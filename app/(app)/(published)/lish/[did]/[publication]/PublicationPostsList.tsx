@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 import { InteractionPreview } from "components/Interactions/InteractionsPreview";
 import { PublicationPostItem } from "./DefaultPublicationHomepage";

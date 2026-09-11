@@ -1,6 +1,13 @@
 "use client";
 import { Modal } from "components/Modal";
-import { JoinMembershipFlow } from "./JoinMembershipFlow";
+import dynamic from "next/dynamic";
+
+// The flow carries the Stripe SDK; it loads with the modal, not with every
+// page that renders a subscribe button.
+const JoinMembershipFlow = dynamic(
+  () => import("./JoinMembershipFlow").then((m) => m.JoinMembershipFlow),
+  { ssr: false },
+);
 import { type JoinResume } from "./joinReturn";
 import { type MembershipJoinViewer } from "actions/publications/joinMembership";
 import type { SubscriptionSource } from "src/subscriptionSource";

@@ -1,7 +1,7 @@
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { ContentLayout, Notification } from "./Notification";
 import { HydratedBskyPostEmbedNotification } from "src/notifications";
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 
 export const BskyPostEmbedNotification = (

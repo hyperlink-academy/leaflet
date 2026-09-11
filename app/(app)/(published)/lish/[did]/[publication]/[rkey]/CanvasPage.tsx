@@ -5,8 +5,8 @@ import {
   PubLeafletPublication,
 } from "lexicons/api";
 import { PostPageData } from "src/utils/getPostPageData";
-import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { AppBskyFeedDefs } from "@atproto/api";
+import type { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import type { AppBskyFeedDefs } from "@atproto/api";
 import { useMemo } from "react";
 import { PageWrapper } from "components/Pages/Page";
 import { Block } from "./PostContent";
@@ -22,7 +22,7 @@ import {
   type BylineProfile,
 } from "./PostHeader/PostHeader";
 import { useInlineDrawer } from "./Interactions/useDrawerOpen";
-import { DrawerThreadPageProvider } from "./Interactions/drawerThreadContext";
+import { DrawerThreadPageProvider } from "./Interactions/DrawerThreadPageProvider";
 import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
@@ -44,7 +44,7 @@ export function CanvasPage({
     preferences,
     pubRecord,
     theme,
-    prerenderedCodeBlocks,
+    prerenderedBlocks,
     bskyPostData,
     standardSitePostData,
     pollData,
@@ -84,7 +84,7 @@ export function CanvasPage({
         <CanvasContent
           blocks={blocks}
           did={did}
-          prerenderedCodeBlocks={prerenderedCodeBlocks}
+          prerenderedBlocks={prerenderedBlocks}
           bskyPostData={bskyPostData}
           standardSitePostData={standardSitePostData}
           pollData={pollData}
@@ -99,7 +99,7 @@ export function CanvasPage({
 function CanvasContent({
   blocks,
   did,
-  prerenderedCodeBlocks,
+  prerenderedBlocks,
   bskyPostData,
   standardSitePostData,
   pageId,
@@ -108,7 +108,7 @@ function CanvasContent({
 }: {
   blocks: PubLeafletPagesCanvas.Block[];
   did: string;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   pollData: PollData[];
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
@@ -140,7 +140,7 @@ function CanvasContent({
               canvasBlock={canvasBlock}
               did={did}
               pollData={pollData}
-              prerenderedCodeBlocks={prerenderedCodeBlocks}
+              prerenderedBlocks={prerenderedBlocks}
               bskyPostData={bskyPostData}
               standardSitePostData={standardSitePostData}
               pageId={pageId}
@@ -157,7 +157,7 @@ function CanvasContent({
 function CanvasBlock({
   canvasBlock,
   did,
-  prerenderedCodeBlocks,
+  prerenderedBlocks,
   bskyPostData,
   standardSitePostData,
   pollData,
@@ -167,7 +167,7 @@ function CanvasBlock({
 }: {
   canvasBlock: PubLeafletPagesCanvas.Block;
   did: string;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
   pollData: PollData[];
@@ -205,7 +205,7 @@ function CanvasBlock({
           did={did}
           index={[index]}
           preview={false}
-          prerenderedCodeBlocks={prerenderedCodeBlocks}
+          prerenderedBlocks={prerenderedBlocks}
         />
       </div>
     </div>

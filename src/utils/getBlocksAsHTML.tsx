@@ -1,11 +1,9 @@
 import { ReadTransaction, Replicache } from "replicache";
 import type { Fact, ReplicacheMutators } from "src/replicache";
 import { scanIndex } from "src/replicache/utils";
-import { renderToStaticMarkup } from "react-dom/server";
 import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { Block } from "components/Blocks/Block";
 import { List, parseBlocksToList } from "./parseBlocksToList";
-import Katex from "katex";
 import { renderFootnoteDefHTML } from "./renderFootnoteDefHTML";
 
 // Definition HTML for each footnote the block owns, keyed by entity id, so the
@@ -17,7 +15,7 @@ async function getFootnoteDefs(tx: ReadTransaction, entity: string) {
   let defs: { [id: string]: string } = {};
   for (let f of footnotes) {
     let [text] = await scanIndex(tx).eav(f.data.value, "block/text");
-    if (text) defs[f.data.value] = renderFootnoteDefHTML(text.data.value);
+    if (text) defs[f.data.value] = await renderFootnoteDefHTML(text.data.value);
   }
   return defs;
 }
@@ -28,6 +26,9 @@ export async function getBlocksAsHTML(
   rep: Replicache<ReplicacheMutators>,
   selectedBlocks: Block[],
 ) {
+  // Warmed before the read transaction opens so the per-block render below
+  // isn't waiting on a chunk fetch mid-transaction.
+  await import("react-dom/server");
   let data = await rep?.query(async (tx) => {
     let result: string[] = [];
     let parsed = parseBlocksToList(selectedBlocks);
@@ -134,6 +135,7 @@ const BlockTypeToHTML: {
   },
   math: async (b, tx, a) => {
     let [math] = await scanIndex(tx).eav(b.entityID, "block/math");
+    const { default: Katex } = await import("katex");
     const html = Katex.renderToString(math?.data.value || "", {
       displayMode: true,
       throwOnError: false,
@@ -286,5 +288,6 @@ async function renderBlock(b: Block, tx: ReadTransaction) {
   let [alignment] = await scanIndex(tx).eav(b.entityID, "block/text-alignment");
   let toHtml = BlockTypeToHTML[b.type];
   let element = await toHtml(b, tx, alignment?.data.value);
+  let { renderToStaticMarkup } = await import("react-dom/server");
   return renderToStaticMarkup(element);
 }

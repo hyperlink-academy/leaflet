@@ -7,7 +7,7 @@ import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { AtUri } from "@atproto/syntax";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
-import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import type { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { SpeedyLink } from "components/SpeedyLink";
 import { ReactNode } from "react";
 import * as linkify from "linkifyjs";

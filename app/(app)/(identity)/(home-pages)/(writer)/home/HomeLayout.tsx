@@ -12,7 +12,7 @@ import {
 } from "components/PageLayouts/dashboardState";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { PageSearch } from "components/PageLayouts/PageSearch";
-import { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
+import type { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { HomeEmptyState } from "./HomeEmpty/HomeEmpty";

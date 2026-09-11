@@ -1,5 +1,5 @@
 "use client";
-import { AppBskyFeedDefs } from "@atproto/api";
+import type { AppBskyFeedDefs } from "@atproto/api";
 import { preload } from "swr";
 import { OpenPage } from "./postPageState";
 import { useOpenThread } from "./Interactions/drawerThreadContext";

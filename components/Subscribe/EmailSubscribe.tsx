@@ -18,7 +18,7 @@ import { Avatar } from "components/Avatar";
 import { useIdentityData } from "components/IdentityProvider";
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { Tooltip } from "components/Tooltip";
-import { SubscribeButtonModeMenu } from "./SubscribeButton";
+import { SubscribeButtonModeMenu } from "./SubscribeButtonModeMenu";
 import { INPUT_HIGHLIGHT_CLASS } from "./inputHighlight";
 import { markLocallySubscribed } from "./viewerSubscription";
 import type { SubscriptionSource } from "src/subscriptionSource";

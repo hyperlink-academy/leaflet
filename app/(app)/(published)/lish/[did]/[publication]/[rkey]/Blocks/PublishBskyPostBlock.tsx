@@ -1,4 +1,4 @@
-import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import type { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 import { BskyPostContent } from "../BskyPostContent";

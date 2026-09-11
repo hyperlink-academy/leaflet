@@ -1,4 +1,4 @@
-import { AppBskyFeedDefs } from "@atproto/api";
+import type { AppBskyFeedDefs } from "@atproto/api";
 import { OpenPage } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/PostPages";
 import { useOpenThread } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
 import { BskyEmbed } from "./BskyEmbed";

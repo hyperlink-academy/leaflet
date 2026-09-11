@@ -1,7 +1,6 @@
 "use client";
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext } from "react";
 import { OpenPage, openPage } from "../postPageState";
-import { openDrawerThread } from "./Interactions";
 
 // A thread or quotes view that can be shown inside the interaction drawer.
 // `standardSitePost` shows a referenced post's own discussion (the post itself
@@ -34,25 +33,4 @@ export function useOpenThread() {
     else if (thread.type !== "standardSitePost" && thread.type !== "recommends")
       openPage(parent, thread);
   };
-}
-
-// Wraps document-body content so Bluesky posts within it open their thread in
-// the interaction drawer (onto a fresh stack) rather than in a new page.
-export function DrawerThreadPageProvider(props: {
-  document_uri: string;
-  pageId?: string;
-  children: React.ReactNode;
-}) {
-  const value = useMemo(
-    () => ({
-      push: (thread: DrawerThread) =>
-        openDrawerThread(props.document_uri, thread, props.pageId),
-    }),
-    [props.document_uri, props.pageId],
-  );
-  return (
-    <DrawerThreadContext.Provider value={value}>
-      {props.children}
-    </DrawerThreadContext.Provider>
-  );
 }

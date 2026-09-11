@@ -21,7 +21,7 @@ import { TagTiny } from "components/Icons/TagTiny";
 import { Popover } from "components/Popover";
 import { TagSelector } from "components/Tags";
 import { useIdentityData } from "components/IdentityProvider";
-import { PostHeaderLayout } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/PostHeader/PostHeader";
+import { PostHeaderLayout } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/PostHeader/PostHeaderLayout";
 import { Backdater } from "./Backdater";
 import { RecommendEmptyTiny } from "components/Icons/RecommendTiny";
 import { mergePreferences } from "src/utils/mergePreferences";

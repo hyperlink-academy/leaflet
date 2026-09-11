@@ -2,7 +2,7 @@
 
 import { getPublicationURL } from "src/utils/getPublicationURL";
 import { supabaseServerClient } from "supabase/serverClient";
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { idResolver } from "src/identity";
 import type { Post } from "actions/reader/getReaderFeed";
 import {

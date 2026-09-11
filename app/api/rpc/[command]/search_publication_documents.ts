@@ -1,4 +1,4 @@
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
@@ -38,11 +38,17 @@ export const search_publication_documents = makeRoute({
     }
 
     const result = documents.map((d) => {
-      const normalizedDoc = normalizeDocumentRecord(d.documents.data, d.documents.uri);
+      const normalizedDoc = normalizeDocumentRecord(
+        d.documents.data,
+        d.documents.uri,
+      );
 
       return {
         uri: d.documents.uri,
-        title: normalizedDoc?.title || (d.documents.data as { title?: string })?.title || "Untitled",
+        title:
+          normalizedDoc?.title ||
+          (d.documents.data as { title?: string })?.title ||
+          "Untitled",
         url: normalizedDoc
           ? getDocumentURL(normalizedDoc, d.documents.uri, d.publications)
           : `${d.documents.uri}`,

@@ -15,7 +15,6 @@ import { focusBlock } from "src/utils/focusBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { v7 } from "uuid";
 import { Replicache } from "replicache";
-import { markdownToHtml } from "src/htmlMarkdownParsers";
 import { betterIsUrl } from "src/utils/isURL";
 import { TextSelection } from "prosemirror-state";
 import type { FilterAttributes } from "src/replicache/attributes";
@@ -83,66 +82,69 @@ export const useHandlePaste = (
         });
         return true;
       }
-      // if there is no html, but there is text, convert the text to markdown
+      let hasImage = false;
+      for (let item of e.clipboardData.items) {
+        if (item.type.includes("image")) hasImage = true;
+      }
+      const pasteHTML = (html: string) => {
+        let children = parsePasteHTMLToElements(html);
+        if (children.length === 1 && children[0].tagName === "IMG" && hasImage)
+          return;
+        const pasteParent = propsRef.current.listData
+          ? propsRef.current.listData.parent
+          : propsRef.current.parent;
+        const useBulkPath = propsRef.current.pageType === "doc";
+        resolveCopiedFootnoteRefs(children, (footnoteEntityID) =>
+          rep.query(async (tx) => {
+            let [text] = await scanIndex(tx).eav(
+              footnoteEntityID,
+              "block/text",
+            );
+            return text ? await renderFootnoteDefHTML(text.data.value) : null;
+          }),
+        ).then(() => {
+          if (useBulkPath) {
+            bulkPaste({
+              children,
+              rep,
+              undoManager,
+              entity_set,
+              propsRef,
+              pasteParent,
+            });
+          } else {
+            let currentPosition = propsRef.current.position;
+            children.forEach((child, index) => {
+              createBlockFromHTMLLegacy(child, {
+                undoManager,
+                parentType: propsRef.current.pageType,
+                first: index === 0,
+                activeBlockProps: propsRef,
+                entity_set,
+                rep,
+                parent: pasteParent,
+                getPosition: () => {
+                  currentPosition = generateKeyBetween(
+                    currentPosition || null,
+                    propsRef.current.nextPosition,
+                  );
+                  return currentPosition;
+                },
+                last: index === children.length - 1,
+              });
+            });
+          }
+        });
+      };
       let xml = new DOMParser().parseFromString(textHTML, "text/html");
       if ((!textHTML || !xml.children.length) && text) {
-        textHTML = markdownToHtml(text);
-      }
-      if (textHTML) {
-        let children = parsePasteHTMLToElements(textHTML);
-        let hasImage = false;
-        for (let item of e.clipboardData.items) {
-          if (item.type.includes("image")) hasImage = true;
-        }
-        if (
-          !(children.length === 1 && children[0].tagName === "IMG" && hasImage)
-        ) {
-          const pasteParent = propsRef.current.listData
-            ? propsRef.current.listData.parent
-            : propsRef.current.parent;
-          const useBulkPath = propsRef.current.pageType === "doc";
-          resolveCopiedFootnoteRefs(children, (footnoteEntityID) =>
-            rep.query(async (tx) => {
-              let [text] = await scanIndex(tx).eav(
-                footnoteEntityID,
-                "block/text",
-              );
-              return text ? renderFootnoteDefHTML(text.data.value) : null;
-            }),
-          ).then(() => {
-            if (useBulkPath) {
-              bulkPaste({
-                children,
-                rep,
-                undoManager,
-                entity_set,
-                propsRef,
-                pasteParent,
-              });
-            } else {
-              let currentPosition = propsRef.current.position;
-              children.forEach((child, index) => {
-                createBlockFromHTMLLegacy(child, {
-                  undoManager,
-                  parentType: propsRef.current.pageType,
-                  first: index === 0,
-                  activeBlockProps: propsRef,
-                  entity_set,
-                  rep,
-                  parent: pasteParent,
-                  getPosition: () => {
-                    currentPosition = generateKeyBetween(
-                      currentPosition || null,
-                      propsRef.current.nextPosition,
-                    );
-                    return currentPosition;
-                  },
-                  last: index === children.length - 1,
-                });
-              });
-            }
-          });
-        }
+        // The markdown pipeline is only needed for a plain-text paste, so it
+        // loads here rather than with the editor.
+        void import("src/htmlMarkdownParsers").then(({ markdownToHtml }) =>
+          pasteHTML(markdownToHtml(text)),
+        );
+      } else if (textHTML) {
+        pasteHTML(textHTML);
       }
 
       for (let item of e.clipboardData.items) {

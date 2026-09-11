@@ -11,7 +11,7 @@ import {
   PubLeafletPagesCanvas,
   PubLeafletPublication,
 } from "lexicons/api";
-import { AppBskyFeedDefs } from "@atproto/api";
+import type { AppBskyFeedDefs } from "@atproto/api";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { TextBlock } from "./TextBlock";
 import { useDocument } from "contexts/DocumentContext";
@@ -34,7 +34,7 @@ export function PublishedPageLinkBlock(props: {
   did: string;
   preview?: boolean;
   className?: string;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
   isCanvas?: boolean;
@@ -81,10 +81,7 @@ export function PublishedPageLinkBlock(props: {
           button) paint above the overlay and stay interactive. An overlay
           rather than an anchor wrapper because the preview can itself contain
           links, and nested <a> tags get re-parented by the HTML parser. */}
-      <a
-        href={`?page=${props.pageId}`}
-        className="absolute inset-0"
-      >
+      <a href={`?page=${props.pageId}`} className="absolute inset-0">
         <span className="sr-only">{titleBlock?.plaintext || "Open page"}</span>
       </a>
       {compact ? (
@@ -150,7 +147,7 @@ function DocLinkBlock(props: {
   did: string;
   preview?: boolean;
   className?: string;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
 }) {
   let [title, description, thirdLine] = pageRecordTextBlocks(props.blocks, {
@@ -269,11 +266,7 @@ const Interactions = (props: {
   parentPageId?: string;
   inline?: boolean;
 }) => {
-  const {
-    uri: document_uri,
-    commentsCountByPage,
-    mentions,
-  } = useDocument();
+  const { uri: document_uri, commentsCountByPage, mentions } = useDocument();
   let comments = commentsCountByPage[props.pageId] ?? 0;
   let quotes = mentions.filter((q) => q.link.includes(props.pageId)).length;
 

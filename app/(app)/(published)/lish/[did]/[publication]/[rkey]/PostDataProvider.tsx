@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useMemo } from "react";
 import useSWRImmutable from "swr/immutable";
-import { AppBskyFeedDefs } from "@atproto/api";
+import type { AppBskyFeedDefs } from "@atproto/api";
 import type { PubLeafletContent } from "lexicons/api";
 import { DocumentProvider } from "contexts/DocumentContext";
 import { LeafletContentProvider } from "contexts/LeafletContentContext";

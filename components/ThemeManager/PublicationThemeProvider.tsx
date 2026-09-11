@@ -4,7 +4,7 @@ import { parseColor } from "react-aria-components";
 import { useEntity } from "src/replicache";
 import { useColorAttribute, colorToString } from "./useColorAttribute";
 import { BaseThemeProvider, CardBorderHiddenContext } from "./ThemeProvider";
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
 import type * as SiteStandardThemeBasic from "lexicons/api/types/site/standard/theme/basic";
 import { resolvePublicationTheme } from "lexicons/src/normalize";

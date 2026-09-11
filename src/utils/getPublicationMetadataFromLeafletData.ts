@@ -1,4 +1,4 @@
-import { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
+import type { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { Json } from "supabase/database.types";
 
 /**

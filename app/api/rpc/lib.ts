@@ -1,4 +1,4 @@
-import { ZodObject, ZodRawShape, ZodUnion, z } from "zod";
+import type { ZodObject, ZodRawShape, ZodUnion, z } from "zod";
 import { canonicalizeInput, encodeInput, decodeInput } from "./inputEncoding";
 
 export type RouteCache = {

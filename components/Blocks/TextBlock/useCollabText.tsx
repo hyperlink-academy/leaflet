@@ -7,12 +7,8 @@ import { useYjsRealtime, YjsRealtimeConnection } from "src/yjsRealtime";
 import { remoteCursorPlugin } from "./remoteCursorPlugin";
 import { RemoteCursors } from "./RemoteCursors";
 import { SCHEMA_VERSION } from "./schema";
-import {
-  markClientStale,
-  stampDocSchemaVersion,
-  updateSchemaVersion,
-  useStaleClient,
-} from "./schemaVersion";
+import { stampDocSchemaVersion, updateSchemaVersion } from "./schemaVersion";
+import { markClientStale, useStaleClient } from "components/StaleClientNotice";
 
 // Everything a collaboratively-edited text entity needs for live multiplayer,
 // in one place so the moving parts can't drift apart between the text block

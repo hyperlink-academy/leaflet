@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { useDocument } from "contexts/DocumentContext";
 import { getPublicationURL } from "src/utils/getPublicationURL";
 
@@ -41,8 +41,7 @@ export function useWarmAdjacentPosts(enabled: boolean) {
       // router can warm.
       try {
         if (
-          new URL(href, window.location.href).origin !==
-          window.location.origin
+          new URL(href, window.location.href).origin !== window.location.origin
         )
           continue;
       } catch {

@@ -1,4 +1,4 @@
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { PubIcon } from "components/ActionBar/Publications";
 import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";

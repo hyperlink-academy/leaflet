@@ -1,5 +1,5 @@
 import { Agent, lexToJson } from "@atproto/api";
-import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import type { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { NextRequest } from "next/server";
 
 export const runtime = "nodejs";

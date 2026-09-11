@@ -1,5 +1,5 @@
 "use client";
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { PubIcon } from "components/ActionBar/Publications";
 import { PublicationThemeWrapper } from "components/ThemeManager/PublicationThemeProvider";
 import {

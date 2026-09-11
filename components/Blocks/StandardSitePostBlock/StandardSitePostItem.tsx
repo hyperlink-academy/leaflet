@@ -1,5 +1,5 @@
 "use client";
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import Link from "next/link";
 import {
   PublicationPostItemSmall,

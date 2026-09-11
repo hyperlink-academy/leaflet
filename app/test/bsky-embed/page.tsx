@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { notFound } from "next/navigation";
-import { AppBskyFeedDefs } from "@atproto/api";
+import type { AppBskyFeedDefs } from "@atproto/api";
 import { BskyEmbed } from "components/Blocks/BlueskyPostBlock/BskyEmbed";
 
 // Manual preview harness for BskyEmbed — the shared bluesky embed renderer used

@@ -6,7 +6,7 @@ import { Modal } from "./Modal";
 import { ButtonPrimary } from "./Buttons";
 import { ActionButton } from "./ActionBar/ActionButton";
 import { AccountSmall } from "./Icons/AccountSmall";
-import { AtmosphericHandleInfo } from "./Subscribe/HandleSubscribe";
+import { AtmosphericHandleInfo } from "./Subscribe/AtmosphericHandleInfo";
 import { HandleSearchInput } from "./HandleSearchInput";
 import { EmailInput, EmailConfirm } from "./Subscribe/EmailSubscribe";
 import { useState } from "react";

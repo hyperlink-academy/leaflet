@@ -1,7 +1,7 @@
 import { MentionTiny } from "components/Icons/MentionTiny";
 import { ContentLayout, Notification } from "./Notification";
 import { HydratedMentionNotification } from "src/notifications";
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 
 export const MentionNotification = (props: HydratedMentionNotification) => {

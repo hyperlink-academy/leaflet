@@ -1,11 +1,9 @@
 import { useEntity, useReplicache } from "src/replicache";
-import "katex/dist/katex.min.css";
 import { BlockLayout, BlockProps } from "./Block";
-import Katex from "katex";
-import { useMemo } from "react";
 import { useUIState } from "src/useUIState";
 import { theme } from "tailwind.config";
 import { BaseTextareaBlock } from "./BaseTextareaBlock";
+import { useMathHtml } from "./useMathHtml";
 import { elementId } from "src/utils/elementId";
 import { useEntitySetContext } from "components/EntitySetProvider";
 
@@ -16,23 +14,7 @@ export function MathBlock(props: BlockProps) {
   );
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
-  const { html, error } = useMemo(() => {
-    try {
-      const html = Katex.renderToString(content?.data.value || "", {
-        displayMode: true,
-        throwOnError: false,
-        errorColor: theme.colors["accent-contrast"],
-      });
-
-      return { html, error: undefined };
-    } catch (error) {
-      if (error instanceof Katex.ParseError || error instanceof TypeError) {
-        return { error };
-      }
-
-      throw error;
-    }
-  }, [content?.data.value]);
+  let html = useMathHtml(content?.data.value, theme.colors["accent-contrast"]);
   return focusedBlock ? (
     <BlockLayout
       isSelected={focusedBlock}
@@ -60,11 +42,14 @@ export function MathBlock(props: BlockProps) {
         }}
       />
     </BlockLayout>
-  ) : html && content?.data.value ? (
-    <div
-      className="text-lg min-h-[48px] w-full border border-transparent"
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+  ) : content?.data.value ? (
+    <div className="text-lg min-h-[48px] w-full border border-transparent">
+      {html ? (
+        <span dangerouslySetInnerHTML={{ __html: html }} />
+      ) : (
+        <span className="whitespace-pre-wrap">{content.data.value}</span>
+      )}
+    </div>
   ) : (
     <BlockLayout
       isSelected={focusedBlock}

@@ -24,7 +24,7 @@ import { useHandlePaste } from "./useHandlePaste";
 import { BlockProps } from "../Block";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { didToBlueskyUrl, atUriToUrl } from "src/utils/mentionUtils";
-import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
+import { useFootnotePopoverStore } from "components/Footnotes/footnotePopoverStore";
 import { useLinkPopoverStore } from "components/LinkPopover";
 import { useEditorCommentSheetStore } from "components/EditorComments/editorCommentStores";
 import { useEditorCommentPopoverStore } from "components/EditorComments/EditorCommentPopover";

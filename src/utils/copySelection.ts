@@ -1,5 +1,4 @@
 import { getBlocksAsHTML } from "src/utils/getBlocksAsHTML";
-import { htmlToMarkdown } from "src/htmlMarkdownParsers";
 import { Replicache } from "replicache";
 import type { ReplicacheMutators } from "src/replicache";
 import { Block } from "components/Blocks/Block";
@@ -9,6 +8,7 @@ export async function copySelection(
   sortedSelection: Block[],
 ) {
   let html = await getBlocksAsHTML(rep, sortedSelection);
+  let { htmlToMarkdown } = await import("src/htmlMarkdownParsers");
   const data = [
     new ClipboardItem({
       ["text/html"]: new Blob([html.join("\n")], { type: "text/html" }),

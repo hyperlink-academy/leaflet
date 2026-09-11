@@ -1,6 +1,6 @@
 "use client";
 import { getPublicationURL } from "src/utils/getPublicationURL";
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { useDocument } from "contexts/DocumentContext";
 import { useWarmAdjacentPosts } from "./useWarmAdjacentPosts";
 import { SpeedyLink } from "components/SpeedyLink";

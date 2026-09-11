@@ -12,7 +12,7 @@ import { useContributorProfiles } from "src/hooks/useContributorProfiles";
 import { bylineName } from "src/utils/byline";
 import { Separator } from "components/Layout";
 import { CheckboxMenuItem, Menu } from "components/Menu";
-import { Profile } from "src/identity";
+import type { Profile } from "src/identity";
 
 type contributors = {
   contributor_did: string;

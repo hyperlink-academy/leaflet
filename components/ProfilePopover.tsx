@@ -6,7 +6,7 @@ import { useRef, useState } from "react";
 import { ProfileHeader } from "app/(app)/(identity)/(home-pages)/p/[didOrHandle]/ProfileHeader";
 import { SpeedyLink } from "./SpeedyLink";
 import { Tooltip } from "./Tooltip";
-import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import type { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { BlueskyTiny } from "./Icons/BlueskyTiny";
 import { ArrowRightTiny } from "./Icons/ArrowRightTiny";
 

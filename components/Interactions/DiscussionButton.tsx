@@ -6,12 +6,18 @@ import { CommentEmptyTiny } from "../Icons/CommentEmptyTiny";
 
 import { CommentFilledSmall } from "../Icons/CommentFilledSmall";
 import { CommentEmptySmall } from "../Icons/CommentEmptySmall";
-import { DiscussionModal } from "./DiscussionModal";
 import { DrawerThreadContext } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
 import {
   InteractionButton,
   LargeInteractionButton,
 } from "./InteractionButtons";
+import dynamic from "next/dynamic";
+
+// The modal renders a whole post body, which reaches every block component.
+const DiscussionModal = dynamic(
+  () => import("./DiscussionModal").then((m) => m.DiscussionModal),
+  { ssr: false },
+);
 
 export function DiscussionButton(props: {
   documentUri: string;
@@ -35,6 +41,9 @@ export function DiscussionButton(props: {
   // thread) instead of the standalone modal used in listings/feeds.
   const drawerNav = useContext(DrawerThreadContext);
   const [discussionsOpen, setDiscussionsOpen] = useState(false);
+  // Mounted on first open so its chunk loads then; kept mounted afterwards so
+  // closing still animates.
+  const [discussionsRequested, setDiscussionsRequested] = useState(false);
 
   const commentsAvailable =
     props.showComments && (props.showWhenEmpty || props.commentsCount > 0);
@@ -52,6 +61,7 @@ export function DiscussionButton(props: {
       drawerNav.push({ type: "standardSitePost", uri: props.documentUri });
     } else {
       props.onOpenChange?.(true);
+      setDiscussionsRequested(true);
       setDiscussionsOpen(true);
     }
   };
@@ -84,7 +94,7 @@ export function DiscussionButton(props: {
         {icon}
         {total > 0 ? ` ${total}` : null}
       </ButtonWrapper>
-      {!props.onClick && !drawerNav && (
+      {!props.onClick && !drawerNav && discussionsRequested && (
         <DiscussionModal
           open={discussionsOpen}
           onOpenChange={(open) => {

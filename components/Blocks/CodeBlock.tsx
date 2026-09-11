@@ -1,13 +1,12 @@
-import {
-  BundledLanguage,
-  bundledLanguagesInfo,
-  bundledThemesInfo,
-  codeToHtml,
-} from "shiki";
 import { useEntity, useReplicache } from "src/replicache";
-import "katex/dist/katex.min.css";
 import { BlockLayout, BlockProps } from "./Block";
-import { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useUIState } from "src/useUIState";
 import { BaseTextareaBlock } from "./BaseTextareaBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
@@ -30,18 +29,28 @@ export function CodeBlock(props: BlockProps & { preview?: boolean }) {
   let entity_set = useEntitySetContext();
   let { permissions } = entity_set;
   const [html, setHTML] = useState<string | null>(null);
+  // Shiki carries every bundled language and theme; a document without a code
+  // block should never load it.
+  const [shiki, setShiki] = useState<typeof import("shiki") | null>(null);
+
+  useEffect(() => {
+    if (props.preview) return;
+    void import("shiki").then(setShiki);
+  }, [props.preview]);
 
   useLayoutEffect(() => {
     if (props.preview) return;
-    if (!content) return;
-    void codeToHtml(content.data.value, {
-      lang,
-      theme,
-      structure: "classic",
-    }).then((h) => {
-      setHTML(h.replaceAll("<br>", "\n"));
-    });
-  }, [content, lang, theme, props.preview]);
+    if (!content || !shiki) return;
+    void shiki
+      .codeToHtml(content.data.value, {
+        lang,
+        theme,
+        structure: "classic",
+      })
+      .then((h) => {
+        setHTML(h.replaceAll("<br>", "\n"));
+      });
+  }, [content, lang, theme, props.preview, shiki]);
 
   const onClick = useCallback((e: React.MouseEvent<HTMLElement>) => {
     focusBlock(
@@ -124,7 +133,7 @@ export function CodeBlock(props: BlockProps & { preview?: boolean }) {
                 });
               }}
             >
-              {bundledThemesInfo.map((t) => (
+              {(shiki?.bundledThemesInfo ?? []).map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.displayName}
                 </option>
@@ -148,7 +157,7 @@ export function CodeBlock(props: BlockProps & { preview?: boolean }) {
             }}
           >
             <option value="plaintext">Plaintext</option>
-            {bundledLanguagesInfo.map((l) => (
+            {(shiki?.bundledLanguagesInfo ?? []).map((l) => (
               <option key={l.id} value={l.id}>
                 {l.name}
               </option>

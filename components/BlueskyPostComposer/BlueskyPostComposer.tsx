@@ -1,6 +1,6 @@
 "use client";
 import { EditorState } from "prosemirror-state";
-import { AppBskyFeedDefs } from "@atproto/api";
+import type { AppBskyFeedDefs } from "@atproto/api";
 import { ProsemirrorEditor } from "./ProsemirrorEditor";
 import { BskyEmbed } from "components/Blocks/BlueskyPostBlock/BskyEmbed";
 import { Avatar } from "components/Avatar";
