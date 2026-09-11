@@ -113,7 +113,7 @@ export const HandleSearchInput = (props: {
             </div>
           )}
           <Input
-            mode="url"
+            inputMode="url"
             autoFocus={props.autoFocus}
             className={`appearance-none! grow outline-none! min-w-0 ${props.large ? "py-1!" : props.compact ? "py-0!" : "py-0.5"}`}
             placeholder={props.placeholder ?? "atmosphere.handle"}
