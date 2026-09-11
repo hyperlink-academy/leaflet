@@ -73,7 +73,7 @@ async function writeDomainRoutesToCache(
   else await cache.delete(`domain:${hostname}`);
 }
 
-export default async function middleware(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
   let hostname = req.headers.get("host")!;
   if (req.nextUrl.pathname === receive_auth_callback_route)
     return receiveAuthCallback(req);
