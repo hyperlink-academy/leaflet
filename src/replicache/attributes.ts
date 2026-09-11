@@ -118,6 +118,10 @@ const BlockAttributes = {
     type: "reference",
     cardinality: "one",
   },
+  "page-link/display": {
+    type: "page-link-display-union",
+    cardinality: "one",
+  },
   "block/bluesky-post": {
     type: "bluesky-post",
     cardinality: "one",
@@ -348,6 +352,22 @@ const PostsListBlockAttributes = {
     type: "number",
     cardinality: "one",
   },
+  "posts-list/reader-controls": {
+    type: "boolean",
+    cardinality: "one",
+  },
+  "posts-list/reader-search": {
+    type: "boolean",
+    cardinality: "one",
+  },
+  "posts-list/reader-tag-filter": {
+    type: "boolean",
+    cardinality: "one",
+  },
+  "posts-list/reader-sort": {
+    type: "boolean",
+    cardinality: "one",
+  },
 } as const;
 
 const ThemeAttributes = {
@@ -557,6 +577,10 @@ export type Data<A extends keyof typeof Attributes> = {
   "standard-site-post-size-union": {
     type: "standard-site-post-size-union";
     value: "large" | "medium" | "small";
+  };
+  "page-link-display-union": {
+    type: "page-link-display-union";
+    value: "full" | "compact";
   };
   color: { type: "color"; value: string };
 }[(typeof Attributes)[A]["type"]];

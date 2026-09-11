@@ -39,7 +39,10 @@ module.exports = {
       //BG COLORS (defined as css variables in global.css)
       "bg-leaflet": "rgb(var(--bg-leaflet))",
       "bg-page": "rgb(var(--bg-page))",
-
+      "bg-light":
+        "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 95%)",
+      "bg-accent":
+        "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
       // HIGHLIGHT COLORS
       "highlight-1": "var(--highlight-1)",
       "highlight-2": "rgb(var(--highlight-2))",

@@ -24,7 +24,7 @@ import {
 } from "@tinybirdco/sdk";
 
 // The token the app runs with (TINYBIRD_TOKEN in prod and the appview): reads
-// every endpoint and appends subscription events.
+// every endpoint and appends user events.
 const PROD_TOKEN = defineToken("prod_read_token_v1");
 const PROD_TOKEN_READ = { token: PROD_TOKEN, scope: "READ" } as const;
 
@@ -85,12 +85,10 @@ export const analyticsEvents = defineDatasource("analytics_events", {
 export type AnalyticsEventsRow = InferRow<typeof analyticsEvents>;
 
 /**
- * Subscription events, ingested server-side (see src/subscriptionAnalytics.ts).
- *
- * `origin` distinguishes subscriptions our own code created ("app") from ones
- * observed on the firehose that were created elsewhere ("firehose"). The
- * appview only ingests firehose events whose subscription row didn't already
- * exist, so app-created records aren't double counted when they echo back.
+ * Retired 2026-09-10: subscribe/unsubscribe are user_events now, and the
+ * app-origin rows here were backfilled into it
+ * (scripts/backfill-user-events-subscriptions.mts). Nothing writes or reads
+ * this datasource; the definition stays so a deploy keeps the raw history.
  */
 export const subscriptionEvents = defineDatasource("subscription_events", {
   description: "Publication subscribe/unsubscribe events",
@@ -115,7 +113,6 @@ export const subscriptionEvents = defineDatasource("subscription_events", {
     sortingKey: ["publication_uri", "timestamp"],
     partitionKey: "toYYYYMM(fromUnixTimestamp64Milli(timestamp))",
   }),
-  tokens: [{ token: PROD_TOKEN, scope: "APPEND" }],
 });
 
 export type SubscriptionEventsRow = InferRow<typeof subscriptionEvents>;
@@ -132,7 +129,7 @@ export const userEvents = defineDatasource("user_events", {
     timestamp: t.uint64(),
     identity_id: t.string(),
     did: t.string().default(""),
-    event: t.string().lowCardinality(), // page_view | push
+    event: t.string().lowCardinality(), // see UserEvent in src/activeUserAnalytics.ts
     properties: t.map(t.string(), t.string()),
   },
   engine: engine.mergeTree({
@@ -387,127 +384,47 @@ export type PublicationBskyTrafficOutput = InferOutputRow<
   typeof publicationBskyTraffic
 >;
 
-/**
- * publication_subscribes_timeseries – daily subscribe/unsubscribe counts for a
- * publication, split by method.
- */
-export const publicationSubscribesTimeseries = defineEndpoint(
-  "publication_subscribes_timeseries",
-  {
-    description: "Daily subscription event counts for a publication",
-    tokens: [PROD_TOKEN_READ],
-    params: {
-      publication_uri: p.string(),
-      date_from: p.string().optional(),
-      date_to: p.string().optional(),
-    },
-    nodes: [
-      node({
-        name: "endpoint",
-        sql: `
-        SELECT
-          toDate(fromUnixTimestamp64Milli(timestamp)) AS day,
-          countIf(event = 'subscribe' AND method = 'email') AS email_subscribes,
-          countIf(event = 'subscribe' AND method = 'atproto') AS atproto_subscribes,
-          countIf(event = 'unsubscribe') AS unsubscribes
-        FROM subscription_events
-        WHERE publication_uri = {{String(publication_uri)}}
-          {% if defined(date_from) %}
-            AND fromUnixTimestamp64Milli(timestamp) >= parseDateTimeBestEffort({{String(date_from)}})
-          {% end %}
-          {% if defined(date_to) %}
-            AND fromUnixTimestamp64Milli(timestamp) <= parseDateTimeBestEffort({{String(date_to)}})
-          {% end %}
-        GROUP BY day
-        ORDER BY day ASC
-      `,
-      }),
-    ],
-    output: {
-      day: t.date(),
-      email_subscribes: t.uint64(),
-      atproto_subscribes: t.uint64(),
-      unsubscribes: t.uint64(),
-    },
-  },
-);
-
-export type PublicationSubscribesTimeseriesParams = InferParams<
-  typeof publicationSubscribesTimeseries
->;
-export type PublicationSubscribesTimeseriesOutput = InferOutputRow<
-  typeof publicationSubscribesTimeseries
->;
-
-/**
- * publication_subscribe_sources – where a publication's subscribes came from:
- * placement on the page, referring publication (recommendations), and whether
- * the subscription was created in-app or observed on the firehose.
- */
-export const publicationSubscribeSources = defineEndpoint(
-  "publication_subscribe_sources",
-  {
-    description: "Subscribe counts by source placement for a publication",
-    tokens: [PROD_TOKEN_READ],
-    params: {
-      publication_uri: p.string(),
-      date_from: p.string().optional(),
-      date_to: p.string().optional(),
-      limit: p.int32().optional(50),
-    },
-    nodes: [
-      node({
-        name: "endpoint",
-        sql: `
-        SELECT
-          origin,
-          source_placement,
-          source_publication,
-          method,
-          count() AS subscribes,
-          uniq(subscriber) AS subscribers
-        FROM subscription_events
-        WHERE event = 'subscribe'
-          AND publication_uri = {{String(publication_uri)}}
-          {% if defined(date_from) %}
-            AND fromUnixTimestamp64Milli(timestamp) >= parseDateTimeBestEffort({{String(date_from)}})
-          {% end %}
-          {% if defined(date_to) %}
-            AND fromUnixTimestamp64Milli(timestamp) <= parseDateTimeBestEffort({{String(date_to)}})
-          {% end %}
-        GROUP BY origin, source_placement, source_publication, method
-        ORDER BY subscribes DESC
-        LIMIT {{Int32(limit, 50)}}
-      `,
-      }),
-    ],
-    output: {
-      origin: t.string(),
-      source_placement: t.string(),
-      source_publication: t.string(),
-      method: t.string(),
-      subscribes: t.uint64(),
-      subscribers: t.uint64(),
-    },
-  },
-);
-
-export type PublicationSubscribeSourcesParams = InferParams<
-  typeof publicationSubscribeSources
->;
-export type PublicationSubscribeSourcesOutput = InferOutputRow<
-  typeof publicationSubscribeSources
->;
-
 // ============================================================================
 // Active users
 // ============================================================================
 
 const USER_EVENT_DAY_SQL = "toDate(fromUnixTimestamp64Milli(timestamp))";
 
+// Per-period event counts (not distinct identities) shared by both active-user
+// endpoints. `posts_published` counts only first publishes: republishing an
+// edit is a `publish` event too, but not a new post.
+const ACTIVITY_COUNT_SQL = `
+          countIf(event = 'signup') AS signups,
+          countIf(event = 'create_document') AS documents_created,
+          countIf(event = 'publish' AND properties['first_publish'] = 'true') AS posts_published,
+          countIf(event = 'create_publication') AS publications_created,
+          countIf(event = 'subscribe') AS subscribes,
+          countIf(event = 'unsubscribe') AS unsubscribes,
+          countIf(event = 'join_membership') AS memberships_joined,
+          countIf(event = 'pro_upgrade') AS pro_upgrades,
+          countIf(event = 'pro_cancel') AS pro_cancels,
+          countIf(event = 'connect_onboarding_started') AS connect_onboardings_started,
+          countIf(event = 'connect_account_enabled') AS connect_accounts_enabled`;
+const ACTIVITY_COUNT_OUTPUT = {
+  signups: t.uint64(),
+  documents_created: t.uint64(),
+  posts_published: t.uint64(),
+  publications_created: t.uint64(),
+  subscribes: t.uint64(),
+  unsubscribes: t.uint64(),
+  memberships_joined: t.uint64(),
+  pro_upgrades: t.uint64(),
+  pro_cancels: t.uint64(),
+  connect_onboardings_started: t.uint64(),
+  connect_accounts_enabled: t.uint64(),
+};
+
 /**
  * active_users_timeseries – distinct identities with any event per calendar
- * period (weeks start on Monday).
+ * period (weeks start on Monday), plus activity counts for the period.
+ * `pro_active` counts identities that were Pro on at least one event in the
+ * period (events are stamped with the status at the time), so an identity that
+ * flips mid-period counts as Pro.
  */
 export const activeUsersTimeseries = defineEndpoint("active_users_timeseries", {
   description: "Distinct active identities per day/week/month",
@@ -527,7 +444,9 @@ export const activeUsersTimeseries = defineEndpoint("active_users_timeseries", {
             {{String(granularity, 'day')}} = 'week', toMonday(${USER_EVENT_DAY_SQL}),
             ${USER_EVENT_DAY_SQL}
           ) AS period,
-          uniqExact(identity_id) AS active
+          uniqExact(identity_id) AS active,
+          uniqExactIf(identity_id, properties['pro'] = 'true') AS pro_active,
+          ${ACTIVITY_COUNT_SQL}
         FROM user_events
         WHERE 1
           {% if defined(date_from) %}
@@ -541,7 +460,12 @@ export const activeUsersTimeseries = defineEndpoint("active_users_timeseries", {
       `,
     }),
   ],
-  output: { period: t.date(), active: t.uint64() },
+  output: {
+    period: t.date(),
+    active: t.uint64(),
+    pro_active: t.uint64(),
+    ...ACTIVITY_COUNT_OUTPUT,
+  },
 });
 
 export type ActiveUsersTimeseriesParams = InferParams<
@@ -552,8 +476,8 @@ export type ActiveUsersTimeseriesOutput = InferOutputRow<
 >;
 
 /**
- * active_users_windows – distinct identities over the last 1, 7 and 30
- * calendar days (UTC, including today), one row per window.
+ * active_users_windows – distinct identities and activity counts over the last
+ * 1, 7 and 30 calendar days (UTC, including today), one row per window.
  */
 export const activeUsersWindows = defineEndpoint("active_users_windows", {
   description: "Distinct active identities over the last 1/7/30 calendar days",
@@ -563,7 +487,11 @@ export const activeUsersWindows = defineEndpoint("active_users_windows", {
     node({
       name: "endpoint",
       sql: `
-        SELECT window_days, uniqExact(identity_id) AS active
+        SELECT
+          window_days,
+          uniqExact(identity_id) AS active,
+          uniqExactIf(identity_id, properties['pro'] = 'true') AS pro_active,
+          ${ACTIVITY_COUNT_SQL}
         FROM user_events
         ARRAY JOIN [1, 7, 30] AS window_days
         WHERE ${USER_EVENT_DAY_SQL} > today() - window_days
@@ -572,7 +500,12 @@ export const activeUsersWindows = defineEndpoint("active_users_windows", {
       `,
     }),
   ],
-  output: { window_days: t.uint8(), active: t.uint64() },
+  output: {
+    window_days: t.uint8(),
+    active: t.uint64(),
+    pro_active: t.uint64(),
+    ...ACTIVITY_COUNT_OUTPUT,
+  },
 });
 
 export type ActiveUsersWindowsOutput = InferOutputRow<
@@ -590,8 +523,6 @@ export const tinybird = new Tinybird({
     publicationTopReferrers,
     publicationTopPages,
     publicationBskyTraffic,
-    publicationSubscribesTimeseries,
-    publicationSubscribeSources,
     activeUsersTimeseries,
     activeUsersWindows,
   },

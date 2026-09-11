@@ -15,13 +15,6 @@ export function PublicationPostItemLarge(props: LargeProps) {
     hasCoverImage,
     widePage,
   );
-  const px = props.inList
-    ? widePage
-      ? hasCoverImage
-        ? "sm:pl-3"
-        : "pr-0"
-      : "px-0"
-    : "px-3";
 
   return (
     <div
@@ -33,12 +26,12 @@ export function PublicationPostItemLarge(props: LargeProps) {
         <img
           src={props.coverImageSrc}
           alt={props.coverImageAlt || props.title || ""}
-          className={`object-cover rounded-none! border-b border-border-light ${widePage ? "sm:h-[254px] aspect-[3/2] sm:border-transparent " : "h-full aspect-[1.91/1]"}  `}
+          className={`object-cover  shrink-0 ${props.inList ? "rounded-md" : " border-b border-border-light rounded-none!"} ${widePage ? "sm:h-[254px] aspect-[3/2] sm:border-transparent " : "h-full aspect-[1.91/1]"}  `}
         />
       )}
 
       <div
-        className={`relative flex flex-col pt-2 ${widePage ? "sm:py-2 sm:px-4 " : ""} ${!props.inList && "px-3 py-2"}`}
+        className={`relative flex flex-col grow pt-2 ${hasCoverImage ? "" : ""}  ${props.inList ? (hasCoverImage && widePage ? "sm:py-2 sm:px-4" : "px-0 py-2") : "px-3 py-2"}`}
       >
         {props.pubInfo}
         {props.membersOnly && (
@@ -55,7 +48,7 @@ export function PublicationPostItemLarge(props: LargeProps) {
           {props.title && (
             <h2
               ref={titleRef as React.RefObject<HTMLHeadingElement>}
-              className={`text-primary leading-snug text-lg  line-clamp-2 ${widePage ? "sm:text-xl " : ""}`}
+              className={`text-primary leading-snug text-lg  line-clamp-2 ${widePage ? "sm:text-xl " : "text-[1.125em]"}`}
             >
               {props.title}
             </h2>

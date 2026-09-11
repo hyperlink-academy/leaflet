@@ -2,6 +2,7 @@ import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { $Typed, UnicodeString } from "@atproto/api";
 import { BlobRef } from "@atproto/lexicon";
+import { DEFAULT_PAGE_LINK_DISPLAY } from "src/utils/pageLinkDisplay";
 
 import {
   PubLeafletBlocksBlockquote,
@@ -231,10 +232,13 @@ export async function processBlocksToPages(opts: {
         });
       }
 
+      const [display] = scan.eav(b.entityID, "page-link/display");
       const block: $Typed<PubLeafletBlocksPage.Main> = {
         $type: "pub.leaflet.blocks.page",
         id: page.data.value,
       };
+      if (display && display.data.value !== DEFAULT_PAGE_LINK_DISPLAY)
+        block.display = display.data.value;
       return block;
     },
     "bluesky-post": async (b) => {
@@ -512,12 +516,34 @@ export async function processBlocksToPages(opts: {
       const filterByTags = filterTagFacts.map((f) => f.data.value);
       const [limitFact] = scan.eav(b.entityID, "posts-list/limit");
       const limit = limitFact?.data.value;
+      const [readerControlsFact] = scan.eav(
+        b.entityID,
+        "posts-list/reader-controls",
+      );
+      const readerControls = readerControlsFact?.data.value;
+      const [readerSearchFact] = scan.eav(
+        b.entityID,
+        "posts-list/reader-search",
+      );
+      const [readerTagFilterFact] = scan.eav(
+        b.entityID,
+        "posts-list/reader-tag-filter",
+      );
+      const [readerSortFact] = scan.eav(b.entityID, "posts-list/reader-sort");
       const block: $Typed<PubLeafletBlocksPostsList.Main> = {
         $type: "pub.leaflet.blocks.postsList",
         ...(viewFact && { view: viewFact.data.value }),
         ...(highlightFact && { highlightFirstPost: highlightFact.data.value }),
         ...(filterByTags.length > 0 && { filterByTags }),
         ...(limit && limit > 0 && { limit }),
+        // The sub-flags only mean anything under readerControls, and each
+        // defaults to true, so write them all whenever it's on.
+        ...(readerControls && {
+          readerControls: true,
+          readerSearch: readerSearchFact?.data.value ?? true,
+          readerTagFilter: readerTagFilterFact?.data.value ?? true,
+          readerSort: readerSortFact?.data.value ?? true,
+        }),
       };
       return block;
     },

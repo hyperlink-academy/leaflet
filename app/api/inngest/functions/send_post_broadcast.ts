@@ -38,7 +38,10 @@ import {
   truncateBlocksAtMembersDelimiter,
 } from "src/membership";
 
+// Postmark's /email/batch caps a call at 500 messages AND 50 MB of payload;
+// long posts hit the byte cap first, so batches are sized by both.
 const BATCH_SIZE = 500;
+const MAX_BATCH_BYTES = 40 * 1024 * 1024;
 // Distinctive URL used once at render-time and string-replaced per recipient
 // so we only pay the React Email render cost once per batch.
 const UNSUB_PLACEHOLDER =
@@ -222,15 +225,31 @@ export const send_post_broadcast = inngest.createFunction(
     )) as Awaited<ReturnType<typeof fetchStandardSiteBlockData>>;
 
     const subscribers = await step.run("snapshot-subscribers", async () => {
-      const { data } = await supabaseServerClient
-        .from("publication_email_subscribers")
-        .select("id, email, unsubscribe_token, identity_id")
-        .eq("publication", publication_uri)
-        .eq("state", "confirmed");
-      const subs = data ?? [];
+      // A retried send (e.g. after a partial batch failure) must not email
+      // anyone who already got this post.
+      const [{ data }, { data: alreadySent }] = await Promise.all([
+        supabaseServerClient
+          .from("publication_email_subscribers")
+          .select("id, email, unsubscribe_token, identity_id")
+          .eq("publication", publication_uri)
+          .eq("state", "confirmed"),
+        supabaseServerClient
+          .from("publication_email_subscriber_events")
+          .select("subscriber")
+          .eq("publication", publication_uri)
+          .eq("event_type", "post_sent")
+          .eq("metadata->>document", document_uri),
+      ]);
+      const sentTo = new Set((alreadySent ?? []).map((e) => e.subscriber));
+      const subs = (data ?? []).filter((s) => !sentTo.has(s.id));
       await supabaseServerClient
         .from("publication_post_sends")
-        .update({ status: "sending", subscriber_count: subs.length })
+        .update({
+          status: "sending",
+          subscriber_count: subs.length,
+          error: null,
+          completed_at: null,
+        })
         .eq("publication", publication_uri)
         .eq("document", document_uri);
       return subs;
@@ -345,6 +364,47 @@ export const send_post_broadcast = inngest.createFunction(
           ]
     ).filter((g) => g.recipients.length > 0);
 
+    const buildMessage = (
+      sub: (typeof subscribers)[number],
+      htmlTemplate: string,
+    ) => {
+      const unsubscribeUrl = `${assetsBaseUrl}/emails/unsubscribe?unsubscribe_token=${encodeURIComponent(
+        sub.unsubscribe_token,
+      )}`;
+      const manageUrl = manageSubscriptionUrl({
+        baseUrl: assetsBaseUrl,
+        email: sub.email,
+        publicationUrl: pubProps.publicationUrl,
+      });
+      const htmlBody = htmlTemplate
+        .split(UNSUB_PLACEHOLDER)
+        .join(unsubscribeUrl)
+        .split(MANAGE_PLACEHOLDER)
+        .join(manageUrl.replace(/&/g, "&amp;"));
+      return {
+        MessageStream: "broadcast",
+        From: fromHeader,
+        ReplyTo: replyToEmail,
+        To: sub.email,
+        Subject: postTitle,
+        HtmlBody: htmlBody,
+        Headers: [
+          {
+            Name: "List-Unsubscribe-Post",
+            Value: "List-Unsubscribe=One-Click",
+          },
+          {
+            Name: "List-Unsubscribe",
+            Value: `<${unsubscribeUrl}>`,
+          },
+        ],
+        Metadata: {
+          subscriber_id: sub.id,
+          publication: publication_uri,
+        },
+      };
+    };
+
     for (const group of groups) {
       // Render once per group with a placeholder, then string-replace per
       // recipient.
@@ -375,9 +435,16 @@ export const send_post_broadcast = inngest.createFunction(
         },
       );
 
+      const bytesPerMessage = Buffer.byteLength(
+        JSON.stringify(buildMessage(group.recipients[0], htmlTemplate)),
+      );
+      const batchSize = Math.max(
+        1,
+        Math.min(BATCH_SIZE, Math.floor(MAX_BATCH_BYTES / bytesPerMessage)),
+      );
       const chunks: (typeof subscribers)[] = [];
-      for (let i = 0; i < group.recipients.length; i += BATCH_SIZE) {
-        chunks.push(group.recipients.slice(i, i + BATCH_SIZE));
+      for (let i = 0; i < group.recipients.length; i += batchSize) {
+        chunks.push(group.recipients.slice(i, i + batchSize));
       }
 
       for (let ci = 0; ci < chunks.length; ci++) {
@@ -392,43 +459,9 @@ export const send_post_broadcast = inngest.createFunction(
               message: string;
             }[]
           > => {
-            const messages = chunk.map((sub) => {
-              const unsubscribeUrl = `${assetsBaseUrl}/emails/unsubscribe?unsubscribe_token=${encodeURIComponent(
-                sub.unsubscribe_token,
-              )}`;
-              const manageUrl = manageSubscriptionUrl({
-                baseUrl: assetsBaseUrl,
-                email: sub.email,
-                publicationUrl: pubProps.publicationUrl,
-              });
-              const htmlBody = htmlTemplate
-                .split(UNSUB_PLACEHOLDER)
-                .join(unsubscribeUrl)
-                .split(MANAGE_PLACEHOLDER)
-                .join(manageUrl.replace(/&/g, "&amp;"));
-              return {
-                MessageStream: "broadcast",
-                From: fromHeader,
-                ReplyTo: replyToEmail,
-                To: sub.email,
-                Subject: postTitle,
-                HtmlBody: htmlBody,
-                Headers: [
-                  {
-                    Name: "List-Unsubscribe-Post",
-                    Value: "List-Unsubscribe=One-Click",
-                  },
-                  {
-                    Name: "List-Unsubscribe",
-                    Value: `<${unsubscribeUrl}>`,
-                  },
-                ],
-                Metadata: {
-                  subscriber_id: sub.id,
-                  publication: publication_uri,
-                },
-              };
-            });
+            const messages = chunk.map((sub) =>
+              buildMessage(sub, htmlTemplate),
+            );
 
             const res = await fetch("https://api.postmarkapp.com/email/batch", {
               method: "POST",

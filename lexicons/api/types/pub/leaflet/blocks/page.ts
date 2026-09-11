@@ -17,6 +17,7 @@ const id = 'pub.leaflet.blocks.page'
 export interface Main {
   $type?: 'pub.leaflet.blocks.page'
   id: string
+  display?: 'full' | 'compact' | (string & {})
 }
 
 const hashMain = 'main'

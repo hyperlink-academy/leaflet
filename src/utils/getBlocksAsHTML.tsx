@@ -250,12 +250,15 @@ const BlockTypeToHTML: {
   },
   card: async (b, tx, a) => {
     let [card] = await scanIndex(tx).eav(b.entityID, "block/card");
+    if (!card) return "";
+    let [display] = await scanIndex(tx).eav(b.entityID, "page-link/display");
     let facts = await getAllFacts(tx, card.data.value);
     return (
       <div
         data-type="card"
         data-facts={JSON.stringify(facts)}
         data-entityid={card.data.value}
+        data-display={display?.data.value}
       />
     );
   },

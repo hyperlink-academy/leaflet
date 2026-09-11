@@ -31,7 +31,6 @@ import { writeFile, readFile } from "fs/promises";
 import { inngest } from "app/api/inngest/client";
 import { stripThemeWithoutType } from "src/utils/stripThemeWithoutType";
 import { pageHasMembersDelimiter } from "src/membership";
-import { trackSubscriptionEvent } from "src/subscriptionAnalytics";
 import { MAIN_SITE_URL } from "src/utils/customDomain";
 import type { AppviewRevalidateEvent } from "app/api/appview_revalidate/route";
 
@@ -536,14 +535,16 @@ async function handleEvent(evt: Event) {
         .delete()
         .eq("uri", evt.uri.toString());
       if (recommendations.length > 0) {
-        let { error } = await supabase.from("publication_recommendations").insert(
-          recommendations.map((recommendation, sort_order) => ({
-            uri: evt.uri.toString(),
-            publication: record.value.publication,
-            recommendation,
-            sort_order,
-          })),
-        );
+        let { error } = await supabase
+          .from("publication_recommendations")
+          .insert(
+            recommendations.map((recommendation, sort_order) => ({
+              uri: evt.uri.toString(),
+              publication: record.value.publication,
+              recommendation,
+              sort_order,
+            })),
+          );
         if (error)
           console.log("Error inserting publication recommendations:", error);
       }
@@ -560,50 +561,18 @@ async function handleEvent(evt: Event) {
       let record = PubLeafletGraphSubscription.validateRecord(evt.record);
       if (!record.success) return;
       await ensureIdentity(evt.did);
-      // App-created subscriptions insert their row (and track their own
-      // analytics event) before the firehose echoes the record back, so only
-      // a previously unseen row counts as a firehose-originated subscribe.
-      // Same logic in the site.standard.graph.subscription handler below.
-      let { data: existing } = await supabase
-        .from("publication_subscriptions")
-        .select("uri")
-        .eq("uri", evt.uri.toString())
-        .maybeSingle();
       await supabase.from("publication_subscriptions").upsert({
         uri: evt.uri.toString(),
         identity: evt.did,
         publication: record.value.publication,
         record: record.value as Json,
       });
-      if (!existing)
-        await trackSubscriptionEvent({
-          event: "subscribe",
-          method: "atproto",
-          origin: "firehose",
-          publicationUri: record.value.publication,
-          subscriberDid: evt.did,
-          recordUri: evt.uri.toString(),
-        });
     }
     if (evt.event === "delete") {
-      let { data: existing } = await supabase
-        .from("publication_subscriptions")
-        .select("publication")
-        .eq("uri", evt.uri.toString())
-        .maybeSingle();
       await supabase
         .from("publication_subscriptions")
         .delete()
         .eq("uri", evt.uri.toString());
-      if (existing)
-        await trackSubscriptionEvent({
-          event: "unsubscribe",
-          method: "atproto",
-          origin: "firehose",
-          publicationUri: existing.publication,
-          subscriberDid: evt.did,
-          recordUri: evt.uri.toString(),
-        });
     }
   }
   // site.standard.document records go into the main "documents" table
@@ -784,46 +753,18 @@ async function handleEvent(evt: Event) {
       let record = SiteStandardGraphSubscription.validateRecord(evt.record);
       if (!record.success) return;
       await ensureIdentity(evt.did);
-      let { data: existing } = await supabase
-        .from("publication_subscriptions")
-        .select("uri")
-        .eq("uri", evt.uri.toString())
-        .maybeSingle();
       await supabase.from("publication_subscriptions").upsert({
         uri: evt.uri.toString(),
         identity: evt.did,
         publication: record.value.publication,
         record: record.value as Json,
       });
-      if (!existing)
-        await trackSubscriptionEvent({
-          event: "subscribe",
-          method: "atproto",
-          origin: "firehose",
-          publicationUri: record.value.publication,
-          subscriberDid: evt.did,
-          recordUri: evt.uri.toString(),
-        });
     }
     if (evt.event === "delete") {
-      let { data: existing } = await supabase
-        .from("publication_subscriptions")
-        .select("publication")
-        .eq("uri", evt.uri.toString())
-        .maybeSingle();
       await supabase
         .from("publication_subscriptions")
         .delete()
         .eq("uri", evt.uri.toString());
-      if (existing)
-        await trackSubscriptionEvent({
-          event: "unsubscribe",
-          method: "atproto",
-          origin: "firehose",
-          publicationUri: existing.publication,
-          subscriberDid: evt.did,
-          recordUri: evt.uri.toString(),
-        });
     }
   }
   if (evt.collection === ids.AppBskyActorProfile) {

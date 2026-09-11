@@ -1,5 +1,5 @@
 // Where a subscribe action was initiated from, threaded from the UI through
-// the subscribe server actions into analytics (see src/subscriptionAnalytics).
+// the subscribe server actions into analytics (see src/activeUserAnalytics).
 // Client-safe: imported by components and by afterSignInActions to carry the
 // source across auth redirects.
 

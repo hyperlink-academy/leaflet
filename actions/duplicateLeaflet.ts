@@ -5,6 +5,7 @@ import { sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 
 import { getAuthIdentity } from "src/auth";
+import { trackDocumentCreated } from "src/activeUserAnalytics";
 import { isConfirmedContributor } from "src/contributorPermissions";
 import { copyLeafletContents } from "src/utils/copyLeafletContents";
 import { getLeafletTitle } from "src/utils/getLeafletTitle";
@@ -29,6 +30,7 @@ export async function duplicateLeaflet(
     .eq("id", token_id)
     .single();
   if (!source) return { token: null, error: "Leaflet not found" };
+  trackDocumentCreated({ kind: "duplicate" });
 
   let sourceTitle = getLeafletTitle(source);
   let sourceDescription =

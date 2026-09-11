@@ -67,7 +67,7 @@ export function LeafletFooter(props: { entityID: string }) {
   return (
     <Media
       mobile
-      className="mobileLeafletFooter pwa-padding-bottom  w-full z-10 touch-none -mt-[54px]"
+      className="mobileLeafletFooter w-full z-10 touch-none -mt-[54px]"
     >
       {focusedBlock &&
       focusedBlock.entityType == "block" &&

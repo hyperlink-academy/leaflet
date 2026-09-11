@@ -11,17 +11,21 @@ import { ChapterShelf } from "app/(app)/(published)/lish/[did]/[publication]/Pub
 import { buildChapterCards } from "src/utils/chapterGrouping";
 import {
   POSTS_LIST_PAGE_SIZE,
+  buildPostsListIndex,
   postsListFilterKey,
+  resolveReaderControls,
   sortPostsForList,
   filterPostsByTags,
   type LoadPostsBatch,
   type PostsListView,
 } from "src/utils/postsListPagination";
+import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import type { PublicationPostsListPost } from "src/utils/buildPublicationPosts";
 import { Popover } from "components/Popover";
 import { Toggle } from "components/Toggle";
 import { SettingsTriggerButton } from "./SettingsTriggerButton";
 import { PlaceholderText } from "./PostSizeIcons";
+import { BlockSettingOptions } from "./BlockSettingOptions";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { EmptyState } from "components/EmptyState";
 import { ShortcutKey } from "components/Layout";
@@ -55,12 +59,41 @@ export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
   );
 };
 
+function usePostsListReaderFlags(entityID: string) {
+  let readerControls = useEntity(entityID, "posts-list/reader-controls");
+  let readerSearch = useEntity(entityID, "posts-list/reader-search");
+  let readerTagFilter = useEntity(entityID, "posts-list/reader-tag-filter");
+  let readerSort = useEntity(entityID, "posts-list/reader-sort");
+  return {
+    readerControls: readerControls?.data.value,
+    readerSearch: readerSearch?.data.value,
+    readerTagFilter: readerTagFilter?.data.value,
+    readerSort: readerSort?.data.value,
+  };
+}
+
 function PostsListBlockContent({ entityID }: { entityID: string }) {
   let { data } = usePublicationData();
   let publicationRecord = useNormalizedPublicationRecord();
+  let { rootEntity } = useReplicache();
+  // The draft's theme facts are the width the editor is rendering at; the
+  // publication record only catches up on publish.
+  let pageWidth = useEntity(rootEntity, "theme/page-width")?.data.value;
 
   let viewFact = useEntity(entityID, "posts-list/view");
   let view: PostsListView = viewFact?.data.value ?? "medium";
+
+  let readerFlags = usePostsListReaderFlags(entityID);
+  let readerControls = useMemo(
+    () => (view === "chapter" ? undefined : resolveReaderControls(readerFlags)),
+    [
+      view,
+      readerFlags.readerControls,
+      readerFlags.readerSearch,
+      readerFlags.readerTagFilter,
+      readerFlags.readerSort,
+    ],
+  );
 
   let highlightFirstFact = useEntity(
     entityID,
@@ -107,9 +140,12 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
         view === "chapter" && data.publication
           ? buildChapterCards(ordered, data.publication)
           : undefined,
+      readerIndex: readerControls
+        ? buildPostsListIndex(ordered, (p) => getFirstParagraph(p.record))
+        : undefined,
       loadBatch,
     };
-  }, [data?.documents, data?.publication, filterTags, view]);
+  }, [data?.documents, data?.publication, filterTags, view, readerControls]);
 
   if (data === undefined) return <PostsListPlaceholder />;
   if (!data?.publication) return <PostsListPlaceholder />;
@@ -148,7 +184,10 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
       view={view}
       highlightFirstPost={highlightFirst}
       limit={limit}
+      readerControls={readerControls}
+      readerIndex={listData.readerIndex}
       disableLinks
+      pageWidth={pageWidth}
     />
   );
 }
@@ -194,11 +233,30 @@ function PostsListSettingsButton(props: { entityID: string }) {
   let limitFact = useEntity(props.entityID, "posts-list/limit");
   let limit = limitFact?.data.value;
 
+  let readerFlags = usePostsListReaderFlags(props.entityID);
+  let readerControlsEnabled = !!readerFlags.readerControls;
+
   let [filterByTagEnabled, setFilterByTagEnabled] = useState(
     () => selectedTags.length > 0,
   );
   let [limitEnabled, setLimitEnabled] = useState(() => !!limit && limit > 0);
   let [chapterHelpOpen, setChapterHelpOpen] = useState(false);
+
+  let setReaderFlag = (
+    attribute:
+      | "posts-list/reader-controls"
+      | "posts-list/reader-search"
+      | "posts-list/reader-tag-filter"
+      | "posts-list/reader-sort",
+    value: boolean,
+  ) => {
+    if (!rep) return;
+    return rep.mutate.assertFact({
+      entity: props.entityID,
+      attribute,
+      data: { type: "boolean", value },
+    });
+  };
 
   let setLimit = (value: number) => {
     if (!rep) return;
@@ -237,46 +295,22 @@ function PostsListSettingsButton(props: { entityID: string }) {
           <div>
             <h3>List Layout</h3>
           </div>
-          <div className="relative flex flex-row sm:gap-1 gap-2 w-full items-stretch">
-            {(
-              [
-                { value: "small", Icon: SmallIcon },
-                { value: "medium", Icon: MedIcon },
-                { value: "chapter", Icon: ChapterIcon },
-              ] as {
-                value: PostsListView;
-                Icon: (props: { selected: boolean }) => React.ReactNode;
-              }[]
-            ).map((option) => {
-              let selected = view === option.value;
-              return (
-                <button
-                  className={`PostBlockSizeSettingOption text-left flex flex-col flex-1 pt-1 p-2 outline-2 outline-offset-1 border ${selected ? "accent-container outline-accent-contrast border-accent-contrast " : "opaque-container outline-transparent"}`}
-                  key={option.value}
-                  type="button"
-                  aria-pressed={selected}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    if (!rep) return;
-                    rep.mutate.assertFact({
-                      entity: props.entityID,
-                      attribute: "posts-list/view",
-                      data: {
-                        type: "posts-list-view-union",
-                        value: option.value,
-                      },
-                    });
-                  }}
-                >
-                  <div className="text-xs font-bold text-secondary uppercase pb-1">
-                    {option.value}
-                  </div>
-                  <div className="flex items-center grow w-full ">
-                    <option.Icon selected={selected} />
-                  </div>
-                </button>
-              );
-            })}
+          <BlockSettingOptions<PostsListView>
+            options={[
+              { value: "small", Icon: SmallIcon },
+              { value: "medium", Icon: MedIcon },
+              { value: "chapter", Icon: ChapterIcon },
+            ]}
+            value={view}
+            onSelect={(value) => {
+              if (!rep) return;
+              rep.mutate.assertFact({
+                entity: props.entityID,
+                attribute: "posts-list/view",
+                data: { type: "posts-list-view-union", value },
+              });
+            }}
+          >
             {/* A sibling of the layout options rather than a child: the chapter
                 option is itself a button, and the row's last column is the
                 chapter icon, so its bottom right corner is this row's. */}
@@ -291,7 +325,7 @@ function PostsListSettingsButton(props: { entityID: string }) {
                 <HelpSmall className="scale-75" />
               </button>
             )}
-          </div>
+          </BlockSettingOptions>
         </div>
         {view === "chapter" && chapterHelpOpen && (
           <div className="light-container p-2 text-tertiary text-sm leading-snug flex flex-col gap-1.5">
@@ -455,6 +489,63 @@ function PostsListSettingsButton(props: { entityID: string }) {
               </div>
             ) : null}
           </div>
+
+          {view !== "chapter" && (
+            <div className="readerControls flex flex-col gap-1">
+              <Toggle
+                toggle={readerControlsEnabled}
+                onToggle={() =>
+                  undoManager.withUndoGroup(async () => {
+                    if (readerControlsEnabled) {
+                      await setReaderFlag("posts-list/reader-controls", false);
+                    } else {
+                      // Turning the feature on should show all three rather
+                      // than an empty control row.
+                      await setReaderFlag("posts-list/reader-controls", true);
+                      await setReaderFlag("posts-list/reader-search", true);
+                      await setReaderFlag("posts-list/reader-tag-filter", true);
+                      await setReaderFlag("posts-list/reader-sort", true);
+                    }
+                  })
+                }
+              >
+                <strong>Enable Reader Controls</strong>
+              </Toggle>
+              {readerControlsEnabled && (
+                <div className="flex flex-col gap-1 py-1 px-2 opaque-container text-secondary">
+                  {(
+                    [
+                      {
+                        label: "Search",
+                        attribute: "posts-list/reader-search",
+                        value: readerFlags.readerSearch ?? true,
+                      },
+                      {
+                        label: "Filter by Tag",
+                        attribute: "posts-list/reader-tag-filter",
+                        value: readerFlags.readerTagFilter ?? true,
+                      },
+                      {
+                        label: "Sort",
+                        attribute: "posts-list/reader-sort",
+                        value: readerFlags.readerSort ?? true,
+                      },
+                    ] as const
+                  ).map((option) => (
+                    <Toggle
+                      key={option.attribute}
+                      toggle={option.value}
+                      onToggle={() =>
+                        setReaderFlag(option.attribute, !option.value)
+                      }
+                    >
+                      {option.label}
+                    </Toggle>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </Popover>

@@ -4,6 +4,7 @@ import { Ok, Err, type Result } from "src/result";
 import { getReaderMembership } from "src/membership.server";
 import { deleteAtprotoSubscriptionForDid } from "src/subscriptions/atproto";
 import { disableEmailSubscription } from "src/subscriptions/email";
+import { trackUserEvent } from "src/activeUserAnalytics";
 
 export type FullUnsubscribeError =
   // An active, not-yet-canceled paid membership blocks full unsubscribe: the
@@ -93,11 +94,18 @@ export async function fullUnsubscribe(args: {
   if (!disabled.ok) return disabled;
 
   // Idempotent and best-effort; no need to check for a record first.
-  if (args.identity?.atp_did)
-    await deleteAtprotoSubscriptionForDid(
+  if (args.identity?.atp_did) {
+    let removedUri = await deleteAtprotoSubscriptionForDid(
       args.identity.atp_did,
       args.publication,
     );
+    if (removedUri)
+      trackUserEvent(args.identity, "unsubscribe", {
+        publication: args.publication,
+        method: "atproto",
+        record_uri: removedUri,
+      });
+  }
 
   // NOTE: Postmark Suppressions API is deliberately NOT called here. Per spec,
   // in-app unsubscribes only flip local state — this prevents a Pub A

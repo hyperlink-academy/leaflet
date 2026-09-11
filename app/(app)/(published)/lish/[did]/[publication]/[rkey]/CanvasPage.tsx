@@ -10,7 +10,7 @@ import { AppBskyFeedDefs } from "@atproto/api";
 import { useMemo } from "react";
 import { PageWrapper } from "components/Pages/Page";
 import { Block } from "./PostContent";
-import { canvasBlockOrder } from "./collectPostImages";
+import { canvasBlockOrder } from "src/utils/canvasBlockOrder";
 import { CanvasBackgroundPattern } from "components/Canvas";
 import { getQuoteCount, Interactions } from "./Interactions/Interactions";
 import { Separator } from "components/Layout";

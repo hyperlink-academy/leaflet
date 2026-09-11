@@ -23,6 +23,10 @@ import {
   type SubscriptionSource,
 } from "src/subscriptionSource";
 import { Ok, Err, type Result } from "src/result";
+import {
+  trackUserEvent,
+  subscriptionSourceProperties,
+} from "src/activeUserAnalytics";
 
 type CheckoutSessionError = "not_authenticated" | "stripe_error";
 
@@ -351,6 +355,14 @@ export async function subscribeToTier(args: {
         { id: identity.id, email: identity.email, atp_did: identity.atp_did },
         sanitizeSubscriptionSource(args.source),
       );
+      trackUserEvent(identity, "join_membership", {
+        publication: args.publicationUri,
+        tier: tier.id,
+        cadence: args.cadence,
+        ...subscriptionSourceProperties(
+          sanitizeSubscriptionSource(args.source),
+        ),
+      });
     }
 
     // Concurrent joins (different tier/cadence, so different idempotency keys)

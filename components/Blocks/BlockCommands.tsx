@@ -3,6 +3,7 @@ import { useUIState } from "src/useUIState";
 
 import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "src/utils/focusPage";
+import { getEditorPrefs } from "src/utils/editorPrefs";
 import { v7 } from "uuid";
 import { Replicache } from "replicache";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
@@ -407,6 +408,7 @@ export const blockCommands: Command[] = [
         pageEntity: newPage,
         type: "doc",
         permission_set: props.entity_set,
+        display: getEditorPrefs().pageLinkDisplay,
       });
 
       useUIState.getState().openPage(props.parent, newPage);
@@ -447,6 +449,7 @@ export const blockCommands: Command[] = [
         firstBlockEntity: v7(),
         pageEntity: newPage,
         permission_set: props.entity_set,
+        display: getEditorPrefs().pageLinkDisplay,
       });
       useUIState.getState().openPage(props.parent, newPage);
       focusPage(newPage, rep, "focusFirstBlock");

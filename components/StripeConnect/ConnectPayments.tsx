@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 import { DotLoader } from "components/utils/DotLoader";
@@ -12,6 +12,11 @@ import { startStripeConnectOnboarding } from "actions/startStripeConnectOnboardi
 import { refreshStripeConnectAccount } from "actions/refreshStripeConnectAccount";
 import { GoToArrow } from "components/Icons/GoToArrow";
 import { AccountEmailForm } from "components/AccountEmailForm";
+import { InputSetting } from "components/SettingsLayout";
+import {
+  STRIPE_CONNECT_COUNTRIES,
+  type StripeConnectCountry,
+} from "stripe/connectCountries";
 
 // Status + onboarding control for collecting payments via Stripe Connect.
 export function ConnectPayments() {
@@ -19,6 +24,7 @@ export function ConnectPayments() {
   let connected = identity?.connectedAccount ?? null;
   let [loading, setLoading] = useState(false);
   let [error, setError] = useState<string | null>(null);
+  let [country, setCountry] = useState<StripeConnectCountry | "">("");
 
   // Refresh a pending account's status on mount so returning from onboarding
   // reflects completion without waiting on the webhook.
@@ -35,7 +41,10 @@ export function ConnectPayments() {
     setLoading(true);
     setError(null);
     try {
-      let result = await startStripeConnectOnboarding(window.location.href);
+      let result = await startStripeConnectOnboarding({
+        returnUrl: window.location.href,
+        country: country || undefined,
+      });
       if (result.ok) {
         // Keep `loading` set: we're navigating away, so the button should stay
         // disabled through the redirect.
@@ -52,9 +61,17 @@ export function ConnectPayments() {
 
   let status = connected?.status ?? null;
   let needsEmail = !connected && !identity?.email;
+  let needsCountry = !connected && !country;
 
   return (
     <>
+      {!connected && (
+        <CountryPicker
+          value={country}
+          disabled={loading}
+          onChange={setCountry}
+        />
+      )}
       {status === "active" ? (
         <a
           href="https://dashboard.stripe.com"
@@ -104,7 +121,7 @@ export function ConnectPayments() {
           className="w-max"
           type="button"
           onClick={startOnboarding}
-          disabled={loading || needsEmail}
+          disabled={loading || needsEmail || needsCountry}
         >
           {loading ? (
             <DotLoader />
@@ -125,5 +142,48 @@ export function ConnectPayments() {
       )}
       {error && <div className="text-sm text-red-500">{error}</div>}
     </>
+  );
+}
+
+// Stripe fixes an account's country at creation, so it has to be chosen up
+// front rather than inside the hosted onboarding flow.
+function CountryPicker(props: {
+  value: StripeConnectCountry | "";
+  disabled?: boolean;
+  onChange: (country: StripeConnectCountry | "") => void;
+}) {
+  let options = useMemo(() => {
+    let names = new Intl.DisplayNames(undefined, { type: "region" });
+    return STRIPE_CONNECT_COUNTRIES.map((code) => ({
+      code,
+      name: names.of(code) ?? code,
+    })).sort((a, b) => a.name.localeCompare(b.name));
+  }, []);
+
+  return (
+    <InputSetting
+      label="Country"
+      htmlFor="stripe-connect-country"
+      helpText="Where you or your business are based. This can't be changed once your Stripe account is created."
+    >
+      <select
+        id="stripe-connect-country"
+        className="input-with-border w-full text-primary"
+        value={props.value}
+        disabled={props.disabled}
+        onChange={(e) =>
+          props.onChange(e.target.value as StripeConnectCountry | "")
+        }
+      >
+        <option value="" disabled>
+          Select a country
+        </option>
+        {options.map((o) => (
+          <option key={o.code} value={o.code}>
+            {o.name}
+          </option>
+        ))}
+      </select>
+    </InputSetting>
   );
 }

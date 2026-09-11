@@ -9,7 +9,7 @@ export const HorizontalRule = (props: BlockProps) => {
       className="border-transparent! outline-transparent! p-0! overflow-visible!"
     >
       <hr
-        className={`my-2 w-full border-border-light
+        className={`my-4 w-full border-border-light
     ${isSelected ? "block-border-selected outline-offset-[3px]!" : ""}
   `}
       />

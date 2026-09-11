@@ -9,6 +9,10 @@ import { localImages } from "src/utils/addImage";
 import { clearImageUploadStatus } from "src/utils/imageUploadStatus";
 import { enqueueBlobCleanup } from "src/utils/blobCleanup";
 import { useUIState } from "src/useUIState";
+import {
+  isPageLinkDisplay,
+  type PageLinkDisplay,
+} from "src/utils/pageLinkDisplay";
 
 export type MutationContext = {
   permission_token_id: string;
@@ -378,6 +382,7 @@ const addPageLinkBlock: Mutation<{
   firstBlockEntity: string;
   firstBlockFactID: string;
   pageEntity: string;
+  display?: PageLinkDisplay;
 }> = async (args, ctx) => {
   await ctx.createEntity({
     entityID: args.pageEntity,
@@ -388,6 +393,12 @@ const addPageLinkBlock: Mutation<{
     attribute: "block/card",
     data: { type: "reference", value: args.pageEntity },
   });
+  if (isPageLinkDisplay(args.display))
+    await ctx.assertFact({
+      entity: args.blockEntity,
+      attribute: "page-link/display",
+      data: { type: "page-link-display-union", value: args.display },
+    });
   await ctx.assertFact({
     attribute: "page/type",
     entity: args.pageEntity,

@@ -7,6 +7,7 @@ import { Popover } from "components/Popover";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useReplicache } from "src/replicache";
 import { useSubscribe } from "src/replicache/useSubscribe";
+import { useIsMobile } from "src/hooks/isMobile";
 
 type PostPreferences = {
   showInDiscover?: boolean;
@@ -53,19 +54,17 @@ export function PostSettings() {
       preferences: { ...current, [field]: value },
     });
   };
-
+  let isMobile = useIsMobile();
   return (
     <Popover
       asChild
-      side="right"
+      side={isMobile ? "top" : "right"}
       align="start"
       className="max-w-xs w-[1000px]"
       trigger={<ActionButton icon={<SettingsSmall />} label="Settings" />}
     >
       <div className="text-primary flex flex-col">
-        <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 py-2 mb-1">
-          This Post Settings
-        </div>
+        <h3 className="pb-2">Settings for this post</h3>
         <div className="flex flex-col gap-2">
           {showDiscoverToggle && (
             <Toggle

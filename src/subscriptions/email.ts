@@ -6,8 +6,10 @@ import {
   deleteSuppression,
 } from "src/utils/postmarkSuppressions";
 import { Ok, Err, type Result } from "src/result";
-import { after } from "next/server";
-import { trackSubscriptionEvent } from "src/subscriptionAnalytics";
+import {
+  subscriptionSourceProperties,
+  trackUserEvent,
+} from "src/activeUserAnalytics";
 import {
   sanitizeSubscriptionSource,
   type SubscriptionSource,
@@ -109,16 +111,14 @@ export async function onEmailSubscriptionConfirmed(
     .select("atp_did")
     .eq("id", identityId)
     .maybeSingle();
-  after(() =>
-    trackSubscriptionEvent({
-      event: "subscribe",
+  trackUserEvent(
+    { id: identityId, atp_did: confirmedIdentity?.atp_did },
+    "subscribe",
+    {
+      publication: publicationUri,
       method: "email",
-      origin: "app",
-      publicationUri,
-      subscriberDid: confirmedIdentity?.atp_did,
-      subscriberEmail: email,
-      source,
-    }),
+      ...subscriptionSourceProperties(source),
+    },
   );
   if (confirmedIdentity?.atp_did)
     await publishAtprotoSubscriptionForDid(
@@ -192,16 +192,15 @@ export async function disableEmailSubscription(
     );
     return Err("database_error");
   }
-  after(() =>
-    trackSubscriptionEvent({
-      event: "unsubscribe",
-      method: "email",
-      origin: "app",
-      publicationUri,
-      subscriberDid: identity?.atp_did,
-      subscriberEmail: identity?.email,
-    }),
-  );
+  if (identity?.id)
+    trackUserEvent(
+      { id: identity.id, atp_did: identity.atp_did },
+      "unsubscribe",
+      {
+        publication: publicationUri,
+        method: "email",
+      },
+    );
   return Ok(null);
 }
 

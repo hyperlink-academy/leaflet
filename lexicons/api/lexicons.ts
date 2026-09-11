@@ -1687,6 +1687,10 @@ export const schemaDict = {
           id: {
             type: 'string',
           },
+          display: {
+            type: 'string',
+            knownValues: ['full', 'compact'],
+          },
         },
       },
     },
@@ -1732,6 +1736,20 @@ export const schemaDict = {
             type: 'integer',
             minimum: 1,
             description: 'Show at most this many posts.',
+          },
+          readerControls: {
+            type: 'boolean',
+            description:
+              'Show reader-facing controls above the list. The readerSearch / readerTagFilter / readerSort flags pick which ones; each defaults to true when this is set.',
+          },
+          readerSearch: {
+            type: 'boolean',
+          },
+          readerTagFilter: {
+            type: 'boolean',
+          },
+          readerSort: {
+            type: 'boolean',
           },
         },
       },

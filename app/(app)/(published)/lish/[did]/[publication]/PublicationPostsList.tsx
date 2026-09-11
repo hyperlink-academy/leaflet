@@ -64,6 +64,7 @@ export function PublicationPostsList({
   className,
   inList,
   disableLinks = false,
+  pageWidth,
 }: {
   publication: PublicationForURL;
   publicationRecord: NormalizedPublication | null;
@@ -71,20 +72,17 @@ export function PublicationPostsList({
   fakePosts?: PublicationPostsListFakePost[];
   view?: PublicationPostsListView;
   highlightFirstPost?: boolean;
-  // Posts already arrive newest-first (server keyset order). Skip the local
-  // publishedAt sort so paginated pages keep the order their cursor assumes.
   preSorted?: boolean;
   className?: string;
   inList?: boolean;
-  // In the editor the list is something you're laying out, not reading, so its
-  // posts render as plain cards that don't navigate away from the page.
   disableLinks?: boolean;
+  // The width the list is actually being rendered at, which the editor passes
+  // from the draft theme — the published record's page width only catches up
+  // on publish, so a highlighted post would otherwise lay itself out for a
+  // width the editor isn't showing.
+  pageWidth?: number;
 }) {
-  // Resolve a byline name per post: the post's explicit contributors when
-  // present, otherwise the document author (publication owner). Server render
-  // paths attach `bylineProfiles` so they appear in the initial HTML; for any
-  // post without them (editor / theme preview) we resolve client-side here,
-  // batched into a single get_profiles lookup keyed on the full DID set.
+  const effectivePageWidth = pageWidth ?? publicationRecord?.theme?.pageWidth;
   const unresolvedDids = useMemo(() => {
     const dids = new Set<string>();
     for (const post of posts ?? []) {
@@ -219,7 +217,7 @@ export function PublicationPostsList({
                     interactions={interactions}
                     coverImageSrc={coverImageSrc}
                     coverImageAlt={doc_record.title}
-                    pageWidth={publicationRecord?.theme?.pageWidth}
+                    pageWidth={effectivePageWidth}
                   />
                   <hr className="last:hidden border-border-light" />
                 </React.Fragment>
