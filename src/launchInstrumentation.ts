@@ -70,11 +70,7 @@ function isSwControlled() {
   }
 }
 
-function beginLaunch(
-  type: Exclude<LaunchType, "soft"> | "soft",
-  route: string,
-  startedAt: number,
-) {
+function beginLaunch(type: LaunchType, route: string, startedAt: number) {
   if (state) clearTimeout(state.timer);
   state = {
     type,
