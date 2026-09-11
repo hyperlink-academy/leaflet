@@ -99,22 +99,22 @@ export default async function PublishLeafletPage(props: Props) {
     !!publicationOwnerDid && publicationOwnerDid !== identity.atp_did;
   let [viewerProfile, publicationOwnerProfile, subscriberCount] =
     await Promise.all([
-    agent.getProfile({ actor: identity.atp_did }),
-    shouldFetchOwnerProfile
-      ? agent
-          .getProfile({ actor: publicationOwnerDid! })
-          .then((res) => res.data)
-          .catch(() => undefined)
-      : Promise.resolve(undefined),
-    newsletterEnabled
-      ? supabaseServerClient
-          .from("publication_email_subscribers")
-          .select("*", { count: "exact", head: true })
-          .eq("publication", publication!.uri)
-          .eq("state", "confirmed")
-          .then(({ count }) => count ?? 0)
-      : Promise.resolve(undefined),
-  ]);
+      agent.getProfile({ actor: identity.atp_did }),
+      shouldFetchOwnerProfile
+        ? agent
+            .getProfile({ actor: publicationOwnerDid! })
+            .then((res) => res.data)
+            .catch(() => undefined)
+        : Promise.resolve(undefined),
+      newsletterEnabled
+        ? supabaseServerClient
+            .from("publication_email_subscribers")
+            .select("*", { count: "exact", head: true })
+            .eq("publication", publication!.uri)
+            .eq("state", "confirmed")
+            .then(({ count }) => count ?? 0)
+        : Promise.resolve(undefined),
+    ]);
 
   // Parse entitiesToDelete from URL params
   let searchParams = await props.searchParams;

@@ -11,7 +11,10 @@ let supabase = createServerClient<Database>(
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
   { cookies: {} },
 );
-export async function GET(request: NextRequest, props: { params: Promise<{ template_id: string }> }) {
+export async function GET(
+  request: NextRequest,
+  props: { params: Promise<{ template_id: string }> },
+) {
   const params = await props.params;
   await createNewLeafletFromTemplate(params.template_id, true);
 }
