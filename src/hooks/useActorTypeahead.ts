@@ -1,4 +1,3 @@
-import { Agent } from "@atproto/api";
 import { useRef, useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 
@@ -28,6 +27,9 @@ export function useActorTypeahead() {
         return;
       }
       let requestId = ++requestIdRef.current;
+      // Loaded here so the landing page doesn't ship the @atproto/api lexicon
+      // bundle for a search box most visitors never type in.
+      let { Agent } = await import("@atproto/api");
       let agent = new Agent("https://public.api.bsky.app");
       try {
         let result = await agent.searchActorsTypeahead({ q: query, limit: 8 });
