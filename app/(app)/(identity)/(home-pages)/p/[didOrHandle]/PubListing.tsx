@@ -25,6 +25,7 @@ type PubListingProps = Omit<
   // Icon and title on one row, description clamped to two lines, no
   // updated-at — for tight spots like the subscribe-success modal.
   compact?: boolean;
+  className?: string;
 };
 
 export const PubListing = (props: PubListingProps) => {
@@ -53,7 +54,7 @@ export const PubListing = (props: PubListingProps) => {
           border border-border-light rounded-lg
           px-3 py-3 selected-outline
           hover:outline-accent-contrast hover:border-accent-contrast
-          relative overflow-hidden`}
+          relative overflow-hidden `}
         style={{
           backgroundImage: `url(${backgroundImage})`,
           backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
@@ -62,12 +63,12 @@ export const PubListing = (props: PubListingProps) => {
       >
         <a href={record.url} className="absolute inset-0 z-[1]" />
         <div
-          className={`flex w-full flex-col justify-center text-center ${props.compact ? "py-3" : "pt-4 pb-3"} px-3 rounded-lg relative   ${props.constrainHeight ? "sm:h-[200px] h-full" : props.compact ? "h-full" : "h-fit"} ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""}`}
+          className={`flex w-full flex-col justify-center text-center ${props.compact ? "" : "pt-4 pb-3 px-3"}  rounded-lg relative   ${props.constrainHeight ? "sm:h-[200px] h-full" : props.compact ? "h-full" : "h-fit"} ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""} ${props.className}`}
         >
           {props.compact ? (
-            <div className="flex flex-row gap-2 items-center justify-center pb-1 min-w-0">
+            <div className="flex flex-col gap-1 items-center justify-center py-1 min-w-0">
               <PubIcon icon={iconSrc} pubName={record.name} />
-              <h4 className="truncate min-w-0">{record.name}</h4>
+              <h4 className="truncate w-full min-w-0">{record.name}</h4>
             </div>
           ) : (
             <>
@@ -84,7 +85,7 @@ export const PubListing = (props: PubListingProps) => {
           )}
           {record.description && (
             <p
-              className={`text-secondary ${props.compact ? "line-clamp-2" : props.constrainHeight ? "line-clamp-1" : ""} min-h-[16px] text-sm overflow-hidden `}
+              className={`text-secondary ${props.compact ? "line-clamp-3" : props.constrainHeight ? "line-clamp-1" : ""} min-h-[16px] text-sm overflow-hidden `}
             >
               {record.description}
             </p>

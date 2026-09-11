@@ -9,6 +9,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { PostListing } from "components/PostListing";
 import { useSelectedPostListing } from "src/useSelectedPostState";
+import { useReaderPostViewer } from "src/useReaderPostViewer";
 import { useIdentityData } from "components/IdentityProvider";
 import { LoginContent } from "components/LoginButton";
 import { EmptyState } from "components/EmptyState";
@@ -47,6 +48,7 @@ export const InboxContent = (props: {
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   let selectedPost = useSelectedPostListing((s) => s.selectedPostListing);
+  let openPostViewer = useReaderPostViewer((s) => s.openViewer);
 
   // Set up intersection observer to load more when trigger element is visible
   useEffect(() => {
@@ -94,6 +96,10 @@ export const InboxContent = (props: {
           {...p}
           key={p.documents.uri}
           selected={selectedPost?.document_uri === p.documents.uri}
+          onOpenInViewer={() => openPostViewer(sortedPosts, p.documents.uri)}
+          onOpenDiscussionsInViewer={() =>
+            openPostViewer(sortedPosts, p.documents.uri, { discussion: true })
+          }
         />
       ))}
       {/* Trigger element for loading more posts */}

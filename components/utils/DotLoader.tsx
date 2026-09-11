@@ -13,7 +13,7 @@ export function DotLoader(props: { className?: string }) {
   }, []);
   return (
     <div className={`w-[26px] h-[24px] text-center text-sm ${props.className}`}>
-      {".".repeat(dots) + "\u00a0".repeat(3 - dots)}
+      {"·".repeat(dots) + "\u00a0".repeat(3 - dots)}
     </div>
   );
 }

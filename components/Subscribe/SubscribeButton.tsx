@@ -406,10 +406,6 @@ export const SubscribeButton = (props: SubscribeProps) => {
           }}
         />
       ) : (
-        // Nothing to one-click with — either logged out, or logged in but
-        // missing the identity this pub needs (a handle for atproto pubs, an
-        // email for newsletters). Both open the full SubscribePanel (pub
-        // name/description + form) in a modal.
         <Modal asChild trigger={subscribeTrigger}>
           <div className="w-md max-w-full">
             <SubscribePanel {...props} />

@@ -6,8 +6,9 @@ import { getPublicationsByUris } from "actions/reader/getSubscriptions";
 import { useStandardSitePublication } from "components/StandardSitePublicationDataProvider";
 
 // Everything the post-subscribe success modals need about the publication: the
-// publication itself, and its recommendations hydrated into listings.
-// `loading` covers all fetches so the modal can gate on a single flag.
+// publication itself for the listing under the heading, and its recommendations
+// hydrated into listings. `loading` covers all fetches so the modal can gate on
+// a single flag.
 export function useSubscribeSuccessData(publicationUri: string | undefined) {
   let { data: publication, isLoading: publicationLoading } =
     useStandardSitePublication(publicationUri);

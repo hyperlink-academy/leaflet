@@ -3,16 +3,20 @@
 import { useState } from "react";
 import useSWR from "swr";
 import Link from "next/link";
+import { AtUri } from "@atproto/syntax";
 import { SpeedyLink } from "components/SpeedyLink";
 import { useStandardSitePublication } from "components/StandardSitePublicationDataProvider";
 import { getPublicationURL } from "src/utils/getPublicationURL";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { useIdentityData } from "components/IdentityProvider";
 import { useModalBack } from "components/Modal";
-import { ButtonSecondary } from "components/Buttons";
+import { ButtonPrimary } from "components/Buttons";
+import { PubIcon } from "components/ActionBar/Publications";
 import { DotLoader } from "components/utils/DotLoader";
 import { ShareTiny } from "components/Icons/ShareTiny";
-import { RecommendEmptyTiny } from "components/Icons/RecommendTiny";
+import { CheckTiny } from "components/Icons/CheckTiny";
 import { getViewerOwnedPublications } from "actions/publications/recommendPublication";
+import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import { LinkHandle } from "./HandleSubscribe";
 import { BLUESKY_SUBSCRIBED_FEED_URL } from "./blueskyFeed";
 import { RecommendedPublications } from "./RecommendedPublications";
@@ -22,11 +26,7 @@ import {
   SharePublicationComposer,
 } from "./SubscribeSuccessFollowUps";
 
-// Shared frame for the post-subscribe success modals: the heading, the
-// subscription-specific body passed as children, follow-up actions (share the
-// publication on Bluesky, recommend it from one of the viewer's own
-// publications — each swaps the modal's content in place), and the
-// publication's own recommendations.
+
 export function SubscribeSuccess(props: {
   publicationUri: string | undefined;
   children: React.ReactNode;
@@ -78,39 +78,57 @@ export function SubscribeSuccess(props: {
   let canShare = !!viewerDid && !!publication;
   let canRecommend = canShare && candidatePubs.length > 0;
   return (
-    <div className="flex flex-col text-center justify-center py-3 text-secondary w-full max-w-full sm:w-auto sm:min-w-md sm:max-w-2xl">
-      <h2 className="text-primary pb-1">
-        {publication
-          ? `You've subscribed to ${publication.record.name}!`
-          : "You've Subscribed!"}
-      </h2>
-      {props.children}
-      {canShare && (
-        <>
-          <hr className="my-4 border-border-light" />
-          <div className="flex flex-col sm:flex-row gap-2 justify-center items-center">
-            <ButtonSecondary fullWidthOnMobile onClick={() => setView("share")}>
-              <ShareTiny /> Share this publication
-            </ButtonSecondary>
-            {canRecommend && (
-              <ButtonSecondary
-                fullWidthOnMobile
-                onClick={() => setView("recommend")}
-              >
-                <RecommendEmptyTiny /> Recommend to your subscribers
-              </ButtonSecondary>
-            )}
-          </div>
-        </>
-      )}
+    <div className="flex flex-col justify-center text-center text-secondary w-full  sm:w-xl pb-2">
+      <div className="flex flex-col items-center gap-3 w-full pt-2">
+        {publication && <SubscribedPubIcon publication={publication} />}
+        <div className="flex flex-col w-full">
+          <h3 className="text-primary">You&apos;re Subscribed!</h3>
+          {props.children}
+        </div>
+        {canShare && (
+          <ButtonPrimary onClick={() => setView("share")}>
+            <ShareTiny /> Share
+          </ButtonPrimary>
+        )}
+      </div>
       <RecommendedPublications
         publicationName={publication?.record.name}
         recommendingPublicationUri={props.publicationUri}
         listings={listings}
       />
+      {canRecommend && (
+        <div className="text-tertiary text-sm pt-3">
+          If your readers would enjoy this publication, consider{" "}
+          <button
+            type="button"
+            className="text-accent-contrast hover:underline"
+            onClick={() => setView("recommend")}
+          >
+            recommending it
+          </button>
+          !
+        </div>
+      )}
     </div>
   );
 }
+
+const SubscribedPubIcon = (props: {
+  publication: StandardSitePublicationData;
+}) => {
+  let record = props.publication.record;
+  let iconSrc = record.icon
+    ? blobRefToSrc(record.icon.ref, new AtUri(props.publication.uri).host)
+    : undefined;
+  return (
+    <div className="relative w-fit">
+      <PubIcon icon={iconSrc} pubName={record.name} xl />
+      <div className="absolute -bottom-1 -right-1 rounded-full p-1.5 bg-accent-1 text-accent-2 border-2 border-bg-page">
+        <CheckTiny />
+      </div>
+    </div>
+  );
+};
 
 export const AtSubscribeSuccess = (props: { publicationUri?: string }) => {
   let { data: publication } = useStandardSitePublication(props.publicationUri);
@@ -118,8 +136,9 @@ export const AtSubscribeSuccess = (props: { publicationUri?: string }) => {
   return (
     <SubscribeSuccess publicationUri={props.publicationUri}>
       You'll receive new posts in the <br />
-      <Link href={"https://leaflet.pub/reader"}>Leaflet Reader</Link>
-      <br />
+      <Link className="font-bold" href={"https://leaflet.pub/reader"}>
+        Leaflet Reader
+      </Link>
       <span className="text-tertiary text-sm">
         or any standard.site enabled reader!
       </span>
@@ -150,27 +169,22 @@ export const EmailSubscribeSuccess = (props: {
 }) => {
   return (
     <SubscribeSuccess publicationUri={props.publicationUri}>
-      You'll receive new posts to <br />
-      <span className="italic">{props.email ? props.email : "your email"}</span>
-      <hr className="my-4 border-border-light" />
-      {!props.handle ? (
-        <div className="accent-container p-3">
-          <LinkHandle compact />
-        </div>
-      ) : (
+      <div>
+        You'll receive new posts to{" "}
+        <em>{props.email ? props.email : "your email"}</em>
+      </div>
+      <div>
+        and in the{" "}
+        <SpeedyLink href={"https://leaflet.pub/reader"}>
+          Leaflet Reader
+        </SpeedyLink>
+      </div>
+      {!props.handle && (
         <>
-          <div>
-            You also get updates in the <br />
-            <SpeedyLink
-              href={"https://leaflet.pub/reader"}
-              className="font-bold"
-            >
-              Leaflet Reader
-            </SpeedyLink>
+          <hr className="my-4 border-border-light" />
+          <div className="accent-container p-3">
+            <LinkHandle compact />
           </div>
-          <span className="text-tertiary text-sm">
-            or any atmospheric reader!
-          </span>
         </>
       )}
     </SubscribeSuccess>
