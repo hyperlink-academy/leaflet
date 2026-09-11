@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { ReadOnlyAltText } from "components/Blocks/ReadOnlyAltText";
 import { ImageErrorState, useImageLoadStatus } from "components/ImageLoadState";
+import { POST_BODY_SIZES } from "src/utils/blobRefToSrc";
 
 export function PublishedImageBlock(props: {
   src: string;
+  srcSet?: string;
   alt?: string;
   width?: number;
   height?: number;
@@ -13,14 +15,25 @@ export function PublishedImageBlock(props: {
   isFullBleed?: boolean;
   className?: string;
   loading?: "lazy" | "eager";
+  fetchPriority?: "high";
   onOpenLightbox?: () => void;
   onOpenAltInLightbox?: () => void;
 }) {
   let [reloads, setReloads] = useState(0);
-  let src =
+  let bustCache = (url: string) =>
     reloads === 0
-      ? props.src
-      : `${props.src}${props.src.includes("?") ? "&" : "?"}reload=${reloads}`;
+      ? url
+      : `${url}${url.includes("?") ? "&" : "?"}reload=${reloads}`;
+  let src = bustCache(props.src);
+  // Every candidate needs the same cache-bust, or a retry re-requests only
+  // `src` while the browser keeps serving the broken cached srcset entry.
+  let srcSet = props.srcSet
+    ?.split(", ")
+    .map((entry) => {
+      let [url, descriptor] = entry.split(" ");
+      return `${bustCache(url)} ${descriptor}`;
+    })
+    .join(", ");
   let { status, imgProps, reset } = useImageLoadStatus(src);
 
   let imageStyle =
@@ -41,11 +54,14 @@ export function PublishedImageBlock(props: {
           {...imgProps}
           alt={props.alt ?? ""}
           loading={props.loading}
+          fetchPriority={props.fetchPriority}
           decoding="async"
           height={props.height}
           width={props.width}
           className={`${props.isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${props.className ?? ""}`}
           src={src}
+          srcSet={srcSet}
+          sizes={srcSet ? POST_BODY_SIZES : undefined}
           style={imageStyle}
         />
       </button>
