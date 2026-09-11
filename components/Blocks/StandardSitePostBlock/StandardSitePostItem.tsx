@@ -194,7 +194,11 @@ export function StandardSitePostItemView({
       : undefined;
   const coverImageSrcSet =
     post.record.coverImage && postDid
-      ? blobRefToSrcSet(post.record.coverImage.ref, postDid, COVER_SRCSET_WIDTHS)
+      ? blobRefToSrcSet(
+          post.record.coverImage.ref,
+          postDid,
+          COVER_SRCSET_WIDTHS,
+        )
       : undefined;
 
   const { rootEntity } = useReplicache();

@@ -101,7 +101,11 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
       })
     : undefined;
   let coverImageSrcSet = postRecord.coverImage
-    ? blobRefToSrcSet(postRecord.coverImage.ref, postUri.host, COVER_SRCSET_WIDTHS)
+    ? blobRefToSrcSet(
+        postRecord.coverImage.ref,
+        postUri.host,
+        COVER_SRCSET_WIDTHS,
+      )
     : undefined;
 
   let author =
