@@ -295,8 +295,8 @@ function PostSendStatus(props: {
         }
       >
         <p className="text-sm text-tertiary">
-          Something went wrong and we couldn't send this email… Try republishing
-          and sending again.
+          An error occurred with this send. Contact us at{" "}
+          <a href="mailto:contact@leaflet.pub">contact@leaflet.pub</a>
         </p>
         <p className="text-sm text-tertiary">
           If the issue persists,{" "}
