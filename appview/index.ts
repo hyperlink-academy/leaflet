@@ -525,9 +525,9 @@ async function handleEvent(evt: Event) {
       // A repo may only publish recommendations on behalf of its own
       // publications.
       if (pubUri.host !== evt.uri.host) return;
-      let recommendations = [...new Set(record.value.recommendations)]
-        .filter((r) => r !== record.value.publication)
-        .slice(0, 3);
+      let recommendations = [...new Set(record.value.recommendations)].filter(
+        (r) => r !== record.value.publication,
+      );
       // One row per edge; replace this record's rows wholesale so removed
       // recommendations don't linger.
       await supabase

@@ -2,6 +2,10 @@
 
 import { type PublicationSubscription } from "actions/reader/getSubscriptions";
 import { PubListing } from "app/(app)/(identity)/(home-pages)/p/[didOrHandle]/PubListing";
+import {
+  centeredGridCellStyle,
+  centeredGridStyle,
+} from "src/utils/centeredGrid";
 
 // Post-subscribe "check out these publications" section. Renders nothing if
 // the publication doesn't recommend anyone.
@@ -17,18 +21,26 @@ export const RecommendedPublications = (props: {
   return (
     <div className="flex flex-col gap-2 w-full max-w-full sm:w-2xl pt-6">
       <h4>Check out {props.publicationName}'s recommendations! </h4>
-      <div className="light-container p-2 flex flex-col gap-2.5 text-left sm:grid sm:grid-flow-col sm:auto-cols-fr">
-        {props.listings.map((listing) => (
-          <PubListing
+      <div
+        className="light-container p-2 flex flex-col gap-2.5 text-left sm:grid sm:gap-x-2"
+        style={centeredGridStyle(props.listings.length)}
+      >
+        {props.listings.map((listing, index) => (
+          <div
             key={listing.uri}
-            compact
-            showSubscribeButton
-            subscribeSource={{
-              placement: "recommendation",
-              publication: props.recommendingPublicationUri,
-            }}
-            {...listing}
-          />
+            className="flex"
+            style={centeredGridCellStyle(index, props.listings.length)}
+          >
+            <PubListing
+              compact
+              showSubscribeButton
+              subscribeSource={{
+                placement: "recommendation",
+                publication: props.recommendingPublicationUri,
+              }}
+              {...listing}
+            />
+          </div>
         ))}
       </div>
     </div>

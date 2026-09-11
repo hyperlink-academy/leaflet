@@ -11,7 +11,11 @@ import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_stan
 
 const DID = "did:plc:example";
 const PUB_URI = `at://${DID}/pub.leaflet.publication/main`;
-const REC_URIS = [1, 2, 3].map((n) => `at://${DID}/pub.leaflet.publication/r${n}`);
+const recUris = (count: number) =>
+  Array.from(
+    { length: count },
+    (_, i) => `at://${DID}/pub.leaflet.publication/r${i}`,
+  );
 
 let pubRecord = (name: string, description: string) =>
   ({
@@ -28,18 +32,32 @@ const publication: StandardSitePublicationData = {
   author: { did: DID, handle: "leaflet.pub", displayName: "Leaflet" },
 };
 
-const listings: PublicationSubscription[] = [
-  ["Aaron Ross Powell", "Politics, culture, and philosophy through a liberal lens."],
+const RECOMMENDED_PUBS = [
+  [
+    "Aaron Ross Powell",
+    "Politics, culture, and philosophy through a liberal lens.",
+  ],
   ["Atmosphere Community", "News from the Atmosphere, the open social web."],
   ["pckt - notes", "the latest and greatest from pckt!"],
-].map(([name, description], i) => ({
-  uri: REC_URIS[i],
-  record: pubRecord(name, description),
-  authorProfile: { handle: `@author${i}.com` },
-  publication_subscriptions: [],
-  publication_newsletter_settings: { enabled: i === 1 },
-  documents_in_publications: [],
-}));
+  ["The Slow Web", "Longer thoughts, published less often."],
+  ["Field Notes", "Dispatches from wherever we happen to be."],
+  ["Marginalia", "Annotations on things worth annotating."],
+  ["Weeknotes", "What we shipped, what we broke."],
+  ["Dead Letters", "Correspondence that never got sent."],
+];
+
+let makeListings = (count: number): PublicationSubscription[] =>
+  recUris(count).map((uri, i) => {
+    let [name, description] = RECOMMENDED_PUBS[i % RECOMMENDED_PUBS.length];
+    return {
+      uri,
+      record: pubRecord(name, description),
+      authorProfile: { handle: `@author${i}.com` },
+      publication_subscriptions: [],
+      publication_newsletter_settings: { enabled: i === 1 },
+      documents_in_publications: [],
+    };
+  });
 
 let makeIdentity = (loggedIn: boolean): Identity | null =>
   loggedIn
@@ -64,10 +82,10 @@ function Case(props: {
   label: string;
   loggedIn: boolean;
   ownedPubCount: number;
-  recommendations: boolean;
+  recommendationCount: number;
   children: React.ReactNode;
 }) {
-  let recs = props.recommendations ? REC_URIS : [];
+  let recs = recUris(props.recommendationCount);
   return (
     <div className="flex flex-col gap-2">
       <div className="text-sm font-bold text-tertiary">{props.label}</div>
@@ -88,11 +106,12 @@ function Case(props: {
               revalidateOnFocus: false,
               fallback: {
                 [`standard-site-publication:${PUB_URI}`]: publication,
-                [unstable_serialize(["publication_recommendations", PUB_URI])]: recs,
+                [unstable_serialize(["publication_recommendations", PUB_URI])]:
+                  recs,
                 [unstable_serialize([
                   "recommended_pub_listings",
                   recs.join(","),
-                ])]: props.recommendations ? listings : [],
+                ])]: makeListings(props.recommendationCount),
                 [unstable_serialize([
                   "viewer-owned-publications",
                   "did:plc:viewer",
@@ -109,7 +128,7 @@ function Case(props: {
 }
 
 export default function SubscribeSuccessTestPage() {
-  let [recommendations, setRecommendations] = useState(true);
+  let [recommendationCount, setRecommendationCount] = useState(3);
   let [ownedPubCount, setOwnedPubCount] = useState(1);
   let email = (
     <EmailSubscribeSuccess
@@ -122,12 +141,15 @@ export default function SubscribeSuccessTestPage() {
     <div className="bg-bg-leaflet min-h-screen p-6 flex flex-col gap-6">
       <div className="flex gap-4 items-center text-sm">
         <label className="flex gap-1 items-center">
+          recommendations
           <input
-            type="checkbox"
-            checked={recommendations}
-            onChange={(e) => setRecommendations(e.target.checked)}
+            type="range"
+            min={0}
+            max={RECOMMENDED_PUBS.length}
+            value={recommendationCount}
+            onChange={(e) => setRecommendationCount(Number(e.target.value))}
           />
-          has recommendations
+          {recommendationCount}
         </label>
         <label className="flex gap-1 items-center">
           <input
@@ -142,7 +164,7 @@ export default function SubscribeSuccessTestPage() {
         label="Email subscribe — logged in"
         loggedIn
         ownedPubCount={ownedPubCount}
-        recommendations={recommendations}
+        recommendationCount={recommendationCount}
       >
         {email}
       </Case>
@@ -150,7 +172,7 @@ export default function SubscribeSuccessTestPage() {
         label="Email subscribe — logged out"
         loggedIn={false}
         ownedPubCount={0}
-        recommendations={recommendations}
+        recommendationCount={recommendationCount}
       >
         <EmailSubscribeSuccess
           email="thisiscelinepark@gmail.com"
@@ -162,7 +184,7 @@ export default function SubscribeSuccessTestPage() {
         label="Atproto subscribe — logged in"
         loggedIn
         ownedPubCount={ownedPubCount}
-        recommendations={recommendations}
+        recommendationCount={recommendationCount}
       >
         <AtSubscribeSuccess publicationUri={PUB_URI} />
       </Case>

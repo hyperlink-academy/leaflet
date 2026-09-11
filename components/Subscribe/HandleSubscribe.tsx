@@ -170,8 +170,6 @@ export const SubscribeWithHandle = (props: {
         onClick={subscribeAtproto}
       >
         {subscribing ? (
-          // DotLoader's default fixed height is taller than the label's line
-          // box, which grows the button while subscribing.
           <DotLoader className="h-auto!" />
         ) : (
           <>
@@ -204,7 +202,7 @@ export const SubscribeWithHandle = (props: {
               trigger={subscribeButton}
               className="text-sm p-1! text-tertiary"
             >
-              {tooltipLabel}
+              {tooltipLabel}x x x +3 friends also subscribe
             </Tooltip>
           ) : (
             subscribeButton
