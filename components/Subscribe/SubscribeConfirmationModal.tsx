@@ -4,12 +4,21 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Modal } from "components/Modal";
 import { useToaster } from "components/Toast";
 import { useIdentityData } from "components/IdentityProvider";
-import { AtSubscribeSuccess, EmailSubscribeSuccess } from "./SubscribeSuccess";
+import dynamic from "next/dynamic";
 import {
   SUBSCRIBE_ERROR_MESSAGES as ERROR_MESSAGES,
   type SubscribeError,
 } from "./subscribeErrors";
 import { replaceWithoutParams } from "src/utils/replaceWithoutParams";
+
+// Only reachable through a subscribe redirect, so the success screens (and the
+// subscribe buttons and membership flow they reach) load with the modal.
+const AtSubscribeSuccess = dynamic(() =>
+  import("./SubscribeSuccess").then((m) => m.AtSubscribeSuccess),
+);
+const EmailSubscribeSuccess = dynamic(() =>
+  import("./SubscribeSuccess").then((m) => m.EmailSubscribeSuccess),
+);
 
 export function SubscribeConfirmationModal() {
   let router = useRouter();
