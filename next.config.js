@@ -31,6 +31,16 @@ const nextConfig = {
   async headers() {
     return [
       {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+        ],
+      },
+      {
         // Generated opengraph-image routes are served with a hash suffix
         // because they sit inside route groups. Keep them out of the search
         // index — unfurl bots fetch og:image URLs directly and ignore robots
