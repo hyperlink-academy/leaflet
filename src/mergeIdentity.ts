@@ -9,6 +9,7 @@ import {
   user_entitlements,
   user_subscriptions,
 } from "drizzle/schema";
+import { IDENTITY_SLICES, invalidateIdentitySlices } from "src/identitySlices";
 import { pool } from "supabase/pool";
 import { Err, Ok, type Result } from "src/result";
 import { backfillAtprotoSubscriptionsForIdentity } from "src/subscriptions/atproto";
@@ -245,6 +246,7 @@ export async function mergeEmailIdentityIntoAtpIdentity(args: {
   }
 
   await backfillAtprotoSubscriptionsForIdentity(targetId, targetAtpDid!);
+  await invalidateIdentitySlices(targetId, IDENTITY_SLICES);
 
   return Ok(null);
 }

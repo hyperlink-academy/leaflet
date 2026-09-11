@@ -2,6 +2,7 @@ import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
 import { PRODUCT_DEFINITION, parseEntitlements } from "stripe/products";
 import { trackUserEvent } from "src/activeUserAnalytics";
+import { invalidateIdentitySlices } from "src/identitySlices";
 
 export async function handleCheckoutCompleted(sessionId: string) {
   const s = await getStripe().checkout.sessions.retrieve(sessionId, {
@@ -51,4 +52,5 @@ export async function handleCheckoutCompleted(sessionId: string) {
       { onConflict: "identity_id,entitlement_key" },
     );
   }
+  await invalidateIdentitySlices(identityId, ["billing"]);
 }

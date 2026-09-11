@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
 import { supabaseServerClient } from "supabase/serverClient";
+import { invalidateIdentitySlices } from "src/identitySlices";
 import type { Json } from "supabase/database.types";
 
 // Postmark webhook endpoint.
@@ -26,6 +27,7 @@ type SubscriberRow = {
   id: string;
   state: string;
   publication: string;
+  identity_id: string | null;
 };
 
 function verifyAuth(request: NextRequest): boolean {
@@ -58,24 +60,23 @@ async function findSubscriberById(
   if (!metadata?.subscriber_id) return null;
   const { data } = await supabaseServerClient
     .from("publication_email_subscribers")
-    .select("id, state, publication")
+    .select("id, state, publication, identity_id")
     .eq("id", metadata.subscriber_id)
     .maybeSingle();
   return data ?? null;
 }
 
-async function findSubscribersByEmail(
-  email: string,
-): Promise<SubscriberRow[]> {
+async function findSubscribersByEmail(email: string): Promise<SubscriberRow[]> {
   const { data } = await supabaseServerClient
     .from("publication_email_subscribers")
-    .select("id, state, publication")
+    .select("id, state, publication, identity_id")
     .eq("email", email.toLowerCase());
   return data ?? [];
 }
 
-async function flipToUnsubscribed(ids: string[]): Promise<void> {
-  if (ids.length === 0) return;
+async function flipToUnsubscribed(rows: SubscriberRow[]): Promise<void> {
+  if (rows.length === 0) return;
+  const ids = rows.map((r) => r.id);
   const { error } = await supabaseServerClient
     .from("publication_email_subscribers")
     .update({
@@ -87,6 +88,8 @@ async function flipToUnsubscribed(ids: string[]): Promise<void> {
   if (error) {
     console.error("[postmark webhook] state flip failed:", error);
   }
+  for (const id of new Set(rows.map((r) => r.identity_id)))
+    if (id) await invalidateIdentitySlices(id, ["subscriptions"]);
 }
 
 async function appendEvents(
@@ -119,7 +122,7 @@ async function handleBounce(body: any): Promise<void> {
     // Fallback: match by email + publication if metadata was stripped.
     const rows = await findSubscribersByEmail(email);
     const pub = metadata?.publication;
-    target = pub ? (rows.find((r) => r.publication === pub) ?? null) : null;
+    target = pub ? rows.find((r) => r.publication === pub) ?? null : null;
   }
   if (!target) {
     console.warn(
@@ -145,7 +148,7 @@ async function handleBounce(body: any): Promise<void> {
     },
   ]);
   if (isHard && target.state !== "unsubscribed") {
-    await flipToUnsubscribed([target.id]);
+    await flipToUnsubscribed([target]);
   }
 }
 
@@ -159,7 +162,7 @@ async function handleSpamComplaint(body: any): Promise<void> {
   if (!target && email) {
     const rows = await findSubscribersByEmail(email);
     const pub = metadata?.publication;
-    target = pub ? (rows.find((r) => r.publication === pub) ?? null) : null;
+    target = pub ? rows.find((r) => r.publication === pub) ?? null : null;
   }
   if (!target) {
     console.warn(
@@ -183,7 +186,7 @@ async function handleSpamComplaint(body: any): Promise<void> {
     },
   ]);
   if (target.state !== "unsubscribed") {
-    await flipToUnsubscribed([target.id]);
+    await flipToUnsubscribed([target]);
   }
 }
 
@@ -208,7 +211,7 @@ async function handleSubscriptionChange(body: any): Promise<void> {
     message_id: body.MessageID ?? null,
   } as unknown as Json;
 
-  await flipToUnsubscribed(active.map((r) => r.id));
+  await flipToUnsubscribed(active);
   await appendEvents(
     active.map((r) => ({
       subscriber: r.id,
@@ -249,11 +252,7 @@ export async function POST(request: NextRequest) {
         break;
     }
   } catch (e) {
-    console.error(
-      "[postmark webhook] handler threw:",
-      body?.RecordType,
-      e,
-    );
+    console.error("[postmark webhook] handler threw:", body?.RecordType, e);
   }
 
   return new NextResponse(null, { status: 200 });

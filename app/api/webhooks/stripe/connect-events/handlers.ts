@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import { render } from "@react-email/render";
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
+import { invalidateIdentitySlices } from "src/identitySlices";
 import { notifyNewMember } from "src/membership.server";
 import { ensureSubscriberRecordsForMembership } from "src/subscriptions/membership";
 import MembershipPaymentFailed from "emails/membershipPaymentFailed";
@@ -53,7 +54,9 @@ export async function handleMembershipSubscriptionEvent(
 
   const { data: existing, error: readError } = await supabaseServerClient
     .from("publication_memberships")
-    .select("id, status, publication, pending_tier, pending_cadence")
+    .select(
+      "id, status, publication, pending_tier, pending_cadence, identity_id",
+    )
     .eq("stripe_subscription_id", sub.id)
     .maybeSingle();
   // Throw so the route 500s and Stripe redelivers; treating a failed read as
@@ -102,6 +105,7 @@ export async function handleMembershipSubscriptionEvent(
     })
     .eq("stripe_subscription_id", sub.id);
   if (writeError) throw writeError;
+  await invalidateIdentitySlices(existing.identity_id, ["subscriptions"]);
 
   if (isActiveStatus(sub.status) && !wasActive) {
     await notifyNewMember(sub.metadata.publication, existing.id);
@@ -222,6 +226,7 @@ async function reconcileUntrackedSubscription(
       .update({ ...fields, tier: tierRes.data.id })
       .eq("id", tracked.id);
     if (error) throw error;
+    await invalidateIdentitySlices(identity_id, ["subscriptions"]);
     await notifyNewMember(publication, tracked.id);
     await mirrorSubscriberRecords(identity_id, publication, sub);
     return;
@@ -271,6 +276,7 @@ async function reconcileUntrackedSubscription(
     .select("id")
     .single();
   if (insertError) throw insertError;
+  await invalidateIdentitySlices(identity_id, ["subscriptions"]);
 
   if (isActiveStatus(sub.status)) {
     await notifyNewMember(publication, inserted.id);
@@ -306,6 +312,8 @@ export async function handleMembershipInvoiceFailed(
     .update({ status: sub.status, updated_at: new Date().toISOString() })
     .eq("stripe_subscription_id", sub.id);
   if (error) throw error;
+  if (sub.metadata.identity_id)
+    await invalidateIdentitySlices(sub.metadata.identity_id, ["subscriptions"]);
 
   if (!isActiveStatus(sub.status)) {
     await sendPaymentFailedEmail(sub);
