@@ -97,10 +97,6 @@ export const LoginContent = (props: {
   const handleEmailSubmit = async () => {
     setLoading(true);
     try {
-      // On a custom domain, complete email auth on the main site: it checks for
-      // an existing session and hands it back if found, otherwise it emails a
-      // code and collects it there before bouncing back. This keeps the
-      // canonical session first-party on the main site.
       let base = mainSiteAuthBase();
       if (base) {
         let loginUrl = new URL("/api/auth/email-login", base);
@@ -138,15 +134,12 @@ export const LoginContent = (props: {
       });
       return;
     }
-    // Local pre-login drafts belong to whoever first signs in on this browser,
-    // never to an additional account added alongside an existing session.
+
     const localLeaflets = props.addAccount
       ? []
       : getHomeDocs().filter((l) => !l.hidden);
     await loginWithEmailToken(localLeaflets, props.redirectRoute);
     if (props.addAccount) {
-      // The session cookie now points at the added account; navigate rather
-      // than mutate in place since page state is keyed to the old identity.
       broadcastIdentityChange(null);
       window.location.href = "/home";
       return;
