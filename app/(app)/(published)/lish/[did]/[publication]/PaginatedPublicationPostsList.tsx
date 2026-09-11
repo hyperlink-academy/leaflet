@@ -189,7 +189,7 @@ export function PaginatedPublicationPostsList({
           batch is served, so crawlers need a plain anchor to the archive to
           reach the rest. */}
       {!disableLinks && hasUnshownPosts && (
-        <div className="text-center pt-3">
+        <div className="text-center pt-3 hidden">
           <SpeedyLink
             href={`${getPublicationURL(publication).replace(/\/+$/, "")}/archive`}
             className="text-sm text-tertiary hover:text-accent-contrast"
