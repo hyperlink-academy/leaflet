@@ -1,4 +1,4 @@
-import { ZodObject, ZodRawShape, ZodUnion, z } from "zod";
+import type { ZodObject, ZodRawShape, ZodUnion, z } from "zod";
 
 type Route<
   Cmd extends string,

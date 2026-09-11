@@ -19,7 +19,7 @@ import { addBlueskyPostBlock, addLinkBlock } from "src/utils/addLinkBlock";
 import { BlockCommandBar } from "components/Blocks/BlockCommandBar";
 import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { TooltipButton } from "components/Buttons";
+import { TooltipButton } from "components/TooltipButton";
 import { blockCommands } from "../BlockCommands";
 import { betterIsUrl } from "src/utils/isURL";
 import { useSmoker } from "components/Toast";

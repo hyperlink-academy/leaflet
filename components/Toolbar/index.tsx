@@ -13,7 +13,7 @@ import { HighlightToolbar } from "./HighlightToolbar";
 import { TextToolbar } from "./TextToolbar";
 import { ImageToolbar } from "./ImageToolbar";
 import { MultiselectToolbar } from "./MultiSelectToolbar";
-import { TooltipButton } from "components/Buttons";
+import { TooltipButton } from "components/TooltipButton";
 import { TextAlignmentToolbar } from "./TextAlignmentToolbar";
 import { useIsMobile } from "src/hooks/isMobile";
 import { CloseTiny } from "components/Icons/CloseTiny";

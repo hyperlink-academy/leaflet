@@ -11,7 +11,7 @@ import { useUIState } from "src/useUIState";
 import useMeasure from "react-use-measure";
 import { useIsMobile } from "src/hooks/isMobile";
 import { Media } from "./Media";
-import { TooltipButton } from "./Buttons";
+import { TooltipButton } from "./TooltipButton";
 import { useBlockKeyboardHandlers } from "./Blocks/useBlockKeyboardHandlers";
 import { AddSmall } from "./Icons/AddSmall";
 import { InfoSmall } from "./Icons/InfoSmall";
