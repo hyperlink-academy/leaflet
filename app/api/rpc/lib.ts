@@ -1,4 +1,11 @@
 import { ZodObject, ZodRawShape, ZodUnion, z } from "zod";
+import { canonicalizeInput, encodeInput, decodeInput } from "./inputEncoding";
+
+export type RouteCache = {
+  sMaxAge: number;
+  staleWhileRevalidate: number;
+  maxAge?: number;
+};
 
 type Route<
   Cmd extends string,
@@ -9,15 +16,35 @@ type Route<
   route: Cmd;
   input: Input;
   handler: (msg: z.infer<Input>, env: Env) => Promise<Result>;
+  // Viewer-independent reads only: set this to also serve the route as a
+  // CDN-cacheable GET. See app/api/rpc/cacheableRoutes.ts.
+  cache?: RouteCache;
 };
 
 type Routes<Env extends {}> = Route<string, any, any, Env>[];
 
-export function makeAPIClient<R extends Routes<any>>(basePath: string) {
+// GET URLs above this length risk being truncated by intermediate proxies;
+// falling back to POST keeps the request correct at the cost of caching.
+const MAX_GET_URL_LENGTH = 2000;
+
+export function makeAPIClient<R extends Routes<any>>(
+  basePath: string,
+  cacheableRoutes: ReadonlySet<string> = new Set(),
+) {
   return async <T extends R[number]["route"]>(
     route: T,
     data: z.infer<Extract<R[number], { route: T }>["input"]>,
   ) => {
+    if (cacheableRoutes.has(route)) {
+      let encoded = encodeInput(canonicalizeInput(data));
+      let url = `${basePath}/${route}?input=${encoded}`;
+      if (url.length <= MAX_GET_URL_LENGTH) {
+        let result = await fetch(url, { method: "GET" });
+        return result.json() as Promise<
+          Awaited<ReturnType<Extract<R[number], { route: T }>["handler"]>>
+        >;
+      }
+    }
     let result = await fetch(`${basePath}/${route}`, {
       body: JSON.stringify(data),
       method: "POST",
@@ -33,9 +60,50 @@ export const makeRouter = <Env extends {}>(routes: Routes<Env>) => {
   return async (route: string, request: Request, env: Env) => {
     let status = 200;
     let result;
+    let cache: RouteCache | undefined;
+    let handler = routes.find((f) => f.route === route);
+
     switch (request.method) {
+      case "GET": {
+        if (!handler || !handler.cache) {
+          status = 404;
+          result = { error: `route ${route} not Found` };
+          break;
+        }
+
+        let encoded = new URL(request.url).searchParams.get("input");
+        let body: unknown = {};
+        if (encoded) {
+          try {
+            body = decodeInput(encoded);
+          } catch (e) {
+            status = 400;
+            result = { error: "input must be valid base64url-encoded JSON" };
+            break;
+          }
+        }
+
+        let msg = handler.input.safeParse(body);
+        if (!msg.success) {
+          status = 400;
+          result = msg.error;
+          break;
+        }
+        try {
+          result = (await handler.handler(msg.data as any, env)) as object;
+          cache = handler.cache;
+          break;
+        } catch (e) {
+          console.log(e);
+          status = 500;
+          result = {
+            error: "An error occured while handling this request",
+            errorText: (e as Error).toString(),
+          };
+          break;
+        }
+      }
       case "POST": {
-        let handler = routes.find((f) => f.route === route);
         if (!handler) {
           status = 404;
           result = { error: `route ${route} not Found` };
@@ -83,6 +151,15 @@ export const makeRouter = <Env extends {}>(routes: Routes<Env>) => {
         "Content-type": "application/json;charset=UTF-8",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,HEAD,POST,OPTIONS",
+        "Cache-Control":
+          status === 200 && cache
+            ? `public, max-age=${cache.maxAge ?? 0}, s-maxage=${cache.sMaxAge}, stale-while-revalidate=${cache.staleWhileRevalidate}`
+            : "no-store",
+        ...(status === 200 && cache
+          ? {
+              "CDN-Cache-Control": `public, s-maxage=${cache.sMaxAge}, stale-while-revalidate=${cache.staleWhileRevalidate}`,
+            }
+          : {}),
       },
     });
     //result.headers?.forEach((h) => res.headers.append(h[0], h[1]));
