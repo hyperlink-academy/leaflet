@@ -5,6 +5,7 @@ import { MetaRow } from "./MetaRow";
 import { PostLink } from "./PostLink";
 import { useFitToHeight } from "./useFitToHeight";
 import { type LargeProps } from "./types";
+import { COVER_SIZES } from "src/utils/blobRefToSrc";
 
 export function PublicationPostItemLarge(props: LargeProps) {
   const hasCoverImage = !!props.coverImageSrc;
@@ -25,7 +26,16 @@ export function PublicationPostItemLarge(props: LargeProps) {
       {hasCoverImage && (
         <img
           src={props.coverImageSrc}
+          srcSet={props.coverImageSrcSet}
+          sizes={COVER_SIZES.large}
           alt={props.coverImageAlt || props.title || ""}
+          // Aspect-ratio hint matching whichever box the CSS below picks;
+          // the CSS classes (not these dimensions) govern the rendered size.
+          width={800}
+          height={widePage ? 533 : 419}
+          decoding="async"
+          loading={props.loading ?? "lazy"}
+          fetchPriority={props.fetchPriority}
           className={`object-cover  shrink-0 ${props.inList ? "rounded-md" : " border-b border-border-light rounded-none!"} ${widePage ? "sm:h-[254px] aspect-[3/2] sm:border-transparent " : "h-full aspect-[1.91/1]"}  `}
         />
       )}

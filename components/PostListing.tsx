@@ -2,7 +2,12 @@
 import { AtUri } from "@atproto/api";
 import { PubIcon } from "components/ActionBar/Publications";
 import { PublicationThemeWrapper } from "components/ThemeManager/PublicationThemeProvider";
-import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
+import {
+  blobRefToSrc,
+  blobRefToSrcSet,
+  COVER_THUMBNAIL_WIDTH,
+  COVER_SRCSET_WIDTHS,
+} from "src/utils/blobRefToSrc";
 import type {
   NormalizedDocument,
   NormalizedPublication,
@@ -95,6 +100,9 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
         width: COVER_THUMBNAIL_WIDTH.large,
       })
     : undefined;
+  let coverImageSrcSet = postRecord.coverImage
+    ? blobRefToSrcSet(postRecord.coverImage.ref, postUri.host, COVER_SRCSET_WIDTHS)
+    : undefined;
 
   let author =
     namedContributors.length > 0 ? (
@@ -178,7 +186,9 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
             interactions={interactions}
             pubInfo={pubInfo}
             coverImageSrc={coverImageSrc}
+            coverImageSrcSet={coverImageSrcSet}
             coverImageAlt={postRecord.title}
+            loading="lazy"
           />
         </div>
       </PublicationThemeWrapper>

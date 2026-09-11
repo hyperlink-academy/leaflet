@@ -17,11 +17,16 @@ export type CommonProps = {
 
 export type LargeProps = CommonProps & {
   coverImageSrc?: string;
+  coverImageSrcSet?: string;
   coverImageAlt?: string;
   pageWidth?: number;
+  loading?: "eager" | "lazy";
+  fetchPriority?: "high";
 };
 
 export type MediumProps = CommonProps & {
   coverImageSrc?: string;
+  coverImageSrcSet?: string;
   coverImageAlt?: string;
+  loading?: "eager" | "lazy";
 };

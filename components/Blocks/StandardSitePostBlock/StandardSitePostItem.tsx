@@ -9,7 +9,12 @@ import {
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
 import { getDocumentURL, getPublicationURL } from "src/utils/getPublicationURL";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
-import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
+import {
+  blobRefToSrc,
+  blobRefToSrcSet,
+  COVER_THUMBNAIL_WIDTH,
+  COVER_SRCSET_WIDTHS,
+} from "src/utils/blobRefToSrc";
 import { useStandardSitePost } from "components/StandardSitePostDataProvider";
 import { useEntity, useReplicache } from "src/replicache";
 import { InteractionPreview } from "components/Interactions/InteractionsPreview";
@@ -187,6 +192,10 @@ export function StandardSitePostItemView({
               : COVER_THUMBNAIL_WIDTH.medium,
         })
       : undefined;
+  const coverImageSrcSet =
+    post.record.coverImage && postDid
+      ? blobRefToSrcSet(post.record.coverImage.ref, postDid, COVER_SRCSET_WIDTHS)
+      : undefined;
 
   const { rootEntity } = useReplicache();
   const themePageWidth = useEntity(rootEntity, "theme/page-width")?.data.value;
@@ -237,6 +246,9 @@ export function StandardSitePostItemView({
     date,
     interactions,
     pubInfo: pubFooter,
+    // Each render is a single embedded post (a block, drawer, or modal), not
+    // an indexable list item, so there's no "above the fold" signal to use.
+    loading: "lazy" as const,
   };
 
   if (size === "large") {
@@ -245,6 +257,7 @@ export function StandardSitePostItemView({
         {...commonProps}
         description={description}
         coverImageSrc={coverImageSrc}
+        coverImageSrcSet={coverImageSrcSet}
         coverImageAlt={post.record.title}
         pageWidth={pageWidth}
       />
@@ -256,6 +269,7 @@ export function StandardSitePostItemView({
         {...commonProps}
         description={description}
         coverImageSrc={coverImageSrc}
+        coverImageSrcSet={coverImageSrcSet}
         coverImageAlt={post.record.title}
       />
     );
