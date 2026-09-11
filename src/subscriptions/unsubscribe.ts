@@ -1,3 +1,4 @@
+import { invalidateSessionIdentityCache } from "src/identityPayload";
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Ok, Err, type Result } from "src/result";
@@ -112,5 +113,6 @@ export async function fullUnsubscribe(args: {
   // unsubscribe from silently breaking Pub B deliveries on the shared broadcast
   // stream. Phase 7 handles webhook-driven suppression reconciliation.
 
+  await invalidateSessionIdentityCache();
   return Ok(null);
 }

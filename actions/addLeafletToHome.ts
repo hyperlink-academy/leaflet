@@ -1,5 +1,6 @@
 "use server";
 
+import { invalidateSessionIdentityCache } from "src/identityPayload";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { sql } from "drizzle-orm";
 import { cookies } from "next/headers";
@@ -29,5 +30,6 @@ export async function addLeafletToHome(leaflet: string) {
     return;
   });
   client.release();
+  await invalidateSessionIdentityCache();
   return;
 }

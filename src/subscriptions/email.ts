@@ -1,3 +1,4 @@
+import { invalidateSessionIdentityCache } from "src/identityPayload";
 import { supabaseServerClient } from "supabase/serverClient";
 import { publishAtprotoSubscriptionForDid } from "src/subscriptions/atproto";
 import { parseActionFromSearchParam } from "app/api/oauth/[route]/afterSignInActions";
@@ -73,6 +74,7 @@ export async function upsertSubscriber(args: {
     console.error("[upsertSubscriber] events failed:", eventsError);
     return Err("database_error");
   }
+  await invalidateSessionIdentityCache();
   return Ok(subscriber);
 }
 
@@ -201,6 +203,7 @@ export async function disableEmailSubscription(
         method: "email",
       },
     );
+  await invalidateSessionIdentityCache();
   return Ok(null);
 }
 

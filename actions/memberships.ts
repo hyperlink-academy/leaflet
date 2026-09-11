@@ -1,5 +1,6 @@
 "use server";
 
+import { invalidateSessionIdentityCache } from "src/identityPayload";
 import { getAuthIdentity } from "src/auth";
 import { getStripe } from "stripe/client";
 import { releaseSchedule } from "stripe/schedules";
@@ -67,6 +68,7 @@ async function setCancelAtPeriodEnd(
         updated_at: new Date().toISOString(),
       })
       .eq("id", membershipId);
+    await invalidateSessionIdentityCache();
     return Ok(null);
   } catch (e) {
     console.error("[memberships] cancel toggle failed:", e);
@@ -327,6 +329,7 @@ export async function changeMembership(
         })
         .eq("id", args.membershipId);
     }
+    await invalidateSessionIdentityCache();
     return Ok({
       immediate: preview.immediate,
       effectiveDate: preview.effectiveDate,

@@ -1,3 +1,4 @@
+import { invalidateSessionIdentityCache } from "src/identityPayload";
 import { revalidateDocumentPaths } from "src/utils/revalidatePublication";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import {
@@ -559,6 +560,7 @@ async function publish({
   // record this publish just wrote — including the title and description that
   // the post's page metadata is built from.
   await revalidateDocumentPaths(result.uri);
+  await invalidateSessionIdentityCache();
 
   return {
     success: true,

@@ -1,5 +1,6 @@
 "use server";
 
+import { invalidateSessionIdentityCache } from "src/identityPayload";
 import { AtpBaseClient } from "lexicons/api";
 import { getAuthIdentity } from "src/auth";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
@@ -209,5 +210,6 @@ export async function deletePublication(
     );
   }
 
+  await invalidateSessionIdentityCache();
   return { success: true };
 }

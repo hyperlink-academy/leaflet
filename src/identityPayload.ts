@@ -35,8 +35,10 @@ export async function getSessionDid() {
 
 // For the common case: a server action that just wrote a row the identity
 // payload embeds, and whose caller is about to router.refresh().
+// Shared writers are also reached from webhooks and background jobs, which
+// have no request cookie and so no key to invalidate.
 export async function invalidateSessionIdentityCache() {
-  let auth_token = await getValidAuthToken();
+  let auth_token = await getValidAuthToken().catch(() => null);
   if (auth_token) await invalidateIdentityCache(auth_token);
 }
 

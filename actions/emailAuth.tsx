@@ -1,5 +1,6 @@
 "use server";
 
+import { invalidateSessionIdentityCache } from "src/identityPayload";
 import { randomBytes } from "crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 
@@ -328,5 +329,6 @@ export async function confirmAccountEmailChange(
     .from("email_auth_tokens")
     .delete()
     .eq("id", tokenId);
+  await invalidateSessionIdentityCache();
   return Ok({ email });
 }
