@@ -78,6 +78,7 @@ const nextConfig = {
       dynamic: 600,
       static: 600,
     },
+    turbopackRustReactCompiler: true,
   },
 };
 
