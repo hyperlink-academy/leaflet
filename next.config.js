@@ -44,6 +44,9 @@ const nextConfig = {
   // Caps the CDN stale-while-revalidate window for ISR pages (default is one
   // year — a bad cached page could be served stale that long).
   expireTime: 86400,
+  // Installed-PWA tabs stay open across deploys; a mismatched deployment ID
+  // makes the client hard-navigate instead of failing chunk loads.
+  deploymentId: process.env.VERCEL_DEPLOYMENT_ID,
   serverExternalPackages: ["yjs"],
   pageExtensions: ["js", "jsx", "ts", "tsx", "md", "mdx"],
   images: {
