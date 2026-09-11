@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { Suspense } from "react";
 import { IdentityProviderServer } from "components/IdentityProviderServer";
-import { FullPageLoading } from "components/PageLayouts/DashboardLoading";
+import { DashboardSkeleton } from "components/PageLayouts/DashboardSkeleton";
 import { RequestHeadersProvider } from "components/Providers/RequestHeadersProvider";
 import { RouteUIStateManager } from "components/RouteUIStateManger";
 import { SubscriptionSuccessModal } from "components/SubscriptionSuccessModal";
@@ -32,7 +32,7 @@ export default function IdentityLayout({
   children: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={<FullPageLoading />}>
+    <Suspense fallback={<DashboardSkeleton variant="plain" />}>
       <IdentityLayoutInner>{children}</IdentityLayoutInner>
     </Suspense>
   );

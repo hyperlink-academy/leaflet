@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { getIdentityData } from "actions/getIdentityData";
 import { PageTitle } from "components/ActionBar/DesktopNavigation";
 import { DashboardShell } from "components/PageLayouts/DashboardShell";
-import { FullPageLoading } from "components/PageLayouts/DashboardLoading";
+import { DashboardSkeleton } from "components/PageLayouts/DashboardSkeleton";
 import { ReaderUnreadSmall } from "components/Icons/ReaderSmall";
 import { NewSmall } from "components/Icons/NewSmall";
 import { TrendingSmall } from "components/Icons/TrendingSmall";
@@ -15,7 +15,7 @@ import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
 // boundary to commit against while getIdentityData resolves.
 export default function ReaderLayout(props: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<FullPageLoading />}>
+    <Suspense fallback={<DashboardSkeleton variant="feed" />}>
       <ReaderLayoutInner>{props.children}</ReaderLayoutInner>
     </Suspense>
   );

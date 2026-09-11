@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { getHomeLeaflet } from "src/homeLeaflet";
 import { EntitySetProvider } from "components/EntitySetProvider";
 import { NavStateTracker } from "components/NavStateTracker";
-import { FullPageLoading } from "components/PageLayouts/DashboardLoading";
+import { DashboardSkeleton } from "components/PageLayouts/DashboardSkeleton";
 import {
   ThemeProvider,
   ThemeBackgroundProvider,
@@ -16,11 +16,9 @@ import { ReplicacheProvider, type Fact } from "src/replicache";
 // against while the home leaflet resolves. (On initial loads the identity
 // provider's suspension surfaces at the (identity) boundary above, but the
 // home leaflet fetch below runs in parallel with it.)
-export default function HomePagesLayout(props: {
-  children: React.ReactNode;
-}) {
+export default function HomePagesLayout(props: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<FullPageLoading />}>
+    <Suspense fallback={<DashboardSkeleton variant="grid" />}>
       <HomePagesLayoutInner>{props.children}</HomePagesLayoutInner>
     </Suspense>
   );
