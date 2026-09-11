@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { cache } from "react";
 import Client from "ioredis";
 import { getPublicAgent } from "app/api/bsky/agent";
@@ -110,6 +111,20 @@ async function fetchProfiles(dids: string[]): Promise<FetchResult> {
 
   return { results, toCache };
 }
+
+// Cache-only variant for paths that must not wait on the AppView: returns what
+// Redis already has and warms the misses after the response, so the next render
+// finds them. Consumers fill a missing profile client-side (useRecordFromDid).
+export const getProfilesFromCache = cache(
+  async (dids: string[]): Promise<Map<string, Profile | null>> => {
+    const unique = Array.from(new Set(dids));
+    if (unique.length === 0) return new Map();
+    const cached = await readCache(unique);
+    const missing = unique.filter((did) => !cached.has(did));
+    if (missing.length > 0) after(() => getProfiles(missing));
+    return cached;
+  },
+);
 
 export const getProfiles = cache(
   async (dids: string[]): Promise<Map<string, Profile | null>> => {

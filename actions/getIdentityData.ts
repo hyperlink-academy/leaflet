@@ -4,7 +4,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { cache } from "react";
 import { deduplicateByUri } from "src/utils/deduplicateRecords";
 import { isLeafletManagedPublication } from "src/utils/isLeafletManagedPublication";
-import { getProfiles } from "src/identity";
+import { getProfilesFromCache } from "src/identity";
 import {
   bskyProfileFromCache,
   ENTITLEMENT_EMBEDS,
@@ -99,9 +99,9 @@ async function fetchIdentityByToken(auth_token: string) {
     // Publications, leaflet_contributors, and publication_contributors are
     // folded into the main identities query above as embedded resources
     // (via the *_contributor_did_fkey / *_identity_did_fkey FKs to
-    // identities.atp_did). getProfiles stays separate because it's an
+    // identities.atp_did). The profile stays separate because it's an
     // external Redis/bsky profile cache, not a DB table.
-    const profiles = await getProfiles([atp_did]);
+    const profiles = await getProfilesFromCache([atp_did]);
     // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces,
     // then filter to only publications created by Leaflet
     const publications = deduplicateByUri(rawPublications || []).filter(
