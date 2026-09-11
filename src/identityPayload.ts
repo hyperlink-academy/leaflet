@@ -3,6 +3,7 @@ import { isUuid } from "./utils/isUuid";
 import type { Profile } from "./identity";
 import { deriveConnectedAccountStatus } from "stripe/accountStatus";
 import { supabaseServerClient } from "supabase/serverClient";
+import { invalidateIdentityCache } from "./identityCache";
 
 // Shared plumbing for the three identity fetchers (getIdentityData,
 // getViewerIdentity, getAuthIdentity). Deliberately not a "use server" module:
@@ -30,6 +31,13 @@ export async function getSessionDid() {
     .eq("confirmed", true)
     .single();
   return data?.identities?.atp_did ?? null;
+}
+
+// For the common case: a server action that just wrote a row the identity
+// payload embeds, and whose caller is about to router.refresh().
+export async function invalidateSessionIdentityCache() {
+  let auth_token = await getValidAuthToken();
+  if (auth_token) await invalidateIdentityCache(auth_token);
 }
 
 // Embed fragments shared by getIdentityData and getViewerIdentity's

@@ -13,14 +13,29 @@ import {
   processConnectedAccount,
   SUBSCRIPTION_STATE_EMBEDS,
 } from "src/identityPayload";
-export const getIdentityData = cache(uncachedGetIdentityData);
-async function uncachedGetIdentityData() {
+import { getCachedIdentity, writeCachedIdentity } from "src/identityCache";
+
+export const getIdentityData = cache(async () => {
   let auth_token = await getValidAuthToken();
-  let auth_res = auth_token
-    ? await supabaseServerClient
-        .from("email_auth_tokens")
-        .select(
-          `*,
+  if (!auth_token) return null;
+  return getCachedIdentity(auth_token, () => fetchIdentityByToken(auth_token));
+});
+
+// The client provider's revalidation path: always authoritative (it runs right
+// after a mutation) and it warms the cache for the next server render.
+export async function getFreshIdentityData() {
+  let auth_token = await getValidAuthToken();
+  if (!auth_token) return null;
+  let identity = await fetchIdentityByToken(auth_token);
+  await writeCachedIdentity(auth_token, identity);
+  return identity;
+}
+
+async function fetchIdentityByToken(auth_token: string) {
+  let auth_res = await supabaseServerClient
+    .from("email_auth_tokens")
+    .select(
+      `*,
           identities(
             *,
             ${SUBSCRIPTION_STATE_EMBEDS},
@@ -54,13 +69,12 @@ async function uncachedGetIdentityData() {
               publications!publication_contributors_publication_uri_fkey!inner(*)
             )
           )`,
-        )
-        .eq("identities.notifications.read", false)
-        .eq("identities.publication_contributors.confirmed", true)
-        .eq("id", auth_token)
-        .eq("confirmed", true)
-        .single()
-    : null;
+    )
+    .eq("identities.notifications.read", false)
+    .eq("identities.publication_contributors.confirmed", true)
+    .eq("id", auth_token)
+    .eq("confirmed", true)
+    .single();
   if (!auth_res?.data?.identities) return null;
 
   // Pull the embedded raw rows off the identity. Spreading `identity` below
