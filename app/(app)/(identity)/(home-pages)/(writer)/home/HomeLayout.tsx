@@ -52,7 +52,9 @@ type LeafletsInPublications = NonNullable<
   >["permission_token_on_homepage"][number]["permission_tokens"]["leaflets_in_publications"]
 >[number];
 type _ShareLinkColumnsPresent = LeafletsInPublications extends {
-  documents: { data: { path: unknown; site: unknown } } | null;
+  documents: {
+    data: { path: unknown; site: unknown; publishedAt: unknown };
+  } | null;
   publications: { uri: string; record: unknown } | null;
 }
   ? true

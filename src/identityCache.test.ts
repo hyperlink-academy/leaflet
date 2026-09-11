@@ -90,6 +90,30 @@ describe("identity cache", () => {
     expect(fetchFresh).not.toHaveBeenCalled();
   });
 
+  test("a failing store degrades to the fresh fetch", async () => {
+    const failing: IdentityCacheStore = {
+      async get() {
+        throw new Error("redis down");
+      },
+      async setex() {
+        throw new Error("redis down");
+      },
+      async del() {
+        throw new Error("redis down");
+      },
+    };
+    const fetchFresh = vi.fn(async () => ({ id: 1 }));
+    expect(await getCachedIdentity("t", fetchFresh, failing)).toEqual({
+      id: 1,
+    });
+    await expect(
+      writeCachedIdentity("t", { id: 1 }, failing),
+    ).resolves.toBeUndefined();
+    await expect(
+      invalidateIdentityCache("t", failing),
+    ).resolves.toBeUndefined();
+  });
+
   test("without a store every read fetches", async () => {
     const fetchFresh = vi.fn(async () => ({ id: 1 }));
     expect(await getCachedIdentity("t", fetchFresh, null)).toEqual({ id: 1 });

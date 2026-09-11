@@ -24,6 +24,16 @@ export function identityCacheKey(auth_token: string) {
   return KEY_PREFIX + createHash("sha256").update(auth_token).digest("hex");
 }
 
+// Redis is an optimisation on a path that can always fall back to Postgres, so
+// an outage degrades to uncached reads (and to at most TTL_SECONDS of
+// staleness on a failed invalidation) rather than failing every render.
+function degrade(op: string) {
+  return (err: unknown) => {
+    console.error(`[identityCache] ${op} failed:`, err);
+    return null;
+  };
+}
+
 const inFlight = new Map<string, Promise<unknown>>();
 
 export async function getCachedIdentity<T>(
@@ -36,16 +46,16 @@ export async function getCachedIdentity<T>(
   const existing = inFlight.get(key);
   if (existing) return existing as Promise<T>;
   const pending = (async () => {
-    const cached = await store.get(key);
-    if (cached !== null) {
+    const cached = await store.get(key).catch(degrade("read"));
+    if (cached != null) {
       try {
         return JSON.parse(cached) as T;
-      } catch {
-        // fall through to a fresh read
-      }
+      } catch {}
     }
     const fresh = await fetchFresh();
-    await store.setex(key, TTL_SECONDS, JSON.stringify(fresh));
+    await store
+      .setex(key, TTL_SECONDS, JSON.stringify(fresh))
+      .catch(degrade("write"));
     return fresh;
   })();
   inFlight.set(key, pending);
@@ -62,11 +72,9 @@ export async function writeCachedIdentity(
   store: IdentityCacheStore | null = getRedis(),
 ) {
   if (!store) return;
-  await store.setex(
-    identityCacheKey(auth_token),
-    TTL_SECONDS,
-    JSON.stringify(value),
-  );
+  await store
+    .setex(identityCacheKey(auth_token), TTL_SECONDS, JSON.stringify(value))
+    .catch(degrade("write"));
 }
 
 export async function invalidateIdentityCache(
@@ -74,5 +82,5 @@ export async function invalidateIdentityCache(
   store: IdentityCacheStore | null = getRedis(),
 ) {
   if (!store) return;
-  await store.del(identityCacheKey(auth_token));
+  await store.del(identityCacheKey(auth_token)).catch(degrade("invalidate"));
 }

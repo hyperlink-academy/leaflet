@@ -1,5 +1,6 @@
 "use server";
 
+import { invalidateSessionIdentityCache } from "src/identityPayload";
 import { getAuthIdentity } from "src/auth";
 import { mergeEmailIdentityIntoAtpIdentity } from "src/mergeIdentity";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -185,6 +186,7 @@ export async function confirmPublicationEmailSubscription(
     identityId,
     sanitizeSubscriptionSource(source),
   );
+  await invalidateSessionIdentityCache();
   return Ok(null);
 }
 
@@ -275,6 +277,7 @@ async function linkEmailToCurrentIdentity(
     }
     await linkOrphanedEmailSubscribers(current.id, email);
     await backfillAtprotoSubscriptionsForIdentity(current.id, current.atp_did);
+    await invalidateSessionIdentityCache();
     return Ok(current.id);
   }
 
