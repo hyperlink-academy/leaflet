@@ -29,9 +29,8 @@ export const InteractionShareButton = (props: {
   publication?: NormalizedPublication;
   pubUri: string | undefined;
   trigger?: React.ReactNode;
+  className?: string;
 }) => {
-  let { identity } = useIdentityData();
-
   let smoker = useSmoker();
   let [shareModalOpen, setShareModalOpen] = useState(false);
 
@@ -48,7 +47,7 @@ export const InteractionShareButton = (props: {
       <Menu
         trigger={
           <div
-            className={`text-sm flex shrink-0 gap-1 items-center relative font-bold`}
+            className={`text-sm flex shrink-0 gap-1 items-center relative font-bold ${props.className}`}
           >
             {props.trigger ? (
               props.trigger

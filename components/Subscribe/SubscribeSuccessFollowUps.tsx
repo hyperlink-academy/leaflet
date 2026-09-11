@@ -8,7 +8,8 @@ import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
 import { PubIcon } from "components/ActionBar/Publications";
 import { RecommendEmptyTiny } from "components/Icons/RecommendTiny";
-import { CheckTiny } from "components/Icons/CheckTiny";
+import { CheckboxChecked } from "components/Icons/CheckboxChecked";
+import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { actionErrorContent } from "components/OAuthError";
 import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import {
@@ -25,6 +26,7 @@ import {
 import { MAX_RECOMMENDATIONS } from "src/utils/publicationRecommendations";
 import { bskyPostEmbed } from "src/utils/bskyPostEmbed";
 import { viewerPostLangs } from "src/utils/bskyPostLangs";
+import { CheckTiny } from "components/Icons/CheckTiny";
 
 export function SharePublicationComposer(props: {
   publication: StandardSitePublicationData;
@@ -89,74 +91,95 @@ export function RecommendPublicationPicker(props: {
   onRecommended: () => void;
 }) {
   let toaster = useToaster();
-  let [selected, setSelected] = useState<string | null>(null);
+  let [selected, setSelected] = useState<string[]>([]);
   let [saving, setSaving] = useState(false);
   let name = props.publicationName ?? "this publication";
 
+  let toggle = (uri: string) =>
+    setSelected((s) =>
+      s.includes(uri) ? s.filter((u) => u !== uri) : [...s, uri],
+    );
+
   let recommend = async () => {
-    let pub = props.publications.find((p) => p.uri === selected);
-    if (!pub || saving) return;
+    let pubs = props.publications.filter((p) => selected.includes(p.uri));
+    if (!pubs.length || saving) return;
     setSaving(true);
-    let res = await addPublicationRecommendation({
-      publicationUri: pub.uri,
-      recommendation: props.publicationUri,
-    });
+    let succeeded: typeof pubs = [];
+    let failure: Parameters<typeof actionErrorContent>[0] | null = null;
+    for (let pub of pubs) {
+      let res = await addPublicationRecommendation({
+        publicationUri: pub.uri,
+        recommendation: props.publicationUri,
+      });
+      if (!res.ok) {
+        failure = failure ?? res.error;
+        continue;
+      }
+      succeeded.push(pub);
+      // The dashboard settings form reads this key for the same publication.
+      mutateGlobal(
+        ["publication_recommendations", pub.uri],
+        res.value.recommendations,
+        { revalidate: false },
+      );
+    }
     setSaving(false);
-    if (!res.ok) {
+    if (succeeded.length)
+      toaster({
+        type: "success",
+        content:
+          succeeded.length === 1
+            ? `${succeeded[0].name} now recommends ${name}!`
+            : `${succeeded.length} of your publications now recommend ${name}!`,
+      });
+    if (failure) {
+      // Leave the ones that didn't go through checked so they can be retried.
+      let done = succeeded.map((p) => p.uri);
+      setSelected((s) => s.filter((uri) => !done.includes(uri)));
       toaster({
         type: "error",
         content: actionErrorContent(
-          res.error,
+          failure,
           "Hmm… Something went wrong. Try again!",
         ),
       });
       return;
     }
-    // The dashboard settings form reads this key for the same publication.
-    mutateGlobal(
-      ["publication_recommendations", pub.uri],
-      res.value.recommendations,
-      { revalidate: false },
-    );
-    toaster({
-      type: "success",
-      content: `${pub.name} now recommends ${name}!`,
-    });
     props.onRecommended();
   };
 
   return (
-    <div className="flex flex-col gap-3 w-full max-w-full sm:w-md text-left">
+    <div className="flex flex-col gap-3 w-full max-w-full  text-left p-2 sm:w-xl">
       <div className="text-center">
-        <h3 className="text-primary">Recommend to your subscribers</h3>
+        <h3 className="text-primary">Recommend this Publication</h3>
         <p className="text-secondary text-sm">
           Pick which of your publications should recommend {name}.
           Recommendations are shown to readers after they subscribe.
         </p>
       </div>
-      <div className="flex flex-col gap-2" role="radiogroup">
+      <div className="flex flex-col gap-2" role="group">
         {props.publications.map((pub) => {
           let status = pub.recommendations.includes(props.publicationUri)
             ? "Already recommends this publication"
             : pub.recommendations.length >= MAX_RECOMMENDATIONS
               ? `Already recommends ${MAX_RECOMMENDATIONS} publications`
               : null;
-          let isSelected = selected === pub.uri;
+          let isSelected = selected.includes(pub.uri);
           return (
             <button
               key={pub.uri}
               type="button"
-              role="radio"
+              role="checkbox"
               aria-checked={isSelected}
               disabled={!!status}
-              onClick={() => setSelected(pub.uri)}
-              className={`flex items-center gap-3 p-2 text-left rounded-md border
-                ${isSelected ? "border-accent-contrast bg-bg-page" : "border-border-light"}
+              onClick={() => toggle(pub.uri)}
+              className={`flex items-start gap-2 p-2 text-left rounded-md block-border hover:outline-border!
+                ${isSelected ? "bg-[var(--accent-light)]" : "border-border-light"}
                 ${status ? "opacity-60 cursor-not-allowed" : "hover:border-accent-contrast"}`}
             >
               <PubIcon icon={pub.icon ?? undefined} pubName={pub.name} />
               <div className="flex flex-col grow min-w-0 leading-tight">
-                <span className="font-bold text-primary truncate">
+                <span className="font-bold text-primary truncate pt-0.5">
                   {pub.name}
                 </span>
                 <span className="text-xs text-tertiary">
@@ -165,7 +188,7 @@ export function RecommendPublicationPicker(props: {
                 </span>
               </div>
               {isSelected && (
-                <CheckTiny className="text-accent-contrast shrink-0" />
+                <CheckTiny className="text-accent-contrast shrink-0  mt-1 mr-1 " />
               )}
             </button>
           );
@@ -173,9 +196,8 @@ export function RecommendPublicationPicker(props: {
       </div>
       <ButtonPrimary
         className="place-self-end"
-        compact
         onClick={recommend}
-        disabled={!selected || saving}
+        disabled={!selected.length || saving}
       >
         {saving ? (
           <DotLoader />

@@ -1,0 +1,10 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "leaflet-dev",
+      "port": 3000,
+      "url": "http://localhost:3000"
+    }
+  ]
+}

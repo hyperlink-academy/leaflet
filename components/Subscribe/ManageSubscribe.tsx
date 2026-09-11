@@ -226,7 +226,7 @@ const ManageSubscriptionContent = (props: {
   const emailEnabled = emailOverride ?? user.emailEnabled;
   useEffect(() => {
     setEmailOverride(null);
-  }, [user.emailEnabled]);
+  }, [user.emailEnabled, props.publicationUri]);
 
   const onToggleEmail = async () => {
     if (emailOverride !== null) return;

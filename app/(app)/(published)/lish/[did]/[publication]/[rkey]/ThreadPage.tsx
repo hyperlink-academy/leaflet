@@ -1,5 +1,12 @@
 "use client";
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   AppBskyFeedDefs,
   AppBskyFeedPost,
@@ -338,9 +345,8 @@ function ThreadQuotes(props: { postUri: string; pageUri: string }) {
         const parent = { type: "thread" as const, uri: props.pageUri };
         // let isPinnedPost = post.uri ===
         return (
-          <>
+          <Fragment key={post.uri}>
             <BskyPostContent
-              key={post.uri}
               post={post}
               parent={parent}
               showEmbed
@@ -352,7 +358,7 @@ function ThreadQuotes(props: { postUri: string; pageUri: string }) {
             />
 
             <hr className="last:hidden border-border-light my-4" />
-          </>
+          </Fragment>
         );
       })}
     </div>
@@ -475,9 +481,8 @@ function Replies(props: {
         const hasReplies = reply.replies && reply.replies.length > 0;
 
         return (
-          <>
+          <Fragment key={reply.post.uri}>
             <ReplyPost
-              key={reply.post.uri}
               post={reply}
               isLast={index === replies.length - 1 && !hasReplies}
               pageUri={pageUri}
@@ -489,7 +494,7 @@ function Replies(props: {
             {props.depth === 0 && (
               <hr className="border-border-light my-4 last:hidden" />
             )}
-          </>
+          </Fragment>
         );
       })}
     </div>

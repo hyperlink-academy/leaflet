@@ -8,6 +8,7 @@ import { getNewFeed } from "actions/reader/getNewFeed";
 import { useEffect, useRef } from "react";
 import { PostListing } from "components/PostListing";
 import { useSelectedPostListing } from "src/useSelectedPostState";
+import { useReaderPostViewer } from "src/useReaderPostViewer";
 
 export const NewContent = (props: {
   promise: Promise<{ posts: Post[]; nextCursor: Cursor | null }>;
@@ -36,6 +37,7 @@ export const NewContent = (props: {
   );
 
   let selectedPost = useSelectedPostListing((s) => s.selectedPostListing);
+  let openPostViewer = useReaderPostViewer((s) => s.openViewer);
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -72,6 +74,10 @@ export const NewContent = (props: {
           {...p}
           key={p.documents.uri}
           selected={selectedPost?.document_uri === p.documents.uri}
+          onOpenInViewer={() => openPostViewer(allPosts, p.documents.uri)}
+          onOpenDiscussionsInViewer={() =>
+            openPostViewer(allPosts, p.documents.uri, { discussion: true })
+          }
         />
       ))}
       <div

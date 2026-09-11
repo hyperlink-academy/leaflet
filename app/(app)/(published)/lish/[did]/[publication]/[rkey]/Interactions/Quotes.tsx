@@ -1,4 +1,5 @@
 "use client";
+import { Fragment } from "react";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { useIsMobile } from "src/hooks/isMobile";
 import { setInteractionState } from "./Interactions";
@@ -156,9 +157,8 @@ export const DiscussionDrawerContent = (props: {
               );
 
               return (
-                <>
+                <Fragment key={q.uri}>
                   <BskyPostContent
-                    key={`mention-${index}`}
                     post={post}
                     parent={parent}
                     showBlueskyLink={true}
@@ -179,7 +179,7 @@ export const DiscussionDrawerContent = (props: {
                     }
                   />
                   <hr className="border-border-light last:hidden" />
-                </>
+                </Fragment>
               );
             })}
           </div>

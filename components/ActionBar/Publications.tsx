@@ -191,9 +191,10 @@ export const PubIcon = (props: {
   tiny?: boolean;
   small?: boolean;
   large?: boolean;
+  xl?: boolean;
   className?: string;
 }) => {
-  let iconSizeClassName = `${props.tiny ? "w-4 h-4" : props.small ? "w-5 h-5" : props.large ? "w-12 h-12" : "w-6 h-6"} rounded-full shrink-0`;
+  let iconSizeClassName = `${props.tiny ? "w-4 h-4" : props.small ? "w-5 h-5" : props.large ? "w-12 h-12" : props.xl ? "w-20 h-20" : "w-6 h-6"} rounded-full shrink-0`;
 
   return props.icon ? (
     <div
@@ -212,7 +213,7 @@ export const PubIcon = (props: {
       className={`${iconSizeClassName} ${props.className} bg-accent-1 relative`}
     >
       <div
-        className={`${props.tiny ? "text-xs" : props.large ? "text-2xl" : "text-sm"} font-bold  absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-accent-2 shrink-0`}
+        className={`${props.tiny ? "text-xs" : props.large ? "text-2xl" : props.xl ? "text-4xl" : "text-sm"} font-bold  absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-accent-2 shrink-0`}
       >
         {props.pubName ? props.pubName.slice(0, 1).toUpperCase() : "P"}
       </div>
