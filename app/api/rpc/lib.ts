@@ -56,6 +56,28 @@ export function makeAPIClient<R extends Routes<any>>(
   };
 }
 
+async function runHandler<Env extends {}>(
+  handler: Routes<Env>[number],
+  body: unknown,
+  env: Env,
+): Promise<{ status: number; result: unknown }> {
+  let msg = handler.input.safeParse(body);
+  if (!msg.success) return { status: 400, result: msg.error };
+  try {
+    let result = (await handler.handler(msg.data as any, env)) as object;
+    return { status: 200, result };
+  } catch (e) {
+    console.log(e);
+    return {
+      status: 500,
+      result: {
+        error: "An error occured while handling this request",
+        errorText: (e as Error).toString(),
+      },
+    };
+  }
+}
+
 export const makeRouter = <Env extends {}>(routes: Routes<Env>) => {
   return async (route: string, request: Request, env: Env) => {
     let status = 200;
@@ -83,25 +105,9 @@ export const makeRouter = <Env extends {}>(routes: Routes<Env>) => {
           }
         }
 
-        let msg = handler.input.safeParse(body);
-        if (!msg.success) {
-          status = 400;
-          result = msg.error;
-          break;
-        }
-        try {
-          result = (await handler.handler(msg.data as any, env)) as object;
-          cache = handler.cache;
-          break;
-        } catch (e) {
-          console.log(e);
-          status = 500;
-          result = {
-            error: "An error occured while handling this request",
-            errorText: (e as Error).toString(),
-          };
-          break;
-        }
+        ({ status, result } = await runHandler(handler, body, env));
+        if (status === 200) cache = handler.cache;
+        break;
       }
       case "POST": {
         if (!handler) {
@@ -120,24 +126,8 @@ export const makeRouter = <Env extends {}>(routes: Routes<Env>) => {
             break;
           }
 
-        let msg = handler.input.safeParse(body);
-        if (!msg.success) {
-          status = 400;
-          result = msg.error;
-          break;
-        }
-        try {
-          result = (await handler.handler(msg.data as any, env)) as object;
-          break;
-        } catch (e) {
-          console.log(e);
-          status = 500;
-          result = {
-            error: "An error occured while handling this request",
-            errorText: (e as Error).toString(),
-          };
-          break;
-        }
+        ({ status, result } = await runHandler(handler, body, env));
+        break;
       }
       default:
         status = 404;
