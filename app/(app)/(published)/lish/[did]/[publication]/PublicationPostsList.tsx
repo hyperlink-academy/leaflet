@@ -14,7 +14,12 @@ import { LocalizedDate } from "./LocalizedDate";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { getGatedPostPolicy } from "src/membership";
-import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
+import {
+  blobRefToSrc,
+  blobRefToSrcSet,
+  COVER_THUMBNAIL_WIDTH,
+  COVER_SRCSET_WIDTHS,
+} from "src/utils/blobRefToSrc";
 import { useContributorProfiles } from "src/hooks/useContributorProfiles";
 import {
   getBylineDids,
@@ -198,6 +203,19 @@ export function PublicationPostsList({
                       : COVER_THUMBNAIL_WIDTH.medium,
                 })
               : undefined;
+            const coverImageSrcSet = doc_record.coverImage
+              ? blobRefToSrcSet(
+                  doc_record.coverImage.ref,
+                  postDid,
+                  COVER_SRCSET_WIDTHS,
+                )
+              : undefined;
+
+            // Only the very first cover on the page is plausibly above the
+            // fold; the next one still loads eagerly so it's ready by the
+            // time a fast scroll reaches it, but without fetchPriority.
+            const imageLoading = index < 2 ? "eager" : "lazy";
+            const imageFetchPriority = index === 0 ? "high" : undefined;
 
             if (Variant === "large") {
               return (
@@ -216,8 +234,11 @@ export function PublicationPostsList({
                     date={date}
                     interactions={interactions}
                     coverImageSrc={coverImageSrc}
+                    coverImageSrcSet={coverImageSrcSet}
                     coverImageAlt={doc_record.title}
                     pageWidth={effectivePageWidth}
+                    loading={imageLoading}
+                    fetchPriority={imageFetchPriority}
                   />
                   <hr className="last:hidden border-border-light" />
                 </React.Fragment>
@@ -259,7 +280,9 @@ export function PublicationPostsList({
                   date={date}
                   interactions={interactions}
                   coverImageSrc={coverImageSrc}
+                  coverImageSrcSet={coverImageSrcSet}
                   coverImageAlt={doc_record.title}
+                  loading={imageLoading}
                 />
                 <hr className="last:hidden border-border-light" />
               </React.Fragment>

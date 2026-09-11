@@ -27,6 +27,7 @@ import type { NormalizedPublication } from "src/utils/normalizeRecords";
 import {
   blobRefCid,
   blobRefToSrc,
+  blobRefToSrcSet,
   POST_BODY_IMAGE_WIDTH,
 } from "src/utils/blobRefToSrc";
 import { srcDocSandbox } from "src/utils/srcDocSandbox";
@@ -574,6 +575,7 @@ export let Block = ({
       let src = blobRefToSrc(block.image.ref, did, undefined, {
         width: POST_BODY_IMAGE_WIDTH,
       });
+      let srcSet = blobRefToSrcSet(block.image.ref, did, [800, 1200, 2000]);
       let cid = blobRefCid(block.image.ref);
       let isFullBleed = block.fullBleed;
       let prevIsFullBleed =
@@ -600,6 +602,7 @@ export let Block = ({
         >
           <PublishedImageBlock
             src={src}
+            srcSet={srcSet}
             alt={block.alt}
             height={block.aspectRatio?.height}
             width={block.aspectRatio?.width}
@@ -608,7 +611,8 @@ export let Block = ({
             className={className}
             // The first block of a page is the one image plausibly above the
             // fold; everything below defers.
-            loading={isFirst ? undefined : "lazy"}
+            loading={isFirst ? "eager" : "lazy"}
+            fetchPriority={isFirst ? "high" : undefined}
             onOpenLightbox={
               canOpenLightbox ? () => openLightbox?.(pageId, cid) : undefined
             }

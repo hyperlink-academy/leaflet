@@ -64,3 +64,36 @@ export const POST_BODY_IMAGE_WIDTH = 1200;
 
 // Shared transform for publication icons rendered into emails.
 export const EMAIL_ICON_TRANSFORM = { width: 360, format: "email" } as const;
+
+// A `srcset` built from ladder widths only (supabase/imageSizes.js), so every
+// candidate the browser can request is one the resize routes already produce
+// (or snap to) rather than minting a new stored variant per caller.
+export const blobRefToSrcSet = (
+  b: BlobRef["ref"],
+  did: string,
+  widths: number[],
+) =>
+  widths
+    .map((width) => `${blobRefToSrc(b, did, undefined, { width })} ${width}w`)
+    .join(", ");
+
+// Ladder widths to offer for cover-image srcsets: large enough for the box at
+// 2x density, small enough that a narrow viewport doesn't pull the 800 candidate.
+export const COVER_SRCSET_WIDTHS = [
+  COVER_THUMBNAIL_WIDTH.medium,
+  COVER_THUMBNAIL_WIDTH.large,
+];
+
+// `sizes` for cover-image thumbnails, matched to each variant's CSS box.
+export const COVER_SIZES = {
+  // PublicationPostItemLarge: a fixed 254px-tall/3:2 box (~381px wide) once a
+  // page opts into the wide row layout at sm+, otherwise the full content
+  // column — 624px is the default --page-width-units (ThemeProvider.tsx).
+  large: "(min-width: 640px) 624px, 100vw",
+  // PublicationPostItemMedium: fixed w-24/sm:w-36 square box.
+  medium: "(min-width: 640px) 144px, 96px",
+};
+
+// `sizes` for post-body images: the ~600px content column
+// (postContent's sm:max-w-(--page-width-units), default 624px, minus padding).
+export const POST_BODY_SIZES = "(min-width: 640px) 600px, 100vw";

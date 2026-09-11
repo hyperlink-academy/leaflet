@@ -5,6 +5,7 @@ import { MetaRow } from "./MetaRow";
 import { PostLink } from "./PostLink";
 import { useFitToHeight } from "./useFitToHeight";
 import { type MediumProps } from "./types";
+import { COVER_SIZES } from "src/utils/blobRefToSrc";
 
 export function PublicationPostItemMedium(props: MediumProps) {
   const hasCoverImage = !!props.coverImageSrc;
@@ -72,7 +73,13 @@ export function PublicationPostItemMedium(props: MediumProps) {
           >
             <img
               src={props.coverImageSrc}
+              srcSet={props.coverImageSrcSet}
+              sizes={COVER_SIZES.medium}
               alt={props.coverImageAlt || props.title || ""}
+              width={144}
+              height={144}
+              decoding="async"
+              loading={props.loading ?? "lazy"}
               className={`w-full h-full aspect-square object-cover rounded-md ${!props.inList && "sm:rounded-none"}`}
             />
           </div>
