@@ -1,5 +1,5 @@
 "use server";
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import { invalidateIdentitySlices } from "src/identitySlices";
 import { drizzle } from "drizzle-orm/node-postgres";
 import {
   email_auth_tokens,
@@ -130,6 +130,10 @@ export async function loginWithEmailToken(
     }
   }
   client.release();
-  await invalidateSessionIdentityCache();
+  if (result?.identity)
+    await invalidateIdentitySlices(result.identity, [
+      "leaflets",
+      "subscriptions",
+    ]);
   if (result?.identity && redirectRoute) redirect(redirectRoute);
 }

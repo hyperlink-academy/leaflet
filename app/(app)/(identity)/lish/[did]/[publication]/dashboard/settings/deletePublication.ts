@@ -1,6 +1,6 @@
 "use server";
 
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import { invalidateIdentitySlices } from "src/identitySlices";
 import { AtpBaseClient } from "lexicons/api";
 import { getAuthIdentity } from "src/auth";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
@@ -210,6 +210,10 @@ export async function deletePublication(
     );
   }
 
-  await invalidateSessionIdentityCache();
+  await invalidateIdentitySlices(identity.id, [
+    "publications",
+    "leaflets",
+    "domains",
+  ]);
   return { success: true };
 }

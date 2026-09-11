@@ -1,6 +1,6 @@
 "use server";
 
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import { invalidateSessionIdentitySlices } from "src/identitySlices";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { sql } from "drizzle-orm";
 import { cookies } from "next/headers";
@@ -30,6 +30,6 @@ export async function addLeafletToHome(leaflet: string) {
     return;
   });
   client.release();
-  await invalidateSessionIdentityCache();
+  await invalidateSessionIdentitySlices(["leaflets"]);
   return;
 }

@@ -1,5 +1,5 @@
 "use server";
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import { invalidateIdentitySlices } from "src/identitySlices";
 import { TID } from "@atproto/common";
 import {
   AtpBaseClient,
@@ -185,7 +185,7 @@ export async function createPublication({
     .from("publication_domains")
     .insert({ domain, publication: result.uri, identity: identity.atp_did });
 
-  await invalidateSessionIdentityCache();
+  await invalidateIdentitySlices(identity.id, ["publications"]);
   trackUserEvent(identity, "create_publication", { publication: result.uri });
   return { success: true, publication };
 }

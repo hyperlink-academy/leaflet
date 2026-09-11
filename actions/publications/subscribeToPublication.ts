@@ -49,7 +49,7 @@ export async function subscribeToPublication(
   }
 
   const created = await createAtprotoSubscription(
-    identity.atp_did,
+    { id: identity.id, atp_did: identity.atp_did },
     publication,
   );
   if (!created.ok) return { success: false, error: created.error };

@@ -1,6 +1,6 @@
 "use server";
 
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import { invalidateIdentitySlices } from "src/identitySlices";
 import { getAuthIdentity } from "src/auth";
 import { isConfirmedContributor } from "src/contributorPermissions";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -47,5 +47,5 @@ export async function moveLeafletToPublication(
     .delete()
     .in("id", entitiesToDelete);
 
-  await invalidateSessionIdentityCache();
+  await invalidateIdentitySlices(identity.id, ["leaflets"]);
 }

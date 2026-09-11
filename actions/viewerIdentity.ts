@@ -30,6 +30,7 @@ async function uncachedGetViewerIdentity(): Promise<Identity> {
           `*,
           identities(
             *,
+            notifications(count),
             ${SUBSCRIPTION_STATE_EMBEDS},
             ${ENTITLEMENT_EMBEDS}
           )`,

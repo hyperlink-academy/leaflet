@@ -1,5 +1,5 @@
 "use server";
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import { invalidateIdentitySlices } from "src/identitySlices";
 import { revalidateAllPublicationPaths } from "src/utils/revalidatePublication";
 import {
   AtpBaseClient,
@@ -123,7 +123,7 @@ async function withPublicationUpdate(
 
   // Theme/name/base-path changes touch every published page.
   await revalidateAllPublicationPaths(uri, [normalizedPub?.name, record.name]);
-  await invalidateSessionIdentityCache();
+  await invalidateIdentitySlices(identity.id, ["publications", "leaflets"]);
 
   return { success: true, publication };
 }

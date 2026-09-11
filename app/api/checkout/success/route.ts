@@ -1,4 +1,4 @@
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import { invalidateIdentitySlices } from "src/identitySlices";
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
           { onConflict: "identity_id,entitlement_key" },
         );
       }
-      await invalidateSessionIdentityCache();
+      await invalidateIdentitySlices(identityId, ["billing"]);
     }
   } catch (err) {
     console.error("Error processing checkout success:", err);

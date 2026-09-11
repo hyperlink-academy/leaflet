@@ -1,5 +1,5 @@
 "use server";
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import { invalidateIdentitySlices } from "src/identitySlices";
 import { getAuthIdentity } from "src/auth";
 import { createNewLeaflet } from "./createNewLeaflet";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -45,6 +45,6 @@ export async function createPublicationDraft(publication_uri: string) {
       );
   }
 
-  await invalidateSessionIdentityCache();
+  await invalidateIdentitySlices(identity.id, ["leaflets"]);
   return newLeaflet;
 }

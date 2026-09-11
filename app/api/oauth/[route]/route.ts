@@ -1,4 +1,4 @@
-import { invalidateIdentityCache } from "src/identityCache";
+import { IDENTITY_SLICES, invalidateIdentitySlices } from "src/identitySlices";
 import { subscribeToPublication } from "actions/publications/subscribeToPublication";
 import { backfillAtprotoSubscriptionsForIdentity } from "src/subscriptions/atproto";
 import { recommendAction } from "actions/recommendAction";
@@ -175,8 +175,7 @@ export async function GET(
               currentIdentity.id,
               session.did,
             );
-            if (currentAuthToken)
-              await invalidateIdentityCache(currentAuthToken);
+            await invalidateIdentitySlices(currentIdentity.id, IDENTITY_SLICES);
             return handleAction(
               s.action,
               redirectPath,
@@ -219,8 +218,7 @@ export async function GET(
               currentIdentity.id,
               session.did,
             );
-            if (currentAuthToken)
-              await invalidateIdentityCache(currentAuthToken);
+            await invalidateIdentitySlices(currentIdentity.id, IDENTITY_SLICES);
             return handleAction(
               s.action,
               redirectPath,

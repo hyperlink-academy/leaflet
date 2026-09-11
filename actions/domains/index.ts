@@ -1,5 +1,5 @@
 "use server";
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import { invalidateIdentitySlices } from "src/identitySlices";
 import { Database } from "supabase/database.types";
 import { createServerClient } from "@supabase/ssr";
 import { getCache } from "@vercel/functions";
@@ -97,7 +97,7 @@ async function createDomain(
     confirmed: false,
     identity_id,
   });
-  await invalidateSessionIdentityCache();
+  await invalidateIdentitySlices(identity_id, ["domains"]);
   return {};
 }
 
@@ -117,7 +117,8 @@ export async function assignDomainToDocument({
   view_permission_token: string;
   edit_permission_token: string;
 }) {
-  if (!(await assertOwnsDomain(domain))) return null;
+  let identity = await assertOwnsDomain(domain);
+  if (!identity) return null;
 
   await Promise.all([
     supabase.from("publication_domains").delete().eq("domain", domain),
@@ -134,7 +135,7 @@ export async function assignDomainToDocument({
     edit_permission_token,
   });
   await expireDomainCache(domain);
-  await invalidateSessionIdentityCache();
+  await invalidateIdentitySlices(identity.id, ["domains"]);
 
   return true;
 }
@@ -165,7 +166,7 @@ export async function assignDomainToPublication({
     domain,
   });
   await expireDomainCache(domain);
-  await invalidateSessionIdentityCache();
+  await invalidateIdentitySlices(identity.id, ["domains"]);
 
   return true;
 }
@@ -176,10 +177,11 @@ export async function assignDomainToPublication({
 // Remove all assignments from a domain (routes + publication links),
 // but keep the domain itself registered.
 export async function removeDomainAssignment({ domain }: { domain: string }) {
-  if (!(await assertOwnsDomain(domain))) return null;
+  let identity = await assertOwnsDomain(domain);
+  if (!identity) return null;
   await clearAllAssignments(domain);
   await expireDomainCache(domain);
-  await invalidateSessionIdentityCache();
+  await invalidateIdentitySlices(identity.id, ["domains"]);
   return true;
 }
 
@@ -200,7 +202,7 @@ export async function removeDomainRoute({ routeId }: { routeId: string }) {
 
   await supabase.from("custom_domain_routes").delete().eq("id", routeId);
   await expireDomainCache(route.domain);
-  await invalidateSessionIdentityCache();
+  await invalidateIdentitySlices(identity.id, ["domains"]);
 
   return true;
 }
@@ -210,7 +212,8 @@ export async function removeDomainRoute({ routeId }: { routeId: string }) {
 
 // Fully delete a domain: clear all assignments, remove from DB, and remove from Vercel.
 export async function deleteDomain({ domain }: { domain: string }) {
-  if (!(await assertOwnsDomain(domain))) return null;
+  let identity = await assertOwnsDomain(domain);
+  if (!identity) return null;
 
   await clearAllAssignments(domain);
   await Promise.all([
@@ -222,7 +225,7 @@ export async function deleteDomain({ domain }: { domain: string }) {
     }),
   ]);
   await expireDomainCache(domain);
-  await invalidateSessionIdentityCache();
+  await invalidateIdentitySlices(identity.id, ["domains"]);
 
   return true;
 }
