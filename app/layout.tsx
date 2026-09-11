@@ -7,6 +7,7 @@ import localFont from "next/font/local";
 import { PopUpProvider } from "components/Toast";
 import { StaleClientNotice } from "components/Blocks/TextBlock/schemaVersion";
 import { TrackPageView } from "components/TrackPageView";
+import { LaunchBeacon } from "components/LaunchBeacon";
 
 export const metadata = {
   title: "Leaflet",
@@ -75,6 +76,7 @@ export default function RootLayout({
         />
         <Analytics />
         <TrackPageView />
+        <LaunchBeacon />
         <ServiceWorker />
         <InitialPageLoad>
           <PopUpProvider>
