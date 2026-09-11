@@ -11,6 +11,7 @@ export const get_publication_recommendations = makeRoute({
   input: z.object({
     publication: z.string(),
   }),
+  cache: { sMaxAge: 60, staleWhileRevalidate: 600 },
   handler: async ({ publication }, { supabase }: Pick<Env, "supabase">) => {
     // One row per edge; the indexer already dedupes, drops
     // self-recommendations, and caps the list at 3.

@@ -15,6 +15,7 @@ export const get_profiles = makeRoute({
   input: z.object({
     dids: z.array(z.string()),
   }),
+  cache: { sMaxAge: 300, staleWhileRevalidate: 3600 },
   handler: async ({ dids }) => {
     let profiles = await getProfiles(dids);
     return {

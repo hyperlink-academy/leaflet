@@ -29,6 +29,7 @@ export const get_standard_site_publications = makeRoute({
   input: z.object({
     uris: z.array(z.string()).max(100),
   }),
+  cache: { sMaxAge: 300, staleWhileRevalidate: 3600 },
   handler: async ({ uris }, { supabase }: Pick<Env, "supabase">) => {
     if (uris.length === 0) return { result: { publications: [] } };
 
