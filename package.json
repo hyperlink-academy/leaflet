@@ -28,7 +28,8 @@
     "format:changed": "{ git diff --name-only --diff-filter=d HEAD; git ls-files -o --exclude-standard; } | xargs prettier --ignore-unknown --write",
     "check-query-plans": "node scripts/check-supabase-query-plans.mjs",
     "check-published-purity": "node scripts/check-published-purity.mjs",
-    "measure-first-load": "node scripts/measure-first-load.mjs"
+    "measure-first-load": "node scripts/measure-first-load.mjs",
+    "analyze": "next experimental-analyze --output"
   },
   "keywords": [],
   "author": "",

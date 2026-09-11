@@ -31,12 +31,21 @@ const nextConfig = {
   async headers() {
     return [
       {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+        ],
+      },
+      {
         // Generated opengraph-image routes are served with a hash suffix
         // because they sit inside route groups. Keep them out of the search
         // index — unfurl bots fetch og:image URLs directly and ignore robots
         // directives, so previews are unaffected.
-        source:
-          "/:path*/:image(opengraph\\-image|opengraph\\-image\\-\\w+)",
+        source: "/:path*/:image(opengraph\\-image|opengraph\\-image\\-\\w+)",
         headers: [{ key: "X-Robots-Tag", value: "noindex" }],
       },
     ];
@@ -44,7 +53,10 @@ const nextConfig = {
   // Caps the CDN stale-while-revalidate window for ISR pages (default is one
   // year — a bad cached page could be served stale that long).
   expireTime: 86400,
-  serverExternalPackages: ["yjs", "pino", "jsdom"],
+  // Installed-PWA tabs stay open across deploys; a mismatched deployment ID
+  // makes the client hard-navigate instead of failing chunk loads.
+  deploymentId: process.env.VERCEL_DEPLOYMENT_ID,
+  serverExternalPackages: ["yjs"],
   pageExtensions: ["js", "jsx", "ts", "tsx", "md", "mdx"],
   images: {
     loader: "custom",
@@ -65,6 +77,7 @@ const nextConfig = {
       dynamic: 600,
       static: 600,
     },
+    turbopackRustReactCompiler: true,
   },
 };
 
