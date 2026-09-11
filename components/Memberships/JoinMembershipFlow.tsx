@@ -13,7 +13,7 @@ import {
 } from "components/Subscribe/SubscribeSuccess";
 import { useSubscribeSuccessData } from "components/Subscribe/useSubscribeSuccessData";
 import { HandleSearchInput } from "components/HandleSearchInput";
-import { AtmosphericHandleInfo } from "components/Subscribe/HandleSubscribe";
+import { AtmosphericHandleInfo } from "components/Subscribe/AtmosphericHandleInfo";
 import { SubscribeInputModeMenu } from "components/Subscribe/SubscribeButton";
 import { LinkIdentityModal } from "components/Subscribe/LinkIdentityModal";
 import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
