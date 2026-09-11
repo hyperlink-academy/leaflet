@@ -1,6 +1,6 @@
 "use client";
 import { PreviewBlockList } from "components/Blocks/PreviewBlocks";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEntity } from "src/replicache";
 import dynamic from "next/dynamic";
