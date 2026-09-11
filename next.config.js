@@ -45,8 +45,7 @@ const nextConfig = {
         // because they sit inside route groups. Keep them out of the search
         // index — unfurl bots fetch og:image URLs directly and ignore robots
         // directives, so previews are unaffected.
-        source:
-          "/:path*/:image(opengraph\\-image|opengraph\\-image\\-\\w+)",
+        source: "/:path*/:image(opengraph\\-image|opengraph\\-image\\-\\w+)",
         headers: [{ key: "X-Robots-Tag", value: "noindex" }],
       },
     ];
