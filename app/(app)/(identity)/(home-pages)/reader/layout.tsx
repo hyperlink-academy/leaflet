@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { getIdentityData } from "actions/getIdentityData";
+import { getSessionDid } from "src/identityPayload";
 import { PageTitle } from "components/ActionBar/DesktopNavigation";
 import { DashboardShell } from "components/PageLayouts/DashboardShell";
 import { DashboardSkeleton } from "components/PageLayouts/DashboardSkeleton";
@@ -12,7 +12,7 @@ import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
 // (home-pages) layouts above: a fresh mount of this segment (e.g. home →
 // /reader) suspends inside their already-committed boundaries, which won't
 // re-show their fallback mid-transition — so this segment needs its own
-// boundary to commit against while getIdentityData resolves.
+// boundary to commit against while the session lookup resolves.
 export default function ReaderLayout(props: { children: React.ReactNode }) {
   return (
     <Suspense fallback={<DashboardSkeleton variant="feed" />}>
@@ -22,10 +22,9 @@ export default function ReaderLayout(props: { children: React.ReactNode }) {
 }
 
 async function ReaderLayoutInner(props: { children: React.ReactNode }) {
-  const identity = await getIdentityData();
+  const did = await getSessionDid();
   const tabs: { [name: string]: { href: string; icon: React.ReactNode } } = {};
-  if (identity?.atp_did)
-    tabs.Inbox = { href: "/reader", icon: <BlockMailboxSmall /> };
+  if (did) tabs.Inbox = { href: "/reader", icon: <BlockMailboxSmall /> };
   tabs.Trending = { href: "/reader/trending", icon: <TrendingSmall /> };
   tabs.New = { href: "/reader/new", icon: <NewSmall /> };
 

@@ -1,5 +1,6 @@
 "use server";
 
+import { invalidateSessionIdentityCache } from "src/identityPayload";
 import { redirect } from "next/navigation";
 import { sql } from "drizzle-orm";
 import { cookies } from "next/headers";
@@ -49,6 +50,7 @@ export async function createNewLeaflet({
           )`
         : undefined,
   });
+  await invalidateSessionIdentityCache();
 
   if (redirectUser)
     redirect(

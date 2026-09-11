@@ -1,5 +1,6 @@
 "use server";
 
+import { invalidateSessionIdentityCache } from "src/identityPayload";
 import { refresh } from "next/cache";
 import { sql } from "drizzle-orm";
 import { cookies } from "next/headers";
@@ -78,6 +79,7 @@ export async function duplicateLeaflet(
     .single();
   if (!token) return { token: null, error: "Couldn't duplicate this leaflet" };
 
+  await invalidateSessionIdentityCache();
   refresh();
   return { token, error: null };
 }

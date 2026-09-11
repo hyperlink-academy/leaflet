@@ -1,3 +1,4 @@
+import { invalidateSessionIdentityCache } from "src/identityPayload";
 import { AtpBaseClient } from "lexicons/api";
 import { restoreOAuthSession, type OAuthSessionError } from "src/atproto-oauth";
 import { TID } from "@atproto/common";
@@ -49,6 +50,7 @@ export async function createAtprotoSubscription(
     publication,
     identity: atp_did,
   });
+  await invalidateSessionIdentityCache();
 
   let publicationOwner = new AtUri(publication).host;
   if (publicationOwner !== atp_did) {
@@ -150,6 +152,7 @@ export async function deleteAtprotoSubscriptionForDid(
       .delete()
       .eq("identity", atp_did)
       .eq("publication", publication);
+    await invalidateSessionIdentityCache();
 
     return existingSubscription.uri;
   } catch (e) {

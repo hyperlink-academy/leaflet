@@ -1,5 +1,6 @@
 "use server";
 
+import { invalidateSessionIdentityCache } from "src/identityPayload";
 import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Ok, Err, type Result } from "src/result";
@@ -34,7 +35,10 @@ async function loadPublication(publication_uri: string) {
 async function ensureIdentity(did: string) {
   await supabaseServerClient
     .from("identities")
-    .upsert({ atp_did: did }, { onConflict: "atp_did", ignoreDuplicates: true });
+    .upsert(
+      { atp_did: did },
+      { onConflict: "atp_did", ignoreDuplicates: true },
+    );
 }
 
 async function resolveHandleToDid(handle: string): Promise<string | null> {
@@ -159,5 +163,6 @@ export async function acceptContributorInvitation(
     console.error("[contributors] accept failed:", error);
     return Err("database_error");
   }
+  await invalidateSessionIdentityCache();
   return Ok(null);
 }

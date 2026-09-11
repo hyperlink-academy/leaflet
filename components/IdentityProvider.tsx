@@ -1,5 +1,5 @@
 "use client";
-import { getIdentityData } from "actions/getIdentityData";
+import { getFreshIdentityData } from "actions/getIdentityData";
 import { getViewerIdentity } from "actions/viewerIdentity";
 import { getCurrentSessionToken } from "actions/savedAccounts";
 import {
@@ -28,7 +28,7 @@ import { recordLaunchMark } from "src/launchInstrumentation";
 export type InterfaceState = {
   dashboards: { [id: string]: DashboardState | undefined };
 };
-export type Identity = Awaited<ReturnType<typeof getIdentityData>>;
+export type Identity = Awaited<ReturnType<typeof getFreshIdentityData>>;
 // Two SWR keys on purpose: dashboard surfaces are seeded server-side with the
 // full identity ("identity"), published pages fetch a slim variant client-side
 // ("viewer-identity"). Sharing one key would let a slim/null entry from a
@@ -108,13 +108,17 @@ export function IdentityContextProvider(props: {
   const initialValue = props.identityPromise
     ? use(props.identityPromise)
     : props.initialValue ?? null;
-  let { data: identity, mutate } = useSWR("identity", () => getIdentityData(), {
-    fallbackData: initialValue,
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    revalidateIfStale: false,
-    revalidateOnMount: false,
-  });
+  let { data: identity, mutate } = useSWR(
+    "identity",
+    () => getFreshIdentityData(),
+    {
+      fallbackData: initialValue,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      revalidateIfStale: false,
+      revalidateOnMount: false,
+    },
+  );
   useEffect(() => {
     // initialValue is already resolved (use()-suspended or passed in) by the
     // time this runs, so mount is the "identity ready" beat.
@@ -202,7 +206,7 @@ export function ClientIdentityProvider(props: { children: React.ReactNode }) {
     data: identity,
     mutate,
     isValidating,
-  } = useSWR<Identity>("identity", () => getIdentityData(), {
+  } = useSWR<Identity>("identity", () => getFreshIdentityData(), {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     revalidateIfStale: false,

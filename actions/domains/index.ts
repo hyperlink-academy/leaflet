@@ -1,4 +1,5 @@
 "use server";
+import { invalidateSessionIdentityCache } from "src/identityPayload";
 import { Database } from "supabase/database.types";
 import { createServerClient } from "@supabase/ssr";
 import { getCache } from "@vercel/functions";
@@ -96,6 +97,7 @@ async function createDomain(
     confirmed: false,
     identity_id,
   });
+  await invalidateSessionIdentityCache();
   return {};
 }
 
@@ -132,6 +134,7 @@ export async function assignDomainToDocument({
     edit_permission_token,
   });
   await expireDomainCache(domain);
+  await invalidateSessionIdentityCache();
 
   return true;
 }
@@ -162,6 +165,7 @@ export async function assignDomainToPublication({
     domain,
   });
   await expireDomainCache(domain);
+  await invalidateSessionIdentityCache();
 
   return true;
 }
@@ -171,14 +175,11 @@ export async function assignDomainToPublication({
 
 // Remove all assignments from a domain (routes + publication links),
 // but keep the domain itself registered.
-export async function removeDomainAssignment({
-  domain,
-}: {
-  domain: string;
-}) {
+export async function removeDomainAssignment({ domain }: { domain: string }) {
   if (!(await assertOwnsDomain(domain))) return null;
   await clearAllAssignments(domain);
   await expireDomainCache(domain);
+  await invalidateSessionIdentityCache();
   return true;
 }
 
@@ -199,6 +200,7 @@ export async function removeDomainRoute({ routeId }: { routeId: string }) {
 
   await supabase.from("custom_domain_routes").delete().eq("id", routeId);
   await expireDomainCache(route.domain);
+  await invalidateSessionIdentityCache();
 
   return true;
 }
@@ -220,6 +222,7 @@ export async function deleteDomain({ domain }: { domain: string }) {
     }),
   ]);
   await expireDomainCache(domain);
+  await invalidateSessionIdentityCache();
 
   return true;
 }

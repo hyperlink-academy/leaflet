@@ -1,4 +1,5 @@
 "use server";
+import { invalidateSessionIdentityCache } from "src/identityPayload";
 import { getAuthIdentity } from "src/auth";
 import {
   getNotificationPage,
@@ -23,5 +24,6 @@ export async function markAsRead() {
     .update({ read: true })
     .eq("recipient", identity.atp_did)
     .eq("read", false);
+  await invalidateSessionIdentityCache();
   return;
 }
