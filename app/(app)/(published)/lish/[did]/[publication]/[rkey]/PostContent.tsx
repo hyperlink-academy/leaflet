@@ -101,7 +101,7 @@ export function PostContent({
   did,
   preview,
   className,
-  prerenderedCodeBlocks,
+  prerenderedBlocks,
   bskyPostData,
   standardSitePostData,
   pageId,
@@ -116,7 +116,7 @@ export function PostContent({
   did: string;
   preview?: boolean;
   className?: string;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
   // Server-fetched like standardSitePostData so the block is in the SSR HTML;
@@ -149,7 +149,7 @@ export function PostContent({
             nextBlock={blocks[index + 1]}
             index={[index]}
             preview={preview}
-            prerenderedCodeBlocks={prerenderedCodeBlocks}
+            prerenderedBlocks={prerenderedBlocks}
             pollData={pollData}
             footnoteIndexMap={footnoteIndexMap}
             postsListData={postsListData}
@@ -170,7 +170,7 @@ export let Block = ({
   preview,
   previousBlock,
   nextBlock,
-  prerenderedCodeBlocks,
+  prerenderedBlocks,
   bskyPostData,
   standardSitePostData,
   standardSitePublicationData,
@@ -191,7 +191,7 @@ export let Block = ({
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   previousBlock?: PubLeafletPagesLinearDocument.Block;
   nextBlock?: PubLeafletPagesLinearDocument.Block;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
   standardSitePublicationData?: StandardSitePublicationData[];
@@ -511,11 +511,13 @@ export let Block = ({
       );
     },
     "pub.leaflet.blocks.math": (block) => {
-      return <StaticMathBlock block={block} />;
+      let pageKey = pageId && pageId !== pages[0]?.id ? pageId : "";
+      let html = prerenderedBlocks?.get(`${pageKey}:${index.join(".")}`);
+      return <StaticMathBlock block={block} prerenderedHtml={html} />;
     },
     "pub.leaflet.blocks.code": (block) => {
       let pageKey = pageId && pageId !== pages[0]?.id ? pageId : "";
-      let html = prerenderedCodeBlocks?.get(`${pageKey}:${index.join(".")}`);
+      let html = prerenderedBlocks?.get(`${pageKey}:${index.join(".")}`);
       return <PubCodeBlock block={block} prerenderedCode={html} />;
     },
     "pub.leaflet.blocks.website": (block) => {

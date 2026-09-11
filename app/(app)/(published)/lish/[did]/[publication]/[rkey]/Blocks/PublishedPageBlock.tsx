@@ -34,7 +34,7 @@ export function PublishedPageLinkBlock(props: {
   did: string;
   preview?: boolean;
   className?: string;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
   isCanvas?: boolean;
@@ -147,7 +147,7 @@ function DocLinkBlock(props: {
   did: string;
   preview?: boolean;
   className?: string;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
 }) {
   let [title, description, thirdLine] = pageRecordTextBlocks(props.blocks, {

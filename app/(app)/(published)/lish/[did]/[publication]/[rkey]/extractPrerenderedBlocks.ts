@@ -3,13 +3,15 @@ import {
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
   PubLeafletBlocksCode,
+  PubLeafletBlocksMath,
 } from "lexicons/api";
 import { codeToHtml, bundledLanguagesInfo, bundledThemesInfo } from "shiki";
+import Katex from "katex";
 
-export async function extractCodeBlocks(
+export async function extractPrerenderedBlocks(
   blocks: PubLeafletPagesLinearDocument.Block[] | PubLeafletPagesCanvas.Block[],
 ): Promise<Map<string, string>> {
-  const codeBlocks = new Map<string, string>();
+  const prerendered = new Map<string, string>();
 
   // Process all blocks (works for both linear and canvas)
   for (let i = 0; i < blocks.length; i++) {
@@ -26,9 +28,20 @@ export async function extractCodeBlocks(
         "github-light";
 
       const html = await codeToHtml(block.block.plaintext, { lang, theme });
-      codeBlocks.set(indexKey, html);
+      prerendered.set(indexKey, html);
+    }
+
+    if (PubLeafletBlocksMath.isMain(block.block)) {
+      prerendered.set(
+        indexKey,
+        Katex.renderToString(block.block.tex, {
+          displayMode: true,
+          output: "html",
+          throwOnError: false,
+        }),
+      );
     }
   }
 
-  return codeBlocks;
+  return prerendered;
 }

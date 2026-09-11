@@ -85,7 +85,7 @@ export async function DocumentPageRenderer({
     standardSitePostData: standardSitePosts,
     standardSitePublicationData,
     pollData,
-    prerenderedCodeBlocks,
+    prerenderedBlocks,
   } = await collectAndFetchBlockResources({
     agent,
     pages: pages as (
@@ -154,7 +154,7 @@ export async function DocumentPageRenderer({
               contributors={contributorProfiles}
               document={document}
               did={did}
-              prerenderedCodeBlocks={prerenderedCodeBlocks}
+              prerenderedBlocks={prerenderedBlocks}
               commentsSlot={
                 <Suspense fallback={null}>
                   <CommentsSection document_uri={document.uri} />

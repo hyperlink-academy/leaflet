@@ -37,7 +37,7 @@ export function LinearDocumentPage({
     profile,
     contributors,
     preferences,
-    prerenderedCodeBlocks,
+    prerenderedBlocks,
     bskyPostData,
     standardSitePostData,
     standardSitePublicationData,
@@ -100,7 +100,7 @@ export function LinearDocumentPage({
               standardSitePublicationData={standardSitePublicationData}
               blocks={blocks}
               did={did}
-              prerenderedCodeBlocks={prerenderedCodeBlocks}
+              prerenderedBlocks={prerenderedBlocks}
               footnoteIndexMap={footnoteIndexMap}
             />
           </DrawerThreadPageProvider>

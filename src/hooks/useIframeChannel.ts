@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useRef } from "react";
-import { newMessagePortRpcSession } from "capnweb";
-import { PartsPageHost, PartsPageHandlers } from "src/partsPageChannel";
+import type { newMessagePortRpcSession } from "capnweb";
+import type { PartsPageHandlers } from "src/partsPageChannel";
 
 export function useIframeChannel(options: PartsPageHandlers) {
   let iframeElRef = useRef<HTMLIFrameElement | null>(null);
   let handlersRef = useRef(options);
   handlersRef.current = options;
 
-  let sessionRef = useRef<ReturnType<
-    typeof newMessagePortRpcSession
-  > | null>(null);
+  let sessionRef = useRef<ReturnType<typeof newMessagePortRpcSession> | null>(
+    null,
+  );
 
   let cleanup = useCallback(() => {
     if (sessionRef.current) {
@@ -18,8 +18,10 @@ export function useIframeChannel(options: PartsPageHandlers) {
     }
   }, []);
 
+  // capnweb and the RPC host load with the first embed that actually connects,
+  // rather than with every page that can hold one.
   let handleMessage = useCallback(
-    (event: MessageEvent) => {
+    async (event: MessageEvent) => {
       let iframe = iframeElRef.current;
       if (!iframe?.contentWindow) return;
       if (event.source !== iframe.contentWindow) return;
@@ -27,6 +29,9 @@ export function useIframeChannel(options: PartsPageHandlers) {
 
       cleanup();
 
+      let [{ newMessagePortRpcSession }, { PartsPageHost }] = await Promise.all(
+        [import("capnweb"), import("src/partsPageChannel")],
+      );
       let { port1, port2 } = new MessageChannel();
 
       let host = new PartsPageHost({
@@ -57,12 +62,9 @@ export function useIframeChannel(options: PartsPageHandlers) {
     };
   }, [handleMessage, cleanup]);
 
-  let iframeRef = useCallback(
-    (el: HTMLIFrameElement | null) => {
-      iframeElRef.current = el;
-    },
-    [],
-  );
+  let iframeRef = useCallback((el: HTMLIFrameElement | null) => {
+    iframeElRef.current = el;
+  }, []);
 
   return { iframeRef };
 }

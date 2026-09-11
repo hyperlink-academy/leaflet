@@ -4,7 +4,6 @@ import { useEntity } from "src/replicache";
 import { usePageMetadata } from "src/hooks/queries/usePageMetadata";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
-import { CompactPageLink } from "./CompactPageLink";
 import { RenderedTextBlock } from "./TextBlock/RenderedTextBlock";
 import type { Block, BlockProps } from "./Block";
 

@@ -19,13 +19,11 @@ import {
   type StandardSitePublicationData,
 } from "app/api/rpc/[command]/get_standard_site_publications";
 import { extractBlocksByType } from "src/utils/extractBlocksByType";
-import { extractCodeBlocks } from "./extractCodeBlocks";
+import { extractPrerenderedBlocks } from "./extractPrerenderedBlocks";
 import { fetchPollData, type PollData } from "./fetchPollData";
 import { fetchBskyPosts } from "src/utils/fetchBskyPosts";
 
-type Page =
-  | PubLeafletPagesLinearDocument.Main
-  | PubLeafletPagesCanvas.Main;
+type Page = PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main;
 
 export async function collectAndFetchBlockResources({
   agent,
@@ -45,7 +43,7 @@ export async function collectAndFetchBlockResources({
   standardSitePostData: StandardSitePostData[];
   standardSitePublicationData: StandardSitePublicationData[];
   pollData: PollData[];
-  prerenderedCodeBlocks: Map<string, string>;
+  prerenderedBlocks: Map<string, string>;
 }> {
   const allBlocks: PubLeafletPagesLinearDocument.Block[] = pages.flatMap(
     (p) => (p as PubLeafletPagesLinearDocument.Main).blocks ?? [],
@@ -104,17 +102,17 @@ export async function collectAndFetchBlockResources({
 
   // Keyed `${pageId}:${blockIndex}` to match PostContent's lookup: the root
   // page renders with no pageId, subpages with their page id.
-  const prerenderedCodeBlocks = new Map<string, string>();
+  const prerenderedBlocks = new Map<string, string>();
   await Promise.all(
     pages.map(async (page, pageIndex) => {
       if (skipCodeBlocks) return;
       const isServerRendered =
         pageIndex === 0 || (!!openPageId && page.id === openPageId);
       if (!isServerRendered) return;
-      const pageCode = await extractCodeBlocks(page.blocks ?? []);
-      const pageKey = pageIndex === 0 ? "" : (page.id ?? "");
-      for (const [blockIndex, html] of pageCode) {
-        prerenderedCodeBlocks.set(`${pageKey}:${blockIndex}`, html);
+      const pagePrerendered = await extractPrerenderedBlocks(page.blocks ?? []);
+      const pageKey = pageIndex === 0 ? "" : page.id ?? "";
+      for (const [blockIndex, html] of pagePrerendered) {
+        prerenderedBlocks.set(`${pageKey}:${blockIndex}`, html);
       }
     }),
   );
@@ -124,6 +122,6 @@ export async function collectAndFetchBlockResources({
     standardSitePostData,
     standardSitePublicationData,
     pollData,
-    prerenderedCodeBlocks,
+    prerenderedBlocks,
   };
 }

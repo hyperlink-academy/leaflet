@@ -1,4 +1,3 @@
-import { renderToStaticMarkup } from "react-dom/server";
 import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 
 // A footnote's content (its block/text yjs value) rendered to the HTML that
@@ -7,7 +6,8 @@ import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment
 // fresh footnote entity (see htmlToBlocks). A ref must never travel as a bare
 // entity id: the pasted footnote node would alias the source block's entity,
 // and deleting the pasted ref would delete the original's content.
-export function renderFootnoteDefHTML(value: string): string {
+export async function renderFootnoteDefHTML(value: string): Promise<string> {
+  const { renderToStaticMarkup } = await import("react-dom/server");
   const html = renderToStaticMarkup(
     <RenderYJSFragment value={value} wrapper="p" renderComments={false} />,
   );
@@ -18,9 +18,7 @@ export function renderFootnoteDefHTML(value: string): string {
   if (!html.includes("footnote-ref")) return html;
   const container = document.createElement("div");
   container.innerHTML = html;
-  for (const ref of Array.from(
-    container.querySelectorAll("span.footnote-ref"),
-  ))
+  for (const ref of Array.from(container.querySelectorAll("span.footnote-ref")))
     ref.remove();
   return container.innerHTML;
 }

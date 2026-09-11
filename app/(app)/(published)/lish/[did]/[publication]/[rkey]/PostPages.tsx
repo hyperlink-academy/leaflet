@@ -53,7 +53,7 @@ export type SharedPageProps = {
   };
   pubRecord?: NormalizedPublication | null;
   theme?: PubLeafletPublication.Theme | null;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
   standardSitePublicationData: StandardSitePublicationData[];
@@ -101,7 +101,7 @@ export function PostPages({
   contributors,
   preferences,
   pubRecord,
-  prerenderedCodeBlocks,
+  prerenderedBlocks,
   document_uri,
   commentsSlot,
 }: {
@@ -111,7 +111,7 @@ export function PostPages({
   contributors?: BylineProfile[];
   pubRecord?: NormalizedPublication | null;
   did: string;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   preferences: {
     showComments?: boolean;
     showMentions?: boolean;
@@ -157,7 +157,7 @@ export function PostPages({
     preferences,
     pubRecord,
     theme,
-    prerenderedCodeBlocks,
+    prerenderedBlocks,
     bskyPostData,
     standardSitePostData,
     standardSitePublicationData,

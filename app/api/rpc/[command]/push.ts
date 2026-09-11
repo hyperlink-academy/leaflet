@@ -8,7 +8,7 @@ import {
   permission_tokens,
   replicache_clients,
 } from "drizzle/schema";
-import { getClientGroup } from "src/replicache/utils";
+import { getClientGroup } from "src/replicache/serverUtils";
 import { makeRoute } from "../lib";
 import { z } from "zod";
 import type { Env } from "./route";
