@@ -10,7 +10,6 @@ import { cookies } from "next/headers";
 export const revalidate = 0;
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
 
 // Image metadata
 export const size = {
@@ -23,7 +22,13 @@ export const contentType = "image/png";
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
-  { cookies: {} },
+  {
+    cookies: {},
+    // Reads must always be fresh; don't depend on a page's fetchCache export.
+    global: {
+      fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+    },
+  },
 );
 export default async function Icon() {
   let cookieStore = await cookies();

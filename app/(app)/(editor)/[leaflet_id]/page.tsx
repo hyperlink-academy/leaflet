@@ -20,7 +20,6 @@ import { FontLoader, extractFontsFromFacts } from "components/FontLoader";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
 
 type Props = {
   // this is now a token id not leaflet! Should probs rename

@@ -5,7 +5,6 @@ import { createNewLeafletFromTemplate } from "actions/createNewLeafletFromTempla
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
