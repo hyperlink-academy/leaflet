@@ -14,6 +14,7 @@ export const get_document_recommends = makeRoute({
   input: z.object({
     document: z.string(),
   }),
+  cache: { sMaxAge: 60, staleWhileRevalidate: 600 },
   handler: async ({ document }, { supabase }: Pick<Env, "supabase">) => {
     const { data } = await supabase
       .from("recommends_on_documents")

@@ -14,6 +14,7 @@ export const search_publication_names = makeRoute({
     query: z.string(),
     limit: z.number().optional().default(10),
   }),
+  cache: { sMaxAge: 60, staleWhileRevalidate: 600 },
   handler: async ({ query, limit }, { supabase }: Pick<Env, "supabase">) => {
     // Search publications by name in record (case-insensitive partial match)
     const { data: rawPublications, error } = await supabase

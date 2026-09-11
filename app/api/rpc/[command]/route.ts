@@ -20,7 +20,6 @@ import { get_profile_data } from "./get_profile_data";
 import { get_profiles } from "./get_profiles";
 import { get_user_recommendations } from "./get_user_recommendations";
 import { get_document_recommends } from "./get_document_recommends";
-import { get_hot_feed } from "./get_hot_feed";
 import { get_document_interactions } from "./get_document_interactions";
 import { get_publication_analytics } from "./get_publication_analytics";
 import { get_publication_bsky_posts } from "./get_publication_bsky_posts";
@@ -28,6 +27,7 @@ import { get_publication_subscribers_timeseries } from "./get_publication_subscr
 import { get_user_mention_services } from "./get_user_mention_services";
 import { proxy_mention_search } from "./proxy_mention_search";
 import { get_active_user_stats } from "./get_active_user_stats";
+import { CACHEABLE_ROUTES } from "../cacheableRoutes";
 
 let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -57,7 +57,6 @@ let Routes = [
   get_profiles,
   get_user_recommendations,
   get_document_recommends,
-  get_hot_feed,
   get_document_interactions,
   get_publication_analytics,
   get_publication_bsky_posts,
@@ -66,11 +65,35 @@ let Routes = [
   proxy_mention_search,
   get_active_user_stats,
 ];
+
+// Every route that opts into GET caching (`cache` on its makeRoute) must be
+// listed in cacheableRoutes.ts, since the browser client reads that set
+// without importing these (server-only) route handlers.
+{
+  let declared = new Set<string>(
+    Routes.filter((r) => r.cache).map((r) => r.route),
+  );
+  let missing = [...declared].filter((r) => !CACHEABLE_ROUTES.has(r));
+  let extra = [...CACHEABLE_ROUTES].filter((r) => !declared.has(r));
+  if (missing.length || extra.length) {
+    throw new Error(
+      `cacheableRoutes.ts out of sync with route \`cache\` flags. Missing: [${missing}] Extra: [${extra}]`,
+    );
+  }
+}
+
+let router = makeRouter(Routes);
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ command: string }> },
+) {
+  let p = await params;
+  return router(p.command, req, Env);
+}
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ command: string }> },
 ) {
   let p = await params;
-  let router = makeRouter(Routes);
   return router(p.command, req, Env);
 }

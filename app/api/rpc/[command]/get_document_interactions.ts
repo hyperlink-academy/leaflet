@@ -17,10 +17,8 @@ export const get_document_interactions = makeRoute({
   input: z.object({
     document_uri: z.string(),
   }),
-  handler: async (
-    { document_uri },
-    { supabase }: Pick<Env, "supabase">,
-  ) => {
+  cache: { sMaxAge: 60, staleWhileRevalidate: 600 },
+  handler: async ({ document_uri }, { supabase }: Pick<Env, "supabase">) => {
     let { data: document } = await supabase
       .from("documents")
       .select(
@@ -46,10 +44,7 @@ export const get_document_interactions = makeRoute({
       };
     }
 
-    const normalizedData = normalizeDocumentRecord(
-      document.data,
-      document.uri,
-    );
+    const normalizedData = normalizeDocumentRecord(document.data, document.uri);
     // Unauthenticated endpoint: discussion views only need the document's
     // metadata, so gated blocks never leave the server regardless of viewer.
     if (normalizedData) {
