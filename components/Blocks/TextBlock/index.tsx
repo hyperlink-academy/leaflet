@@ -26,7 +26,7 @@ import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useMountProsemirror } from "./mountProsemirror";
 import { schema } from "./schema";
-import { useStaleClient } from "./schemaVersion";
+import { useStaleClient } from "components/StaleClientNotice";
 import { useFootnotePopoverStore } from "components/Footnotes/FootnotePopover";
 import { blockTextSize } from "src/utils/blockTextSize";
 import { getAspectRatio } from "src/utils/aspectRatio";

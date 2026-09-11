@@ -1,4 +1,4 @@
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { getProfiles } from "src/identity/profileCache";
 import {
   getBylineDids,

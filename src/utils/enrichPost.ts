@@ -1,4 +1,4 @@
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { getPublicationURL } from "src/utils/getPublicationURL";
 import { getConstellationBacklinks } from "src/utils/getPostPageData";
 import { getDocumentURL } from "src/utils/getPublicationURL";

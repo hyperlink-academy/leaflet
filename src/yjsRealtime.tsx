@@ -19,7 +19,7 @@ import {
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { supabaseBrowserClient } from "supabase/browserClient";
 import { SCHEMA_VERSION } from "components/Blocks/TextBlock/schema";
-import { markClientStale } from "components/Blocks/TextBlock/schemaVersion";
+import { markClientStale } from "components/StaleClientNotice";
 import { useIdentityData } from "components/IdentityProvider";
 
 // Live multiplayer layer for text blocks. Each client broadcasts incremental

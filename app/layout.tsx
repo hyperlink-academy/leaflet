@@ -5,7 +5,7 @@ import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import localFont from "next/font/local";
 import { PopUpProvider } from "components/Toast";
-import { StaleClientNotice } from "components/Blocks/TextBlock/schemaVersion";
+import { StaleClientNotice } from "components/StaleClientNotice";
 import { TrackPageView } from "components/TrackPageView";
 
 export const metadata = {

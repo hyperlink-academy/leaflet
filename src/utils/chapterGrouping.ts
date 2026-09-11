@@ -13,7 +13,7 @@
 // in reading order, so a chapter is always a *run* of consecutive posts and
 // only neighbours need comparing.
 
-import { AtUri } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
 import { getDocumentURL } from "./getPublicationURL";
 import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "./blobRefToSrc";
 import type { NormalizedDocument } from "./normalizeRecords";

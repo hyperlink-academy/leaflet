@@ -19,7 +19,7 @@ import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
 import { betterIsUrl } from "src/utils/isURL";
 import { trackUndoRedo } from "components/Blocks/TextBlock/mountProsemirror";
 import { useCollabText } from "components/Blocks/TextBlock/useCollabText";
-import { useStaleClient } from "components/Blocks/TextBlock/schemaVersion";
+import { useStaleClient } from "components/StaleClientNotice";
 import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { FootnoteItemLayout } from "./FootnoteItemLayout";

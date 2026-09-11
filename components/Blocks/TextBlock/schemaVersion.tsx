@@ -1,8 +1,5 @@
 "use client";
-import { useEffect } from "react";
 import * as Y from "yjs";
-import { create } from "zustand";
-import { useToaster } from "components/Toast";
 import { SCHEMA_VERSION } from "./schema";
 
 // Clients with different prosemirror schemas must never sync over yjs:
@@ -46,33 +43,3 @@ export const stampDocSchemaVersion = (doc: Y.Doc) => {
   if (docSchemaVersion(doc) < SCHEMA_VERSION)
     doc.getMap("meta").set(META_KEY, SCHEMA_VERSION);
 };
-
-export const useStaleClient = create(() => ({ stale: false }));
-export const markClientStale = () => useStaleClient.setState({ stale: true });
-
-// Mounted once in the root layout (inside PopUpProvider) so going stale is
-// explained to the user instead of editing silently turning off.
-export function StaleClientNotice() {
-  let stale = useStaleClient((s) => s.stale);
-  let toaster = useToaster();
-  useEffect(() => {
-    if (!stale) return;
-    toaster({
-      type: "info",
-      duration: 60000,
-      content: (
-        <div>
-          Leaflet has been updated!{" "}
-          <button
-            className="underline font-bold"
-            onClick={() => window.location.reload()}
-          >
-            Refresh
-          </button>{" "}
-          to keep editing.
-        </div>
-      ),
-    });
-  }, [stale, toaster]);
-  return null;
-}
