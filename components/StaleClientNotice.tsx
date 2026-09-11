@@ -7,9 +7,9 @@ export const useStaleClient = create(() => ({ stale: false }));
 export const markClientStale = () => useStaleClient.setState({ stale: true });
 
 // Mounted once in the root layout (inside PopUpProvider) so going stale is
-// explained to the user instead of editing silently turning off.
-// Kept out of TextBlock/schemaVersion so the root layout doesn't pull in yjs
-// and the prosemirror schema (and through it @atproto/api) on every page.
+// explained to the user instead of editing silently turning off. This module
+// must stay free of yjs and the prosemirror schema — either would pull
+// @atproto/api into the root layout that mounts this component.
 export function StaleClientNotice() {
   let stale = useStaleClient((s) => s.stale);
   let toaster = useToaster();
