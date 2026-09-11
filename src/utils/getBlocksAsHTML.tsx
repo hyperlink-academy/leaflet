@@ -26,6 +26,9 @@ export async function getBlocksAsHTML(
   rep: Replicache<ReplicacheMutators>,
   selectedBlocks: Block[],
 ) {
+  // Warmed before the read transaction opens so the per-block render below
+  // isn't waiting on a chunk fetch mid-transaction.
+  await import("react-dom/server");
   let data = await rep?.query(async (tx) => {
     let result: string[] = [];
     let parsed = parseBlocksToList(selectedBlocks);
