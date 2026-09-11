@@ -12,6 +12,11 @@ import { getAuthIdentity } from "./auth";
 export type UserEvent =
   | "page_view" // client beacon on every route change (see actions/trackPageView.ts)
   | "push" // ran replicache mutations
+  // Launch timing beacon (see src/launchInstrumentation.ts, actions/trackLaunch.ts).
+  // Props: launch_type (cold | warm | soft), route, standalone, sw_controlled,
+  // shell_paint_ms, local_render_ms, identity_ready_ms (each "" if that mark
+  // never fired for this launch).
+  | "launch"
   // Subscribe/unsubscribe props: publication, method, record_uri,
   // source_placement, source_publication, source_url.
   | "subscribe"

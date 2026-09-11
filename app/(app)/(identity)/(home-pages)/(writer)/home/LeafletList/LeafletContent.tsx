@@ -6,6 +6,7 @@ import { useEntity } from "src/replicache";
 import { CanvasContent } from "components/Canvas";
 import styles from "./LeafletPreview.module.css";
 import { PublicationMetadataPreview } from "components/Pages/PublicationMetadata";
+import { recordLaunchMark } from "src/launchInstrumentation";
 
 export const LeafletContent = (props: {
   entityID: string;
@@ -14,6 +15,12 @@ export const LeafletContent = (props: {
   let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
   let blocks = useBlocks(props.entityID);
   let previewRef = useRef<HTMLDivElement | null>(null);
+
+  // This is the first surface that actually renders replicache-backed content
+  // for a home leaflet card, so its mount is the "local render" beat.
+  useEffect(() => {
+    recordLaunchMark("local-render");
+  }, []);
 
   if (type === "canvas")
     return (

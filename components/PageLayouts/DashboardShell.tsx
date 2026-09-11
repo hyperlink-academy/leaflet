@@ -9,6 +9,7 @@ import {
 import { Sidebar, useSidebarStore } from "components/ActionBar/Sidebar";
 import { DashboardIdContext } from "./dashboardState";
 import { NotificationContent } from "./NotificationContent";
+import { recordLaunchMark } from "src/launchInstrumentation";
 
 type DashboardShellProps = {
   id: string;
@@ -31,6 +32,9 @@ export function DashboardShell(props: DashboardShellProps) {
   useEffect(() => {
     if (!open) setSuppressOpenAnimation(false);
   }, [open]);
+  useEffect(() => {
+    recordLaunchMark("shell-paint");
+  }, []);
   let searchParams = useSearchParams();
   let showNotifications = searchParams.get("notifications") === "open";
 

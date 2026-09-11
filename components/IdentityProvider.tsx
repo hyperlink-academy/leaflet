@@ -23,6 +23,7 @@ import {
   useIdentityChangeListener,
   useReloadOnIdentityChange,
 } from "src/identityBroadcast";
+import { recordLaunchMark } from "src/launchInstrumentation";
 
 export type InterfaceState = {
   dashboards: { [id: string]: DashboardState | undefined };
@@ -106,7 +107,7 @@ export function IdentityContextProvider(props: {
 }) {
   const initialValue = props.identityPromise
     ? use(props.identityPromise)
-    : (props.initialValue ?? null);
+    : props.initialValue ?? null;
   let { data: identity, mutate } = useSWR("identity", () => getIdentityData(), {
     fallbackData: initialValue,
     revalidateOnFocus: false,
@@ -114,6 +115,11 @@ export function IdentityContextProvider(props: {
     revalidateIfStale: false,
     revalidateOnMount: false,
   });
+  useEffect(() => {
+    // initialValue is already resolved (use()-suspended or passed in) by the
+    // time this runs, so mount is the "identity ready" beat.
+    recordLaunchMark("identity-ready");
+  }, []);
   useEffect(() => {
     // revalidate:false — initialValue is a full server value; the default
     // would kick off a redundant full getIdentityData round-trip per render.
