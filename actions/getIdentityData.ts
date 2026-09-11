@@ -31,6 +31,87 @@ export async function getFreshIdentityData() {
   return identity;
 }
 
+// Only the published-record fields getDocumentURL needs. The whole record is
+// the largest thing in this payload — every page of every published leaflet on
+// the home page — and nothing the identity feeds reads the rest of it.
+const DOCUMENT_URL_FIELDS = `uri, indexed_at, type:data->>"$type", path:data->>path, site:data->>site, publishedAt:data->>publishedAt, publication:data->>publication, author:data->>author`;
+
+type DocumentUrlRow = {
+  uri: string;
+  indexed_at: string;
+  type: string | null;
+  path: string | null;
+  site: string | null;
+  publishedAt: string | null;
+  publication: string | null;
+  author: string | null;
+};
+
+type DocumentRecordRow = {
+  uri: string;
+  indexed_at: string;
+  data: {
+    $type: string | null;
+    path: string | null;
+    site: string | null;
+    publishedAt: string | null;
+    publication: string | null;
+    author: string | null;
+  };
+};
+
+type WithDocumentRecord<T extends { documents: DocumentUrlRow | null }> = Omit<
+  T,
+  "documents"
+> & { documents: DocumentRecordRow | null };
+
+// Rebuilds the `data` shape consumers (normalizeDocumentRecord) expect.
+function withDocumentRecord<T extends { documents: DocumentUrlRow | null }>(
+  row: T,
+): WithDocumentRecord<T> {
+  const doc = row.documents;
+  return {
+    ...row,
+    documents: doc
+      ? {
+          uri: doc.uri,
+          indexed_at: doc.indexed_at,
+          data: {
+            $type: doc.type,
+            path: doc.path,
+            site: doc.site,
+            publishedAt: doc.publishedAt,
+            publication: doc.publication,
+            author: doc.author,
+          },
+        }
+      : null,
+  };
+}
+
+function withDocumentRecords<
+  T extends {
+    leaflets_to_documents: { documents: DocumentUrlRow | null }[];
+    leaflets_in_publications: { documents: DocumentUrlRow | null }[];
+  },
+>(
+  token: T,
+): Omit<T, "leaflets_to_documents" | "leaflets_in_publications"> & {
+  leaflets_to_documents: WithDocumentRecord<
+    T["leaflets_to_documents"][number]
+  >[];
+  leaflets_in_publications: WithDocumentRecord<
+    T["leaflets_in_publications"][number]
+  >[];
+} {
+  return {
+    ...token,
+    leaflets_to_documents: token.leaflets_to_documents.map(withDocumentRecord),
+    leaflets_in_publications:
+      token.leaflets_in_publications.map(withDocumentRecord),
+  };
+}
+
 async function fetchIdentityByToken(auth_token: string) {
   let auth_res = await supabaseServerClient
     .from("email_auth_tokens")
@@ -49,8 +130,8 @@ async function fetchIdentityByToken(auth_token: string) {
                 title,
                 description,
                 permission_token_rights(*),
-                leaflets_to_documents(*, documents(uri, indexed_at, data)),
-                leaflets_in_publications(*, documents(uri, indexed_at, data), publications(uri, record))
+                leaflets_to_documents(*, documents(${DOCUMENT_URL_FIELDS})),
+                leaflets_in_publications(*, documents(${DOCUMENT_URL_FIELDS}), publications(uri, record))
               )
             ),
             ${ENTITLEMENT_EMBEDS},
@@ -60,8 +141,8 @@ async function fetchIdentityByToken(auth_token: string) {
               permission_tokens!leaflet_contributors_leaflet_fkey!inner(
                 id, root_entity, title, description,
                 permission_token_rights(*),
-                leaflets_to_documents(*, documents(uri, indexed_at, data)),
-                leaflets_in_publications(*, documents(uri, indexed_at, data), publications(uri, record))
+                leaflets_to_documents(*, documents(${DOCUMENT_URL_FIELDS})),
+                leaflets_in_publications(*, documents(${DOCUMENT_URL_FIELDS}), publications(uri, record))
               )
             ),
             publication_contributors!publication_contributors_contributor_did_fkey(
@@ -86,12 +167,17 @@ async function fetchIdentityByToken(auth_token: string) {
     publications: rawPublications,
     leaflet_contributors: contributorLeafletRows,
     publication_contributors: contributorPubRows,
+    permission_token_on_homepage: homepageRows,
     user_entitlements: entitlementRows,
     user_subscriptions: subscription,
     stripe_connected_accounts: connectedAccount,
     ...identity
   } = auth_res.data.identities;
 
+  const permission_token_on_homepage = homepageRows.map((r) => ({
+    ...r,
+    permission_tokens: withDocumentRecords(r.permission_tokens),
+  }));
   const entitlements = keyEntitlements(entitlementRows);
 
   const atp_did = identity.atp_did;
@@ -107,13 +193,18 @@ async function fetchIdentityByToken(auth_token: string) {
     const publications = deduplicateByUri(rawPublications || []).filter(
       isLeafletManagedPublication,
     );
-    const contributor_leaflets = (contributorLeafletRows ?? []).filter(
-      (
-        r,
-      ): r is typeof r & {
-        permission_tokens: NonNullable<typeof r.permission_tokens>;
-      } => !!r.permission_tokens,
-    );
+    const contributor_leaflets = (contributorLeafletRows ?? [])
+      .filter(
+        (
+          r,
+        ): r is typeof r & {
+          permission_tokens: NonNullable<typeof r.permission_tokens>;
+        } => !!r.permission_tokens,
+      )
+      .map((r) => ({
+        ...r,
+        permission_tokens: withDocumentRecords(r.permission_tokens),
+      }));
     const rawContributorPubs = (contributorPubRows ?? [])
       .map((r) => r.publications)
       .filter((p): p is NonNullable<typeof p> => !!p);
@@ -127,6 +218,7 @@ async function fetchIdentityByToken(auth_token: string) {
       // before a client-side revalidation) instead of overwriting newer data.
       fetched_at: Date.now(),
       bsky_profiles: bskyProfileFromCache(profiles.get(atp_did) ?? null),
+      permission_token_on_homepage,
       publications,
       contributor_publications,
       contributor_leaflets,
@@ -140,6 +232,7 @@ async function fetchIdentityByToken(auth_token: string) {
     ...identity,
     fetched_at: Date.now(),
     bsky_profiles: null,
+    permission_token_on_homepage,
     publications: [],
     contributor_publications: [],
     contributor_leaflets: [],
