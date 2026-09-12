@@ -35,7 +35,9 @@ export const LeafletListItem = (props: {
     );
     observer.observe(previewRef.current);
     return () => observer.disconnect();
-  }, [visibilityReporter]);
+    // The list and grid branches are separate subtrees, so a display switch
+    // hands this effect a new node to watch.
+  }, [visibilityReporter, props.display]);
 
   const tokenId = pubStatus?.shareLink ?? "";
 

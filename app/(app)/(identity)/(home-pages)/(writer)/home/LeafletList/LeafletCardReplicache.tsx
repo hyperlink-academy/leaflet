@@ -42,8 +42,8 @@ export function LeafletCardReplicache(props: {
   const notifyVisible = useCallback(() => setHasBeenVisible(true), []);
   const contextValue = useMemo(() => ({ notifyVisible }), [notifyVisible]);
 
-  // No key derived from whether the facts have landed: the provider mounts
-  // once per card and the facts reach readers through its context value.
+  // The provider must mount exactly once per card: the facts reach readers
+  // through its context value, not through a remount.
   return (
     <CardVisibilityContext.Provider value={contextValue}>
       <ReplicacheProvider
