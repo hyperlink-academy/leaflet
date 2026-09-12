@@ -41,7 +41,7 @@ function MobileHeaderSkeleton() {
   );
 }
 
-function GridContentSkeleton() {
+export function GridContentSkeleton() {
   return (
     <div className="dashboardPageContent relative w-full h-full flex flex-col gap-2 pt-3 pb-[calc(var(--safe-padding-bottom)+64px)] px-3 sm:pt-6 sm:pb-6 sm:pl-8 sm:pr-4 overflow-y-auto">
       <div
@@ -64,7 +64,7 @@ function GridContentSkeleton() {
   );
 }
 
-function FeedContentSkeleton() {
+export function FeedContentSkeleton() {
   return (
     <div className="w-full h-full pt-3 px-3 sm:pt-6 sm:pl-8 sm:pr-4">
       <FeedSkeleton />
@@ -72,6 +72,9 @@ function FeedContentSkeleton() {
   );
 }
 
+// The dashboard chrome, plus a content column shaped like the route's own
+// content. `plain` is for boundaries shared by routes with different content
+// shapes: guessing one there means the user watches it morph into another.
 export function DashboardSkeleton(props: {
   variant: "grid" | "feed" | "plain";
 }) {
