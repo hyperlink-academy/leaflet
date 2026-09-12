@@ -12,22 +12,21 @@ import { recordLaunchMark } from "src/launchInstrumentation";
 // for it.
 const CanvasContent = dynamic(
   () => import("components/Canvas").then((m) => m.CanvasContent),
-  { ssr: false },
+  { ssr: false, loading: () => null },
 );
 
-export const LeafletContent = (props: {
-  entityID: string;
-  isOnScreen: boolean;
-}) => {
+export const LeafletContent = (props: { entityID: string }) => {
   let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
   let blocks = useBlocks(props.entityID);
   let previewRef = useRef<HTMLDivElement | null>(null);
 
   // This is the first surface that actually renders replicache-backed content
-  // for a home leaflet card, so its mount is the "local render" beat.
+  // for a home leaflet card, so its first non-empty render is the "local
+  // render" beat.
+  let hasContent = blocks.length > 0 || type === "canvas";
   useEffect(() => {
-    recordLaunchMark("local-render");
-  }, []);
+    if (hasContent) recordLaunchMark("local-render");
+  }, [hasContent]);
 
   if (type === "canvas")
     return (
@@ -41,9 +40,7 @@ export const LeafletContent = (props: {
             height: "calc(1272px * 2)",
           }}
         >
-          {props.isOnScreen && (
-            <CanvasContent entityID={props.entityID} preview />
-          )}
+          <CanvasContent entityID={props.entityID} preview />
         </div>
       </div>
     );
@@ -61,12 +58,10 @@ export const LeafletContent = (props: {
       >
         <PublicationMetadataPreview />
 
-        {props.isOnScreen && (
-          <PreviewBlockList
-            blocks={blocks.slice(0, 10)}
-            previewRef={previewRef}
-          />
-        )}
+        <PreviewBlockList
+          blocks={blocks.slice(0, 10)}
+          previewRef={previewRef}
+        />
       </div>
     </div>
   );

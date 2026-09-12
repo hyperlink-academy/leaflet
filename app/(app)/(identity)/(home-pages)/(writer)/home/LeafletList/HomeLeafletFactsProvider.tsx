@@ -15,11 +15,17 @@ const leafletFactsBatcher = create({
   scheduler: windowScheduler(10),
 });
 
-export function useLeafletFacts(root: string, enabled: boolean = true) {
-  const { data, isLoading } = useSWR(
+// Revalidation on mount is what keeps a preview current after the user edits
+// that leaflet and comes back: signed in, the card reads only from these facts,
+// so a key that never refetches leaves the card showing pre-edit content until
+// a full reload. SWR keeps the previous data while revalidating and nothing is
+// keyed off the facts any more, so fresher data only re-renders readers — it
+// cannot blank a card or remount its provider.
+export function useLeafletFacts(root: string, enabled: boolean) {
+  const { data } = useSWR(
     enabled ? `leaflet-facts:${root}` : null,
     () => leafletFactsBatcher.fetch(root),
     { revalidateOnFocus: false, revalidateOnReconnect: false },
   );
-  return { facts: data ?? null, isLoading };
+  return data ?? null;
 }

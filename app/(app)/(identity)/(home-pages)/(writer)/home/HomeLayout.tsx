@@ -227,7 +227,6 @@ export function LeafletList(props: {
               loggedIn={!!identity}
               display={display}
               added_at={added_at}
-              index={index}
               showPreview={props.showPreview}
               isHidden={
                 !searchedLeaflets.some(
