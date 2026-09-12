@@ -17,9 +17,6 @@ export const StaticMathBlock = ({
   let html = prerenderedHtml || renderedHtml;
   return (
     <div className="math-block my-2">
-      {/* Blank, not the raw TeX: the source and the rendered formula are very
-          differently sized, so showing the source first reflows the document
-          below it when katex lands. */}
       {html ? (
         <div dangerouslySetInnerHTML={{ __html: html }} />
       ) : (
