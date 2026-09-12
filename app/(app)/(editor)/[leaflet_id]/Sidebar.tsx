@@ -56,7 +56,7 @@ export function LeafletSidebar() {
   if (publicationPage) return null;
 
   return (
-    <Media mobile={false} className="w-0 h-full relative">
+    <Media mobile={false} className="leafletSidebar w-0 h-full relative">
       <div
         className="absolute top-0 left-0  h-full flex justify-end "
         style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}

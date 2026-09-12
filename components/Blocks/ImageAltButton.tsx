@@ -53,7 +53,7 @@ export function ImageAltButton(props: {
           if (!group.contains(document.activeElement)) setShowAlt(false);
         });
       }}
-      className={`absolute bottom-1.5 right-1.5 left-1.5 transition-opacity flex flex-col h-fit ${
+      className={`imageAltButton absolute bottom-1.5 right-1.5 left-1.5 transition-opacity flex flex-col h-fit ${
         props.selected || hasAlt
           ? "opacity-100"
           : "opacity-0 group-hover/image:opacity-100"
