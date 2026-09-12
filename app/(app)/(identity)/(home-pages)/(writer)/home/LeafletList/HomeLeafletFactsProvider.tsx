@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import useSWRImmutable from "swr/immutable";
 import { create, windowScheduler } from "@yornaath/batshit";
 import { callRPC } from "app/api/rpc/client";
 import type { Fact } from "src/replicache";
@@ -15,27 +15,13 @@ const leafletFactsBatcher = create({
   scheduler: windowScheduler(10),
 });
 
-const factsCache = new Map<string, Fact<Attribute>[]>();
-
-// A one-way latch: null until this card's facts are in hand, then an array
-// that is only ever replaced by another array. Nothing sets it back to null,
-// so a card body goes blank → content exactly once per mount and never back.
-// The module cache means a card that has been seen once this session renders
-// its preview on the first frame of any later mount.
+// useSWRImmutable never revalidates a key once it has data, so a card that
+// has been seen this session renders its preview on the first frame of any
+// later mount, and delivery can't change `facts` identity after it lands.
 export function useLeafletFacts(root: string, enabled: boolean) {
-  let [facts, setFacts] = useState<Fact<Attribute>[] | null>(
-    () => factsCache.get(root) ?? null,
+  const { data } = useSWRImmutable(
+    enabled ? `leaflet-facts:${root}` : null,
+    () => leafletFactsBatcher.fetch(root),
   );
-  useEffect(() => {
-    if (!enabled) return;
-    let live = true;
-    leafletFactsBatcher.fetch(root).then((fetched) => {
-      factsCache.set(root, fetched);
-      if (live) setFacts(fetched);
-    });
-    return () => {
-      live = false;
-    };
-  }, [enabled, root]);
-  return facts;
+  return data ?? null;
 }
