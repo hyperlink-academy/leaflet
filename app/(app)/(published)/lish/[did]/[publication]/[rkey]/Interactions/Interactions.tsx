@@ -323,7 +323,7 @@ export const ExpandedInteractions = (props: {
 
   return (
     <div
-      className={`text-tertiary px-3 sm:px-4 flex flex-col ${props.className}`}
+      className={`expandedInteractions text-tertiary px-3 sm:px-4 flex flex-col ${props.className}`}
     >
       {tagCount > 0 && (
         <>

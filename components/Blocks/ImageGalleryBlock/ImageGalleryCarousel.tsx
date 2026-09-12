@@ -31,7 +31,7 @@ export function ImageGalleryCarousel(props: {
         <div
           ref={scrollRef}
           onScroll={onScroll}
-          className="grid grid-flow-col auto-cols-[100%] overflow-x-auto snap-x snap-mandatory no-scrollbar"
+          className="imageGalleryCarousel grid grid-flow-col auto-cols-[100%] overflow-x-auto snap-x snap-mandatory no-scrollbar"
         >
           {Array.from({ length: count }).map((_, i) => (
             <div
@@ -83,7 +83,7 @@ function CarouselArrow(props: {
         props.onClick();
       }}
       onMouseDown={(e) => e.preventDefault()}
-      className={`light-container hover:text-accent-contrast hover:border-accent-contrast rounded-full! p-1 ${props.className ?? ""}`}
+      className={`imageGalleryCarouselArrow light-container hover:text-accent-contrast hover:border-accent-contrast rounded-full! p-1 ${props.className ?? ""}`}
     >
       <GoToArrowLined
         className={props.direction === "left" ? "rotate-180" : ""}
