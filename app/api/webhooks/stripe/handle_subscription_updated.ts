@@ -1,6 +1,7 @@
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
 import { PRODUCT_DEFINITION, parseEntitlements } from "stripe/products";
+import { invalidateIdentitySlices } from "src/identitySlices";
 
 export async function handleSubscriptionUpdated(subscriptionId: string) {
   const sub = await getStripe().subscriptions.retrieve(subscriptionId);
@@ -56,4 +57,5 @@ export async function handleSubscriptionUpdated(subscriptionId: string) {
       { onConflict: "identity_id,entitlement_key" },
     );
   }
+  await invalidateIdentitySlices(identityId, ["billing"]);
 }

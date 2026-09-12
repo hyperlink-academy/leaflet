@@ -1,4 +1,4 @@
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import { invalidateIdentitySlices } from "src/identitySlices";
 import { supabaseServerClient } from "supabase/serverClient";
 import { publishAtprotoSubscriptionForDid } from "src/subscriptions/atproto";
 import { parseActionFromSearchParam } from "app/api/oauth/[route]/afterSignInActions";
@@ -74,7 +74,8 @@ export async function upsertSubscriber(args: {
     console.error("[upsertSubscriber] events failed:", eventsError);
     return Err("database_error");
   }
-  await invalidateSessionIdentityCache();
+  if (args.identityId)
+    await invalidateIdentitySlices(args.identityId, ["subscriptions"]);
   return Ok(subscriber);
 }
 
@@ -124,7 +125,7 @@ export async function onEmailSubscriptionConfirmed(
   );
   if (confirmedIdentity?.atp_did)
     await publishAtprotoSubscriptionForDid(
-      confirmedIdentity.atp_did,
+      { id: identityId, atp_did: confirmedIdentity.atp_did },
       publicationUri,
     );
 }
@@ -203,7 +204,8 @@ export async function disableEmailSubscription(
         method: "email",
       },
     );
-  await invalidateSessionIdentityCache();
+  if (identity?.id)
+    await invalidateIdentitySlices(identity.id, ["subscriptions"]);
   return Ok(null);
 }
 

@@ -57,7 +57,10 @@ export async function ensureSubscriberRecordsForMembership(
         ).ok;
     }
     if (!recorded && identity.atp_did)
-      await publishAtprotoSubscriptionForDid(identity.atp_did, publicationUri);
+      await publishAtprotoSubscriptionForDid(
+        { id: identity.id, atp_did: identity.atp_did },
+        publicationUri,
+      );
   } catch (e) {
     console.error(
       "[ensureSubscriberRecordsForMembership] mirroring failed:",

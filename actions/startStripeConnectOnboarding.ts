@@ -1,6 +1,6 @@
 "use server";
 
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import { invalidateIdentitySlices } from "src/identitySlices";
 import { getAuthIdentity } from "src/auth";
 import { getProfiles } from "src/identity";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -65,7 +65,7 @@ export async function startStripeConnectOnboarding(args: {
         { onConflict: "identity_id", ignoreDuplicates: true },
       );
     if (error) return Err("Failed to save connected account");
-    await invalidateSessionIdentityCache();
+    await invalidateIdentitySlices(identity.id, ["billing"]);
     trackUserEvent(identity, "connect_onboarding_started");
   }
 

@@ -1,6 +1,6 @@
 "use server";
 
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import { invalidateIdentitySlices } from "src/identitySlices";
 import { getAuthIdentity } from "src/auth";
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -334,7 +334,7 @@ export async function subscribeToTier(args: {
       console.error("[joinMembership] membership upsert failed:", error);
       return Err("stripe_error");
     }
-    await invalidateSessionIdentityCache();
+    await invalidateIdentitySlices(identity.id, ["subscriptions"]);
 
     // The webhook only notifies on an inactive→active transition, and this
     // row is already active by the time its events arrive — so the inline

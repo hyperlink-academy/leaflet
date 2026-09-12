@@ -1,6 +1,6 @@
 "use server";
 
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import { invalidateSessionIdentitySlices } from "src/identitySlices";
 import { sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -35,7 +35,7 @@ export async function createNewLeafletFromTemplate(
         )`
       : undefined,
   });
-  await invalidateSessionIdentityCache();
+  await invalidateSessionIdentitySlices(["leaflets"]);
 
   if (redirectUser) redirect(`/${permTokenId}`);
   return { id: permTokenId, error: null } as const;

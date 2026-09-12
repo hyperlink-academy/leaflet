@@ -1,4 +1,4 @@
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import { invalidateIdentitySlicesForDid } from "src/identitySlices";
 import { revalidatePublicationPaths } from "src/utils/revalidatePublication";
 import { TID } from "@atproto/common";
 import { AtUri } from "@atproto/syntax";
@@ -234,7 +234,7 @@ export async function publishPublicationPages({
     .from("publications")
     .update({ record: pubRecord as Json })
     .eq("uri", publication_uri);
-  await invalidateSessionIdentityCache();
+  await invalidateIdentitySlicesForDid(actorDid, ["publications", "leaflets"]);
 
   // Bust the cached reader routes so edits to existing pages show up — without
   // this only brand-new (uncached) page paths would reflect the latest content.

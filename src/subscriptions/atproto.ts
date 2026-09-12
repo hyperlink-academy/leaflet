@@ -1,4 +1,4 @@
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import { invalidateIdentitySlices } from "src/identitySlices";
 import { AtpBaseClient } from "lexicons/api";
 import { restoreOAuthSession, type OAuthSessionError } from "src/atproto-oauth";
 import { TID } from "@atproto/common";
@@ -22,9 +22,10 @@ import { v7 } from "uuid";
 // Throws on a failed PDS write — subscribeToPublication surfaces that to the
 // reader; publishAtprotoSubscriptionForDid is the best-effort wrapper.
 export async function createAtprotoSubscription(
-  atp_did: string,
+  identity: { id: string; atp_did: string },
   publication: string,
 ): Promise<Result<{ uri: string } | null, OAuthSessionError>> {
+  const { id, atp_did } = identity;
   let { data: existingSubscription } = await supabaseServerClient
     .from("publication_subscriptions")
     .select("uri")
@@ -50,7 +51,7 @@ export async function createAtprotoSubscription(
     publication,
     identity: atp_did,
   });
-  await invalidateSessionIdentityCache();
+  await invalidateIdentitySlices(id, ["subscriptions"]);
 
   let publicationOwner = new AtUri(publication).host;
   if (publicationOwner !== atp_did) {
@@ -73,15 +74,15 @@ export async function createAtprotoSubscription(
 // those flows are the source of truth and must succeed whether or not the
 // atproto write goes through.
 export async function publishAtprotoSubscriptionForDid(
-  atp_did: string,
+  identity: { id: string; atp_did: string },
   publication: string,
 ): Promise<void> {
   try {
-    await createAtprotoSubscription(atp_did, publication);
+    await createAtprotoSubscription(identity, publication);
   } catch (e) {
     console.error(
       "[publishAtprotoSubscriptionForDid] failed:",
-      atp_did,
+      identity.atp_did,
       publication,
       e,
     );
@@ -106,7 +107,12 @@ export async function backfillAtprotoSubscriptionsForIdentity(
   if (!subs || subs.length === 0) return;
 
   await Promise.all(
-    subs.map((s) => publishAtprotoSubscriptionForDid(atp_did, s.publication)),
+    subs.map((s) =>
+      publishAtprotoSubscriptionForDid(
+        { id: identityId, atp_did },
+        s.publication,
+      ),
+    ),
   );
 }
 
@@ -152,7 +158,6 @@ export async function deleteAtprotoSubscriptionForDid(
       .delete()
       .eq("identity", atp_did)
       .eq("publication", publication);
-    await invalidateSessionIdentityCache();
 
     return existingSubscription.uri;
   } catch (e) {

@@ -1,5 +1,5 @@
 "use server";
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import { invalidateIdentitySlices } from "src/identitySlices";
 import { refresh } from "next/cache";
 
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -114,7 +114,7 @@ export async function deleteLeaflet(permission_token: PermissionToken) {
   });
   client.release();
 
-  await invalidateSessionIdentityCache();
+  if (identity) await invalidateIdentitySlices(identity.id, ["leaflets"]);
   refresh();
   return;
 }
@@ -132,7 +132,7 @@ export async function archivePost(token: string) {
 
   await setArchivedInPublications(token, identity.atp_did, true);
 
-  await invalidateSessionIdentityCache();
+  await invalidateIdentitySlices(identity.id, ["leaflets"]);
   refresh();
   return;
 }
@@ -150,7 +150,7 @@ export async function unarchivePost(token: string) {
 
   await setArchivedInPublications(token, identity.atp_did, false);
 
-  await invalidateSessionIdentityCache();
+  await invalidateIdentitySlices(identity.id, ["leaflets"]);
   refresh();
   return;
 }

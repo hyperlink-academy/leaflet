@@ -2,6 +2,7 @@
 
 import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
+import { invalidateIdentitySlices } from "src/identitySlices";
 import { Ok, Err, type Result } from "src/result";
 import { isAdminEmail } from "src/adminAllowlist";
 import { getProfiles, idResolver } from "src/identity";
@@ -138,6 +139,7 @@ export async function grantEntitlement(args: {
     console.error("[admin/entitlements] grant failed:", error);
     return Err("database_error");
   }
+  await invalidateIdentitySlices(args.identityId, ["billing"]);
   return Ok(data);
 }
 
@@ -158,6 +160,8 @@ export async function revokeAllForKey(args: {
     console.error("[admin/entitlements] revoke-all failed:", error);
     return Err("database_error");
   }
+  for (const row of data ?? [])
+    await invalidateIdentitySlices(row.identity_id, ["billing"]);
   return Ok({ removed: (data ?? []).length });
 }
 
@@ -176,5 +180,6 @@ export async function revokeEntitlement(args: {
     console.error("[admin/entitlements] revoke failed:", error);
     return Err("database_error");
   }
+  await invalidateIdentitySlices(args.identityId, ["billing"]);
   return Ok(null);
 }

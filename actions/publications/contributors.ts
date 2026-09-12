@@ -1,6 +1,9 @@
 "use server";
 
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import {
+  invalidateIdentitySlices,
+  invalidateIdentitySlicesForDid,
+} from "src/identitySlices";
 import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Ok, Err, type Result } from "src/result";
@@ -135,6 +138,10 @@ export async function removeContributor(
       .eq("contributor_did", contributor_did)
       .in("leaflet", leafletIds);
   }
+  await invalidateIdentitySlicesForDid(contributor_did, [
+    "publications",
+    "leaflets",
+  ]);
 
   return Ok(null);
 }
@@ -163,6 +170,6 @@ export async function acceptContributorInvitation(
     console.error("[contributors] accept failed:", error);
     return Err("database_error");
   }
-  await invalidateSessionIdentityCache();
+  await invalidateIdentitySlices(identity.id, ["publications"]);
   return Ok(null);
 }

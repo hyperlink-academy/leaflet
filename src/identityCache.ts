@@ -1,28 +1,22 @@
-import { createHash } from "node:crypto";
 import { getRedis } from "src/redis";
 
-// Deliberately not a "use server" module: exporting an async fn from one would
-// publish it as a client-callable endpoint.
+// Redis-backed read-through cache for the identity slices (src/identitySlices.ts
+// owns the keys and the invalidation policy). Deliberately not a "use server"
+// module: exporting an async fn from one would publish it as a client-callable
+// endpoint.
 
-const KEY_PREFIX = "identity:v1:";
-// 30s is the staleness ceiling for the writers that can't invalidate: Stripe
-// and Postmark webhooks change membership and subscription rows without a
-// session token, so there's no key for them to delete. Everything that runs
-// with the user's cookie calls invalidateIdentityCache instead and is
+// 30s is the staleness ceiling for writers that can't invalidate a user's
+// slices: actions taken by other users (contributor changes, the appview
+// re-indexing a publication record) and the per-keystroke title writes on the
+// Replicache push path. Everything else calls invalidateIdentitySlices and is
 // immediately consistent.
 const TTL_SECONDS = 30;
 
 export type IdentityCacheStore = {
   get(key: string): Promise<string | null>;
   setex(key: string, seconds: number, value: string): Promise<unknown>;
-  del(key: string): Promise<unknown>;
+  del(...keys: string[]): Promise<unknown>;
 };
-
-// The token is hashed because it is a live session credential and Redis keys
-// leak through MONITOR, slowlogs and key scans.
-export function identityCacheKey(auth_token: string) {
-  return KEY_PREFIX + createHash("sha256").update(auth_token).digest("hex");
-}
 
 // Redis is an optimisation on a path that can always fall back to Postgres, so
 // an outage degrades to uncached reads (and to at most TTL_SECONDS of
@@ -36,13 +30,12 @@ function degrade(op: string) {
 
 const inFlight = new Map<string, Promise<unknown>>();
 
-export async function getCachedIdentity<T>(
-  auth_token: string,
+export async function getCached<T>(
+  key: string,
   fetchFresh: () => Promise<T>,
   store: IdentityCacheStore | null = getRedis(),
 ): Promise<T> {
   if (!store) return fetchFresh();
-  const key = identityCacheKey(auth_token);
   const existing = inFlight.get(key);
   if (existing) return existing as Promise<T>;
   const pending = (async () => {
@@ -66,21 +59,21 @@ export async function getCachedIdentity<T>(
   }
 }
 
-export async function writeCachedIdentity(
-  auth_token: string,
+export async function writeCached(
+  key: string,
   value: unknown,
   store: IdentityCacheStore | null = getRedis(),
 ) {
   if (!store) return;
   await store
-    .setex(identityCacheKey(auth_token), TTL_SECONDS, JSON.stringify(value))
+    .setex(key, TTL_SECONDS, JSON.stringify(value))
     .catch(degrade("write"));
 }
 
-export async function invalidateIdentityCache(
-  auth_token: string,
+export async function invalidateCached(
+  keys: string[],
   store: IdentityCacheStore | null = getRedis(),
 ) {
-  if (!store) return;
-  await store.del(identityCacheKey(auth_token)).catch(degrade("invalidate"));
+  if (!store || keys.length === 0) return;
+  await store.del(...keys).catch(degrade("invalidate"));
 }

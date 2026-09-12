@@ -1,6 +1,6 @@
 "use server";
 
-import { invalidateSessionIdentityCache } from "src/identityPayload";
+import { invalidateIdentitySlices } from "src/identitySlices";
 import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Ok, Err, type Result } from "src/result";
@@ -23,6 +23,6 @@ export async function refreshStripeConnectAccount(): Promise<
   if (!row?.stripe_account_id) return Err("No connected account");
 
   const state = await syncConnectedAccountState(row.stripe_account_id);
-  await invalidateSessionIdentityCache();
+  await invalidateIdentitySlices(identity.id, ["billing"]);
   return Ok(state);
 }
