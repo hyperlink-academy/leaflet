@@ -1,14 +1,11 @@
 "use client";
 import { LeafletListPreview, LeafletGridPreview } from "./LeafletPreview";
 import { LeafletInfo } from "./LeafletInfo";
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import { SpeedyLink } from "components/SpeedyLink";
 import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
-import {
-  EAGERLY_VISIBLE_CARDS,
-  useReportCardVisible,
-} from "./LeafletCardReplicache";
+import { useReportCardVisible } from "./LeafletCardReplicache";
 
 export const LeafletListItem = (props: {
   archived?: boolean | null;
@@ -16,36 +13,29 @@ export const LeafletListItem = (props: {
   display: "list" | "grid";
   added_at: string;
   title?: string;
-  index: number;
   isHidden: boolean;
   showPreview?: boolean;
 }) => {
   const cardBorderHidden = useCardBorderHidden();
   const pubStatus = useLeafletPublicationStatus();
   const visibilityReporter = useReportCardVisible();
-  let [isOnScreen, setIsOnScreen] = useState(
-    props.index < EAGERLY_VISIBLE_CARDS,
-  );
   let previewRef = useRef<HTMLDivElement | null>(null);
 
+  // Report once and stop watching: a card that has been seen keeps its
+  // preview, so scrolling it away must not take the content back off.
   useEffect(() => {
     if (!previewRef.current) return;
     let observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsOnScreen(true);
-            visibilityReporter?.notifyVisible();
-          } else {
-            setIsOnScreen(false);
-          }
-        });
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        visibilityReporter?.notifyVisible();
+        observer.disconnect();
       },
-      { threshold: 0.1, root: null },
+      { threshold: 0.1 },
     );
     observer.observe(previewRef.current);
     return () => observer.disconnect();
-  }, [previewRef, visibilityReporter]);
+  }, [visibilityReporter]);
 
   const tokenId = pubStatus?.shareLink ?? "";
 
@@ -67,7 +57,7 @@ export const LeafletListItem = (props: {
             href={`/${tokenId}`}
             className={`absolute w-full h-full top-0 left-0 no-underline! hover:no-underline! text-primary`}
           />
-          {props.showPreview && <LeafletListPreview isVisible={isOnScreen} />}
+          {props.showPreview && <LeafletListPreview />}
           <LeafletInfo
             title={props.title}
             display={props.display}
@@ -103,7 +93,7 @@ export const LeafletListItem = (props: {
         className={`absolute w-full h-full top-0 left-0 no-underline hover:no-underline! text-primary`}
       />
       <div className="grow">
-        <LeafletGridPreview isVisible={isOnScreen} />
+        <LeafletGridPreview />
       </div>
       <LeafletInfo
         className="px-1 pb-0.5 shrink-0"

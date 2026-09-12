@@ -1,14 +1,26 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { ReplicacheProvider, type PermissionToken } from "src/replicache";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
+import {
+  ReplicacheProvider,
+  type Fact,
+  type PermissionToken,
+} from "src/replicache";
+import type { Attribute } from "src/replicache/attributes";
 import { useLeafletFacts } from "./HomeLeafletFactsProvider";
 
 // Cards assumed on-screen before the IntersectionObserver has fired: they
-// render their preview and fetch facts immediately on mount. One constant for
-// both so the initial view resolves in a single batched getFactsForRoots call —
-// a card that renders eagerly but fetches lazily lands in a second RPC batch.
+// fetch their facts on mount, so the initial view resolves in a single batched
+// getFactsForRoots call.
 export const EAGERLY_VISIBLE_CARDS = 16;
+
+const NO_FACTS: Fact<Attribute>[] = [];
 
 const CardVisibilityContext = createContext<{
   notifyVisible: () => void;
@@ -25,29 +37,22 @@ export function LeafletCardReplicache(props: {
   children: React.ReactNode;
 }) {
   const [hasBeenVisible, setHasBeenVisible] = useState(props.eagerLoadFacts);
-  const { facts } = useLeafletFacts(
-    props.leaflet.root_entity,
-    hasBeenVisible,
-  );
+  const facts = useLeafletFacts(props.leaflet.root_entity, hasBeenVisible);
 
-  const notifyVisible = useCallback(() => {
-    setHasBeenVisible((v) => v || true);
-  }, []);
+  const notifyVisible = useCallback(() => setHasBeenVisible(true), []);
   const contextValue = useMemo(() => ({ notifyVisible }), [notifyVisible]);
 
-  const initialFacts = facts ?? [];
-  const providerKey = `${props.leaflet.id}:${facts ? "loaded" : "loading"}`;
-
+  // No key derived from whether the facts have landed: the provider mounts
+  // once per card and the facts reach readers through its context value.
   return (
     <CardVisibilityContext.Provider value={contextValue}>
       <ReplicacheProvider
         disablePull
         initialFactsOnly={props.loggedIn}
-        key={providerKey}
         rootEntity={props.leaflet.root_entity}
         token={props.leaflet}
         name={props.leaflet.root_entity}
-        initialFacts={initialFacts}
+        initialFacts={facts ?? NO_FACTS}
       >
         {props.children}
       </ReplicacheProvider>

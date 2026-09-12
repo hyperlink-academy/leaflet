@@ -59,7 +59,7 @@ function useLeafletPreviewData() {
   };
 }
 
-export const LeafletListPreview = (props: { isVisible: boolean }) => {
+export const LeafletListPreview = () => {
   const {
     root,
     page,
@@ -104,7 +104,7 @@ export const LeafletListPreview = (props: { isVisible: boolean }) => {
         <ThemeBackgroundProvider entityID={root}>
           <div className="leafletPreview grow shrink-0 h-44 w-64 px-2 pt-2 sm:px-3 sm:pt-3 flex items-end pointer-events-none rounded-[2px] ">
             <div className={contentWrapperClass} style={contentWrapperStyle}>
-              <LeafletContent entityID={page} isOnScreen={props.isVisible} />
+              <LeafletContent entityID={page} />
             </div>
           </div>
         </ThemeBackgroundProvider>
@@ -113,7 +113,7 @@ export const LeafletListPreview = (props: { isVisible: boolean }) => {
   );
 };
 
-export const LeafletGridPreview = (props: { isVisible: boolean }) => {
+export const LeafletGridPreview = () => {
   const { root, page, contentWrapperStyle, contentWrapperClass } =
     useLeafletPreviewData();
 
@@ -127,7 +127,7 @@ export const LeafletGridPreview = (props: { isVisible: boolean }) => {
               className="leafletPreview grow shrink-0 h-full w-full px-2 pt-2 sm:px-3 sm:pt-3 flex items-end pointer-events-none"
             >
               <div className={contentWrapperClass} style={contentWrapperStyle}>
-                <LeafletContent entityID={page} isOnScreen={props.isVisible} />
+                <LeafletContent entityID={page} />
               </div>
             </div>
           </ThemeBackgroundProvider>
