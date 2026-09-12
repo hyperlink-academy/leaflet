@@ -133,6 +133,9 @@ export function CodeBlock(props: BlockProps & { preview?: boolean }) {
                 });
               }}
             >
+              {/* A select with no option matching its value renders blank, so
+                  carry the current one until shiki's list arrives. */}
+              {!shiki && <option value={theme}>{theme}</option>}
               {(shiki?.bundledThemesInfo ?? []).map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.displayName}
@@ -157,6 +160,9 @@ export function CodeBlock(props: BlockProps & { preview?: boolean }) {
             }}
           >
             <option value="plaintext">Plaintext</option>
+            {!shiki && lang !== "plaintext" && (
+              <option value={lang}>{lang}</option>
+            )}
             {(shiki?.bundledLanguagesInfo ?? []).map((l) => (
               <option key={l.id} value={l.id}>
                 {l.name}

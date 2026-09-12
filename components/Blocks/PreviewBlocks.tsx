@@ -138,7 +138,7 @@ function PreviewBlockContent(props: PreviewProps) {
     case "card":
       return <PreviewPageLink entityID={props.entityID} />;
     default:
-      return <PreviewPlaceholder />;
+      return <PreviewPlaceholder label={props.type.replaceAll("-", " ")} />;
   }
 }
 
@@ -190,8 +190,14 @@ function PreviewPageLink(props: { entityID: string }) {
   );
 }
 
-function PreviewPlaceholder() {
-  return <div className="w-full h-8 rounded-md bg-border-light" />;
+// A final state, not a loading one: previews don't render these block types at
+// all. Outlined rather than filled so it can't be read as a stuck skeleton.
+function PreviewPlaceholder(props: { label?: string }) {
+  return (
+    <div className="w-full h-8 rounded-md border border-border-light text-tertiary text-sm flex items-center px-2 capitalize">
+      {props.label}
+    </div>
+  );
 }
 
 function PreviewListMarker(props: PreviewProps) {

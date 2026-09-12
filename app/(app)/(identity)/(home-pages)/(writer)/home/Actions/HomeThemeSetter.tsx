@@ -13,7 +13,9 @@ const ThemeSetterContent = dynamic(
     import("components/ThemeManager/ThemeSetter").then(
       (m) => m.ThemeSetterContent,
     ),
-  { ssr: false },
+  // Sized placeholder: the popover is positioned against its content, so a
+  // zero-height body makes Radix re-measure and re-anchor when the chunk lands.
+  { ssr: false, loading: () => <div className="h-80" /> },
 );
 
 export const HomeThemeSetter = (props: { entityID: string }) => {

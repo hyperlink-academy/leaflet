@@ -6,7 +6,9 @@ import dynamic from "next/dynamic";
 // page that renders a subscribe button.
 const JoinMembershipFlow = dynamic(
   () => import("./JoinMembershipFlow").then((m) => m.JoinMembershipFlow),
-  { ssr: false },
+  // Sized placeholder so the modal opens at roughly the flow's height instead
+  // of as an empty box that jumps once the chunk lands.
+  { ssr: false, loading: () => <div className="w-sm max-w-full h-96" /> },
 );
 import { type JoinResume } from "./joinReturn";
 import { type MembershipJoinViewer } from "actions/publications/joinMembership";
