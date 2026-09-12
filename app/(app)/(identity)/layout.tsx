@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { Suspense } from "react";
 import { IdentityProviderServer } from "components/IdentityProviderServer";
-import { DashboardSkeleton } from "components/PageLayouts/DashboardSkeleton";
+import { FullPageLoading } from "components/PageLayouts/DashboardLoading";
 import { RequestHeadersProvider } from "components/Providers/RequestHeadersProvider";
 import { RouteUIStateManager } from "components/RouteUIStateManger";
 import { SubscriptionSuccessModal } from "components/SubscriptionSuccessModal";
@@ -32,7 +32,9 @@ export default function IdentityLayout({
   children: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={<DashboardSkeleton variant="plain" />}>
+    // Shape-neutral: this group also covers the publish flow, /upgrade,
+    // /admin and all of /lish/**, none of which mount a dashboard shell.
+    <Suspense fallback={<FullPageLoading />}>
       <IdentityLayoutInner>{children}</IdentityLayoutInner>
     </Suspense>
   );

@@ -13,7 +13,7 @@ import { Metadata } from "next";
 import { cache, Suspense } from "react";
 import { PageTitle } from "components/ActionBar/DesktopNavigation";
 import { Avatar } from "components/Avatar";
-import { FullPageLoading } from "components/PageLayouts/DashboardLoading";
+import { DashboardSkeleton } from "components/PageLayouts/DashboardSkeleton";
 import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
 import { TrendingSmall } from "components/Icons/TrendingSmall";
 import { NewSmall } from "components/Icons/NewSmall";
@@ -66,7 +66,7 @@ export default function ProfilePageLayout(props: {
   children: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={<FullPageLoading />}>
+    <Suspense fallback={<DashboardSkeleton variant="plain" />}>
       <ProfilePageLayoutInner {...props} />
     </Suspense>
   );

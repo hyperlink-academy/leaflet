@@ -13,11 +13,17 @@ import { replaceWithoutParams } from "src/utils/replaceWithoutParams";
 
 // Only reachable through a subscribe redirect, so the success screens (and the
 // subscribe buttons and membership flow they reach) load with the modal.
-const AtSubscribeSuccess = dynamic(() =>
-  import("./SubscribeSuccess").then((m) => m.AtSubscribeSuccess),
+// Sized placeholder so the modal opens at roughly the success screen's height
+// instead of as an empty box; this modal is reached by a post-OAuth redirect,
+// when the client bundle is always cold.
+const successLoading = () => <div className="w-sm max-w-full h-64" />;
+const AtSubscribeSuccess = dynamic(
+  () => import("./SubscribeSuccess").then((m) => m.AtSubscribeSuccess),
+  { loading: successLoading },
 );
-const EmailSubscribeSuccess = dynamic(() =>
-  import("./SubscribeSuccess").then((m) => m.EmailSubscribeSuccess),
+const EmailSubscribeSuccess = dynamic(
+  () => import("./SubscribeSuccess").then((m) => m.EmailSubscribeSuccess),
+  { loading: successLoading },
 );
 
 export function SubscribeConfirmationModal() {

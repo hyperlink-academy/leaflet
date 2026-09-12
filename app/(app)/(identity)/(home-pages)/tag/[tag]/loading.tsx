@@ -1,5 +1,5 @@
-import { DashboardLoading } from "components/PageLayouts/DashboardLoading";
+import { FeedContentSkeleton } from "components/PageLayouts/DashboardSkeleton";
 
 export default function Loading() {
-  return <DashboardLoading />;
+  return <FeedContentSkeleton />;
 }

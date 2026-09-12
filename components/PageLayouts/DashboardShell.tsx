@@ -8,6 +8,7 @@ import {
 } from "components/ActionBar/DesktopNavigation";
 import { Sidebar, useSidebarStore } from "components/ActionBar/Sidebar";
 import { DashboardIdContext } from "./dashboardState";
+import { DashboardLoading } from "./DashboardLoading";
 import { recordLaunchMark } from "src/launchInstrumentation";
 import dynamic from "next/dynamic";
 
@@ -15,7 +16,9 @@ import dynamic from "next/dynamic";
 // rarely enough that every dashboard page shouldn't carry them.
 const NotificationContent = dynamic(
   () => import("./NotificationContent").then((m) => m.NotificationContent),
-  { ssr: false },
+  // Without a `loading` the content column is empty until the chunk lands, so
+  // opening the overlay reads as the dashboard blanking out.
+  { ssr: false, loading: () => <DashboardLoading /> },
 );
 
 type DashboardShellProps = {

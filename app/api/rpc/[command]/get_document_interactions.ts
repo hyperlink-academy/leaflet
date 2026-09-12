@@ -17,7 +17,6 @@ export const get_document_interactions = makeRoute({
   input: z.object({
     document_uri: z.string(),
   }),
-  cache: { sMaxAge: 60, staleWhileRevalidate: 600 },
   handler: async ({ document_uri }, { supabase }: Pick<Env, "supabase">) => {
     let { data: document } = await supabase
       .from("documents")

@@ -1,5 +1,5 @@
-import { DashboardLoading } from "components/PageLayouts/DashboardLoading";
+import { GridContentSkeleton } from "components/PageLayouts/DashboardSkeleton";
 
 export default function Loading() {
-  return <DashboardLoading />;
+  return <GridContentSkeleton />;
 }

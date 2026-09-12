@@ -16,8 +16,10 @@ type Route<
   route: Cmd;
   input: Input;
   handler: (msg: z.infer<Input>, env: Env) => Promise<Result>;
-  // Viewer-independent reads only: set this to also serve the route as a
-  // CDN-cacheable GET. See app/api/rpc/cacheableRoutes.ts.
+  // Viewer-independent reads that no viewer can write: set this to also serve
+  // the route as a CDN-cacheable GET. A route backing optimistic UI must not
+  // set it — the shared edge entry has no way to know about the write, so the
+  // next read reverts it. See app/api/rpc/cacheableRoutes.ts.
   cache?: RouteCache;
 };
 
@@ -141,9 +143,12 @@ export const makeRouter = <Env extends {}>(routes: Routes<Env>) => {
         "Content-type": "application/json;charset=UTF-8",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,HEAD,POST,OPTIONS",
+        // No stale-while-revalidate here: browsers honour it too, so with
+        // max-age=0 the disk cache would keep serving the pre-write body for
+        // the whole window. The edge gets its own window below.
         "Cache-Control":
           status === 200 && cache
-            ? `public, max-age=${cache.maxAge ?? 0}, s-maxage=${cache.sMaxAge}, stale-while-revalidate=${cache.staleWhileRevalidate}`
+            ? `public, max-age=${cache.maxAge ?? 0}, s-maxage=${cache.sMaxAge}`
             : "no-store",
         ...(status === 200 && cache
           ? {

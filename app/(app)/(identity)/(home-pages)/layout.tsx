@@ -18,7 +18,10 @@ import { ReplicacheProvider, type Fact } from "src/replicache";
 // home leaflet fetch below runs in parallel with it.)
 export default function HomePagesLayout(props: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<DashboardSkeleton variant="grid" />}>
+    // Every route under this group mounts a DashboardShell, so the chrome is
+    // safe to draw here; the content column is not, since the group spans
+    // card grids, feeds and profiles. Each segment shapes its own.
+    <Suspense fallback={<DashboardSkeleton variant="plain" />}>
       <HomePagesLayoutInner>{props.children}</HomePagesLayoutInner>
     </Suspense>
   );

@@ -44,11 +44,7 @@ export function MathBlock(props: BlockProps) {
     </BlockLayout>
   ) : content?.data.value ? (
     <div className="text-lg min-h-[48px] w-full border border-transparent">
-      {html ? (
-        <span dangerouslySetInnerHTML={{ __html: html }} />
-      ) : (
-        <span className="whitespace-pre-wrap">{content.data.value}</span>
-      )}
+      {html ? <span dangerouslySetInnerHTML={{ __html: html }} /> : null}
     </div>
   ) : (
     <BlockLayout
