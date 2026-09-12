@@ -44,11 +44,10 @@ export function MathBlock(props: BlockProps) {
     </BlockLayout>
   ) : content?.data.value ? (
     <div className="text-lg min-h-[48px] w-full border border-transparent">
-      {html ? (
-        <span dangerouslySetInnerHTML={{ __html: html }} />
-      ) : (
-        <span className="whitespace-pre-wrap">{content.data.value}</span>
-      )}
+      {/* Blank, not the raw TeX: the source and the rendered formula are very
+          differently sized, so showing the source first reflows the document
+          below it when katex lands. The wrapper already reserves 48px. */}
+      {html ? <span dangerouslySetInnerHTML={{ __html: html }} /> : null}
     </div>
   ) : (
     <BlockLayout

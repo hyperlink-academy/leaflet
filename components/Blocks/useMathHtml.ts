@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
-// Null until katex has loaded and rendered; callers show the raw TeX meanwhile.
+// Null until katex has loaded and rendered.
 export function useMathHtml(tex: string | undefined, errorColor?: string) {
   let [html, setHtml] = useState<string | null>(null);
   useEffect(() => {
