@@ -94,10 +94,6 @@ export function PaginatedPublicationPostsList({
   const cappedInitialPosts =
     limit && limit > 0 ? initialPosts.slice(0, limit) : initialPosts;
 
-  const seedMatches =
-    cappedInitialPosts.length > 0 &&
-    cappedInitialPosts.every((p, i) => p.uri === cappedUris[i]);
-
   const getKey = (pageIndex: number) => {
     const start = pageIndex * POSTS_LIST_PAGE_SIZE;
     const slice = cappedUris.slice(start, start + POSTS_LIST_PAGE_SIZE);
@@ -105,11 +101,24 @@ export function PaginatedPublicationPostsList({
     return ["posts-batch", listId, slice] as const;
   };
 
+  const isSeededSlice = (slice: string[]) =>
+    slice.length === cappedInitialPosts.length &&
+    cappedInitialPosts.every((p, i) => p.uri === slice[i]);
+  const seedMatches =
+    cappedInitialPosts.length > 0 && isSeededSlice(getKey(0)?.[2] ?? []);
+
+  // The server already rendered the first page, so it is served from the seed
+  // rather than refetched: SWR's `isLoading` ignores fallback data and would
+  // otherwise dim the list on every mount while re-requesting posts it has.
   const { data, size, setSize, isValidating, isLoading } = useSWRInfinite(
     getKey,
-    ([, , slice]) => loadBatch(slice),
+    ([, , slice]) =>
+      seedMatches && isSeededSlice(slice)
+        ? cappedInitialPosts
+        : loadBatch(slice),
     {
       fallbackData: seedMatches ? [cappedInitialPosts] : undefined,
+      revalidateOnMount: !seedMatches,
       revalidateFirstPage: false,
       keepPreviousData: true,
     },
