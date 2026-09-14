@@ -2,7 +2,7 @@
 
 import { ActionButton } from "components/ActionBar/ActionButton";
 import { SettingsSmall } from "components/Icons/SettingsSmall";
-import { Toggle } from "components/Toggle";
+import { ToggleWithLabel } from "components/Toggle";
 import { Popover } from "components/Popover";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useReplicache } from "src/replicache";
@@ -67,53 +67,41 @@ export function PostSettings() {
         <h3 className="pb-2">Settings for this post</h3>
         <div className="flex flex-col gap-2">
           {showDiscoverToggle && (
-            <Toggle
+            <ToggleWithLabel
               toggle={showInDiscover}
               onToggle={() =>
                 updatePreference("showInDiscover", !showInDiscover)
               }
-            >
-              <div className="flex flex-col justify-start">
-                <div className="font-bold">Show in Discover</div>
-                <div className="text-tertiary text-sm leading-tight">
-                  List this post in Leaflet&apos;s Discover feed and other
-                  standard.site reader feeds
-                </div>
-              </div>
-            </Toggle>
+              label="Show in Discover"
+              helpText="List this post in Leaflet's Discover feed and other
+              standard.site reader feeds"
+            />
           )}
           {pub.publications && (
             <>
-              <Toggle
-                toggle={showComments}
-                onToggle={() => updatePreference("showComments", !showComments)}
-              >
-                <div className="font-bold">Show Comments</div>
-              </Toggle>
-              <Toggle
-                toggle={showMentions}
-                onToggle={() => updatePreference("showMentions", !showMentions)}
-              >
-                <div className="flex flex-col justify-start">
-                  <div className="font-bold">Show Mentions</div>
-                  <div className="text-tertiary text-sm leading-tight">
-                    Display a list of Bluesky mentions about your post
-                  </div>
-                </div>
-              </Toggle>
-              <Toggle
+              <hr />
+              <ToggleWithLabel
                 toggle={showRecommends}
                 onToggle={() =>
                   updatePreference("showRecommends", !showRecommends)
                 }
-              >
-                <div className="flex flex-col justify-start">
-                  <div className="font-bold">Show Recommends</div>
-                  <div className="text-tertiary text-sm leading-tight">
-                    Allow readers to recommend/like your post
-                  </div>
-                </div>
-              </Toggle>
+                label="Show Recommends"
+                helpText="Allow readers to recommend/like your post"
+              />
+              <hr />
+              <ToggleWithLabel
+                toggle={showComments}
+                onToggle={() => updatePreference("showComments", !showComments)}
+                label="Show Comments"
+                helpText="Allow readers to comment on your post"
+              />
+              <hr />
+              <ToggleWithLabel
+                toggle={showMentions}
+                onToggle={() => updatePreference("showMentions", !showMentions)}
+                label="Show Mentions"
+                helpText="Display Bluesky posts that mention this post"
+              />
             </>
           )}
         </div>

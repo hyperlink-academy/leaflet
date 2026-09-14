@@ -1,6 +1,5 @@
 import { useEntity, useReplicache } from "src/replicache";
-import { Popover } from "components/Popover";
-import { SettingsTriggerButton } from "./SettingsTriggerButton";
+import { BlockSettings } from "./SettingsTriggerButton";
 import { PlaceholderText } from "./PostSizeIcons";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { setEditorPref } from "src/utils/editorPrefs";
@@ -20,46 +19,25 @@ export function PageLinkSettingsButton(props: { entityID: string }) {
   let display = usePageLinkDisplay(props.entityID);
 
   return (
-    <Popover
-      asChild
-      side="top"
-      align="end"
-      className="p-0!"
-      onOpenAutoFocus={(e) => e.preventDefault()}
-      trigger={
-        <SettingsTriggerButton
-          aria-label="Page Link Settings"
-          onClick={(e) => e.stopPropagation()}
-        />
-      }
-    >
-      {/* Clicks here would otherwise bubble (through the portal) to the page
-          wrapper, which refocuses the page and unmounts the options bar. */}
-      <div
-        className="flex flex-col gap-2 w-full sm:w-[1000px] sm:max-w-sm pt-1 p-3! overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div>
-          <h4>Page Style</h4>
-        </div>
-        <BlockSettingOptions<PageLinkDisplay>
-          options={[
-            { value: "full", Icon: FullIcon },
-            { value: "compact", Icon: CompactIcon },
-          ]}
-          value={display}
-          onSelect={(value) => {
-            if (!rep) return;
-            setEditorPref("pageLinkDisplay", value);
-            rep.mutate.assertFact({
-              entity: props.entityID,
-              attribute: "page-link/display",
-              data: { type: "page-link-display-union", value },
-            });
-          }}
-        />
-      </div>
-    </Popover>
+    <BlockSettings label="Page Link" className="w-sm">
+      <h4>Page Style</h4>
+      <BlockSettingOptions<PageLinkDisplay>
+        options={[
+          { value: "full", Icon: FullIcon },
+          { value: "compact", Icon: CompactIcon },
+        ]}
+        value={display}
+        onSelect={(value) => {
+          if (!rep) return;
+          setEditorPref("pageLinkDisplay", value);
+          rep.mutate.assertFact({
+            entity: props.entityID,
+            attribute: "page-link/display",
+            data: { type: "page-link-display-union", value },
+          });
+        }}
+      />
+    </BlockSettings>
   );
 }
 

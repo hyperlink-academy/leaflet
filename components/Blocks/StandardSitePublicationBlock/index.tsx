@@ -1,9 +1,8 @@
 import { BlockProps, BlockLayout } from "../Block";
 import { useEntity, useReplicache } from "src/replicache";
 import { useIsBlockSelected } from "src/useUIState";
-import { Popover } from "components/Popover";
-import { Toggle } from "components/Toggle";
-import { SettingsTriggerButton } from "../SettingsTriggerButton";
+import { ToggleWithLabel } from "components/Toggle";
+import { BlockSettings } from "../SettingsTriggerButton";
 import {
   StandardSitePublicationItem,
   StandardSitePublicationItemPlaceholder,
@@ -85,31 +84,19 @@ function StandardSitePublicationSettingsButton(props: { entityID: string }) {
   let showPubTheme = showPubThemeFact?.data.value !== false;
 
   return (
-    <Popover
-      asChild
-      side="top"
-      align="end"
-      className="p-0!"
-      onOpenAutoFocus={(e) => e.preventDefault()}
-      trigger={
-        <SettingsTriggerButton aria-label="Standard Site Publication Settings" />
-      }
-    >
-      <div className="flex flex-col gap-2 w-fit pt-1 p-3! overflow-y-auto">
-        <Toggle
-          toggle={showPubTheme}
-          onToggle={() => {
-            if (!rep) return;
-            rep.mutate.assertFact({
-              entity: props.entityID,
-              attribute: "standard-site-publication/show-publication-theme",
-              data: { type: "boolean", value: !showPubTheme },
-            });
-          }}
-        >
-          <div className="font-bold">Use Publication Theme</div>
-        </Toggle>
-      </div>
-    </Popover>
+    <BlockSettings label="Publication">
+      <ToggleWithLabel
+        label="Use Publication Theme"
+        toggle={showPubTheme}
+        onToggle={() => {
+          if (!rep) return;
+          rep.mutate.assertFact({
+            entity: props.entityID,
+            attribute: "standard-site-publication/show-publication-theme",
+            data: { type: "boolean", value: !showPubTheme },
+          });
+        }}
+      />
+    </BlockSettings>
   );
 }

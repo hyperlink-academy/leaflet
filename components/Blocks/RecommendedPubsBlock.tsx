@@ -5,9 +5,8 @@ import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { usePublicationRecommendationListings } from "components/Subscribe/useSubscribeSuccessData";
 import { RecommendedPubsGrid } from "components/Subscribe/RecommendedPublications";
 import { getBasePublicationURL } from "src/utils/getPublicationURL";
-import { Popover } from "components/Popover";
-import { Toggle } from "components/Toggle";
-import { SettingsTriggerButton } from "./SettingsTriggerButton";
+import { ToggleWithLabel } from "components/Toggle";
+import { BlockSettings } from "./SettingsTriggerButton";
 import { EmptyState } from "components/EmptyState";
 
 export const RecommendedPubsBlock = (
@@ -39,10 +38,6 @@ export const RecommendedPubsBlock = (
 };
 
 function RecommendedPubsBlockContent({ entityID }: { entityID: string }) {
-  // Source publication data from the leaflet editor's provider, not the
-  // dashboard PublicationSWRProvider — the latter isn't mounted in the post
-  // editor, so reading from it left the block stuck on its loading placeholder
-  // there. See the same note in SubscribeBlock.
   let { data } = useLeafletPublicationData();
   let compact = useEntity(entityID, "recommended-pubs/compact")?.data.value;
   let publication = data?.publications;
@@ -56,14 +51,20 @@ function RecommendedPubsBlockContent({ entityID }: { entityID: string }) {
     let settingsUrl = `${getBasePublicationURL(publication)}/dashboard/settings?tab=general`;
     return (
       <EmptyState
-        container="none"
+        container="light"
         title="You haven't recommended any publications yet!"
       >
-        Set up your recommendations in{" "}
-        <a href={settingsUrl} target="_blank" rel="noopener noreferrer">
-          Settings
-        </a>
-        .
+        <div>
+          Set up your recommendations in{" "}
+          <a
+            href={settingsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline"
+          >
+            Publication Settings
+          </a>
+        </div>
       </EmptyState>
     );
   }
@@ -99,31 +100,20 @@ function RecommendedPubsSettingsButton(props: { entityID: string }) {
     useEntity(props.entityID, "recommended-pubs/compact")?.data.value ?? false;
 
   return (
-    <Popover
-      asChild
-      side="top"
-      align="end"
-      sideOffset={6}
-      trigger={<SettingsTriggerButton aria-label="Recommended Pubs Settings" />}
-    >
-      <div className="flex flex-col gap-3 text-primary py-1 min-w-[220px]">
-        <Toggle
-          toggle={compact}
-          onToggle={() => {
-            if (!rep) return;
-            rep.mutate.assertFact({
-              entity: props.entityID,
-              attribute: "recommended-pubs/compact",
-              data: { type: "boolean", value: !compact },
-            });
-          }}
-        >
-          <strong>Compact</strong>
-        </Toggle>
-        <div className="text-tertiary text-sm ml-8 -mt-2 leading-snug">
-          Show the recommendations in a single side-scrolling row.
-        </div>
-      </div>
-    </Popover>
+    <BlockSettings label="Recommended Pubs" className="w-xs">
+      <ToggleWithLabel
+        label="Compact"
+        helpText="Show the recommendations in a single side-scrolling row."
+        toggle={compact}
+        onToggle={() => {
+          if (!rep) return;
+          rep.mutate.assertFact({
+            entity: props.entityID,
+            attribute: "recommended-pubs/compact",
+            data: { type: "boolean", value: !compact },
+          });
+        }}
+      />
+    </BlockSettings>
   );
 }

@@ -17,7 +17,7 @@ export const RecommendedPubsGrid = (props: {
   if (props.compact)
     return (
       <div
-        className={`flex flex-row gap-3 text-left overflow-x-auto ${props.className || ""}`}
+        className={`flex flex-row gap-3 text-left overflow-x-auto p-1 -m-1 ${props.className || ""}`}
       >
         {props.listings.map((listing) => (
           <div key={listing.uri} className="flex sm:w-56 w-32 shrink-0">

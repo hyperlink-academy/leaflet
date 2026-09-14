@@ -53,6 +53,7 @@ export const PubListing = (props: PubListingProps) => {
           bg-bg-leaflet
           border border-border-light rounded-lg
           px-3 py-3 selected-outline
+        outline-transparent
           hover:outline-accent-contrast hover:border-accent-contrast
           relative overflow-hidden `}
         style={{

@@ -497,6 +497,11 @@ const BlockMultiselectIndicator = (props: BlockProps) => {
     );
 };
 
+const swallowActivation = (e: React.MouseEvent) => {
+  e.preventDefault();
+  e.stopPropagation();
+};
+
 export const BlockLayout = (props: {
   isSelected: boolean;
   children: React.ReactNode;
@@ -529,8 +534,13 @@ export const BlockLayout = (props: {
           : undefined
       }
     >
-      {props.inertContent && <div className="absolute inset-0 z-10" />}
       <div
+        {...(props.inertContent
+          ? {
+              onClickCapture: swallowActivation,
+              onAuxClickCapture: swallowActivation,
+            }
+          : {})}
         className={`nonTextBlock ${props.className} p-2 sm:p-3 overflow-hidden
         ${props.hasAlignment ? "w-fit" : "w-full"}
          ${props.isSelected ? "block-border-selected " : "block-border"}
