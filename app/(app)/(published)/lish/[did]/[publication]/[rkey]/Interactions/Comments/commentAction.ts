@@ -21,6 +21,8 @@ import {
   isDocumentCollection,
   isPublicationCollection,
 } from "src/utils/collectionHelpers";
+import { tombstoneComment } from "src/comments/tombstoneComment";
+import { revalidateDocumentPaths } from "src/utils/revalidatePublication";
 
 type PublishCommentResult =
   | { success: true; record: Json; profile: any; uri: string }
@@ -132,6 +134,139 @@ export async function publishComment(args: {
     profile: lexToJson(profile.value),
     uri: uri.toString(),
   };
+}
+
+type OwnCommentError =
+  | OAuthSessionError
+  | { type: "forbidden" | "failed"; message: string };
+
+type DeleteCommentResult =
+  | { success: true }
+  | { success: false; error: OwnCommentError };
+
+type UpdateCommentResult =
+  | { success: true; record: Json }
+  | { success: false; error: OwnCommentError };
+
+// Resolves an authenticated agent for a comment the viewer authored.
+async function authorAgentForComment(
+  commentUri: string,
+): Promise<
+  | { ok: true; uri: AtUri; agent: AtpBaseClient; did: string }
+  | { ok: false; error: OwnCommentError }
+> {
+  let identity = await getAuthIdentity();
+  let uri: AtUri;
+  try {
+    uri = new AtUri(commentUri);
+  } catch {
+    return {
+      ok: false,
+      error: { type: "failed", message: "Invalid comment" },
+    };
+  }
+  if (
+    !identity?.atp_did ||
+    identity.atp_did !== uri.host ||
+    uri.collection !== "pub.leaflet.comment"
+  ) {
+    return {
+      ok: false,
+      error: { type: "forbidden", message: "Not your comment" },
+    };
+  }
+
+  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  if (!sessionResult.ok) {
+    return { ok: false, error: sessionResult.error };
+  }
+  let credentialSession = sessionResult.value;
+  let agent = new AtpBaseClient(
+    credentialSession.fetchHandler.bind(credentialSession),
+  );
+  return { ok: true, uri, agent, did: credentialSession.did! };
+}
+
+export async function updateComment(args: {
+  uri: string;
+  plaintext: string;
+  facets: PubLeafletRichtextFacet.Main[];
+}): Promise<UpdateCommentResult> {
+  let auth = await authorAgentForComment(args.uri);
+  if (!auth.ok) return { success: false, error: auth.error };
+  let { uri, agent, did } = auth;
+
+  let { data: existing } = await supabaseServerClient
+    .from("comments_on_documents")
+    .select("record, past_versions, document")
+    .eq("uri", args.uri)
+    .maybeSingle();
+  if (!existing) {
+    return {
+      success: false,
+      error: { type: "failed", message: "Comment not found" },
+    };
+  }
+
+  let previous = existing.record as PubLeafletComment.Record;
+  let record: Un$Typed<PubLeafletComment.Record> = {
+    subject: previous.subject,
+    onPage: previous.onPage,
+    createdAt: previous.createdAt,
+    reply: previous.reply,
+    attachment: previous.attachment,
+    plaintext: args.plaintext,
+    facets: args.facets,
+  };
+  try {
+    await agent.pub.leaflet.comment.put({ rkey: uri.rkey, repo: did }, record);
+  } catch (e) {
+    console.error("Failed to update comment record", e);
+    return {
+      success: false,
+      error: { type: "failed", message: "Couldn't update the comment" },
+    };
+  }
+
+  let stored = { $type: "pub.leaflet.comment", ...record } as unknown as Json;
+  let pastVersions = Array.isArray(existing.past_versions)
+    ? existing.past_versions
+    : [];
+  await supabaseServerClient
+    .from("comments_on_documents")
+    .update({
+      record: stored,
+      past_versions: [
+        ...pastVersions,
+        { record: existing.record, replaced_at: new Date().toISOString() },
+      ],
+    })
+    .eq("uri", args.uri);
+  if (existing.document)
+    await revalidateDocumentPaths(existing.document, { neighbours: false });
+  return { success: true, record: stored };
+}
+
+export async function deleteComment(args: {
+  uri: string;
+}): Promise<DeleteCommentResult> {
+  let auth = await authorAgentForComment(args.uri);
+  if (!auth.ok) return { success: false, error: auth.error };
+  let { uri, agent, did } = auth;
+  try {
+    await agent.pub.leaflet.comment.delete({ rkey: uri.rkey, repo: did });
+  } catch (e) {
+    console.error("Failed to delete comment record", e);
+    return {
+      success: false,
+      error: { type: "failed", message: "Couldn't delete the comment" },
+    };
+  }
+
+  let comment = await tombstoneComment(supabaseServerClient, args.uri);
+  if (comment?.document)
+    await revalidateDocumentPaths(comment.document, { neighbours: false });
+  return { success: true };
 }
 
 /**
