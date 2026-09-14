@@ -62,8 +62,13 @@ export function CommentsDrawerContent(props: {
     let filtered = props.comments.filter(
       (c) => (c.record as PubLeafletComment.Record)?.onPage === pageId,
     );
+    // A locally posted comment can also arrive in props once the page
+    // refreshes; the server copy wins.
+    let serverUris = new Set(filtered.map((c) => c.uri));
     return [
-      ...localComments.filter((c) => (c.record as any)?.onPage === pageId),
+      ...localComments.filter(
+        (c) => (c.record as any)?.onPage === pageId && !serverUris.has(c.uri),
+      ),
       ...filtered,
     ].map((c) => {
       if (deletedComments.includes(c.uri) && !c.deleted)

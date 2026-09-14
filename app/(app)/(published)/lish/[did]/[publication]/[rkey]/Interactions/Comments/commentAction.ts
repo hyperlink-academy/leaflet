@@ -22,7 +22,6 @@ import {
   isPublicationCollection,
 } from "src/utils/collectionHelpers";
 import { tombstoneComment } from "src/comments/tombstoneComment";
-import { revalidateDocumentPaths } from "src/utils/revalidatePublication";
 
 type PublishCommentResult =
   | { success: true; record: Json; profile: any; uri: string }
@@ -198,7 +197,7 @@ export async function updateComment(args: {
 
   let { data: existing } = await supabaseServerClient
     .from("comments_on_documents")
-    .select("record, past_versions, document")
+    .select("record, past_versions")
     .eq("uri", args.uri)
     .maybeSingle();
   if (!existing) {
@@ -242,8 +241,6 @@ export async function updateComment(args: {
       ],
     })
     .eq("uri", args.uri);
-  if (existing.document)
-    await revalidateDocumentPaths(existing.document, { neighbours: false });
   return { success: true, record: stored };
 }
 
@@ -263,9 +260,9 @@ export async function deleteComment(args: {
     };
   }
 
-  let comment = await tombstoneComment(supabaseServerClient, args.uri);
-  if (comment?.document)
-    await revalidateDocumentPaths(comment.document, { neighbours: false });
+  // Cached pages are revalidated by the appview when the delete event lands,
+  // like publishing; revalidating here would refresh the page mid-action.
+  await tombstoneComment(supabaseServerClient, args.uri);
   return { success: true };
 }
 
