@@ -52,6 +52,7 @@ export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
       // covers hover an outline that sits outside their border box — clipping
       // here would shave it off the grid's outer cards.
       className="border-none! p-0! rounded-none! overflow-visible!"
+      inertContent
       extraOptions={<PostsListSettingsButton entityID={props.entityID} />}
     >
       <PostsListBlockContent entityID={props.entityID} />

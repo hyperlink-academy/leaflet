@@ -63,7 +63,7 @@ export const PubListing = (props: PubListingProps) => {
       >
         <a href={record.url} className="absolute inset-0 z-[1]" />
         <div
-          className={`flex w-full flex-col justify-center text-center ${props.compact ? "" : "pt-4 pb-3 px-3"}  rounded-lg relative   ${props.constrainHeight ? "sm:h-[200px] h-full" : props.compact ? "h-full" : "h-fit"} ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""} ${props.className}`}
+          className={`flex w-full flex-col justify-center text-center ${props.compact ? "p-2 pb-3" : "pt-4 pb-3 px-3"}  rounded-lg relative   ${props.constrainHeight ? "sm:h-[200px] h-full" : props.compact ? "h-full" : "h-fit"} ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""} ${props.className}`}
         >
           {props.compact ? (
             <div className="flex flex-col gap-1 items-center justify-center py-1 min-w-0">

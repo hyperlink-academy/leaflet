@@ -1755,6 +1755,25 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksRecommendedPubs: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.recommendedPubs',
+    defs: {
+      main: {
+        type: 'object',
+        description:
+          'The publications this publication recommends, resolved at render time from its recommendations rather than stored on the block.',
+        required: [],
+        properties: {
+          compact: {
+            type: 'boolean',
+            description:
+              'Lay the recommendations out as a single side-scrolling row instead of a grid.',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksSignup: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.signup',
@@ -2237,6 +2256,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.button',
               'lex:pub.leaflet.blocks.postsList',
               'lex:pub.leaflet.blocks.signup',
+              'lex:pub.leaflet.blocks.recommendedPubs',
               'lex:pub.leaflet.blocks.membersOnlyDelimiter',
             ],
           },
@@ -2346,6 +2366,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.button',
               'lex:pub.leaflet.blocks.postsList',
               'lex:pub.leaflet.blocks.signup',
+              'lex:pub.leaflet.blocks.recommendedPubs',
               'lex:pub.leaflet.blocks.membersOnlyDelimiter',
             ],
           },
@@ -3312,6 +3333,7 @@ export const ids = {
   PubLeafletBlocksPage: 'pub.leaflet.blocks.page',
   PubLeafletBlocksPoll: 'pub.leaflet.blocks.poll',
   PubLeafletBlocksPostsList: 'pub.leaflet.blocks.postsList',
+  PubLeafletBlocksRecommendedPubs: 'pub.leaflet.blocks.recommendedPubs',
   PubLeafletBlocksSignup: 'pub.leaflet.blocks.signup',
   PubLeafletBlocksStandardSitePost: 'pub.leaflet.blocks.standardSitePost',
   PubLeafletBlocksStandardSitePublication:

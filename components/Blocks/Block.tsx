@@ -47,6 +47,7 @@ import { CodeBlock } from "./CodeBlock";
 import { HorizontalRule } from "./HorizontalRule";
 import { MembersOnlyDelimiterBlock } from "./MembersOnlyDelimiterBlock";
 import { PostsListBlock } from "./PostsListBlock";
+import { RecommendedPubsBlock } from "./RecommendedPubsBlock";
 import { SubscribeBlock } from "./SubscribeBlock";
 import { deepEquals } from "src/utils/deepEquals";
 import { isTextBlock } from "src/utils/isTextBlock";
@@ -455,6 +456,7 @@ const BlockTypeComponents: {
   "horizontal-rule": HorizontalRule,
   "members-only-delimiter": MembersOnlyDelimiterBlock,
   "posts-list": PostsListBlock,
+  "recommended-pubs": RecommendedPubsBlock,
   signup: SubscribeBlock,
 };
 
@@ -506,8 +508,8 @@ export const BlockLayout = (props: {
   areYouSure?: boolean;
   setAreYouSure?: (value: boolean) => void;
   extraOptions?: React.ReactNode;
+  inertContent?: boolean;
 }) => {
-  // this is used to wrap non-text blocks in consistent selected styling, spacing, and top level options like delete
   let bodyDrag = useBlockBodyDrag();
   return (
     <div
@@ -516,8 +518,6 @@ export const BlockLayout = (props: {
       onPointerDown={
         bodyDrag
           ? (e) => {
-              // A hold on a control inside the block (a vote button, a caption
-              // input, the embed's resize handle) is meant for the control.
               if (
                 (e.target as Element).closest(
                   "button, a, input, textarea, select, [contenteditable], [data-draggable]",
@@ -529,6 +529,7 @@ export const BlockLayout = (props: {
           : undefined
       }
     >
+      {props.inertContent && <div className="absolute inset-0 z-10" />}
       <div
         className={`nonTextBlock ${props.className} p-2 sm:p-3 overflow-hidden
         ${props.hasAlignment ? "w-fit" : "w-full"}
@@ -543,9 +544,6 @@ export const BlockLayout = (props: {
         }
         `}
       >
-        {/* A block's own list marker sits beside its body, so any ListMarker
-            rendered inside (a page link's preview of its page's title) must
-            not inherit the handle and pick this block up. */}
         <ListDragHandleContext.Provider value={null}>
           {props.children}
         </ListDragHandleContext.Provider>

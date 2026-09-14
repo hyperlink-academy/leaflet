@@ -65,6 +65,7 @@ import { openPage as openPageAction } from "./postPageState";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { MembersOnlyPaywall } from "./MembersOnlyPaywall";
+import { PublishedRecommendedPubs } from "./Blocks/PublishedRecommendedPubs";
 
 // Mirrors HeadingStyle in components/Blocks/TextBlock/index.tsx so published
 // headers match the editor exactly. Keep the two in sync — see the
@@ -401,6 +402,17 @@ export let Block = ({
             }
             publicationDescription={document.normalizedPublication?.description}
             newsletterMode={document.publication.newsletterMode}
+          />
+        </div>
+      );
+    },
+    "pub.leaflet.blocks.recommendedPubs": (block) => {
+      if (!currentPublicationUri) return null;
+      return (
+        <div className={className} {...blockProps}>
+          <PublishedRecommendedPubs
+            publicationUri={currentPublicationUri}
+            compact={block.compact}
           />
         </div>
       );

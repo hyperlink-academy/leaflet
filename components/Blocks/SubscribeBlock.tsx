@@ -47,6 +47,7 @@ export const SubscribeBlock = (
       isSelected={!!isSelected}
       areYouSure={props.areYouSure}
       setAreYouSure={props.setAreYouSure}
+      inertContent
       className="accent-container rounded-lg! border-none! p-0! text-center justify-center"
     >
       <div className="px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-5">

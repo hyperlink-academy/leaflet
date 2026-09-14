@@ -202,7 +202,7 @@ export const SubscribeWithHandle = (props: {
               trigger={subscribeButton}
               className="text-sm p-1! text-tertiary"
             >
-              {tooltipLabel}x x x +3 friends also subscribe
+              {tooltipLabel}
             </Tooltip>
           ) : (
             subscribeButton
