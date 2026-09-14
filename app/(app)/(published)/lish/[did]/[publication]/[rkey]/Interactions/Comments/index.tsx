@@ -5,7 +5,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import { Json } from "supabase/database.types";
 import { PubLeafletComment } from "lexicons/api";
 import { BaseTextBlock } from "../../Blocks/BaseTextBlock";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { CollapsibleReplies } from "components/CollapsibleReplies";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
@@ -40,7 +40,16 @@ export type Comment = {
 // editor drags prosemirror into every public post page otherwise.
 const CommentBox = dynamic(
   () => import("./CommentBox").then((m) => m.CommentBox),
-  { ssr: false },
+  { ssr: false, loading: () => <ComposerPlaceholder /> },
+);
+
+// Same footprint as the composer (input + toolbar row) so the list below
+// doesn't jump while the viewer's identity or the editor chunk is loading.
+const ComposerPlaceholder = () => (
+  <div className="flex flex-col grow">
+    <div className="border input-with-border min-h-32 px-2 py-[6px]" />
+    <div className="pt-1 h-[30px]" />
+  </div>
 );
 export function CommentsDrawerContent(props: {
   document_uri: string;
@@ -48,7 +57,7 @@ export function CommentsDrawerContent(props: {
   noCommentBox?: boolean;
   pageId?: string;
 }) {
-  let { identity } = useIdentityData();
+  let { identity, identityPending } = useIdentityData();
   let {
     localComments,
     deletedComments,
@@ -107,6 +116,8 @@ export function CommentsDrawerContent(props: {
         <>
           {identity?.atp_did ? (
             <CommentBox doc_uri={props.document_uri} pageId={pageId} />
+          ) : identityPending ? (
+            <ComposerPlaceholder />
           ) : (
             <div className="w-full accent-container text-tertiary text-center italic p-3 gap-2">
               <span className="text-accent-contrast font-bold">
@@ -128,7 +139,7 @@ export function CommentsDrawerContent(props: {
         {topLevel.map((comment) => {
           let record = comment.record as PubLeafletComment.Record;
           return (
-            <>
+            <Fragment key={comment.uri}>
               <Comment
                 pageId={pageId}
                 profile={comment.profile}
@@ -136,10 +147,9 @@ export function CommentsDrawerContent(props: {
                 comment={comment}
                 record={record}
                 comments={comments}
-                key={comment.uri}
               />
               <hr className="border-border last:hidden" />
-            </>
+            </Fragment>
           );
         })}
       </div>

@@ -450,7 +450,7 @@ export function CommentBox(props: {
   }, []);
 
   return (
-    <div className={`flex flex-col grow ${props.className}`}>
+    <div className={`flex flex-col grow ${props.className ?? ""}`}>
       {quote && (
         <div className="relative mt-2 mb-2">
           <QuoteContent position={quote} did="" index={-1} />
