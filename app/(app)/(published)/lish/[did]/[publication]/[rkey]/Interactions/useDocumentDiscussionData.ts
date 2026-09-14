@@ -42,8 +42,9 @@ export function useDocumentDiscussionData(
   const documentRecord = data?.document ?? null;
   const pages = documentRecord ? (getDocumentPages(documentRecord) ?? []) : [];
 
+  const liveComments = (data?.comments ?? []).filter((c) => !c.deleted);
   const commentsCountByPage: Record<string, number> = {};
-  for (const c of data?.comments ?? []) {
+  for (const c of liveComments) {
     const onPage = (c.record as { onPage?: string } | null)?.onPage ?? "";
     commentsCountByPage[onPage] = (commentsCountByPage[onPage] ?? 0) + 1;
   }
@@ -64,7 +65,7 @@ export function useDocumentDiscussionData(
         prevNext: null,
         quotesAndMentions: data?.quotesAndMentions ?? [],
         publication: null,
-        commentsCount: data?.comments.length ?? 0,
+        commentsCount: liveComments.length,
         commentsCountByPage,
         mentions: [],
         recommendsCount: 0,

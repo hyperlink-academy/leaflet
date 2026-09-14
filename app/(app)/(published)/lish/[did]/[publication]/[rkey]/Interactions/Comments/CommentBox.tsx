@@ -20,8 +20,10 @@ import {
   useRef,
   useState,
 } from "react";
-import { publishComment } from "./commentAction";
-import { ButtonPrimary } from "components/Buttons";
+import { publishComment, updateComment } from "./commentAction";
+import { PubLeafletComment } from "lexicons/api";
+import { RichText } from "../../Blocks/TextBlockCore";
+import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { useInteractionState, setInteractionState } from "../Interactions";
 import { DotLoader } from "components/utils/DotLoader";
@@ -99,16 +101,26 @@ export function CommentBox(props: {
   onSubmit?: () => void;
   autoFocus?: boolean;
   className?: string;
+  // Edits an existing comment in place: the editor is seeded from the record,
+  // submit updates it, and the quote attachment is kept as-is.
+  editing?: { uri: string; record: PubLeafletComment.Record };
+  onCancel?: () => void;
 }) {
   let mountRef = useRef<HTMLPreElement | null>(null);
   // Scope the persisted draft to this post, and separately to each reply
-  // composer, so reloading restores the right in-progress comment
-  let draftKey = `comment:${props.doc_uri}${
-    props.replyTo ? `:reply:${props.replyTo}` : ""
-  }`;
+  // composer, so reloading restores the right in-progress comment. Edits
+  // aren't persisted: a reload should show the published text again.
+  let draftKey = props.editing
+    ? null
+    : `comment:${props.doc_uri}${
+        props.replyTo ? `:reply:${props.replyTo}` : ""
+      }`;
   let {
-    commentBox: { quote },
+    commentBox: { quote: draftQuote },
   } = useInteractionState(props.doc_uri);
+  let quote = props.editing ? null : draftQuote;
+  let onCancelRef = useRef(props.onCancel);
+  onCancelRef.current = props.onCancel;
   let [loading, setLoading] = useState(false);
   let view = useRef<null | EditorView>(null);
   let toaster = useToaster();
@@ -180,6 +192,31 @@ export function CommentBox(props: {
     setLoading(true);
     let currentState = view.current.state;
     let [plaintext, facets] = docToFacetedText(currentState.doc);
+    if (props.editing) {
+      let editing = props.editing;
+      let result = await updateComment({
+        uri: editing.uri,
+        plaintext,
+        facets,
+      });
+      setLoading(false);
+      if (!result.success) {
+        toaster({
+          content: isOAuthSessionError(result.error) ? (
+            <OAuthErrorMessage error={result.error} />
+          ) : (
+            "We couldn't update this. Please try again!"
+          ),
+          type: "error",
+        });
+        return;
+      }
+      setInteractionState(props.doc_uri, (s) => ({
+        editedComments: { ...s.editedComments, [editing.uri]: result.record },
+      }));
+      props.onSubmit?.();
+      return;
+    }
     let result = await publishComment({
       pageId: props.pageId,
       document: props.doc_uri,
@@ -247,7 +284,12 @@ export function CommentBox(props: {
   let [editorState, setEditorState] = useState(() => {
     let savedDoc = loadDraftDoc(draftKey);
     let doc: Node | undefined = undefined;
-    if (savedDoc) {
+    if (props.editing) {
+      doc = facetedTextToDoc(
+        props.editing.record.plaintext,
+        props.editing.record.facets ?? [],
+      );
+    } else if (savedDoc) {
       try {
         doc = multiBlockSchema.nodeFromJSON(savedDoc);
       } catch {
@@ -269,6 +311,11 @@ export function CommentBox(props: {
           },
           "Meta-Enter": () => {
             handleSubmitRef.current();
+            return true;
+          },
+          Escape: () => {
+            if (!onCancelRef.current) return false;
+            onCancelRef.current();
             return true;
           },
         }),
@@ -403,7 +450,7 @@ export function CommentBox(props: {
   }, []);
 
   return (
-    <div className={`flex flex-col grow ${props.className}`}>
+    <div className={`flex flex-col grow ${props.className ?? ""}`}>
       {quote && (
         <div className="relative mt-2 mb-2">
           <QuoteContent position={quote} did="" index={-1} />
@@ -475,9 +522,24 @@ export function CommentBox(props: {
               size="small"
             />
           )}
-          <ButtonPrimary compact onClick={() => handleSubmitRef.current()}>
-            {loading ? <DotLoader /> : <ShareSmall />}
-          </ButtonPrimary>
+          {props.editing ? (
+            <>
+              <ButtonTertiary compact onClick={() => props.onCancel?.()}>
+                Cancel
+              </ButtonTertiary>
+              <ButtonPrimary
+                compact
+                disabled={loading}
+                onClick={() => handleSubmitRef.current()}
+              >
+                {loading ? <DotLoader /> : "Update"}
+              </ButtonPrimary>
+            </>
+          ) : (
+            <ButtonPrimary compact onClick={() => handleSubmitRef.current()}>
+              {loading ? <DotLoader /> : <ShareSmall />}
+            </ButtonPrimary>
+          )}
         </div>
       </div>
     </div>
@@ -597,6 +659,75 @@ function docToFacetedText(doc: Node): [string, PubLeafletRichtextFacet.Main[]] {
   });
 
   return [fullText, facets];
+}
+
+// Inverse of docToFacetedText: rebuilds the editor document from a published
+// record so it can be edited.
+function facetedTextToDoc(
+  plaintext: string,
+  facets: PubLeafletRichtextFacet.Main[],
+): Node {
+  let paragraphs: Node[][] = [[]];
+  for (let segment of new RichText({ text: plaintext, facets }).segments()) {
+    let features = segment.facet ?? [];
+    let didMention = features.find(PubLeafletRichtextFacet.isDidMention);
+    let atMention = features.find(PubLeafletRichtextFacet.isAtMention);
+    if (didMention) {
+      paragraphs[paragraphs.length - 1].push(
+        multiBlockSchema.nodes.didMention.create({
+          did: didMention.did,
+          text: segment.text,
+        }),
+      );
+      continue;
+    }
+    if (atMention) {
+      paragraphs[paragraphs.length - 1].push(
+        multiBlockSchema.nodes.atMention.create({
+          atURI: atMention.atURI,
+          text: segment.text,
+        }),
+      );
+      continue;
+    }
+    let marks = featuresToMarks(features);
+    segment.text.split("\n").forEach((line, i) => {
+      if (i > 0) paragraphs.push([]);
+      if (line)
+        paragraphs[paragraphs.length - 1].push(
+          multiBlockSchema.text(line, marks),
+        );
+    });
+  }
+  return multiBlockSchema.nodes.doc.create(
+    null,
+    paragraphs.map((inline) =>
+      multiBlockSchema.nodes.paragraph.create(null, inline),
+    ),
+  );
+}
+
+function featuresToMarks(
+  features: PubLeafletRichtextFacet.Main["features"],
+): Mark[] {
+  let marks: Mark[] = [];
+  for (let feature of features) {
+    if (PubLeafletRichtextFacet.isBold(feature))
+      marks.push(multiBlockSchema.marks.strong.create());
+    else if (PubLeafletRichtextFacet.isItalic(feature))
+      marks.push(multiBlockSchema.marks.em.create());
+    else if (PubLeafletRichtextFacet.isUnderline(feature))
+      marks.push(multiBlockSchema.marks.underline.create());
+    else if (PubLeafletRichtextFacet.isStrikethrough(feature))
+      marks.push(multiBlockSchema.marks.strikethrough.create());
+    else if (PubLeafletRichtextFacet.isCode(feature))
+      marks.push(multiBlockSchema.marks.code.create());
+    else if (PubLeafletRichtextFacet.isHighlight(feature))
+      marks.push(multiBlockSchema.marks.highlight.create());
+    else if (PubLeafletRichtextFacet.isLink(feature))
+      marks.push(multiBlockSchema.marks.link.create({ href: feature.uri }));
+  }
+  return marks;
 }
 
 function marksToFeatures(marks: readonly Mark[]) {

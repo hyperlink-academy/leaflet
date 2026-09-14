@@ -32,6 +32,7 @@ import { inngest } from "app/api/inngest/client";
 import { stripThemeWithoutType } from "src/utils/stripThemeWithoutType";
 import { pageHasMembersDelimiter } from "src/membership";
 import { MAIN_SITE_URL } from "src/utils/customDomain";
+import { tombstoneComment } from "src/comments/tombstoneComment";
 import type { AppviewRevalidateEvent } from "app/api/appview_revalidate/route";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
@@ -420,15 +421,7 @@ async function handleEvent(evt: Event) {
         });
     }
     if (evt.event === "delete") {
-      let { data: comment } = await supabase
-        .from("comments_on_documents")
-        .select("document")
-        .eq("uri", evt.uri.toString())
-        .maybeSingle();
-      await supabase
-        .from("comments_on_documents")
-        .delete()
-        .eq("uri", evt.uri.toString());
+      let comment = await tombstoneComment(supabase, evt.uri.toString());
       if (comment?.document && (await isInLeafletPublication(comment.document)))
         await notifyRevalidate({
           kind: "interaction",

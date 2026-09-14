@@ -23,6 +23,12 @@ export type InteractionState = {
   pageId?: string;
   drawer: undefined | "comments" | "quotes";
   localComments: Comment[];
+  // URIs the viewer deleted this session; overlays server-rendered comment
+  // lists until the revalidated page arrives.
+  deletedComments: string[];
+  // Records the viewer edited this session, keyed by comment URI, overlaid
+  // the same way.
+  editedComments: { [uri: string]: Json };
   commentBox: { quote: QuotePosition | null };
   // Thread/quotes views opened within the drawer, innermost last. When
   // non-empty the drawer shows the top entry instead of the comments/mentions
@@ -34,6 +40,8 @@ const defaultInteractionState: InteractionState = {
   drawerOpen: undefined,
   drawer: undefined,
   localComments: [],
+  deletedComments: [],
+  editedComments: {},
   commentBox: { quote: null },
   threadStack: [],
 };

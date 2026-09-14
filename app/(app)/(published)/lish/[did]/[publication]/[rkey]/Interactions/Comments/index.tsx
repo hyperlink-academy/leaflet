@@ -5,9 +5,17 @@ import { useIdentityData } from "components/IdentityProvider";
 import { Json } from "supabase/database.types";
 import { PubLeafletComment } from "lexicons/api";
 import { BaseTextBlock } from "../../Blocks/BaseTextBlock";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { CollapsibleReplies } from "components/CollapsibleReplies";
 import { CommentTiny } from "components/Icons/CommentTiny";
+import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
+import { DeleteSmall } from "components/Icons/DeleteSmall";
+import { EditTiny } from "components/Icons/EditTiny";
+import { Menu, MenuItem } from "components/Menu";
+import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
+import { useToaster } from "components/Toast";
+import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
+import { deleteComment } from "./commentAction";
 
 import { AtUri } from "@atproto/api";
 import { usePathname } from "next/navigation";
@@ -22,13 +30,26 @@ export type Comment = {
   record: Json;
   uri: string;
   profile: Profile | null;
+  // Tombstoned: `record` is stripped to subject/createdAt/onPage/reply and the
+  // comment renders as a placeholder only while it still has visible replies.
+  deleted?: boolean;
+  edited?: boolean;
 };
 
 // Loaded when the comments drawer renders rather than bundled: the comment
 // editor drags prosemirror into every public post page otherwise.
 const CommentBox = dynamic(
   () => import("./CommentBox").then((m) => m.CommentBox),
-  { ssr: false },
+  { ssr: false, loading: () => <ComposerPlaceholder /> },
+);
+
+// Same footprint as the composer (input + toolbar row) so the list below
+// doesn't jump while the viewer's identity or the editor chunk is loading.
+const ComposerPlaceholder = () => (
+  <div className="flex flex-col grow">
+    <div className="border input-with-border min-h-32 px-2 py-[6px]" />
+    <div className="pt-1 h-[30px]" />
+  </div>
 );
 export function CommentsDrawerContent(props: {
   document_uri: string;
@@ -36,10 +57,13 @@ export function CommentsDrawerContent(props: {
   noCommentBox?: boolean;
   pageId?: string;
 }) {
-  let { identity } = useIdentityData();
-  let { localComments, pageId: statePageId } = useInteractionState(
-    props.document_uri,
-  );
+  let { identity, identityPending } = useIdentityData();
+  let {
+    localComments,
+    deletedComments,
+    editedComments,
+    pageId: statePageId,
+  } = useInteractionState(props.document_uri);
   // Callers (e.g. the discussion modal) can pin the page explicitly; otherwise
   // fall back to the page tracked in the shared interaction state.
   let pageId = props.pageId ?? statePageId;
@@ -47,11 +71,33 @@ export function CommentsDrawerContent(props: {
     let filtered = props.comments.filter(
       (c) => (c.record as PubLeafletComment.Record)?.onPage === pageId,
     );
+    // A locally posted comment can also arrive in props once the page
+    // refreshes; the server copy wins.
+    let serverUris = new Set(filtered.map((c) => c.uri));
     return [
-      ...localComments.filter((c) => (c.record as any)?.onPage === pageId),
+      ...localComments.filter(
+        (c) => (c.record as any)?.onPage === pageId && !serverUris.has(c.uri),
+      ),
       ...filtered,
-    ];
-  }, [props.comments, localComments, pageId]);
+    ].map((c) => {
+      if (deletedComments.includes(c.uri) && !c.deleted)
+        return { ...c, deleted: true };
+      if (editedComments[c.uri])
+        return { ...c, record: editedComments[c.uri], edited: true };
+      return c;
+    });
+  }, [props.comments, localComments, deletedComments, editedComments, pageId]);
+  let topLevel = useMemo(
+    () =>
+      comments
+        .filter(
+          (comment) =>
+            !(comment.record as PubLeafletComment.Record).reply &&
+            isCommentShown(comment, comments),
+        )
+        .sort(byNewest),
+    [comments],
+  );
   let pathname = usePathname();
   let redirectRoute = useMemo(() => {
     if (typeof window === "undefined") return;
@@ -70,6 +116,8 @@ export function CommentsDrawerContent(props: {
         <>
           {identity?.atp_did ? (
             <CommentBox doc_uri={props.document_uri} pageId={pageId} />
+          ) : identityPending ? (
+            <ComposerPlaceholder />
           ) : (
             <div className="w-full accent-container text-tertiary text-center italic p-3 gap-2">
               <span className="text-accent-contrast font-bold">
@@ -87,40 +135,51 @@ export function CommentsDrawerContent(props: {
         </>
       )}
       <div className="comments flex flex-col gap-4 sm:gap-6 py-2">
-        {comments.length === 0 && <EmptyState>No comments yet…</EmptyState>}
-        {comments.length > 0 &&
-          comments
-            .sort((a, b) => {
-              let aRecord = a.record as PubLeafletComment.Record;
-              let bRecord = b.record as PubLeafletComment.Record;
-              return (
-                new Date(bRecord.createdAt).getTime() -
-                new Date(aRecord.createdAt).getTime()
-              );
-            })
-            .filter(
-              (comment) => !(comment.record as PubLeafletComment.Record).reply,
-            )
-            .map((comment) => {
-              let record = comment.record as PubLeafletComment.Record;
-              return (
-                <>
-                  <Comment
-                    pageId={pageId}
-                    profile={comment.profile}
-                    document={props.document_uri}
-                    comment={comment}
-                    record={record}
-                    comments={comments}
-                    key={comment.uri}
-                  />
-                  <hr className="border-border last:hidden" />
-                </>
-              );
-            })}
+        {topLevel.length === 0 && <EmptyState>No comments yet…</EmptyState>}
+        {topLevel.map((comment) => {
+          let record = comment.record as PubLeafletComment.Record;
+          return (
+            <Fragment key={comment.uri}>
+              <Comment
+                pageId={pageId}
+                profile={comment.profile}
+                document={props.document_uri}
+                comment={comment}
+                record={record}
+                comments={comments}
+              />
+              <hr className="border-border last:hidden" />
+            </Fragment>
+          );
+        })}
       </div>
     </div>
   );
+}
+
+const byNewest = (a: Comment, b: Comment) =>
+  new Date((b.record as PubLeafletComment.Record).createdAt).getTime() -
+  new Date((a.record as PubLeafletComment.Record).createdAt).getTime();
+
+// A deleted comment only earns a placeholder while something visible hangs
+// off it; a deleted leaf (and a chain of deleted leaves) disappears outright.
+function isCommentShown(comment: Comment, comments: Comment[]): boolean {
+  if (!comment.deleted) return true;
+  return comments.some(
+    (c) =>
+      (c.record as PubLeafletComment.Record).reply?.parent === comment.uri &&
+      isCommentShown(c, comments),
+  );
+}
+
+function getVisibleReplies(parentUri: string, comments: Comment[]) {
+  return comments
+    .filter(
+      (comment) =>
+        (comment.record as PubLeafletComment.Record).reply?.parent ===
+          parentUri && isCommentShown(comment, comments),
+    )
+    .sort(byNewest);
 }
 
 const Comment = (props: {
@@ -131,7 +190,34 @@ const Comment = (props: {
   record: PubLeafletComment.Record;
   pageId?: string;
 }) => {
-  const did = props.profile?.did;
+  let { identity } = useIdentityData();
+  let isAuthor =
+    !!identity?.atp_did &&
+    new AtUri(props.comment.uri).host === identity.atp_did;
+  let [editing, setEditing] = useState(false);
+
+  if (props.comment.deleted) {
+    return (
+      <div
+        id={props.comment.uri}
+        className="comment flex gap-2 pointer-events-auto"
+      >
+        <div className="h-6 w-6 shrink-0 rounded-full bg-border-light" />
+        <div className="min-w-0 w-full grow flex flex-col pt-1">
+          <div className="italic text-tertiary pb-[4px]">
+            This comment has been deleted
+          </div>
+          <Replies
+            pageId={props.pageId}
+            comment_uri={props.comment.uri}
+            comments={props.comments}
+            document={props.document}
+            canReply={false}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -149,12 +235,24 @@ const Comment = (props: {
       />
 
       <div className="min-w-0 w-full grow flex flex-col pt-1">
-        <PostInfo
-          displayName={props.profile?.displayName}
-          handle={props.profile?.handle || ""}
-          createdAt={props.record.createdAt}
-          compact
-        />
+        <div className="flex items-center gap-2">
+          <PostInfo
+            displayName={props.profile?.displayName}
+            handle={props.profile?.handle || ""}
+            createdAt={props.record.createdAt}
+            compact
+          />
+          {props.comment.edited && (
+            <span className="text-xs text-tertiary shrink-0">edited</span>
+          )}
+          {isAuthor && !editing && (
+            <CommentOptions
+              uri={props.comment.uri}
+              document={props.document}
+              onEdit={() => setEditing(true)}
+            />
+          )}
+        </div>
 
         {props.record.attachment &&
           PubLeafletComment.isLinearDocumentQuote(props.record.attachment) && (
@@ -166,18 +264,30 @@ const Comment = (props: {
               />
             </div>
           )}
-        <pre
-          key={props.comment.uri}
-          style={{ wordBreak: "break-word", fontFamily: "inherit" }}
-          className="whitespace-pre-wrap text-secondary pb-[4px] "
-        >
-          <BaseTextBlock
-            index={[]}
-            plaintext={props.record.plaintext}
-            facets={props.record.facets}
-            ugcLinks
+        {editing ? (
+          <CommentBox
+            className="pt-1 pb-2"
+            doc_uri={props.document}
+            pageId={props.pageId}
+            editing={{ uri: props.comment.uri, record: props.record }}
+            autoFocus
+            onCancel={() => setEditing(false)}
+            onSubmit={() => setEditing(false)}
           />
-        </pre>
+        ) : (
+          <pre
+            key={props.comment.uri}
+            style={{ wordBreak: "break-word", fontFamily: "inherit" }}
+            className="whitespace-pre-wrap text-secondary pb-[4px] "
+          >
+            <BaseTextBlock
+              index={[]}
+              plaintext={props.record.plaintext}
+              facets={props.record.facets}
+              ugcLinks
+            />
+          </pre>
+        )}
         <Replies
           pageId={props.pageId}
           comment_uri={props.comment.uri}
@@ -194,31 +304,20 @@ const Replies = (props: {
   comments: Comment[];
   document: string;
   pageId?: string;
+  canReply?: boolean;
 }) => {
   let { identity } = useIdentityData();
+  let canReply = props.canReply !== false && !!identity?.atp_did;
 
   let [replyBoxOpen, setReplyBoxOpen] = useState(false);
   let [repliesOpen, setRepliesOpen] = useState(true);
 
-  let replies = props.comments
-    .filter(
-      (comment) =>
-        (comment.record as PubLeafletComment.Record).reply?.parent ===
-        props.comment_uri,
-    )
-    .sort((a, b) => {
-      let aRecord = a.record as PubLeafletComment.Record;
-      let bRecord = b.record as PubLeafletComment.Record;
-      return (
-        new Date(bRecord.createdAt).getTime() -
-        new Date(aRecord.createdAt).getTime()
-      );
-    });
+  let replies = getVisibleReplies(props.comment_uri, props.comments);
 
   return (
     <>
       <div className="flex gap-2 items-center">
-        {(replies.length !== 0 || identity?.atp_did) && (
+        {(replies.length !== 0 || canReply) && (
           <button
             className="flex gap-1 items-center text-sm text-tertiary"
             onClick={() => {
@@ -230,7 +329,7 @@ const Replies = (props: {
             {replies.length !== 0 && replies.length}
           </button>
         )}
-        {identity?.atp_did && (
+        {canReply && (
           <button
             className="text-accent-contrast text-sm"
             onClick={() => {
@@ -301,5 +400,87 @@ const Replies = (props: {
         </CollapsibleReplies>
       )}
     </>
+  );
+};
+
+const CommentOptions = (props: {
+  uri: string;
+  document: string;
+  onEdit: () => void;
+}) => {
+  let [state, setState] = useState<"menu" | "confirm">("menu");
+  let [loading, setLoading] = useState(false);
+  let toaster = useToaster();
+
+  return (
+    <Menu
+      asChild
+      align="end"
+      onOpenChange={(open) => {
+        if (!open) setState("menu");
+      }}
+      trigger={
+        <button
+          className="shrink-0 text-tertiary hover:text-accent-contrast"
+          aria-label="Comment options"
+        >
+          <MoreOptionsTiny />
+        </button>
+      }
+    >
+      {state === "menu" ? (
+        <>
+          <MenuItem onSelect={() => props.onEdit()}>
+            <EditTiny />
+            Edit Comment
+          </MenuItem>
+          <MenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              setState("confirm");
+            }}
+          >
+            <DeleteSmall />
+            Delete Comment
+          </MenuItem>
+        </>
+      ) : (
+        <div className="flex flex-col justify-center p-2 text-center">
+          <div className="text-primary font-bold">Delete this comment?</div>
+          <div className="text-sm text-secondary">
+            Replies to it will stay visible.
+          </div>
+          <div className="flex gap-2 mx-auto items-center mt-2">
+            <ButtonTertiary onClick={() => setState("menu")}>
+              Nevermind
+            </ButtonTertiary>
+            <ButtonPrimary
+              disabled={loading}
+              onClick={async () => {
+                setLoading(true);
+                let result = await deleteComment({ uri: props.uri });
+                setLoading(false);
+                if (!result.success) {
+                  toaster({
+                    content: isOAuthSessionError(result.error) ? (
+                      <OAuthErrorMessage error={result.error} />
+                    ) : (
+                      "We couldn't delete this. Please try again!"
+                    ),
+                    type: "error",
+                  });
+                  return;
+                }
+                setInteractionState(props.document, (s) => ({
+                  deletedComments: [...s.deletedComments, props.uri],
+                }));
+              }}
+            >
+              Delete
+            </ButtonPrimary>
+          </div>
+        </div>
+      )}
+    </Menu>
   );
 };
