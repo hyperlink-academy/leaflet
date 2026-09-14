@@ -2,12 +2,19 @@
 import React from "react";
 import { MembersBadge } from "./MembersBadge";
 import { MetaRow } from "./MetaRow";
+import { PostItemCoverImage } from "./PostItemCoverImage";
 import { PostLink } from "./PostLink";
 import { useFitToHeight } from "./useFitToHeight";
 import { type MediumProps } from "./types";
+import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
+import { membershipUnlocksGatedPost } from "src/membership";
 
 export function PublicationPostItemMedium(props: MediumProps) {
   const hasCoverImage = !!props.coverImageSrc;
+  const { membership } = useViewerSubscription(props.publicationUri);
+  const locked =
+    !!props.membersOnly &&
+    !membershipUnlocksGatedPost(membership, props.gatePolicy);
   const { boxRef, titleRef, descriptionRef } = useFitToHeight(
     props.title,
     props.description,
@@ -70,10 +77,11 @@ export function PublicationPostItemMedium(props: MediumProps) {
           <div
             className={`self-start shrink-0 w-24  sm:w-36  ${!props.inList ? "border-l sm:border-border-light border-transparent sm:p-0 pt-2" : "p-2"}  ${props.pubInfo && "sm:mt-0 mt-[21px] sm:mr-0 mr-3"}`}
           >
-            <img
-              src={props.coverImageSrc}
+            <PostItemCoverImage
+              src={props.coverImageSrc!}
               alt={props.coverImageAlt || props.title || ""}
-              className={`w-full h-full aspect-square object-cover rounded-md ${!props.inList && "sm:rounded-none"}`}
+              locked={locked}
+              className={`w-full aspect-square rounded-md ${!props.inList && "sm:rounded-none"}`}
             />
           </div>
         )}

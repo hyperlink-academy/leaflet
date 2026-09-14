@@ -11,7 +11,7 @@ export function MembersBadge(props: {
   let { membership } = useViewerSubscription(props.publicationUri);
   let unlocked = membershipUnlocksGatedPost(membership, props.gatePolicy);
   let badgeClassName =
-    "membersBadge group absolute top-2.5 right-2.5 rounded-full h-5 px-0.5 flex items-center gap-1";
+    "membersBadge group absolute top-2.5 right-2.5 z-[1] pointer-events-none rounded-full h-5 px-0.5 flex items-center gap-1";
   if (unlocked)
     return (
       <div className={`${badgeClassName} bg-transparent text-border`}>
