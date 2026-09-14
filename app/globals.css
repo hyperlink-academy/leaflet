@@ -1109,3 +1109,184 @@ body > iframe[name^="__privateStripeFrame"],
 body > iframe[src*="js.stripe.com"] {
   pointer-events: auto !important;
 }
+
+
+/* Print. On screen the app is a fixed-height viewport with nested scroll
+   containers (viewport wrapper → theme wrappers → page carousel → each page),
+   so the browser's print engine sees one screen's worth of content and clips
+   the rest. Every level here is released to flow at its content height, the
+   horizontal carousel becomes a vertical stack (main page first, then each
+   open subpage on its own sheet), and interactive chrome is dropped. Unlayered
+   rules beat Tailwind's layered utilities; `!important` is only needed where
+   an inline style or an `!`-utility is being overridden. */
+@media print {
+  html,
+  body,
+  .viewportSizeLayout,
+  .leafletWrapper,
+  .LeafletBackgroundWrapper,
+  .PubBackgroundWrapper,
+  .leafetLayout,
+  .pagesWrapper,
+  .pageWrapper,
+  .pageScrollWrapper,
+  .postPageContent,
+  .pubWrapper,
+  .pubContentScroll {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* The theme sets the leaflet colour on body inline; on paper the area
+     outside the page (the remainder of a sheet after a forced break) must stay
+     white. */
+  body {
+    background: #fff !important;
+  }
+
+  /* Highlights, code blocks and themed page backgrounds are content, not
+     decoration; without this most browsers strip them on paper. */
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .leafletWrapper,
+  .LeafletBackgroundWrapper,
+  .PubBackgroundWrapper {
+    background-image: none !important;
+    background-color: transparent !important;
+  }
+
+  .leafetLayout,
+  .pagesWrapper {
+    display: block;
+    padding: 0 !important;
+  }
+
+  .pagesWrapper > .spacer,
+  .pagesWrapper > .leafletSidebar,
+  .pagesWrapper > .interactionDrawer {
+    display: none !important;
+  }
+
+  .pageWrapper {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  /* Each open subpage prints after the main page has fully flowed, starting
+     on a fresh sheet. A page's wrapper is either a direct child of the
+     carousel (published) or sits inside a display:contents theme wrapper
+     (editor), so match both shapes; the first page never breaks. */
+  .pagesWrapper > :is(.pageWrapper, :has(> .pageWrapper)) ~ .pageWrapper,
+  .pagesWrapper > :is(.pageWrapper, :has(> .pageWrapper)) ~ :has(> .pageWrapper) > .pageWrapper {
+    break-before: page;
+  }
+
+  .pageScrollWrapper {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding-top: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .postPageContent {
+    max-width: none !important;
+  }
+
+  .pageBackground {
+    display: none;
+  }
+
+  .pubWrapper,
+  .pubContentScroll {
+    max-width: none !important;
+    width: 100% !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Editor and reader chrome. */
+  .desktopPageFooter,
+  .mobileLeafletFooter,
+  .pageOptions,
+  .footnote-side-column,
+  .postPrevNext,
+  .expandedInteractions,
+  .subscribePanel,
+  .newBlockButton,
+  .blockListClickableBottomArea,
+  .inlineVersionBanner,
+  .floatingVersionBanner,
+  .toastAnimationWrapper,
+  .mobileSheet,
+  .yjs-cursor-layer,
+  .blockSelectionBG,
+  .listDropIndicator,
+  .headingFoldButton,
+  .imageGalleryCarouselArrow,
+  .imageGalleryCarouselControls,
+  .imageAltButton,
+  .publicationEditHeader,
+  [data-radix-popper-content-wrapper] {
+    display: none !important;
+  }
+
+  /* Page-break hygiene. */
+  .blockWrapper,
+  .publishedBskyPostBlock,
+  .standardSitePostBlock,
+  .membersOnlyPaywall,
+  pre,
+  img {
+    break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    break-after: avoid;
+  }
+
+  p,
+  li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Gallery images are sized by their grid cells, so they keep their own
+     fit; a standalone image taller than a sheet is scaled to fit one. */
+  img:not(.imageGalleryBlock *) {
+    max-height: 90vh;
+    object-fit: contain;
+  }
+
+  /* The carousel shows one slide at a time behind a horizontal scroller; on
+     paper every slide is stacked. */
+  .imageGalleryCarousel {
+    grid-auto-flow: row !important;
+    overflow: visible !important;
+    row-gap: 8px;
+  }
+
+  /* Code scrolls horizontally on screen; on paper it has to wrap. */
+  pre.shiki,
+  .codeBlockEditor,
+  .codeBlockRendered {
+    overflow: visible !important;
+    white-space: pre-wrap !important;
+    word-break: break-word;
+  }
+
+  .selection-highlight {
+    background: transparent !important;
+  }
+}

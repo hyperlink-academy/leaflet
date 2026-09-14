@@ -904,16 +904,23 @@ function ListItem(props: {
   let isChecklist = props.item.checked !== undefined;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
-      <div
-        className={`listMarker shrink-0 mx-3 z-1 mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
-      />
-      {isChecklist && (
+      {/* One box for the marker and the checkbox, so the li's gap only
+          separates them from the content — as in the editor's ListMarker. The
+          checkbox rides a zero-height line 12px in (h-3 + pt-[12px]) to sit on
+          the first text line; mt-1 stands in for the top margin the published
+          renderer puts on the content block instead of the row. */}
+      <div className="flex shrink-0">
         <div
-          className={`pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}
-        >
-          {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
-        </div>
-      )}
+          className={`listMarker shrink-0 mx-3 z-1 mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
+        />
+        {isChecklist && (
+          <div
+            className={`shrink-0 flex items-center h-3 mt-1 pt-[12px] pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}
+          >
+            {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
+          </div>
+        )}
+      </div>
       <div className="flex flex-col w-full min-w-0">
         <Block
           pollData={props.pollData}
@@ -995,16 +1002,18 @@ function OrderedListItem(props: {
   let isChecklist = props.item.checked !== undefined;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
-      <div className="listMarker shrink-0 ml-2 z-1 mt-[4px]">
-        {calculatedIndex}.
-      </div>
-      {isChecklist && (
-        <div
-          className={`pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}
-        >
-          {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
+      <div className="flex shrink-0">
+        <div className="listMarker shrink-0 ml-2 z-1 mt-[4px]">
+          {calculatedIndex}.
         </div>
-      )}
+        {isChecklist && (
+          <div
+            className={`shrink-0 flex items-center h-3 mt-1 pt-[12px] pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}
+          >
+            {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
+          </div>
+        )}
+      </div>
       <div className="flex flex-col w-full min-w-0">
         <Block
           pollData={props.pollData}

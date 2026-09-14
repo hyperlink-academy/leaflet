@@ -176,7 +176,7 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
   )
     return null;
   return (
-    <div className="flex items-center justify-between group/text px-3 sm:px-4">
+    <div className="newBlockButton flex items-center justify-between group/text px-3 sm:px-4">
       <div
         className="h-6 hover:cursor-text italic text-tertiary grow"
         onMouseDown={async () => {

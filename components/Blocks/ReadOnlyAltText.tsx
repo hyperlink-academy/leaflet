@@ -30,7 +30,7 @@ export function ReadOnlyAltText(props: {
           if (!group.contains(document.activeElement)) setShowAlt(false);
         });
       }}
-      className={`absolute bottom-1.5 right-1.5 left-1.5 flex flex-col h-fit ${props.className || ""}`}
+      className={`imageAltButton absolute bottom-1.5 right-1.5 left-1.5 flex flex-col h-fit ${props.className || ""}`}
     >
       <div className="flex gap-1 items-center justify-end">
         <button

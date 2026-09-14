@@ -146,7 +146,8 @@ export function buildChapterCards(
       pageCount: item.posts.length,
       coverImageSrc: coverImage
         ? blobRefToSrc(coverImage.ref, new AtUri(first.uri).host, undefined, {
-            width: COVER_THUMBNAIL_WIDTH.medium,
+            width: COVER_THUMBNAIL_WIDTH.large,
+            height: COVER_THUMBNAIL_WIDTH.large,
           })
         : undefined,
       membersOnly: item.posts.some((post) => !!post.membersOnly),

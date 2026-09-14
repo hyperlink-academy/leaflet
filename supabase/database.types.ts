@@ -185,10 +185,40 @@ export type Database = {
           },
         ]
       }
+      comment_tombstones: {
+        Row: {
+          deleted_at: string
+          document: string | null
+          record: Json
+          uri: string
+        }
+        Insert: {
+          deleted_at?: string
+          document?: string | null
+          record: Json
+          uri: string
+        }
+        Update: {
+          deleted_at?: string
+          document?: string | null
+          record?: Json
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_tombstones_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       comments_on_documents: {
         Row: {
           document: string | null
           indexed_at: string
+          past_versions: Json
           profile: string | null
           record: Json
           uri: string
@@ -196,6 +226,7 @@ export type Database = {
         Insert: {
           document?: string | null
           indexed_at?: string
+          past_versions?: Json
           profile?: string | null
           record: Json
           uri: string
@@ -203,6 +234,7 @@ export type Database = {
         Update: {
           document?: string | null
           indexed_at?: string
+          past_versions?: Json
           profile?: string | null
           record?: Json
           uri?: string

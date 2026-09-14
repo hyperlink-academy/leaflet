@@ -85,7 +85,7 @@ export const InteractionDrawer = (props: {
   return (
     <>
       <SandwichSpacer noWidth />
-      <div className="snap-center h-full  flex z-10 shrink-0 sm:max-w-prose sm:w-full w-[calc(100vw-12px)]">
+      <div className="interactionDrawer snap-center h-full  flex z-10 shrink-0 sm:max-w-prose sm:w-full w-[calc(100vw-12px)]">
         <div
           ref={scrollRef}
           id="interaction-drawer"

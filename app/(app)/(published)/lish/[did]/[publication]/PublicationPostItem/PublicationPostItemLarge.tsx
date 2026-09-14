@@ -2,13 +2,20 @@
 import React from "react";
 import { MembersBadge } from "./MembersBadge";
 import { MetaRow } from "./MetaRow";
+import { PostItemCoverImage } from "./PostItemCoverImage";
 import { PostLink } from "./PostLink";
 import { useFitToHeight } from "./useFitToHeight";
 import { type LargeProps } from "./types";
+import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
+import { membershipUnlocksGatedPost } from "src/membership";
 
 export function PublicationPostItemLarge(props: LargeProps) {
   const hasCoverImage = !!props.coverImageSrc;
   const widePage = (props.pageWidth ?? 0) >= 768;
+  const { membership } = useViewerSubscription(props.publicationUri);
+  const locked =
+    !!props.membersOnly &&
+    !membershipUnlocksGatedPost(membership, props.gatePolicy);
   const { boxRef, titleRef, descriptionRef } = useFitToHeight(
     props.title,
     props.description,
@@ -23,10 +30,11 @@ export function PublicationPostItemLarge(props: LargeProps) {
       <PostLink href={props.href} title={props.title} onClick={props.onClick} />
 
       {hasCoverImage && (
-        <img
-          src={props.coverImageSrc}
+        <PostItemCoverImage
+          src={props.coverImageSrc!}
           alt={props.coverImageAlt || props.title || ""}
-          className={`object-cover  shrink-0 ${props.inList ? "rounded-md" : " border-b border-border-light rounded-none!"} ${widePage ? "sm:h-[254px] aspect-[3/2] sm:border-transparent " : "h-full aspect-[1.91/1]"}  `}
+          locked={locked}
+          className={`shrink-0 ${props.inList ? "rounded-md" : " border-b border-border-light rounded-none!"} ${widePage ? "sm:h-[254px] aspect-[3/2] sm:border-transparent " : "w-full h-auto aspect-[1.91/1]"}  `}
         />
       )}
 
