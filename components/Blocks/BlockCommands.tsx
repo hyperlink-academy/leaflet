@@ -107,6 +107,7 @@ type Command = {
   alternateNames?: string[];
   hiddenInPublication?: boolean;
   hiddenOnPublicationPage?: boolean;
+  hiddenInPost?: boolean;
   publicationOnly?: boolean;
   // Only shown when the publication has paid memberships enabled, the current
   // page is the post's first page, and no delimiter exists yet (gating is
@@ -472,14 +473,13 @@ export const blockCommands: Command[] = [
       });
     },
   },
-
-  // PUBLICATION BLOCKS — shown anywhere within a publication (posts and publication pages)
   {
     name: "Post List",
     icon: <PostListSmall />,
     type: "publication",
     alternateNames: ["posts", "archive", "feed", "listing"],
     publicationOnly: true,
+    hiddenInPost: true,
     onSelect: async (rep, props) => {
       props.entityID && clearCommandSearchText(props.entityID);
       await createBlockWithType(rep, props, "posts-list");
