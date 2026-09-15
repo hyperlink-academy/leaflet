@@ -11,9 +11,10 @@ import {
 import { DrawerThreadContext } from "./drawerThreadContext";
 import Link from "next/link";
 
-// Other publications fill in only while this publication has fewer tagged
-// posts than this, and are capped at it.
-const POST_LIMIT = 20;
+// Fewer posts from other publications when this one already has plenty.
+const SAME_PUBLICATION_THRESHOLD = 20;
+const OTHER_PUBLICATIONS_LIMIT = 20;
+const OTHER_PUBLICATIONS_LIMIT_WHEN_PLENTY = 5;
 
 export function TagDrawerView(props: { tag: string }) {
   const { uri, publication, normalizedPublication } = useDocument();
@@ -27,21 +28,12 @@ export function TagDrawerView(props: { tag: string }) {
   const samePublication = (samePublicationQuery.data?.posts ?? []).filter(
     (p) => p.documents.uri !== uri,
   );
-  const samePublicationLoaded = !publication || !!samePublicationQuery.data;
-
-  const needOtherPublications =
-    showOtherPublications &&
-    samePublicationLoaded &&
-    samePublication.length < POST_LIMIT;
   const otherPublicationsQuery = useSWR(
-    needOtherPublications ? ["tag-posts", props.tag, "trending"] : null,
+    showOtherPublications ? ["tag-posts", props.tag, "trending"] : null,
     () => getDocumentsByTag(props.tag, { orderBy: "trending" }),
   );
 
-  if (
-    samePublicationQuery.isLoading ||
-    (needOtherPublications && otherPublicationsQuery.isLoading)
-  )
+  if (samePublicationQuery.isLoading || otherPublicationsQuery.isLoading)
     return (
       <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm py-8">
         <span>loading</span>
@@ -50,15 +42,18 @@ export function TagDrawerView(props: { tag: string }) {
     );
 
   const currentPublicationKey = publicationKey(publication?.uri);
-  const allOtherPublications = needOtherPublications
-    ? (otherPublicationsQuery.data?.posts ?? []).filter(
-        (p) =>
-          p.documents.uri !== uri &&
-          (!currentPublicationKey ||
-            publicationKey(p.publication?.uri) !== currentPublicationKey),
-      )
-    : [];
-  const otherPublications = allOtherPublications.slice(0, POST_LIMIT);
+  const allOtherPublications = (otherPublicationsQuery.data?.posts ?? []).filter(
+    (p) =>
+      p.documents.uri !== uri &&
+      (!currentPublicationKey ||
+        publicationKey(p.publication?.uri) !== currentPublicationKey),
+  );
+  const otherPublications = allOtherPublications.slice(
+    0,
+    samePublication.length >= SAME_PUBLICATION_THRESHOLD
+      ? OTHER_PUBLICATIONS_LIMIT_WHEN_PLENTY
+      : OTHER_PUBLICATIONS_LIMIT,
+  );
   const hasMore = allOtherPublications.length > otherPublications.length;
 
   let inPubAndAtmo = samePublication.length > 0 && otherPublications.length > 0;

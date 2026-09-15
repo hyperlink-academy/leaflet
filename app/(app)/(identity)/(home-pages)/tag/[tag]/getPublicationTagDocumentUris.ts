@@ -2,6 +2,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { sql } from "drizzle-orm";
 import { AtUri } from "@atproto/api";
 import { pool } from "supabase/pool";
+import { TRENDING_RANK } from "src/utils/trendingRank";
 
 export async function getPublicationTagDocumentUris(
   tag: string,
@@ -21,7 +22,7 @@ export async function getPublicationTagDocumentUris(
           publicationUris.map((u) => sql`${u}`),
           sql`, `,
         )})
-      ORDER BY d.sort_date DESC NULLS LAST
+      ORDER BY ${TRENDING_RANK} DESC NULLS LAST
     `);
     return rows.rows.map((row: any) => row.uri as string);
   } catch (e) {

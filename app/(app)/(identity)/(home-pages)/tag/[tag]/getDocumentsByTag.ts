@@ -60,7 +60,7 @@ export async function getDocumentsByTag(
   return { posts: await toPosts(deduplicateByUriOrdered(rawDocuments || [])) };
 }
 
-// Every post in a publication carrying a tag, newest first.
+// Every post in a publication carrying a tag, ranked by trending.
 export async function getPublicationDocumentsByTag(
   tag: string,
   publicationUri: string,
