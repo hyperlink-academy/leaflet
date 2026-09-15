@@ -370,6 +370,13 @@ const PostsListBlockAttributes = {
   },
 } as const;
 
+const RecommendedPubsBlockAttributes = {
+  "recommended-pubs/compact": {
+    type: "boolean",
+    cardinality: "one",
+  },
+} as const;
+
 const ThemeAttributes = {
   "theme/heading-font": {
     type: "string",
@@ -472,6 +479,7 @@ export const Attributes = {
   ...GalleryBlockAttributes,
   ...PollBlockAttributes,
   ...PostsListBlockAttributes,
+  ...RecommendedPubsBlockAttributes,
 };
 export type Attributes = typeof Attributes;
 export type Attribute = keyof Attributes;
@@ -555,6 +563,7 @@ export type Data<A extends keyof typeof Attributes> = {
       | "horizontal-rule"
       | "members-only-delimiter"
       | "posts-list"
+      | "recommended-pubs"
       | "signup"
       | "image-gallery";
   };

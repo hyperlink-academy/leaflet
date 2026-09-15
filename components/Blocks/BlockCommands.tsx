@@ -22,6 +22,7 @@ import { ImageGallerySmall } from "components/Icons/ImageGallerySmall";
 import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
 import { BlockPollSmall } from "components/Icons/BlockPollSmall";
 import { PostListSmall } from "components/Icons/PostListSmall";
+import { RecommendFilledSmall } from "components/Icons/RecommendFilledSmall";
 import {
   ParagraphSmall,
   Header1Small,
@@ -483,6 +484,17 @@ export const blockCommands: Command[] = [
     onSelect: async (rep, props) => {
       props.entityID && clearCommandSearchText(props.entityID);
       await createBlockWithType(rep, props, "posts-list");
+    },
+  },
+  {
+    name: "Recommended Pubs",
+    icon: <RecommendFilledSmall />,
+    type: "publication",
+    alternateNames: ["recommendations", "recommended", "publications", "pubs"],
+    publicationOnly: true,
+    onSelect: async (rep, props) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      await createBlockWithType(rep, props, "recommended-pubs");
     },
   },
   {

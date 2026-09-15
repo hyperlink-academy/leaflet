@@ -1,9 +1,8 @@
 import { BlockProps, BlockLayout } from "../Block";
 import { useEntity, useReplicache } from "src/replicache";
 import { useIsBlockSelected } from "src/useUIState";
-import { Popover } from "components/Popover";
-import { Toggle } from "components/Toggle";
-import { SettingsTriggerButton } from "../SettingsTriggerButton";
+import { ToggleWithLabel } from "components/Toggle";
+import { BlockSettings } from "../SettingsTriggerButton";
 import {
   StandardSitePostItem,
   StandardSitePostItemPlaceholder,
@@ -92,51 +91,37 @@ function StandardSitePostSettingsButton(props: { entityID: string }) {
   let showPubTheme = showPubThemeFact?.data.value !== false;
 
   return (
-    <Popover
-      asChild
-      side="top"
-      align="end"
-      className="p-0!"
-      onOpenAutoFocus={(e) => e.preventDefault()}
-      trigger={
-        <SettingsTriggerButton aria-label="Standard Site Post Settings" />
-      }
-    >
-      <div className="flex flex-col gap-2 w-full sm:w-[1000px] sm:max-w-md pt-1 p-3! overflow-y-auto">
-        <div>
-          <h4>Post Size</h4>
-        </div>
-        <BlockSettingOptions<StandardSitePostSize>
-          options={[
-            { value: "small", Icon: SmallIcon },
-            { value: "medium", Icon: MedIcon },
-            { value: "large", Icon: LargeIcon },
-          ]}
-          value={size === "small" || size === "large" ? size : "medium"}
-          onSelect={(value) => {
-            if (!rep) return;
-            rep.mutate.assertFact({
-              entity: props.entityID,
-              attribute: "standard-site-post/size",
-              data: { type: "standard-site-post-size-union", value },
-            });
-          }}
-        />
-        <hr className="border-border-light my-1" />
-        <Toggle
-          toggle={showPubTheme}
-          onToggle={() => {
-            if (!rep) return;
-            rep.mutate.assertFact({
-              entity: props.entityID,
-              attribute: "standard-site-post/show-publication-theme",
-              data: { type: "boolean", value: !showPubTheme },
-            });
-          }}
-        >
-          <div className="font-bold">Use Publication Theme</div>
-        </Toggle>
-      </div>
-    </Popover>
+    <BlockSettings label="Post" className="w-md">
+      <h4>Post Size</h4>
+      <BlockSettingOptions<StandardSitePostSize>
+        options={[
+          { value: "small", Icon: SmallIcon },
+          { value: "medium", Icon: MedIcon },
+          { value: "large", Icon: LargeIcon },
+        ]}
+        value={size === "small" || size === "large" ? size : "medium"}
+        onSelect={(value) => {
+          if (!rep) return;
+          rep.mutate.assertFact({
+            entity: props.entityID,
+            attribute: "standard-site-post/size",
+            data: { type: "standard-site-post-size-union", value },
+          });
+        }}
+      />
+      <hr className="border-border-light my-1" />
+      <ToggleWithLabel
+        label="Use Publication Theme"
+        toggle={showPubTheme}
+        onToggle={() => {
+          if (!rep) return;
+          rep.mutate.assertFact({
+            entity: props.entityID,
+            attribute: "standard-site-post/show-publication-theme",
+            data: { type: "boolean", value: !showPubTheme },
+          });
+        }}
+      />
+    </BlockSettings>
   );
 }

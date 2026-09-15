@@ -280,6 +280,7 @@ const BlockTypeToHTML: {
     );
   },
   "posts-list": async () => null,
+  "recommended-pubs": async () => null,
 };
 
 async function renderBlock(b: Block, tx: ReadTransaction) {

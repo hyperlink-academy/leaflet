@@ -23,7 +23,6 @@ import {
   addPublicationRecommendation,
   type ViewerOwnedPublication,
 } from "actions/publications/recommendPublication";
-import { MAX_RECOMMENDATIONS } from "src/utils/publicationRecommendations";
 import { bskyPostEmbed } from "src/utils/bskyPostEmbed";
 import { viewerPostLangs } from "src/utils/bskyPostLangs";
 import { CheckTiny } from "components/Icons/CheckTiny";
@@ -161,9 +160,7 @@ export function RecommendPublicationPicker(props: {
         {props.publications.map((pub) => {
           let status = pub.recommendations.includes(props.publicationUri)
             ? "Already recommends this publication"
-            : pub.recommendations.length >= MAX_RECOMMENDATIONS
-              ? `Already recommends ${MAX_RECOMMENDATIONS} publications`
-              : null;
+            : null;
           let isSelected = selected.includes(pub.uri);
           return (
             <button
@@ -182,10 +179,9 @@ export function RecommendPublicationPicker(props: {
                 <span className="font-bold text-primary truncate pt-0.5">
                   {pub.name}
                 </span>
-                <span className="text-xs text-tertiary">
-                  {status ??
-                    `${pub.recommendations.length}/${MAX_RECOMMENDATIONS} recommendations used`}
-                </span>
+                {status && (
+                  <span className="text-xs text-tertiary">{status}</span>
+                )}
               </div>
               {isSelected && (
                 <CheckTiny className="text-accent-contrast shrink-0  mt-1 mr-1 " />

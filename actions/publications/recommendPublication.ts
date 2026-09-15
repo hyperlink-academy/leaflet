@@ -9,7 +9,6 @@ import { deduplicateByUri } from "src/utils/deduplicateRecords";
 import { isLeafletManagedPublication } from "src/utils/isLeafletManagedPublication";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
-import { MAX_RECOMMENDATIONS } from "src/utils/publicationRecommendations";
 import { writeRecommendations } from "src/utils/writeRecommendations";
 import { supabaseServerClient } from "supabase/serverClient";
 
@@ -22,9 +21,8 @@ export type ViewerOwnedPublication = {
 
 // The viewer's own Leaflet publications (same set the dashboard identity
 // exposes) with each one's current recommendation list, so a picker can show
-// which already recommend a given publication and which are full. Fetched on
-// demand because the slim viewer identity on published pages leaves
-// `publications` empty.
+// which already recommend a given publication. Fetched on demand because the
+// slim viewer identity on published pages leaves `publications` empty.
 export async function getViewerOwnedPublications(): Promise<
   ViewerOwnedPublication[]
 > {
@@ -60,7 +58,7 @@ function orderedRecommendations(
 }
 
 export type RecommendPublicationError =
-  | { type: "not_owner" | "at_limit" | "invalid" }
+  | { type: "not_owner" | "invalid" }
   | OAuthSessionError;
 
 // Appends `recommendation` to `publicationUri`'s recommendation list. A no-op
@@ -97,7 +95,6 @@ export async function addPublicationRecommendation(args: {
   const existing = orderedRecommendations(pub.publication_recommendations);
   if (existing.includes(args.recommendation))
     return Ok({ recommendations: existing });
-  if (existing.length >= MAX_RECOMMENDATIONS) return Err({ type: "at_limit" });
 
   const sessionResult = await restoreOAuthSession(identity.atp_did);
   if (!sessionResult.ok) return Err(sessionResult.error);

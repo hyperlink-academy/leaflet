@@ -12,6 +12,10 @@ import {
   type SubscriberTier,
 } from "src/membership";
 import { TierDescription } from "components/Memberships/TierDescription";
+import {
+  centeredGridCellStyle,
+  centeredGridStyle,
+} from "src/utils/centeredGrid";
 
 // Stored tiers are always paid tiers now.
 export type Tier = PaidTier;
@@ -103,8 +107,6 @@ export function TierGrid(props: {
     return `Change for ${price}`;
   };
 
-  const cols = Math.min(plans.length, plans.length % 3 === 1 ? 2 : 3);
-
   return (
     <>
       {hasAnnual && (
@@ -123,9 +125,9 @@ export function TierGrid(props: {
 
       <div
         className="tierGroup sm:grid sm:gap-x-3 sm:gap-y-6 gap-6 flex flex-col w-full items-stretch min-h-0 grow"
-        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+        style={centeredGridStyle(plans.length)}
       >
-        {plans.map((plan) => {
+        {plans.map((plan, index) => {
           const key = membershipPlanKey(plan);
           const current =
             plan.kind === "subscriber"
@@ -139,6 +141,7 @@ export function TierGrid(props: {
           return (
             <div
               key={key}
+              style={centeredGridCellStyle(index, plans.length)}
               className="tier opaque-container rounded-lg! relative flex flex-col p-4 pt-3 max-w-md w-full max-h-full"
             >
               <div className="flex flex-col gap-1 grow min-h-0 overflow-y-scroll">

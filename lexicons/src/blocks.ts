@@ -505,6 +505,26 @@ export const PubLeafletBlocksPostsList: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksRecommendedPubs: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.recommendedPubs",
+  defs: {
+    main: {
+      type: "object",
+      description:
+        "The publications this publication recommends, resolved at render time from its recommendations rather than stored on the block.",
+      required: [],
+      properties: {
+        compact: {
+          type: "boolean",
+          description:
+            "Lay the recommendations out as a single side-scrolling row instead of a grid.",
+        },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksMembersOnlyDelimiter: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.membersOnlyDelimiter",
@@ -568,6 +588,7 @@ export const BlockLexicons = [
   PubLeafletBlocksButton,
   PubLeafletBlocksPostsList,
   PubLeafletBlocksSignup,
+  PubLeafletBlocksRecommendedPubs,
   PubLeafletBlocksMembersOnlyDelimiter,
 ];
 export const BlockUnion: LexRefUnion = {

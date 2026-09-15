@@ -50,6 +50,7 @@
             "pub.leaflet.blocks.button",
             "pub.leaflet.blocks.postsList",
             "pub.leaflet.blocks.signup",
+            "pub.leaflet.blocks.recommendedPubs",
             "pub.leaflet.blocks.membersOnlyDelimiter"
           ]
         },

@@ -1,0 +1,17 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.blocks.recommendedPubs",
+  "defs": {
+    "main": {
+      "type": "object",
+      "description": "The publications this publication recommends, resolved at render time from its recommendations rather than stored on the block.",
+      "required": [],
+      "properties": {
+        "compact": {
+          "type": "boolean",
+          "description": "Lay the recommendations out as a single side-scrolling row instead of a grid."
+        }
+      }
+    }
+  }
+}

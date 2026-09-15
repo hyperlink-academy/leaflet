@@ -23,6 +23,7 @@ import {
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
   PubLeafletBlocksPostsList,
+  PubLeafletBlocksRecommendedPubs,
   PubLeafletBlocksSignup,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
@@ -544,6 +545,14 @@ export async function processBlocksToPages(opts: {
           readerTagFilter: readerTagFilterFact?.data.value ?? true,
           readerSort: readerSortFact?.data.value ?? true,
         }),
+      };
+      return block;
+    },
+    "recommended-pubs": async (b) => {
+      const [compactFact] = scan.eav(b.entityID, "recommended-pubs/compact");
+      const block: $Typed<PubLeafletBlocksRecommendedPubs.Main> = {
+        $type: "pub.leaflet.blocks.recommendedPubs",
+        ...(compactFact && { compact: compactFact.data.value }),
       };
       return block;
     },
