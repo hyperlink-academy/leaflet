@@ -75,6 +75,10 @@
         "showRecommends": {
           "type": "boolean",
           "default": true
+        },
+        "showOtherPublicationsInTags": {
+          "type": "boolean",
+          "default": true
         }
       }
     },

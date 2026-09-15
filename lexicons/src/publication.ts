@@ -42,6 +42,7 @@ export const PubLeafletPublication: LexiconDoc = {
           default: "rtl",
         },
         showRecommends: { type: "boolean", default: true },
+        showOtherPublicationsInTags: { type: "boolean", default: true },
       },
     },
     theme: {

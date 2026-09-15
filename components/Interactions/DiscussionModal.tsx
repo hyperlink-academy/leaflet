@@ -11,6 +11,7 @@ import { DiscussionDrawerContent } from "app/(app)/(published)/lish/[did]/[publi
 import {
   type DrawerThread,
   DrawerThreadContext,
+  sameDrawerThread,
 } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
 import { ThreadView } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/ThreadPage";
 import { StandardSitePostDrawerView } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/StandardSitePostDrawerView";
@@ -66,8 +67,7 @@ export function DiscussionContent(props: {
       push: (thread: DrawerThread) =>
         setThreadStack((s) => {
           const top = s[s.length - 1];
-          if (top && top.type === thread.type && top.uri === thread.uri)
-            return s;
+          if (top && sameDrawerThread(top, thread)) return s;
           return [...s, thread];
         }),
     }),
@@ -175,7 +175,8 @@ export function DiscussionContent(props: {
                     uri={activeThread.uri}
                     tab="comments"
                   />
-                ) : activeThread ? (
+                ) : activeThread?.type === "thread" ||
+                  activeThread?.type === "quotes" ? (
                   <ThreadView
                     parentUri={activeThread.uri}
                     initialTab={

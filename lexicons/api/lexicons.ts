@@ -2565,6 +2565,10 @@ export const schemaDict = {
             type: 'boolean',
             default: true,
           },
+          showOtherPublicationsInTags: {
+            type: 'boolean',
+            default: true,
+          },
         },
       },
       theme: {
@@ -3174,6 +3178,10 @@ export const schemaDict = {
             type: 'string',
           },
           showRecommends: {
+            default: true,
+            type: 'boolean',
+          },
+          showOtherPublicationsInTags: {
             default: true,
             type: 'boolean',
           },

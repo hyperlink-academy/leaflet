@@ -7,11 +7,22 @@ import { openDrawerThread } from "./Interactions";
 // `standardSitePost` shows a referenced post's own discussion (the post itself
 // plus its comments / Bluesky mentions) rather than a Bluesky thread.
 // `recommends` shows the list of profiles that recommended a post.
+// `tag` shows the posts carrying a tag, and is keyed by the tag name rather
+// than a uri.
 export type DrawerThread =
   | { type: "thread"; uri: string }
   | { type: "quotes"; uri: string }
   | { type: "standardSitePost"; uri: string }
-  | { type: "recommends"; uri: string };
+  | { type: "recommends"; uri: string }
+  | { type: "tag"; tag: string };
+
+// Identity for drawer views, used to avoid stacking a duplicate of the view
+// you're already on.
+export function sameDrawerThread(a: DrawerThread, b: DrawerThread) {
+  if (a.type !== b.type) return false;
+  const key = (t: DrawerThread) => (t.type === "tag" ? t.tag : t.uri);
+  return key(a) === key(b);
+}
 
 type DrawerThreadNav = {
   push: (thread: DrawerThread) => void;
@@ -29,9 +40,10 @@ export function useOpenThread() {
   const drawerNav = useContext(DrawerThreadContext);
   return (parent: OpenPage | undefined, thread: DrawerThread) => {
     if (drawerNav) drawerNav.push(thread);
-    // standardSitePost and recommends only exist inside the drawer; they have no
-    // page form, so they're never reached here without a drawer-aware provider.
-    else if (thread.type !== "standardSitePost" && thread.type !== "recommends")
+    // standardSitePost, recommends and tag only exist inside the drawer; they
+    // have no page form, so they're never reached here without a drawer-aware
+    // provider.
+    else if (thread.type === "thread" || thread.type === "quotes")
       openPage(parent, thread);
   };
 }

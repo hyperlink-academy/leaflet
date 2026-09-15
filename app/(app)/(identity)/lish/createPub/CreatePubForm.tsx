@@ -68,6 +68,7 @@ export const CreatePubForm = () => {
               prevNextDirection: "rtl",
               showRecommends: true,
               showFirstLast: false,
+              showOtherPublicationsInTags: true,
             },
           });
         } catch {
