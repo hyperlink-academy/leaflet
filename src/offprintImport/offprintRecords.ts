@@ -1,4 +1,4 @@
-import { AtUri } from "@atproto/syntax";
+import { AtUri, isValidRecordKey } from "@atproto/syntax";
 import { AtpBaseClient } from "lexicons/api";
 import { idResolver } from "src/identity/idResolver";
 
@@ -233,6 +233,17 @@ export async function resolvePds(did: string): Promise<string> {
   if (!service || typeof service.serviceEndpoint !== "string")
     throw new Error(`Could not find a PDS for ${did}`);
   return service.serviceEndpoint;
+}
+
+// The record key that keeps as much of an Offprint path as Leaflet can serve:
+// its last segment. Offprint paths look like /a/<tid>-<slug>; Leaflet routes
+// posts on a single segment, so the /a/ prefix has to go.
+export function offprintPathRkey(path: string | null | undefined): string {
+  let segment = (path ?? "").split("/").filter(Boolean).at(-1) ?? "";
+  if (!segment) throw new Error("The Offprint document has no path");
+  if (!isValidRecordKey(segment))
+    throw new Error(`Path segment "${segment}" is not a valid record key`);
+  return segment;
 }
 
 export const blobUrl = (pds: string, did: string, cid: string) =>

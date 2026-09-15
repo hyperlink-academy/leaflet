@@ -27,6 +27,7 @@ import {
   ExternalLink,
   ImportOptions,
   SelectAllHeader,
+  type PathMode,
 } from "./ImportShared";
 
 type PostStatus =
@@ -49,6 +50,7 @@ export function AdminImportGhost() {
   let [siteUrl, setSiteUrl] = useState("");
   let [selected, setSelected] = useState<Set<string>>(new Set());
   let [mode, setMode] = useState<GhostImportMode>("publish");
+  let [pathMode, setPathMode] = useState<PathMode>("source");
   let [showInDiscover, setShowInDiscover] = useState(false);
   let [previews, setPreviews] = useState<Map<string, Preview>>(new Map());
   let [expanded, setExpanded] = useState<string | null>(null);
@@ -109,6 +111,7 @@ export function AdminImportGhost() {
         publicationUri: publication.uri,
         siteUrl: siteUrl.trim(),
         mode,
+        pathMode,
         showInDiscover,
       });
       if (res.ok) {
@@ -177,10 +180,14 @@ export function AdminImportGhost() {
       <ImportOptions
         mode={mode}
         onModeChange={setMode}
+        pathMode={pathMode}
+        onPathModeChange={setPathMode}
         showInDiscover={showInDiscover}
         onShowInDiscoverChange={setShowInDiscover}
-        publishDescription="Each post is published as the owner under its Ghost slug, backdated to its Ghost publish date. Pages are added to the publication's navigation and published along with any pending page edits."
+        publishDescription="Each post is published as the owner, backdated to its Ghost publish date. Pages are added to the publication's navigation and published along with any pending page edits."
         draftDescription="Posts appear in the publication's drafts, and pages in its page editor, for the owner to publish."
+        sourcePathDescription="Posts keep their Ghost slug: /my-post stays /my-post. Pages always keep their slug."
+        leafletPathDescription="Posts get a fresh record key, like /3mvj2xk5qzc2a."
       />
 
       {posts.length > 0 && (

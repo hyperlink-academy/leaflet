@@ -2,6 +2,7 @@
 
 import { sql } from "drizzle-orm";
 import { v7 } from "uuid";
+import { isValidRecordKey } from "@atproto/syntax";
 import { generateKeyBetween } from "fractional-indexing";
 import { supabaseServerClient } from "supabase/serverClient";
 import type { Result } from "src/result";
@@ -9,6 +10,7 @@ import { asAdmin } from "src/admin/asAdmin";
 import { restoreOAuthSession } from "src/atproto-oauth";
 import { appendToLeaflet, insertLeaflet } from "src/utils/insertLeaflet";
 import { publishLeaflet } from "src/utils/publishLeaflet";
+import { assertRkeyFree } from "src/utils/assertRkeyFree";
 import {
   publishPublicationPages,
   routeShape,
@@ -52,13 +54,13 @@ export async function previewGhostImport(args: {
 }
 
 export type GhostImportMode = "draft" | "publish";
+// Whether a published post keeps its Ghost slug as its record key or gets a
+// fresh one. Pages always keep their slug: it's their route.
+export type GhostPathMode = "source" | "leaflet";
 
 export type GhostImportResult =
   | { kind: "post"; leafletId: string; rkey: string | null }
   | { kind: "page"; route: string };
-
-// Record keys must be valid AT Protocol rkeys; Ghost slugs almost always are.
-const RKEY_RE = /^[a-zA-Z0-9._:~-]{1,512}$/;
 
 // Import one Ghost post as a draft in the publication (and, in publish mode,
 // publish it as the owner under its Ghost slug; a post that fails to publish
@@ -70,6 +72,7 @@ export async function importGhostPost(args: {
   publicationUri: string;
   siteUrl: string;
   mode: GhostImportMode;
+  pathMode: GhostPathMode;
   showInDiscover: boolean;
 }): Promise<Result<GhostImportResult, string>> {
   return asAdmin("import-ghost", async () => {
@@ -80,11 +83,12 @@ export async function importGhostPost(args: {
       .maybeSingle()
       .throwOnError();
     if (!pub) throw new Error("Publication not found");
-    let rkey = args.post.slug;
+    let slug = args.post.slug;
+    let keepSlug = args.post.type === "page" || args.pathMode === "source";
 
     if (args.mode === "publish") {
-      if (!RKEY_RE.test(rkey) || rkey === "." || rkey === "..")
-        throw new Error(`Slug "${rkey}" is not a valid record key`);
+      if (keepSlug && !isValidRecordKey(slug))
+        throw new Error(`Slug "${slug}" is not a valid record key`);
       // Publishing writes to the owner's PDS with their stored session; check
       // it before creating a draft that couldn't be published.
       let session = await restoreOAuthSession(pub.identity_did);
@@ -92,16 +96,7 @@ export async function importGhostPost(args: {
     }
     // Published pages take precedence over posts at the same /slug, so a
     // clash either way would hide one of them.
-    let { data: existing } = await supabaseServerClient
-      .from("documents")
-      .select("uri")
-      .in("uri", [
-        `at://${pub.identity_did}/site.standard.document/${rkey}`,
-        `at://${pub.identity_did}/pub.leaflet.document/${rkey}`,
-      ])
-      .throwOnError();
-    if (existing && existing.length > 0)
-      throw new Error(`A post with slug "${rkey}" is already published`);
+    if (keepSlug) await assertRkeyFree(pub.identity_did, slug);
 
     // Fetch every image before touching the database, so a draft never
     // references an upload that hasn't happened.
@@ -116,10 +111,10 @@ export async function importGhostPost(args: {
     };
 
     if (args.post.type === "page") {
-      let route = `/${rkey}`;
+      let route = `/${slug}`;
       if (!routeShape.test(route))
         throw new Error(
-          `Slug "${rkey}" can't be a page path (lowercase letters, digits, and dashes only)`,
+          `Slug "${slug}" can't be a page path (lowercase letters, digits, and dashes only)`,
         );
       let pubRecord = normalizePublicationRecord(pub.record);
       let draftLeaflet =
@@ -211,7 +206,7 @@ export async function importGhostPost(args: {
       // Imported posts are back-catalogue: never email subscribers about them.
       sendEmail: false,
       showInDiscover: args.showInDiscover,
-      rkey,
+      rkey: keepSlug ? slug : undefined,
     });
     if (!published.success)
       throw new Error(

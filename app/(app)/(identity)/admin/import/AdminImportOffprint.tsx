@@ -25,6 +25,7 @@ import {
   ExternalLink,
   ImportOptions,
   SelectAllHeader,
+  type PathMode,
 } from "./ImportShared";
 
 const OFFPRINT_CONTENT = "app.offprint.content";
@@ -43,6 +44,7 @@ export function AdminImportOffprint() {
   let [source, setSource] = useState<OffprintPublication | null>(null);
   let [selected, setSelected] = useState<Set<string>>(new Set());
   let [mode, setMode] = useState<OffprintImportMode>("publish");
+  let [pathMode, setPathMode] = useState<PathMode>("source");
   let [showInDiscover, setShowInDiscover] = useState(false);
   let [previews, setPreviews] = useState<Map<string, Preview>>(new Map());
   let [expanded, setExpanded] = useState<string | null>(null);
@@ -103,6 +105,7 @@ export function AdminImportOffprint() {
         uri: post.uri,
         publicationUri: publication.uri,
         mode,
+        pathMode,
         showInDiscover,
       });
       if (res.ok) next.set(post.uri, { state: "done", result: res.value });
@@ -165,10 +168,14 @@ export function AdminImportOffprint() {
       <ImportOptions
         mode={mode}
         onModeChange={setMode}
+        pathMode={pathMode}
+        onPathModeChange={setPathMode}
         showInDiscover={showInDiscover}
         onShowInDiscoverChange={setShowInDiscover}
-        publishDescription="Each post is published as the owner under a new record key, backdated to its Offprint publish date. The Offprint records are left untouched."
+        publishDescription="Each post is published as the owner, backdated to its Offprint publish date. The Offprint records are left untouched."
         draftDescription="Posts appear in the publication's drafts for the owner to publish."
+        sourcePathDescription="Posts keep the last segment of their Offprint path: /a/3mud2splhpc23-my-post becomes /3mud2splhpc23-my-post. Leaflet serves posts on a single segment, so the /a/ prefix can't be kept."
+        leafletPathDescription="Posts get a fresh record key, like /3mvj2xk5qzc2a."
       />
 
       {source && posts.length > 0 && (

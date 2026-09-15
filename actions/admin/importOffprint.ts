@@ -8,6 +8,7 @@ import { asAdmin } from "src/admin/asAdmin";
 import { restoreOAuthSession } from "src/atproto-oauth";
 import { insertLeaflet } from "src/utils/insertLeaflet";
 import { publishLeaflet } from "src/utils/publishLeaflet";
+import { assertRkeyFree } from "src/utils/assertRkeyFree";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { previewImage } from "src/ghostImport/ghostPostToLeaflet";
@@ -15,6 +16,7 @@ import { uploadRemoteImage } from "src/ghostImport/uploadRemoteImage";
 import {
   fetchOffprintDocument,
   fetchOffprintPublication,
+  offprintPathRkey,
   type OffprintPublication,
 } from "src/offprintImport/offprintRecords";
 import {
@@ -61,18 +63,22 @@ export async function previewOffprintImport(args: {
 }
 
 export type OffprintImportMode = "draft" | "publish";
+// Whether a published post keeps the last segment of its Offprint path as
+// its record key or gets a fresh one.
+export type OffprintPathMode = "source" | "leaflet";
 
 export type OffprintImportResult = { leafletId: string; rkey: string | null };
 
 // Import one Offprint document as a draft in the publication and, in publish
-// mode, publish it as the owner under a fresh record key (a post that fails
-// to publish is left as a draft). The Offprint record itself is never
-// touched: reusing its key would overwrite it when the owner imports into a
-// Leaflet publication on the same account.
+// mode, publish it as the owner (a post that fails to publish is left as a
+// draft). The Offprint record itself is never touched: reusing its key would
+// overwrite it when the owner imports into a Leaflet publication on the same
+// account.
 export async function importOffprintPost(args: {
   uri: string;
   publicationUri: string;
   mode: OffprintImportMode;
+  pathMode: OffprintPathMode;
   showInDiscover: boolean;
 }): Promise<Result<OffprintImportResult, string>> {
   return asAdmin("import-offprint", async () => {
@@ -92,6 +98,16 @@ export async function importOffprintPost(args: {
     }
 
     let source = await fetchOffprintDocument(args.uri);
+    let rkey =
+      args.pathMode === "source"
+        ? offprintPathRkey(source.doc.path)
+        : undefined;
+    if (rkey && pub.identity_did === source.did && rkey === source.rkey)
+      throw new Error(
+        `Publishing at /${rkey} would overwrite the Offprint record itself`,
+      );
+    if (rkey && args.mode === "publish")
+      await assertRkeyFree(pub.identity_did, rkey);
     // Nothing ties a draft back to its source record, so a re-run would
     // duplicate every post; the title is the best available guard.
     let { data: existing } = await supabaseServerClient
@@ -146,6 +162,7 @@ export async function importOffprintPost(args: {
       // Imported posts are back-catalogue: never email subscribers about them.
       sendEmail: false,
       showInDiscover: args.showInDiscover,
+      rkey,
     });
     if (!published.success)
       throw new Error(

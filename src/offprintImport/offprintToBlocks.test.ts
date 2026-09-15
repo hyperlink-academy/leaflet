@@ -8,7 +8,11 @@ import {
   offprintContentToBlocks,
   type OffprintResolved,
 } from "./offprintToBlocks";
-import type { OffprintBlock, OffprintDocument } from "./offprintRecords";
+import {
+  offprintPathRkey,
+  type OffprintBlock,
+  type OffprintDocument,
+} from "./offprintRecords";
 
 const empty = (): OffprintResolved => ({
   components: new Map(),
@@ -368,6 +372,20 @@ describe("offprintContentToBlocks", () => {
     expect(new Set(r.images.map((i) => i.entityID)).size).toBe(r.images.length);
     expect(r.blocks.every((b) => b.type !== "text" || text(b).trim())).toBe(
       true,
+    );
+  });
+});
+
+describe("offprintPathRkey", () => {
+  test("keeps the last path segment as the record key", () => {
+    expect(offprintPathRkey("/a/3mud2splhpc23-reflected-light-part-2")).toBe(
+      "3mud2splhpc23-reflected-light-part-2",
+    );
+    expect(offprintPathRkey("/my-post/")).toBe("my-post");
+    expect(() => offprintPathRkey("/")).toThrow(/no path/);
+    expect(() => offprintPathRkey(null)).toThrow(/no path/);
+    expect(() => offprintPathRkey("/a/bad slug")).toThrow(
+      /not a valid record key/,
     );
   });
 });
