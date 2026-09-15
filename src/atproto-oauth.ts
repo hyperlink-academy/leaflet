@@ -173,12 +173,18 @@ function dedupedRestore(did: string): Promise<OAuthSession> {
 }
 
 export async function restoreOAuthSession(
-  did: string
+  did: string,
 ): Promise<Result<OAuthSession, OAuthSessionError>> {
   try {
     const session = await dedupedRestore(did);
     return Ok(session);
   } catch (error) {
+    // The caller only gets "expired"; the real reason (no stored session,
+    // refresh rejected, token revoked) is only visible here.
+    console.error("[oauth] restore session failed", {
+      did,
+      error: error instanceof Error ? `${error.name}: ${error.message}` : error,
+    });
     return Err({
       type: "oauth_session_expired",
       message:

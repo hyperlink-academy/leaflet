@@ -1,11 +1,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import useSWRInfinite from "swr/infinite";
-import { SpeedyLink } from "components/SpeedyLink";
-import { getPublicationURL } from "src/utils/getPublicationURL";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
-import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
+import { useDebouncedValue } from "src/hooks/useDebouncedValue";
 import { PublicationPostsList } from "./PublicationPostsList";
 import {
   PostsListReaderControlsBar,
@@ -26,18 +23,19 @@ const DEFAULT_READER_STATE: PostsListReaderState = {
   sort: "latest",
 };
 
+const RETRY_DELAY_MS = 2000;
+
 export function PaginatedPublicationPostsList({
   publication,
   publicationRecord,
-  listId,
   uris,
-  initialPosts,
+  index,
+  knownPosts,
   loadBatch,
   view = "medium",
   highlightFirstPost = false,
   limit,
   readerControls,
-  readerIndex,
   emptyState,
   className,
   disableLinks = false,
@@ -45,15 +43,14 @@ export function PaginatedPublicationPostsList({
 }: {
   publication: { uri: string; record: unknown };
   publicationRecord: NormalizedPublication | null;
-  listId: string;
-  uris: string[];
-  initialPosts: PublicationPostsListPost[];
-  loadBatch: LoadPostsBatch;
+  uris?: string[];
+  index?: PostsListIndexEntry[];
+  knownPosts: PublicationPostsListPost[];
+  loadBatch?: LoadPostsBatch;
   view?: "small" | "medium";
   highlightFirstPost?: boolean;
   limit?: number;
   readerControls?: PostsListReaderControls;
-  readerIndex?: PostsListIndexEntry[];
   emptyState?: React.ReactNode;
   className?: string;
   disableLinks?: boolean;
@@ -61,91 +58,105 @@ export function PaginatedPublicationPostsList({
 }) {
   const [readerState, setReaderState] =
     useState<PostsListReaderState>(DEFAULT_READER_STATE);
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  useDebouncedEffect(() => setDebouncedSearch(readerState.search), 200, [
-    readerState.search,
-  ]);
+  const search = useDebouncedValue(readerState.search, 200);
   const searchEnabled = !!readerControls?.search;
   const tagFilterEnabled = !!readerControls?.tagFilter;
   const sortEnabled = !!readerControls?.sort;
-  // this filters the posts according to reader options
   const orderedUris = useMemo(() => {
-    if (!readerIndex || !(searchEnabled || tagFilterEnabled || sortEnabled))
-      return uris;
-
-    return readerControlledUris(readerIndex, {
-      search: searchEnabled ? debouncedSearch : "",
+    if (!index) return uris ?? [];
+    return readerControlledUris(index, {
+      search: searchEnabled ? search : "",
       tags: tagFilterEnabled ? readerState.tags : null,
       sort: sortEnabled ? readerState.sort : "latest",
     });
   }, [
     uris,
-    readerIndex,
+    index,
     searchEnabled,
     tagFilterEnabled,
     sortEnabled,
-    debouncedSearch,
+    search,
     readerState.tags,
     readerState.sort,
   ]);
-
   const cappedUris =
     limit && limit > 0 ? orderedUris.slice(0, limit) : orderedUris;
-  const cappedInitialPosts =
-    limit && limit > 0 ? initialPosts.slice(0, limit) : initialPosts;
 
-  const seedMatches =
-    cappedInitialPosts.length > 0 &&
-    cappedInitialPosts.every((p, i) => p.uri === cappedUris[i]);
+  const filterKey = `${search}\n${readerState.tags.join(",")}\n${readerState.sort}`;
+  const [shown, setShown] = useState({ filterKey, pages: 1 });
+  const pages = shown.filterKey === filterKey ? shown.pages : 1;
+  const visibleUris = cappedUris.slice(0, pages * POSTS_LIST_PAGE_SIZE);
+  const hasMore = cappedUris.length > visibleUris.length;
 
-  const getKey = (pageIndex: number) => {
-    const start = pageIndex * POSTS_LIST_PAGE_SIZE;
-    const slice = cappedUris.slice(start, start + POSTS_LIST_PAGE_SIZE);
-    if (slice.length === 0) return null;
-    return ["posts-batch", listId, slice] as const;
-  };
-
-  const { data, size, setSize, isValidating, isLoading } = useSWRInfinite(
-    getKey,
-    ([, , slice]) => loadBatch(slice),
-    {
-      fallbackData: seedMatches ? [cappedInitialPosts] : undefined,
-      revalidateFirstPage: false,
-      keepPreviousData: true,
-    },
+  const known = useMemo(
+    () => new Map(knownPosts.map((p) => [p.uri, p])),
+    [knownPosts],
   );
+  const [fetched, setFetched] = useState(
+    () => new Map<string, PublicationPostsListPost | null>(),
+  );
+  const postFor = (uri: string) =>
+    known.get(uri) ?? (loadBatch ? fetched.get(uri) : null);
+
+  const posts: PublicationPostsListPost[] = [];
+  const pendingUris: string[] = [];
+  for (const uri of visibleUris) {
+    const post = postFor(uri);
+    if (post === undefined) pendingUris.push(uri);
+    else if (post && pendingUris.length === 0) posts.push(post);
+  }
+  const isHydrating = pendingUris.length > 0;
+
+  const inflight = useRef(new Set<string>());
+  const [retry, setRetry] = useState(0);
+  const pendingKey = pendingUris.join(" ");
+  useEffect(() => {
+    if (!loadBatch || !pendingKey) return;
+    const batch = pendingKey
+      .split(" ")
+      .filter((uri) => !inflight.current.has(uri))
+      .slice(0, POSTS_LIST_PAGE_SIZE);
+    if (batch.length === 0) return;
+    for (const uri of batch) inflight.current.add(uri);
+    loadBatch(batch)
+      .then((result) => {
+        setFetched((prev) => {
+          const next = new Map(prev);
+          for (const uri of batch)
+            next.set(uri, result.find((p) => p.uri === uri) ?? null);
+          return next;
+        });
+      })
+      .catch(() => {
+        setTimeout(() => setRetry((r) => r + 1), RETRY_DELAY_MS);
+      })
+      .finally(() => {
+        for (const uri of batch) inflight.current.delete(uri);
+      });
+  }, [loadBatch, pendingKey, retry]);
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
-  const hasMore = cappedUris.length > size * POSTS_LIST_PAGE_SIZE;
-  // `data` gains a page only once the whole array resolves, so a size that has
-  // outrun it means a batch is in flight. `isValidating` alone also fires for
-  // focus revalidation, and `hasMore` describes the page *after* the one being
-  // loaded — it goes false on the final batch, the one readers wait on.
-  const isLoadingMore = isValidating && size > (data?.length ?? 0);
-  const hasUnshownPosts = hasMore || cappedUris.length < orderedUris.length;
   useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el || !hasMore || isHydrating) return;
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !isValidating && hasMore) {
-          setSize(size + 1);
-        }
+      ([entry]) => {
+        if (entry.isIntersecting) setShown({ filterKey, pages: pages + 1 });
       },
       { threshold: 0.1 },
     );
-    if (loadMoreRef.current) observer.observe(loadMoreRef.current);
+    observer.observe(el);
     return () => observer.disconnect();
-  }, [size, setSize, isValidating, hasMore]);
+  }, [hasMore, isHydrating, filterKey, pages]);
 
-  if (uris.length === 0) return <>{emptyState}</>;
-
-  const allPosts = data ? data.flatMap((page) => page) : [];
+  if ((index ?? uris ?? []).length === 0) return <>{emptyState}</>;
 
   return (
     <div className={`relative w-full py-2 ${className ?? ""}`}>
-      {readerControls && readerIndex && (
+      {readerControls && index && (
         <PostsListReaderControlsBar
           controls={readerControls}
-          index={readerIndex}
+          index={index}
           state={readerState}
           setState={setReaderState}
         />
@@ -157,17 +168,13 @@ export function PaginatedPublicationPostsList({
         </div>
       ) : (
         <>
-          <div
-            className={isLoading ? "opacity-50 transition-opacity" : ""}
-            aria-busy={isLoading || undefined}
-          >
+          <div aria-busy={isHydrating || undefined}>
             <PublicationPostsList
               publication={publication}
               publicationRecord={publicationRecord}
-              posts={allPosts}
+              posts={posts}
               view={view}
               highlightFirstPost={highlightFirstPost}
-              preSorted
               disableLinks={disableLinks}
               pageWidth={pageWidth}
             />
@@ -178,25 +185,12 @@ export function PaginatedPublicationPostsList({
             className="absolute bottom-[1200px] left-0 w-full h-px pointer-events-none"
             aria-hidden="true"
           />
-          {isLoadingMore && (
+          {isHydrating && (
             <div className="text-center text-tertiary py-4">
               Loading more posts...
             </div>
           )}
         </>
-      )}
-      {/* In the SSR HTML whenever posts are missing from it: only the first
-          batch is served, so crawlers need a plain anchor to the archive to
-          reach the rest. */}
-      {!disableLinks && hasUnshownPosts && (
-        <div className="text-center pt-3 hidden">
-          <SpeedyLink
-            href={`${getPublicationURL(publication).replace(/\/+$/, "")}/archive`}
-            className="text-sm text-tertiary hover:text-accent-contrast"
-          >
-            View all posts
-          </SpeedyLink>
-        </div>
       )}
     </div>
   );

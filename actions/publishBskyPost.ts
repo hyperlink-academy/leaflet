@@ -11,6 +11,7 @@ import { AtUri } from "@atproto/syntax";
 import { getAuthIdentity } from "src/auth";
 import { AtpBaseClient, SiteStandardDocument } from "lexicons/api";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
+import { loggedFetchHandler } from "src/utils/loggedFetchHandler";
 import type { OAuthSession } from "@atproto/oauth-client-node";
 import { idResolver } from "src/identity";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -60,7 +61,7 @@ async function postingSession(did?: string): Promise<
   if (!sessionResult.ok) return Err(sessionResult.error);
   let credentialSession = sessionResult.value;
   let agent = new AtpBaseClient(
-    credentialSession.fetchHandler.bind(credentialSession),
+    loggedFetchHandler(credentialSession, { actorDid: identity.atp_did }),
   );
   let uploadThumb: UploadThumb = (bytes) =>
     agent.com.atproto.repo
@@ -298,7 +299,10 @@ async function createExternalCardPost(
     external.associatedRefs = args.associatedRefs;
   if (args.thumb) external.thumb = args.thumb;
 
-  let bsky = new BskyAgent(credentialSession);
+  let bsky = new BskyAgent({
+    did: credentialSession.did,
+    fetchHandler: loggedFetchHandler(credentialSession, { url: args.url }),
+  });
   return bsky.app.bsky.feed.post.create(
     {
       repo: credentialSession.did!,

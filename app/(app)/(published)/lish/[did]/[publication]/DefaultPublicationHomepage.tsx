@@ -13,6 +13,7 @@ import {
   type PublicationPostsListFakePost,
 } from "./PublicationPostsList";
 import { type PublicationPostsListPost } from "src/utils/buildPublicationPosts";
+import { sortPostsForList } from "src/utils/postsListPagination";
 
 type FakePost = PublicationPostsListFakePost;
 
@@ -53,7 +54,7 @@ export const DefaultPublicationHomepage = ({
   const navPages = publishedNavPages(publication.publication_pages);
   const posts: PublicationPostsListPost[] = fakePosts
     ? []
-    : resolvedPosts ?? [];
+    : sortPostsForList(resolvedPosts ?? []);
   return (
     <>
       <FontLoader
