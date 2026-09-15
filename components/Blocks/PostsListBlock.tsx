@@ -10,13 +10,10 @@ import { PaginatedPublicationPostsList } from "app/(app)/(published)/lish/[did]/
 import { ChapterShelf } from "app/(app)/(published)/lish/[did]/[publication]/PublicationPostsChapterList";
 import { buildChapterCards } from "src/utils/chapterGrouping";
 import {
-  POSTS_LIST_PAGE_SIZE,
   buildPostsListIndex,
-  postsListFilterKey,
   resolveReaderControls,
   sortPostsForList,
   filterPostsByTags,
-  type LoadPostsBatch,
   type PostsListView,
 } from "src/utils/postsListPagination";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
@@ -111,7 +108,7 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
 
   let listData = useMemo(() => {
     if (!data?.documents) return null;
-    let ordered = sortPostsForList(
+    let ordered: PublicationPostsListPost[] = sortPostsForList(
       filterPostsByTags(data.documents, filterTags).map((d) => ({
         uri: d.uri,
         record: d.record,
@@ -121,14 +118,8 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
         membersOnly: d.membersOnly,
       })),
     );
-    let byUri = new Map(ordered.map((p) => [p.uri, p]));
-    let loadBatch: LoadPostsBatch = async (batch) =>
-      batch
-        .map((u) => byUri.get(u))
-        .filter((p): p is PublicationPostsListPost => p !== undefined);
     return {
-      uris: ordered.map((p) => p.uri),
-      initialPosts: ordered.slice(0, POSTS_LIST_PAGE_SIZE),
+      posts: ordered,
       latestPost: ordered[0],
       chapterCards:
         view === "chapter" && data.publication
@@ -137,14 +128,13 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
       readerIndex: readerControls
         ? buildPostsListIndex(ordered, (p) => getFirstParagraph(p.record))
         : undefined,
-      loadBatch,
     };
   }, [data?.documents, data?.publication, filterTags, view, readerControls]);
 
   if (data === undefined) return <PostsListPlaceholder />;
   if (!data?.publication) return <PostsListPlaceholder />;
 
-  if (!listData || listData.uris.length === 0)
+  if (!listData || listData.posts.length === 0)
     return (
       <EmptyState container="none">
         You haven't published any posts yet! When you do, they'll show here.
@@ -171,15 +161,13 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
     <PaginatedPublicationPostsList
       publication={data.publication}
       publicationRecord={publicationRecord}
-      listId={`${data.publication.uri}:${postsListFilterKey(filterTags)}`}
-      uris={listData.uris}
-      initialPosts={listData.initialPosts}
-      loadBatch={listData.loadBatch}
+      uris={listData.readerIndex ? undefined : listData.posts.map((p) => p.uri)}
+      index={listData.readerIndex}
+      knownPosts={listData.posts}
       view={view}
       highlightFirstPost={highlightFirst}
       limit={limit}
       readerControls={readerControls}
-      readerIndex={listData.readerIndex}
       disableLinks
       pageWidth={pageWidth}
     />
