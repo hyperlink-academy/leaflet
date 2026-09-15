@@ -68,6 +68,7 @@ function buildLeafletRecord(
           showRecommends: preferences.showRecommends,
           showFirstLast: preferences.showFirstLast,
           prevNextDirection: preferences.prevNextDirection,
+          showOtherPublicationsInTags: preferences.showOtherPublicationsInTags,
         }
       : undefined,
   };
@@ -118,6 +119,7 @@ function buildStandardRecord(
           showRecommends: preferences.showRecommends,
           showFirstLast: preferences.showFirstLast,
           prevNextDirection: preferences.prevNextDirection,
+          showOtherPublicationsInTags: preferences.showOtherPublicationsInTags,
         }
       : undefined,
   };

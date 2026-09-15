@@ -122,6 +122,7 @@ export async function createPublication({
         prevNextDirection: preferences.prevNextDirection,
         showRecommends: preferences.showRecommends,
         showFirstLast: preferences.showFirstLast,
+        showOtherPublicationsInTags: preferences.showOtherPublicationsInTags,
       },
     } satisfies SiteStandardPublication.Record;
   } else {

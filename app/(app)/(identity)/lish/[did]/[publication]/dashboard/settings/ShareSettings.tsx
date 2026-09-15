@@ -11,6 +11,8 @@ export function ShareSettings(props: {
   setShowRecommends: (v: boolean) => void;
   showInDiscover: boolean;
   setShowInDiscover: (v: boolean) => void;
+  showOtherPublicationsInTags: boolean;
+  setShowOtherPublicationsInTags: (v: boolean) => void;
 }) {
   return (
     <SettingsSection title="Share">
@@ -48,6 +50,17 @@ export function ShareSettings(props: {
           }
           toggle={props.showInDiscover}
           onToggle={() => props.setShowInDiscover(!props.showInDiscover)}
+        />
+
+        <ToggleSetting
+          label="Show Other Publications in Tags"
+          helpText="When readers open tags in your post, include posts from other publications"
+          toggle={props.showOtherPublicationsInTags}
+          onToggle={() =>
+            props.setShowOtherPublicationsInTags(
+              !props.showOtherPublicationsInTags,
+            )
+          }
         />
       </div>
     </SettingsSection>

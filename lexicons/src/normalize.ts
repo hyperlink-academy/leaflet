@@ -381,6 +381,8 @@ export function normalizePublication(
             showFirstLast: record.preferences.showFirstLast,
             prevNextDirection: record.preferences.prevNextDirection,
             showRecommends: record.preferences.showRecommends,
+            showOtherPublicationsInTags:
+              record.preferences.showOtherPublicationsInTags,
           }
         : undefined;
 

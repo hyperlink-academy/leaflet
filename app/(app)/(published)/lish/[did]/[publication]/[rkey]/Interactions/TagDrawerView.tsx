@@ -4,9 +4,15 @@ import { DotLoader } from "components/utils/DotLoader";
 import { PostListing } from "components/PostListing";
 import { useDocument } from "contexts/DocumentContext";
 import { getDocumentsByTag } from "app/(app)/(identity)/(home-pages)/tag/[tag]/getDocumentsByTag";
+import Link from "next/link";
+
+const OTHER_PUBLICATIONS_LIMIT = 20;
 
 export function TagDrawerView(props: { tag: string }) {
-  const { uri, publication } = useDocument();
+  const { uri, publication, normalizedPublication } = useDocument();
+  // Publication-level only — a post can't opt its own tag window in or out.
+  const showOtherPublications =
+    normalizedPublication?.preferences?.showOtherPublicationsInTags !== false;
   const { data, isLoading } = useSWR(["tag-posts", props.tag, "trending"], () =>
     getDocumentsByTag(props.tag, { orderBy: "trending" }),
   );
@@ -23,13 +29,22 @@ export function TagDrawerView(props: { tag: string }) {
   const samePublication = publication
     ? posts.filter((p) => p.publication?.uri === publication.uri)
     : [];
-  const otherPublications = publication
-    ? posts.filter((p) => p.publication?.uri !== publication.uri)
-    : posts;
+  const allOtherPublications = !showOtherPublications
+    ? []
+    : publication
+      ? posts.filter((p) => p.publication?.uri !== publication.uri)
+      : posts;
+  const otherPublications = allOtherPublications.slice(
+    0,
+    OTHER_PUBLICATIONS_LIMIT,
+  );
+  const hasMore = allOtherPublications.length > otherPublications.length;
 
   let inPubAndAtmo = samePublication.length > 0 && otherPublications.length > 0;
 
-  if (posts.length === 0)
+  // Counts what's actually rendered, not what was fetched — with other
+  // publications turned off the tag can have posts and still show nothing.
+  if (samePublication.length + otherPublications.length === 0)
     return (
       <div className="text-tertiary italic text-sm py-8 text-center">
         No other posts tagged {props.tag}
@@ -54,6 +69,16 @@ export function TagDrawerView(props: { tag: string }) {
           {otherPublications.map((post) => (
             <PostListing key={post.documents.uri} {...post} compact />
           ))}
+          {hasMore && (
+            // The drawer renders on custom domains too, where /tag would 404,
+            // so link out the way tag chips do.
+            <Link
+              href={`https://leaflet.pub/tag/${encodeURIComponent(props.tag)}`}
+              className="text-sm text-tertiary hover:text-accent-contrast text-center pt-1"
+            >
+              See more
+            </Link>
+          )}
         </>
       )}
     </div>
