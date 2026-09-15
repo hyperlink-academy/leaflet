@@ -1,6 +1,8 @@
 "use client";
+import { useContext, useState } from "react";
 import { Tag } from "../Tags";
 import { Popover } from "../Popover";
+import { DrawerThreadContext } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
 import { TagTiny } from "../Icons/TagTiny";
 import { RecommendButton } from "./RecommendButton";
 import { DiscussionButton } from "./DiscussionButton";
@@ -54,9 +56,15 @@ export const InteractionPreview = (props: {
   );
 };
 
+// When a drawer-aware provider is in scope (the published post header) a tag
+// opens the drawer's tag view instead of linking out to the tag page.
 export const TagPopover = (props: { tags: string[] }) => {
+  const drawerNav = useContext(DrawerThreadContext);
+  const [open, setOpen] = useState(false);
   return (
     <Popover
+      open={open}
+      onOpenChange={setOpen}
       className="p-2! max-w-xs"
       trigger={
         <div
@@ -67,16 +75,35 @@ export const TagPopover = (props: { tags: string[] }) => {
         </div>
       }
     >
-      <TagList tags={props.tags} className="text-secondary!" />
+      <TagList
+        tags={props.tags}
+        className="text-secondary!"
+        onTagClick={
+          drawerNav &&
+          ((tag) => {
+            setOpen(false);
+            drawerNav.push({ type: "tag", tag });
+          })
+        }
+      />
     </Popover>
   );
 };
 
-const TagList = (props: { tags: string[]; className?: string }) => {
+const TagList = (props: {
+  tags: string[];
+  className?: string;
+  onTagClick?: ((tag: string) => void) | null;
+}) => {
   return (
     <div className="flex gap-1 flex-wrap" role="list" aria-label="Tags">
       {props.tags.map((tag, index) => (
-        <Tag name={tag} key={index} className={props.className} />
+        <Tag
+          name={tag}
+          key={index}
+          className={props.className}
+          onClick={props.onTagClick ?? undefined}
+        />
       ))}
     </div>
   );

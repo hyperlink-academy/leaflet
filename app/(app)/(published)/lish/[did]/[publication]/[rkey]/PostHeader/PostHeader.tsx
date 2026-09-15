@@ -1,6 +1,15 @@
 "use client";
 import { getPublicationURL } from "src/utils/getPublicationURL";
-import { Interactions, getQuoteCount } from "../Interactions/Interactions";
+import {
+  Interactions,
+  getQuoteCount,
+  openDrawerThread,
+} from "../Interactions/Interactions";
+import {
+  type DrawerThread,
+  DrawerThreadContext,
+} from "../Interactions/drawerThreadContext";
+import { useDocumentOptional } from "contexts/DocumentContext";
 import { PostPageData } from "src/utils/getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { usePostEditLink } from "../usePostEditLink";
@@ -9,7 +18,7 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { Separator } from "components/Layout";
 import { ProfilePopover } from "components/ProfilePopover";
-import { Fragment } from "react";
+import { Fragment, useMemo } from "react";
 import {
   type BylineProfile,
   bylineName,
@@ -109,6 +118,18 @@ export function PostByline(props: {
   let namedContributors = (props.contributors ?? []).filter(
     (c) => c.displayName || c.handle,
   );
+  const document = useDocumentOptional();
+  const documentUri = document?.uri;
+  const tagDrawerNav = useMemo(
+    () =>
+      documentUri
+        ? {
+            push: (thread: DrawerThread) =>
+              openDrawerThread(documentUri, thread),
+          }
+        : null,
+    [documentUri],
+  );
   const record = props.record;
   const formattedDate = useLocalizedDate(
     record?.publishedAt || new Date().toISOString(),
@@ -162,7 +183,11 @@ export function PostByline(props: {
       {tagCount > 0 && (
         <>
           <Separator classname="h-4!" />
-          <TagPopover tags={tags} />
+          {/* TagPopover reads this off context to open the tag in this post's
+              own interaction drawer. */}
+          <DrawerThreadContext.Provider value={tagDrawerNav}>
+            <TagPopover tags={tags} />
+          </DrawerThreadContext.Provider>
         </>
       )}
     </div>

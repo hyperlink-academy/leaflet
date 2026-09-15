@@ -25,7 +25,12 @@ export const Tag = (props: {
         <button
           type="button"
           className={labelClassName}
-          aria-pressed={!!props.selected}
+          // Only a toggle when the chip has a selected state; otherwise it's a
+          // plain action button and aria-pressed would be misleading.
+          aria-pressed={
+            props.selected === undefined ? undefined : props.selected
+          }
+          aria-label={`Tag: ${props.name}`}
           onClick={() => props.onClick?.(props.name)}
         >
           {props.name}{" "}

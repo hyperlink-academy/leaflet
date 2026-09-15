@@ -98,6 +98,16 @@ export const InteractionDrawer = (props: {
   );
 };
 
+// Placeholder for the posts-by-tag view; the tag name itself is rendered by the
+// drawer header above.
+const TagDrawerView = (props: { tag: string }) => {
+  return (
+    <div className="text-tertiary italic text-sm py-8 text-center">
+      Posts tagged {props.tag} will show up here
+    </div>
+  );
+};
+
 const InteractionDrawerContent = (props: {
   showPageBackground: boolean | undefined;
   document_uri: string;
@@ -205,6 +215,8 @@ const InteractionDrawerContent = (props: {
                   : `Comments${ssp.comments.length > 0 ? ` (${ssp.comments.length})` : ""}`}
               </h4>
             )
+          ) : activeThread?.type === "tag" ? (
+            <h3 className="truncate">{activeThread.tag}</h3>
           ) : activeThread?.type === "recommends" ? (
             <div className="flex items-center justify-between gap-2">
               <h3>Recommends</h3>
@@ -278,11 +290,14 @@ const InteractionDrawerContent = (props: {
       <DrawerThreadContext.Provider value={drawerNav}>
         {sspUri ? (
           <StandardSitePostDrawerView uri={sspUri} tab={sspActiveTab} />
+        ) : activeThread?.type === "tag" ? (
+          <TagDrawerView tag={activeThread.tag} />
         ) : activeThread?.type === "recommends" ? (
           <>
             <RecommendsList documentUri={activeThread.uri} />
           </>
-        ) : activeThread ? (
+        ) : activeThread?.type === "thread" ||
+          activeThread?.type === "quotes" ? (
           <ThreadView
             parentUri={activeThread.uri}
             initialTab={activeThread.type === "quotes" ? "quotes" : "replies"}

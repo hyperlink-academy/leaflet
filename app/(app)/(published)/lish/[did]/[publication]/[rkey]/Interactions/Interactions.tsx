@@ -13,7 +13,11 @@ import { EditTiny } from "components/Icons/EditTiny";
 import { RecommendButton } from "components/Interactions/RecommendButton";
 import { DiscussionButton } from "components/Interactions/DiscussionButton";
 import { useMemo } from "react";
-import { type DrawerThread, DrawerThreadContext } from "./drawerThreadContext";
+import {
+  type DrawerThread,
+  DrawerThreadContext,
+  sameDrawerThread,
+} from "./drawerThreadContext";
 import { InteractionShareButton } from "components/Interactions/InteractionShareButton";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 import { ShareSmall } from "components/Icons/ShareSmall";
@@ -153,7 +157,7 @@ export function openDrawerThread(
 export function pushDrawerThread(document_uri: string, thread: DrawerThread) {
   setInteractionState(document_uri, (s) => {
     const top = s.threadStack[s.threadStack.length - 1];
-    if (top && top.type === thread.type && top.uri === thread.uri) return {};
+    if (top && sameDrawerThread(top, thread)) return {};
     return { threadStack: [...s.threadStack, thread] };
   });
 }
@@ -337,7 +341,10 @@ export const ExpandedInteractions = (props: {
         <>
           <hr className="border-border-light mb-3" />
 
-          <TagList tags={tags} className="mb-3" />
+          <TagList
+            tags={tags}
+            onTagClick={(tag) => drawerNav.push({ type: "tag", tag })}
+          />
         </>
       )}
 
@@ -402,12 +409,16 @@ export const ExpandedInteractions = (props: {
   );
 };
 
-const TagList = (props: { className?: string; tags: string[] | undefined }) => {
+const TagList = (props: {
+  className?: string;
+  tags: string[] | undefined;
+  onTagClick?: (tag: string) => void;
+}) => {
   if (!props.tags) return;
   return (
-    <div className="flex gap-1 flex-wrap" role="list" aria-label="Tags">
+    <div className="flex gap-1 flex-wrap mb-3" role="list" aria-label="Tags">
       {props.tags.map((tag, index) => (
-        <Tag name={tag} key={index} className={props.className} />
+        <Tag name={tag} key={index} onClick={props.onTagClick} />
       ))}
     </div>
   );
