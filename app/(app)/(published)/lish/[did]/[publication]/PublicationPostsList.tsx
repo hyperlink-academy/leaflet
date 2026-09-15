@@ -60,7 +60,6 @@ export function PublicationPostsList({
   fakePosts,
   view = "medium",
   highlightFirstPost = false,
-  preSorted = false,
   className,
   inList,
   disableLinks = false,
@@ -72,7 +71,6 @@ export function PublicationPostsList({
   fakePosts?: PublicationPostsListFakePost[];
   view?: PublicationPostsListView;
   highlightFirstPost?: boolean;
-  preSorted?: boolean;
   className?: string;
   inList?: boolean;
   disableLinks?: boolean;
@@ -123,18 +121,7 @@ export function PublicationPostsList({
               date={post.date}
             />
           ))
-        : (preSorted
-            ? posts
-            : posts?.slice().sort((a, b) => {
-                const aDate = a.record.publishedAt
-                  ? new Date(a.record.publishedAt)
-                  : new Date(0);
-                const bDate = b.record.publishedAt
-                  ? new Date(b.record.publishedAt)
-                  : new Date(0);
-                return bDate.getTime() - aDate.getTime();
-              })
-          )?.map((post, index) => {
+        : posts?.map((post, index) => {
             const doc_record = post.record;
             const quotes = post.mentionsCount;
             const comments =

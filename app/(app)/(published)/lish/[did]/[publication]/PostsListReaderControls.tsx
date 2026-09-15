@@ -98,7 +98,7 @@ export function PostsListReaderControlsBar({
       )}
 
       <div
-        className={`readerFilterAndSort ml-auto gap-3 items-center ${!controls.tagFilter && !controls.sort ? "hidden" : searchOpen ? "hidden sm:flex" : "flex"} ${controls.tagFilter && controls.sort && controls.search ? " flex-row" : "flex-row-reverse"} `}
+        className={`readerFilterAndSort ml-auto gap-3 items-center ${!controls.tagFilter && !controls.sort ? "hidden" : searchOpen ? "hidden sm:flex" : "flex"} ${controls.search ? "flex-row" : "flex-row-reverse"}`}
       >
         {controls.tagFilter && (
           <TagSelector

@@ -80,14 +80,14 @@ type PostsListData = {
   publication: { uri: string; record: unknown };
   publicationRecord: NormalizedPublication | null;
   // Per tag-filter signature (postsListFilterKey), what the blocks using that
-  // filter need: list views the full ordered URI list plus an SSR-seeded,
-  // byline-resolved first batch; chapter views the server-grouped cards and
-  // the newest post for the "Latest" highlight. `index` is only built for
-  // lists with reader controls, which search/sort across every post.
+  // filter need: list views the full ordered post list (`uris`, or `index`
+  // when a block has reader controls) plus an SSR-seeded, byline-resolved
+  // first batch; chapter views the server-grouped cards and the newest post
+  // for the "Latest" highlight.
   initialByFilter: Record<
     string,
     {
-      uris: string[];
+      uris?: string[];
       initialPosts: PublicationPostsListPost[];
       index?: PostsListIndexEntry[];
       latestPost?: PublicationPostsListPost;
@@ -429,15 +429,14 @@ export let Block = ({
           <PaginatedPublicationPostsList
             publication={postsListData.publication}
             publicationRecord={postsListData.publicationRecord}
-            listId={`${postsListData.publication.uri}:${key}`}
             uris={seed.uris}
-            initialPosts={seed.initialPosts}
+            index={seed.index}
+            knownPosts={seed.initialPosts}
             loadBatch={getPostsByUris}
             view={view}
             highlightFirstPost={!!block.highlightFirstPost}
             limit={block.limit}
             readerControls={resolveReaderControls(block)}
-            readerIndex={seed.index}
           />
         </div>
       );

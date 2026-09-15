@@ -181,7 +181,8 @@ export async function PublicationPageRenderer({
         return [
           key,
           {
-            uris: needsList ? ordered.map((p) => p.uri) : [],
+            uris:
+              needsList && !needsIndex ? ordered.map((p) => p.uri) : undefined,
             initialPosts: attachBylineProfiles(firstBatch, profiles),
             index: needsIndex
               ? buildPostsListIndex(ordered, (p) => getFirstParagraph(p.record))

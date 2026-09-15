@@ -50,7 +50,6 @@ export function ChapterShelf({
               publicationRecord={publicationRecord}
               posts={[latestPost]}
               view="medium"
-              preSorted
               disableLinks={disableLinks}
             />
           </div>
