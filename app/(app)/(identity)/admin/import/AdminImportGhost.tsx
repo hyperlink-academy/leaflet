@@ -21,7 +21,13 @@ import {
   type GhostPost,
 } from "src/ghostImport/parseGhostExport";
 import { PublicationPicker } from "../PublicationPicker";
-import { GhostPostPreview } from "./GhostPostPreview";
+import { ImportPreview } from "./ImportPreview";
+import {
+  Badge,
+  ExternalLink,
+  ImportOptions,
+  SelectAllHeader,
+} from "./ImportShared";
 
 type PostStatus =
   | { state: "importing" }
@@ -132,24 +138,17 @@ export function AdminImportGhost() {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto flex flex-col gap-8 px-4 py-8">
-      <div className="flex flex-col gap-1">
-        <h2>Import from Ghost</h2>
-        <div className="text-secondary leading-snug">
-          Turn a Ghost export (Settings → Advanced → Import/Export → Export
-          content) into drafts in a publication, optionally publishing them on
-          the publication owner&apos;s behalf. Ghost posts become posts; Ghost
-          pages become pages in the publication&apos;s navigation, at the same
-          /slug. Images are copied into Leaflet storage. Subscribers are never
-          emailed about imported posts. Members-only and paid posts are placed
-          behind a members-only delimiter.
-        </div>
-      </div>
-
+    <>
       <PublicationPicker publication={publication} onChange={setPublication} />
 
       <div className="flex flex-col gap-3">
         <h3>Ghost export</h3>
+        <div className="text-tertiary text-sm leading-snug">
+          Settings → Advanced → Import/Export → Export content. Ghost pages
+          become pages in the publication&apos;s navigation, at the same /slug.
+          Members-only and paid posts are placed behind a members-only
+          delimiter.
+        </div>
         <input
           type="file"
           accept=".json,application/json"
@@ -175,30 +174,14 @@ export function AdminImportGhost() {
         </label>
       </div>
 
-      <div className="flex flex-col gap-3">
-        <h3>Options</h3>
-        <ModeRadio
-          value="publish"
-          current={mode}
-          onChange={setMode}
-          label="Create drafts and publish"
-          description="Each post is published as the owner under its Ghost slug, backdated to its Ghost publish date. Pages are added to the publication's navigation and published along with any pending page edits."
-        />
-        <ModeRadio
-          value="draft"
-          current={mode}
-          onChange={setMode}
-          label="Create drafts only"
-          description="Posts appear in the publication's drafts, and pages in its page editor, for the owner to publish."
-        />
-        <Checkbox
-          small
-          checked={showInDiscover}
-          onChange={(e) => setShowInDiscover(e.target.checked)}
-        >
-          Show published posts in Discover and aggregated feeds.
-        </Checkbox>
-      </div>
+      <ImportOptions
+        mode={mode}
+        onModeChange={setMode}
+        showInDiscover={showInDiscover}
+        onShowInDiscoverChange={setShowInDiscover}
+        publishDescription="Each post is published as the owner under its Ghost slug, backdated to its Ghost publish date. Pages are added to the publication's navigation and published along with any pending page edits."
+        draftDescription="Posts appear in the publication's drafts, and pages in its page editor, for the owner to publish."
+      />
 
       {posts.length > 0 && (
         <div className="flex flex-col gap-2">
@@ -209,22 +192,17 @@ export function AdminImportGhost() {
             </div>
           </div>
           <div className="border border-border-light rounded-md overflow-hidden text-sm">
-            <div className="flex items-center gap-2 px-3 py-2 bg-bg-page border-b border-border-light">
-              <Checkbox
-                small
-                checked={selected.size === posts.length}
-                indeterminate={selected.size > 0}
-                onChange={() =>
-                  setSelected(
-                    selected.size === posts.length
-                      ? new Set()
-                      : new Set(posts.map((p) => p.id)),
-                  )
-                }
-              >
-                <span className="text-tertiary">Select all</span>
-              </Checkbox>
-            </div>
+            <SelectAllHeader
+              selected={selected.size}
+              total={posts.length}
+              onToggle={() =>
+                setSelected(
+                  selected.size === posts.length
+                    ? new Set()
+                    : new Set(posts.map((p) => p.id)),
+                )
+              }
+            />
             {posts.map((p) => (
               <PostRow
                 key={p.id}
@@ -282,30 +260,7 @@ export function AdminImportGhost() {
           `${mode === "publish" ? "Import and publish" : "Import as drafts"} (${selectedPosts.length})`
         )}
       </ButtonPrimary>
-    </div>
-  );
-}
-
-function ModeRadio(props: {
-  value: GhostImportMode;
-  current: GhostImportMode;
-  onChange: (m: GhostImportMode) => void;
-  label: string;
-  description: string;
-}) {
-  return (
-    <label className="flex items-baseline gap-2 text-sm cursor-pointer">
-      <input
-        type="radio"
-        name="ghost-import-mode"
-        checked={props.current === props.value}
-        onChange={() => props.onChange(props.value)}
-      />
-      <span>
-        <span className="font-bold text-primary">{props.label}</span>{" "}
-        <span className="text-tertiary">{props.description}</span>
-      </span>
-    </label>
+    </>
   );
 }
 
@@ -352,23 +307,13 @@ function PostRow(props: {
                 )}
                 {status.state === "done" && status.result.kind === "post" && (
                   <>
-                    <a
-                      className="text-accent-contrast hover:underline"
-                      href={`/${status.result.leafletId}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
+                    <ExternalLink href={`/${status.result.leafletId}`}>
                       Edit draft
-                    </a>
+                    </ExternalLink>
                     {status.result.rkey && pubBase && (
-                      <a
-                        className="text-accent-contrast hover:underline"
-                        href={`${pubBase}/${status.result.rkey}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
+                      <ExternalLink href={`${pubBase}/${status.result.rkey}`}>
                         View post
-                      </a>
+                      </ExternalLink>
                     )}
                   </>
                 )}
@@ -376,23 +321,13 @@ function PostRow(props: {
                   status.result.kind === "page" &&
                   pubBase && (
                     <>
-                      <a
-                        className="text-accent-contrast hover:underline"
-                        href={`${pubBase}/edit`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
+                      <ExternalLink href={`${pubBase}/edit`}>
                         Edit pages
-                      </a>
+                      </ExternalLink>
                       {props.pagesPublished && (
-                        <a
-                          className="text-accent-contrast hover:underline"
-                          href={`${pubBase}${status.result.route}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
+                        <ExternalLink href={`${pubBase}${status.result.route}`}>
                           View page
-                        </a>
+                        </ExternalLink>
                       )}
                     </>
                   )}
@@ -416,19 +351,12 @@ function PostRow(props: {
       )}
       {props.preview && props.preview !== "loading" && (
         <div className="px-3 pb-3">
-          <GhostPostPreview publication={publication} preview={props.preview} />
+          <ImportPreview
+            publication={publication}
+            preview={{ ...props.preview, previewKey: props.preview.ghostId }}
+          />
         </div>
       )}
     </div>
-  );
-}
-
-function Badge(props: { children: React.ReactNode; warn?: boolean }) {
-  return (
-    <span
-      className={`px-1 rounded-sm border ${props.warn ? "border-accent-1 text-accent-1" : "border-border-light text-tertiary"}`}
-    >
-      {props.children}
-    </span>
   );
 }

@@ -3,10 +3,9 @@
 import { sql } from "drizzle-orm";
 import { v7 } from "uuid";
 import { generateKeyBetween } from "fractional-indexing";
-import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
-import { Ok, Err, type Result } from "src/result";
-import { isAdminEmail } from "src/adminAllowlist";
+import type { Result } from "src/result";
+import { asAdmin } from "src/admin/asAdmin";
 import { restoreOAuthSession } from "src/atproto-oauth";
 import { appendToLeaflet, insertLeaflet } from "src/utils/insertLeaflet";
 import { publishLeaflet } from "src/utils/publishLeaflet";
@@ -29,20 +28,6 @@ import {
 } from "src/ghostImport/ghostPostToLeaflet";
 import { uploadRemoteImage } from "src/ghostImport/uploadRemoteImage";
 
-// Errors are returned as messages rather than thrown: Next redacts thrown
-// server-action errors in production, and the admin needs the real reason.
-async function asAdmin<T>(fn: () => Promise<T>): Promise<Result<T, string>> {
-  let identity = await getAuthIdentity();
-  if (!identity || !isAdminEmail(identity.email))
-    return Err("You're not allowed to do that.");
-  try {
-    return Ok(await fn());
-  } catch (e) {
-    console.error("[admin/import-ghost]", e);
-    return Err(e instanceof Error ? e.message : String(e));
-  }
-}
-
 export type GhostPostPreview = GhostLeaflet & {
   // The draft exactly as importGhostPost would write it, with images left at
   // their Ghost URLs; the client renders it with the editor's block components.
@@ -53,7 +38,7 @@ export async function previewGhostImport(args: {
   post: GhostPost;
   siteUrl: string;
 }): Promise<Result<GhostPostPreview, string>> {
-  return asAdmin(async () => {
+  return asAdmin("import-ghost", async () => {
     let leaflet = await ghostPostToLeaflet(
       args.post,
       args.siteUrl,
@@ -87,7 +72,7 @@ export async function importGhostPost(args: {
   mode: GhostImportMode;
   showInDiscover: boolean;
 }): Promise<Result<GhostImportResult, string>> {
-  return asAdmin(async () => {
+  return asAdmin("import-ghost", async () => {
     let { data: pub } = await supabaseServerClient
       .from("publications")
       .select("uri, identity_did, record, draft_leaflet")
@@ -242,7 +227,7 @@ export async function importGhostPost(args: {
 export async function publishGhostPages(args: {
   publicationUri: string;
 }): Promise<Result<{ published: number }, string>> {
-  return asAdmin(async () => {
+  return asAdmin("import-ghost", async () => {
     let { data: pub } = await supabaseServerClient
       .from("publications")
       .select("identity_did")

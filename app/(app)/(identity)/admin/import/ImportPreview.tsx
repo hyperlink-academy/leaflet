@@ -8,25 +8,39 @@ import { Block } from "components/Blocks/Block";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { localImages } from "src/utils/addImage";
 import type { AdminPublicationSearchResult } from "actions/admin/importSubscribers";
-import type { GhostPostPreview as Preview } from "actions/admin/importGhost";
+import type { Fact } from "src/replicache";
+import type { Attribute } from "src/replicache/attributes";
 
-const PREVIEW_SET = "ghost-import-preview";
+const PREVIEW_SET = "import-preview";
+
+export type ImportPreviewData = {
+  // Distinguishes this preview's fake permission token from other previews on
+  // the page.
+  previewKey: string;
+  rootEntityId: string;
+  firstPageId: string;
+  title: string;
+  description: string;
+  tags: string[];
+  coverImageUrl: string | null;
+  facts: Fact<Attribute>[];
+};
 
 // Renders a planned import the way the editor shows a draft: the real block
 // components over the plan's facts, with no Replicache instance behind them —
 // the same read-only setup the home page's leaflet cards use.
-export function GhostPostPreview(props: {
+export function ImportPreview(props: {
   publication: AdminPublicationSearchResult | null;
-  preview: Preview;
+  preview: ImportPreviewData;
 }) {
   let { publication, preview } = props;
   let token = useMemo<PermissionToken>(
     () => ({
-      id: `ghost-import-preview-${preview.ghostId}`,
+      id: `import-preview-${preview.previewKey}`,
       root_entity: preview.rootEntityId,
       permission_token_rights: [
         {
-          token: `ghost-import-preview-${preview.ghostId}`,
+          token: `import-preview-${preview.previewKey}`,
           entity_set: PREVIEW_SET,
           created_at: "",
           read: true,
@@ -36,7 +50,7 @@ export function GhostPostPreview(props: {
         },
       ],
     }),
-    [preview.ghostId, preview.rootEntityId],
+    [preview.previewKey, preview.rootEntityId],
   );
   // Blocks that show publication context (subscribe, members-only delimiter)
   // read it from the leaflet data; without this they'd fetch it by token id.
@@ -67,7 +81,7 @@ export function GhostPostPreview(props: {
     [token, preview, publication],
   );
   // ImageBlock serves stored images through the Supabase resize proxy, which
-  // can't fetch Ghost-hosted URLs; images registered as local render as-is.
+  // can't fetch the source's URLs; images registered as local render as-is.
   useMemo(() => {
     for (let f of preview.facts)
       if (f.data.type === "image") localImages.set(f.data.src, f.data.src);
