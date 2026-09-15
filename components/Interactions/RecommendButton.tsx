@@ -23,6 +23,7 @@ import {
   InteractionButton,
   LargeInteractionButton,
 } from "./InteractionButtons";
+import { StandardSitePostItem } from "../Blocks/StandardSitePostBlock/StandardSitePostItem";
 
 // Create a batcher for recommendation checks
 // Batches requests made within 10ms window
@@ -279,10 +280,6 @@ export function RecommendButton(props: {
   );
 }
 
-// Lists the profiles that have recommended a document. The sm: variants below
-// align with the useIsMobile breakpoint that swaps the modal for a sheet: the
-// sheet keeps the button's default chrome, the modal strips it down to a bare
-// inline count.
 function RecommendsModal(props: {
   documentUri: string;
   open: boolean;
@@ -292,10 +289,21 @@ function RecommendsModal(props: {
   return (
     <Modal
       sheetOnMobile
-      title="Recommended by"
       open={props.open}
       onOpenChange={props.onOpenChange}
-      actionButton={
+      className="px-3! pt-0! pb-4 gap-0 sm:w-lg max-w-full relative bg-[var(--color-bg-light)]!"
+      sheetClassName="px-3! pt-0!"
+    >
+      <div className="standardSitePostBlock block-border overflow-hidden w-full bg-bg-page my-3">
+        <StandardSitePostItem
+          pageWidth={448}
+          uri={props.documentUri}
+          size="small"
+          hideInteractions
+        />
+      </div>
+      <div className="flex items-center justify-between gap-3 pb-2">
+        <div className="font-bold text-tertiary text-sm!">Recommended by</div>
         <RecommendButton
           documentUri={props.documentUri}
           recommendsCount={props.recommendCount}
@@ -303,10 +311,8 @@ function RecommendsModal(props: {
           large
           className="sm:p-0! sm:border-none! sm:flex-row-reverse! hover:sm:bg-transparent! sm:h-fit! hover:sm:text-accent-contrast!"
         />
-      }
-      className="px-3!  pb-4 gap-0 sm:w-lg max-w-full relative bg-[var(--color-bg-light)]!"
-    >
-      <hr className="border-border-light -mx-3 mb-3 hidden sm:block" />
+      </div>
+      <hr className="border-border-light -mx-3 mb-3" />
       <RecommendsList documentUri={props.documentUri} />
     </Modal>
   );

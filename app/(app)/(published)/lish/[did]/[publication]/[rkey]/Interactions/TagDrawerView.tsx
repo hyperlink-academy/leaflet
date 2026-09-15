@@ -1,22 +1,47 @@
 "use client";
 import useSWR from "swr";
+import { AtUri } from "@atproto/api";
 import { DotLoader } from "components/utils/DotLoader";
 import { PostListing } from "components/PostListing";
 import { useDocument } from "contexts/DocumentContext";
-import { getDocumentsByTag } from "app/(app)/(identity)/(home-pages)/tag/[tag]/getDocumentsByTag";
+import {
+  getDocumentsByTag,
+  getPublicationDocumentsByTag,
+} from "app/(app)/(identity)/(home-pages)/tag/[tag]/getDocumentsByTag";
+import { DrawerThreadContext } from "./drawerThreadContext";
 import Link from "next/link";
 
-const OTHER_PUBLICATIONS_LIMIT = 20;
+// Other publications fill in only while this publication has fewer tagged
+// posts than this, and are capped at it.
+const POST_LIMIT = 20;
 
 export function TagDrawerView(props: { tag: string }) {
   const { uri, publication, normalizedPublication } = useDocument();
   const showOtherPublications =
     normalizedPublication?.preferences?.showOtherPublicationsInTags !== false;
-  const { data, isLoading } = useSWR(["tag-posts", props.tag, "trending"], () =>
-    getDocumentsByTag(props.tag, { orderBy: "trending" }),
+
+  const samePublicationQuery = useSWR(
+    publication ? ["tag-publication-posts", props.tag, publication.uri] : null,
+    () => getPublicationDocumentsByTag(props.tag, publication!.uri),
+  );
+  const samePublication = (samePublicationQuery.data?.posts ?? []).filter(
+    (p) => p.documents.uri !== uri,
+  );
+  const samePublicationLoaded = !publication || !!samePublicationQuery.data;
+
+  const needOtherPublications =
+    showOtherPublications &&
+    samePublicationLoaded &&
+    samePublication.length < POST_LIMIT;
+  const otherPublicationsQuery = useSWR(
+    needOtherPublications ? ["tag-posts", props.tag, "trending"] : null,
+    () => getDocumentsByTag(props.tag, { orderBy: "trending" }),
   );
 
-  if (!data && isLoading)
+  if (
+    samePublicationQuery.isLoading ||
+    (needOtherPublications && otherPublicationsQuery.isLoading)
+  )
     return (
       <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm py-8">
         <span>loading</span>
@@ -24,19 +49,16 @@ export function TagDrawerView(props: { tag: string }) {
       </div>
     );
 
-  const posts = (data?.posts ?? []).filter((p) => p.documents.uri !== uri);
-  const samePublication = publication
-    ? posts.filter((p) => p.publication?.uri === publication.uri)
+  const currentPublicationKey = publicationKey(publication?.uri);
+  const allOtherPublications = needOtherPublications
+    ? (otherPublicationsQuery.data?.posts ?? []).filter(
+        (p) =>
+          p.documents.uri !== uri &&
+          (!currentPublicationKey ||
+            publicationKey(p.publication?.uri) !== currentPublicationKey),
+      )
     : [];
-  const allOtherPublications = !showOtherPublications
-    ? []
-    : publication
-      ? posts.filter((p) => p.publication?.uri !== publication.uri)
-      : posts;
-  const otherPublications = allOtherPublications.slice(
-    0,
-    OTHER_PUBLICATIONS_LIMIT,
-  );
+  const otherPublications = allOtherPublications.slice(0, POST_LIMIT);
   const hasMore = allOtherPublications.length > otherPublications.length;
 
   let inPubAndAtmo = samePublication.length > 0 && otherPublications.length > 0;
@@ -49,33 +71,49 @@ export function TagDrawerView(props: { tag: string }) {
     );
 
   return (
-    <div className="tagDrawerView flex flex-col gap-4">
-      {samePublication.length > 0 && (
-        <>
-          {inPubAndAtmo && <h4>From this Publication</h4>}
+    // Null out the drawer's navigation so the listings' discussion and
+    // recommend buttons open their modals: pushing another post's discussion
+    // onto the drawer would strand the reader with no way back to this list.
+    <DrawerThreadContext.Provider value={null}>
+      <div className="tagDrawerView flex flex-col gap-4">
+        {samePublication.length > 0 && (
+          <>
+            {inPubAndAtmo && <h4>From this Publication</h4>}
 
-          {samePublication.map((post) => (
-            <PostListing key={post.documents.uri} {...post} compact />
-          ))}
-        </>
-      )}
-      {inPubAndAtmo && <hr className="my-4" />}
-      {otherPublications.length > 0 && (
-        <>
-          <h4>From across the Atmosphere</h4>
-          {otherPublications.map((post) => (
-            <PostListing key={post.documents.uri} {...post} compact />
-          ))}
-          {hasMore && (
-            <Link
-              href={`https://leaflet.pub/tag/${encodeURIComponent(props.tag)}`}
-              className="text-sm text-tertiary hover:text-accent-contrast text-center pt-1"
-            >
-              See more
-            </Link>
-          )}
-        </>
-      )}
-    </div>
+            {samePublication.map((post) => (
+              <PostListing key={post.documents.uri} {...post} compact />
+            ))}
+          </>
+        )}
+        {inPubAndAtmo && <hr className="my-4" />}
+        {otherPublications.length > 0 && (
+          <>
+            <h4>From across the Atmosphere</h4>
+            {otherPublications.map((post) => (
+              <PostListing key={post.documents.uri} {...post} compact />
+            ))}
+            {hasMore && (
+              <Link
+                href={`https://leaflet.pub/tag/${encodeURIComponent(props.tag)}`}
+                className="text-sm text-tertiary hover:text-accent-contrast text-center pt-1"
+              >
+                See more
+              </Link>
+            )}
+          </>
+        )}
+      </div>
+    </DrawerThreadContext.Provider>
   );
+}
+
+// A publication's pub.leaflet and site.standard records share a did and rkey.
+function publicationKey(uri: string | undefined) {
+  if (!uri) return null;
+  try {
+    const { host, rkey } = new AtUri(uri);
+    return `${host}/${rkey}`;
+  } catch {
+    return null;
+  }
 }
