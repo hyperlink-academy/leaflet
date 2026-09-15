@@ -1,0 +1,778 @@
+{
+  "path": "/a/3mud2splhpc23-reflected-light-part-2-metal-and-reflective-surfaces",
+  "site": "at://did:plc:las7et3zzc7zcyru2vfefna2/site.standard.publication/3mrxvbva5jj2y",
+  "$type": "site.standard.document",
+  "title": "Reflected Light Part 2: Metal and Reflective Surfaces",
+  "content": {
+    "$type": "app.offprint.content",
+    "items": [
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": "So after I wrote my Mini Overview on reflected light, I received this question:"
+      },
+      {
+        "$type": "app.offprint.block.blockquote",
+        "content": [
+          {
+            "$type": "app.offprint.block.text",
+            "plaintext": "Joking aside, do you have a tutorial about painting metal that's NOT a sphere or a cube? I'm so desperate that I consider sculpting a few shapes and covering them in aluminum foil for ref T_T"
+          }
+        ]
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "facets": [
+          {
+            "index": {
+              "byteEnd": 85,
+              "byteStart": 46
+            },
+            "features": [
+              {
+                "uri": "https://www.cosmos.so/scazrelet/collections",
+                "$type": "app.offprint.richtext.facet#link"
+              }
+            ]
+          }
+        ],
+        "plaintext": "\nWell, let's get into it.\n\nI have, over time, collected an awful lot of art tutorials. So I have image macros on doing very specific complex pieces but no generalized \"here is how to metal\" tutorial. Which admittedly sucks. \n\nMetal is complicated though, namely because there are a number of interacting factors that will drastically alter its appearance. The main two being A) How much light it bounces and B) how perfectly it bounces it. This macro here shows the difference in the top too examples:\n"
+      },
+      {
+        "$type": "app.offprint.block.image",
+        "image": {
+          "ref": {
+            "$link": "bafkreicdmcvjjk5whpfcmv44qkq3b4bkmxuyttn22ews6iohbyvlyrjrgq"
+          },
+          "size": 58295,
+          "$type": "blob",
+          "mimeType": "image/jpeg"
+        },
+        "width": "63%",
+        "alignment": "center",
+        "aspectRatio": {
+          "width": 459,
+          "height": 1000
+        }
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": "Like flat aluminum (think the inside of soda can?) is pretty shiny but loses the mirror reflective quality of chrome."
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.image",
+        "image": {
+          "ref": {
+            "$link": "bafkreicrihwfxfhfumtvucx3i6gemaezfis7jzwy7gndrkn7534snttcju"
+          },
+          "size": 38300,
+          "$type": "blob",
+          "mimeType": "image/jpeg"
+        },
+        "width": "58%",
+        "alignment": "center",
+        "aspectRatio": {
+          "width": 1000,
+          "height": 1000
+        }
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "facets": [
+          {
+            "index": {
+              "byteEnd": 174,
+              "byteStart": 150
+            },
+            "features": [
+              {
+                "$type": "app.offprint.richtext.facet#italic"
+              }
+            ]
+          }
+        ],
+        "plaintext": "Glossy objects in general have mirror like qualities, which is why you see reflections in glass. These are highlights, yes, but specifically they are mirrors of light sources."
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": "The reflection here is light bounced off the metal tumbler onto the glass, which is mirroring it back to the viewer."
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.image",
+        "image": {
+          "ref": {
+            "$link": "bafkreieurewhvdlvcigyklopes2zlkgwdm2qjx445qp26xe5erzpo7dfs4"
+          },
+          "size": 69015,
+          "$type": "blob",
+          "mimeType": "image/jpeg"
+        },
+        "width": "69%",
+        "caption": "I didn't draw on this one myself, but someone did and I'm glad for that.",
+        "alignment": "center",
+        "aspectRatio": {
+          "width": 667,
+          "height": 1000
+        }
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "facets": [
+          {
+            "index": {
+              "byteEnd": 212,
+              "byteStart": 202
+            },
+            "features": [
+              {
+                "$type": "app.offprint.richtext.facet#italic"
+              }
+            ]
+          }
+        ],
+        "plaintext": "In general metal gets VERY DARK and VERY BRIGHT and frequently has (because of the way the mirrors work) hot bright specular highlights directly against dark sections. It also picks up local color from everything."
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.imageGrid",
+        "images": [
+          {
+            "image": {
+              "ref": {
+                "$link": "bafkreihz2c6qsy2sabmx7apagd7u27o7t7xpphi2ysdmgkf7xnvzjkg7pa"
+              },
+              "size": 24948,
+              "$type": "blob",
+              "mimeType": "image/webp"
+            },
+            "aspectRatio": {
+              "width": 516,
+              "height": 387
+            }
+          },
+          {
+            "image": {
+              "ref": {
+                "$link": "bafkreier3dtvtpd7rvqax56wvylncwb65qohrrq6zy6gy7lg2prjnml4ji"
+              },
+              "size": 45194,
+              "$type": "blob",
+              "mimeType": "image/webp"
+            },
+            "aspectRatio": {
+              "width": 425,
+              "height": 640
+            }
+          },
+          {
+            "image": {
+              "ref": {
+                "$link": "bafkreied6tryikvyyolzgd4jtcz43ywza4yenpa4mk34drgig2jn3ygzgq"
+              },
+              "size": 107926,
+              "$type": "blob",
+              "mimeType": "image/webp"
+            },
+            "aspectRatio": {
+              "width": 1182,
+              "height": 1575
+            }
+          },
+          {
+            "image": {
+              "ref": {
+                "$link": "bafkreifyadalmxmj7jel75dhfvxiwj2d36kg5bt62jz5cz7fdkogp2ch2e"
+              },
+              "size": 26774,
+              "$type": "blob",
+              "mimeType": "image/webp"
+            },
+            "aspectRatio": {
+              "width": 600,
+              "height": 448
+            }
+          }
+        ],
+        "aspectRatio": "mosaic"
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": "The most important part is that the reflections, highlights, etc will follow the CURVATURE OF THE METAL."
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.imageGrid",
+        "images": [
+          {
+            "image": {
+              "ref": {
+                "$link": "bafkreih2rpzsboiy465v3jy3c2rjgoxgmyrgj4xy5wbzt3mqfyitql6fxy"
+              },
+              "size": 74290,
+              "$type": "blob",
+              "mimeType": "image/webp"
+            },
+            "aspectRatio": {
+              "width": 510,
+              "height": 1600
+            }
+          },
+          {
+            "image": {
+              "ref": {
+                "$link": "bafkreigckfzyl4k5banbcwo6ebduzitsjshi4av2iianftnpzyg774tcoy"
+              },
+              "size": 30130,
+              "$type": "blob",
+              "mimeType": "image/webp"
+            },
+            "aspectRatio": {
+              "width": 736,
+              "height": 557
+            }
+          },
+          {
+            "image": {
+              "ref": {
+                "$link": "bafkreiblpkjvx6f5xysfhgovbtvvw6anbfndghw7nxjim7k3g4xf2ob4ia"
+              },
+              "size": 102010,
+              "$type": "blob",
+              "mimeType": "image/webp"
+            },
+            "aspectRatio": {
+              "width": 968,
+              "height": 1187
+            }
+          },
+          {
+            "image": {
+              "ref": {
+                "$link": "bafkreibli5y6amcghcr26kkcxwtdwaqhjq7by35unw6ywnub7xjoy3zpce"
+              },
+              "size": 28102,
+              "$type": "blob",
+              "mimeType": "image/webp"
+            },
+            "aspectRatio": {
+              "width": 736,
+              "height": 1039
+            }
+          }
+        ],
+        "aspectRatio": "mosaic"
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": "The light will stretch depending on the surface of the shape reflecting it - but it's also still a mirror reflection of the object being reflected into it. You can see on my Monster can there that the reflections are, in fact, rectangles - skewed and stretched, but rectangles, since the can is reflecting the fluorescent lights on the ceiling."
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.image",
+        "image": {
+          "ref": {
+            "$link": "bafkreidwcfwnhqrm7wgerunhxzx2mvq5k3wmwepzll2j6vzwrgjazsas2i"
+          },
+          "size": 123813,
+          "$type": "blob",
+          "mimeType": "image/jpeg"
+        },
+        "width": "76%",
+        "caption": "So unnecessarily patriotic, but so delicious.",
+        "alignment": "center",
+        "aspectRatio": {
+          "width": 964,
+          "height": 1280
+        }
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": "\nThis means a round light source will appear as a circle on a sphere, a stretched oval on a cylinder, and maybe even just a flat plane on a cube if the the cube is small enough (or the light big enough)."
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.image",
+        "image": {
+          "ref": {
+            "$link": "bafkreickt6g5ukeoe2gz2uf2dhaaw2sap4jhf4fztrzlmwuyy7ml26neti"
+          },
+          "size": 187808,
+          "$type": "blob",
+          "mimeType": "image/jpeg"
+        },
+        "width": "81%",
+        "caption": "Don't forget that at the end of the day we are still we are dealing with light rays.",
+        "alignment": "center",
+        "aspectRatio": {
+          "width": 1864,
+          "height": 2000
+        }
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "facets": [
+          {
+            "index": {
+              "byteEnd": 199,
+              "byteStart": 159
+            },
+            "features": [
+              {
+                "$type": "app.offprint.richtext.facet#italic"
+              }
+            ]
+          }
+        ],
+        "plaintext": "An extremely glossy object, functioning as a mirror, will be affected by the illuminating aspect of its light source, as any object would be, but it will also reflect dark objects like a mirror would, to the point of overriding this base illumination - which can feel paradoxical when trying to render it out."
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.imageGrid",
+        "images": [
+          {
+            "image": {
+              "ref": {
+                "$link": "bafkreid4najqd3du2b6qhiejmowcgpgxb656idsws5yj4qhched7pzbmhe"
+              },
+              "size": 246991,
+              "$type": "blob",
+              "mimeType": "image/jpeg"
+            },
+            "aspectRatio": {
+              "width": 1280,
+              "height": 964
+            }
+          },
+          {
+            "image": {
+              "ref": {
+                "$link": "bafkreihia7glqg4e3piav7qljvok3k4r3bslbcczz2g32iamqndremisi4"
+              },
+              "size": 310895,
+              "$type": "blob",
+              "mimeType": "image/jpeg"
+            },
+            "aspectRatio": {
+              "width": 1280,
+              "height": 964
+            }
+          }
+        ],
+        "caption": "This is actually a completely different can, captured on a different day. Go figure.",
+        "aspectRatio": "mosaic"
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": "It might help to think of it in two parts: "
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": "1) The base rendering, following the shapes and forms in the traditional fashion."
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": "2) The mirror image, overlaid on top of the base rendering."
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": "In case it wasn't clear from the phone screen in the previous images, this \"overlay of reflection on top of base rendering\" is not unique to metal. Any object with a high level of gloss/polish will demonstrate reflective qualities."
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.image",
+        "image": {
+          "ref": {
+            "$link": "bafkreicpgfw53ovcguxkvurs3xl6zupovma4wyjpl6v6btobfes5hzkz3u"
+          },
+          "size": 281719,
+          "$type": "blob",
+          "mimeType": "image/jpeg"
+        },
+        "alignment": "center",
+        "aspectRatio": {
+          "width": 964,
+          "height": 1280
+        }
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "facets": [
+          {
+            "index": {
+              "byteEnd": 216,
+              "byteStart": 114
+            },
+            "features": [
+              {
+                "$type": "app.offprint.richtext.facet#italic"
+              }
+            ]
+          },
+          {
+            "index": {
+              "byteEnd": 256,
+              "byteStart": 254
+            },
+            "features": [
+              {
+                "$type": "app.offprint.richtext.facet#italic"
+              }
+            ]
+          }
+        ],
+        "plaintext": "Of course, the more glossy/polished the surface is, the more perfect of a mirror it will be. \n\nMetal just has the unique property of maintaining reflective, mirror-like properties even at low levels of gloss/polish. Which is why it is so very, very shiny. More on how it does that below."
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.imageGrid",
+        "images": [
+          {
+            "image": {
+              "ref": {
+                "$link": "bafkreibjg5sprdi7bmvucs6n7mnihqxxg2hfdfirzl7tl6wjrrakmogfue"
+              },
+              "size": 264797,
+              "$type": "blob",
+              "mimeType": "image/jpeg"
+            },
+            "aspectRatio": {
+              "width": 964,
+              "height": 1280
+            }
+          },
+          {
+            "image": {
+              "ref": {
+                "$link": "bafkreicawpjhtmbo3tbn3ht44ug5kztsauu2ps4y2jimwrroydybry5zey"
+              },
+              "size": 252036,
+              "$type": "blob",
+              "mimeType": "image/jpeg"
+            },
+            "aspectRatio": {
+              "width": 964,
+              "height": 1280
+            }
+          },
+          {
+            "image": {
+              "ref": {
+                "$link": "bafkreif4eq3vu3f4di4sjdphpkv2ahlsfcfnalfsryawdselmrqqsypota"
+              },
+              "size": 184425,
+              "$type": "blob",
+              "mimeType": "image/jpeg"
+            },
+            "aspectRatio": {
+              "width": 964,
+              "height": 1280
+            }
+          },
+          {
+            "image": {
+              "ref": {
+                "$link": "bafkreib5s45ypke4s2vj6aims4fx6vfojzd7a5nuvjr3n2cso432gkwsyq"
+              },
+              "size": 264199,
+              "$type": "blob",
+              "mimeType": "image/jpeg"
+            },
+            "aspectRatio": {
+              "width": 964,
+              "height": 1280
+            }
+          }
+        ],
+        "aspectRatio": "mosaic"
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "facets": [
+          {
+            "index": {
+              "byteEnd": 95,
+              "byteStart": 75
+            },
+            "features": [
+              {
+                "$type": "app.offprint.richtext.facet#italic"
+              }
+            ]
+          }
+        ],
+        "plaintext": "This, understandably, makes rendering metal accurately without a reference incredibly difficult. The good news, however, is that if you generally obey the light source and follow the shape of your object most people will be completely unable to tell if you just wing it."
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.image",
+        "image": {
+          "ref": {
+            "$link": "bafkreid23l34tjwsvueoe73op7qfmro7e25komevoc6lbgcb76efbzkeda"
+          },
+          "size": 146027,
+          "$type": "blob",
+          "mimeType": "image/jpeg"
+        },
+        "width": "57%",
+        "caption": "Some 3D renders for good measure",
+        "alignment": "center",
+        "aspectRatio": {
+          "width": 725,
+          "height": 2000
+        }
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "facets": [
+          {
+            "index": {
+              "byteEnd": 12,
+              "byteStart": 8
+            },
+            "features": [
+              {
+                "$type": "app.offprint.richtext.facet#italic"
+              }
+            ]
+          },
+          {
+            "index": {
+              "byteEnd": 88,
+              "byteStart": 80
+            },
+            "features": [
+              {
+                "$type": "app.offprint.richtext.facet#italic"
+              }
+            ]
+          }
+        ],
+        "plaintext": "\nSo why does metal still reflect light even when it's \"dull\"? \n\nWell, polishing anything (or coating it in gloss) will make it level out and direct light back more linearly as the plane becomes unified - but metal likes to shear at the microscopic level, making many flat planes. Like a bunch of pieces of glitter.\n"
+      },
+      {
+        "$type": "app.offprint.block.image",
+        "image": {
+          "ref": {
+            "$link": "bafkreigiqbcev7apc2vyva6yryutk2guvfiv2nqu6jjmtwihz6gpswwfwu"
+          },
+          "size": 139376,
+          "$type": "blob",
+          "mimeType": "image/jpeg"
+        },
+        "width": "76%",
+        "caption": "What did I just tell you about rays of light?",
+        "alignment": "center",
+        "aspectRatio": {
+          "width": 1864,
+          "height": 2000
+        }
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": "\nHere's some images of metal highly magnified to better demonstrate what I mean:"
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.imageGrid",
+        "images": [
+          {
+            "image": {
+              "ref": {
+                "$link": "bafkreigpzfuoqjpuvzt7iwnjsfmk7pfajhw3y2vqevejhcv3bfdoixadhy"
+              },
+              "size": 70364,
+              "$type": "blob",
+              "mimeType": "image/webp"
+            },
+            "aspectRatio": {
+              "width": 677,
+              "height": 531
+            }
+          },
+          {
+            "image": {
+              "ref": {
+                "$link": "bafkreidjgsazjarg32eu635wz2t6by5npibnommpa5dsxyrksuksicow4u"
+              },
+              "size": 40092,
+              "$type": "blob",
+              "mimeType": "image/webp"
+            },
+            "aspectRatio": {
+              "width": 960,
+              "height": 540
+            }
+          }
+        ],
+        "aspectRatio": "mosaic"
+      },
+      {
+        "$type": "app.offprint.block.heading",
+        "level": 3,
+        "plaintext": "\n\n\nAnyway."
+      },
+      {
+        "$type": "app.offprint.block.heading",
+        "level": 3,
+        "facets": [
+          {
+            "index": {
+              "byteEnd": 43,
+              "byteStart": 2
+            },
+            "features": [
+              {
+                "$type": "app.offprint.richtext.facet#italic"
+              }
+            ]
+          }
+        ],
+        "plaintext": "\n\nThis is why no one makes metal tutorials."
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": "\n"
+      },
+      {
+        "$type": "app.offprint.block.horizontalRule"
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "facets": [
+          {
+            "index": {
+              "byteEnd": 46,
+              "byteStart": 39
+            },
+            "features": [
+              {
+                "uri": "https://bsky.app/profile/scazrelet.bsky.social",
+                "$type": "app.offprint.richtext.facet#link"
+              }
+            ]
+          },
+          {
+            "index": {
+              "byteEnd": 122,
+              "byteStart": 73
+            },
+            "features": [
+              {
+                "uri": "https://ko-fi.com/scazrelet",
+                "$type": "app.offprint.richtext.facet#link"
+              }
+            ]
+          }
+        ],
+        "plaintext": "As always, check out my pinned post on Bluesky for more helpful stuff or throw me a tip/buy some stickers on my Ko-fi page so I can keep making free educational resources and art materials."
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": "(Who am I kidding I know we're all broke)"
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      },
+      {
+        "$type": "app.offprint.block.horizontalRule"
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": "\nGo with love. Everyone deserves to live and pursue their dreams."
+      },
+      {
+        "$type": "app.offprint.block.text",
+        "plaintext": ""
+      }
+    ]
+  },
+  "coverImage": {
+    "ref": {
+      "$link": "bafkreicvxz533hqxxmsskn3u4k742ap5kawzckab3km6et7wdyfgv3jxym"
+    },
+    "size": 98000,
+    "$type": "blob",
+    "mimeType": "image/jpeg"
+  },
+  "publishedAt": "2026-08-31T16:16:40+00:00",
+  "textContent": "So after I wrote my Mini Overview on reflected light, I received this question:\n> Joking aside, do you have a tutorial about painting metal that's NOT a sphere or a cube? I'm so desperate that I consider sculpting a few shapes and covering them in aluminum foil for ref T_T\n\nWell, let's get into it.\n\nI have, over time, collected an awful lot of art tutorials. So I have image macros on doing very specific complex pieces but no generalized \"here is how to metal\" tutorial. Which admittedly sucks. \n\nMetal is complicated though, namely because there are a number of interacting factors that will drastically alter its appearance. The main two being A) How much light it bounces and B) how perfectly it bounces it. This macro here shows the difference in the top too examples:\n\n\nLike flat aluminum (think the inside of soda can?) is pretty shiny but loses the mirror reflective quality of chrome.\n\n\nGlossy objects in general have mirror like qualities, which is why you see reflections in glass. These are highlights, yes, but specifically they are mirrors of light sources.\nThe reflection here is light bounced off the metal tumbler onto the glass, which is mirroring it back to the viewer.\n\nI didn't draw on this one myself, but someone did and I'm glad for that.\nIn general metal gets VERY DARK and VERY BRIGHT and frequently has (because of the way the mirrors work) hot bright specular highlights directly against dark sections. It also picks up local color from everything.\n\n\nThe most important part is that the reflections, highlights, etc will follow the CURVATURE OF THE METAL.\n\n\nThe light will stretch depending on the surface of the shape reflecting it - but it's also still a mirror reflection of the object being reflected into it. You can see on my Monster can there that the reflections are, in fact, rectangles - skewed and stretched, but rectangles, since the can is reflecting the fluorescent lights on the ceiling.\n\nSo unnecessarily patriotic, but so delicious.\nThis means a round light source will appear as a circle on a sphere, a stretched oval on a cylinder, and maybe even just a flat plane on a cube if the the cube is small enough (or the light big enough).\n\nDon't forget that at the end of the day we are still we are dealing with light rays.\nAn extremely glossy object, functioning as a mirror, will be affected by the illuminating aspect of its light source, as any object would be, but it will also reflect dark objects like a mirror would, to the point of overriding this base illumination - which can feel paradoxical when trying to render it out.\n\nThis is actually a completely different can, captured on a different day. Go figure.\nIt might help to think of it in two parts: \n1) The base rendering, following the shapes and forms in the traditional fashion.\n2) The mirror image, overlaid on top of the base rendering.\n\nIn case it wasn't clear from the phone screen in the previous images, this \"overlay of reflection on top of base rendering\" is not unique to metal. Any object with a high level of gloss/polish will demonstrate reflective qualities.\n\n\nOf course, the more glossy/polished the surface is, the more perfect of a mirror it will be. \n\nMetal just has the unique property of maintaining reflective, mirror-like properties even at low levels of gloss/polish. Which is why it is so very, very shiny. More on how it does that below.\n\n\nThis, understandably, makes rendering metal accurately without a reference incredibly difficult. The good news, however, is that if you generally obey the light source and follow the shape of your object most people will be completely unable to tell if you just wing it.\n\nSome 3D renders for good measure\nSo why does metal still reflect light even when it's \"dull\"? \n\nWell, polishing anything (or coating it in gloss) will make it level out and direct light back more linearly as the plane becomes unified - but metal likes to shear at the microscopic level, making many flat planes. Like a bunch of pieces of glitter.\n\nWhat did I just tell you about rays of light?\nHere's some images of metal highly magnified to better demonstrate what I mean:\n\n\n\n\nAnyway.\n\n\nThis is why no one makes metal tutorials.\n\n\n\n---\n\nAs always, check out my pinned post on Bluesky for more helpful stuff or throw me a tip/buy some stickers on my Ko-fi page so I can keep making free educational resources and art materials.\n(Who am I kidding I know we're all broke)\n\n\n---\n\nGo with love. Everyone deserves to live and pursue their dreams."
+}

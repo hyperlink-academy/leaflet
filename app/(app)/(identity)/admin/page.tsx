@@ -78,10 +78,10 @@ export default async function AdminPage() {
           Active users →
         </Link>
         <Link
-          href="/admin/import-ghost"
+          href="/admin/import"
           className="text-sm text-accent-contrast hover:underline"
         >
-          Import from Ghost →
+          Import posts →
         </Link>
         <Link
           href="/admin/import-subscribers"

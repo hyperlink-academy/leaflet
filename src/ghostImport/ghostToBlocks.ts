@@ -27,7 +27,7 @@ export type ConvertedContent = {
 // a synchronous conversion and removed again — leaving `document` defined on
 // the server would trip libraries that use it to detect a browser.
 let sharedDom: JSDOM | undefined;
-function withDomGlobals<T>(fn: () => T): T {
+export function withDomGlobals<T>(fn: () => T): T {
   const g = globalThis as Record<string, unknown>;
   if (typeof g.document !== "undefined") return fn();
   sharedDom ??= new JSDOM("");

@@ -1,17 +1,17 @@
 import { notFound } from "next/navigation";
 import { getIdentityData } from "actions/getIdentityData";
 import { isAdminEmail } from "src/adminAllowlist";
-import { AdminImportGhost } from "./AdminImportGhost";
+import { AdminImport } from "./AdminImport";
 
 export const metadata = {
-  title: "Import from Ghost",
+  title: "Import posts",
 };
 
-export default async function ImportGhostPage() {
+export default async function ImportPage() {
   let identity = await getIdentityData();
   // 404 rather than a login/denied screen so the route stays invisible to
   // non-admins.
   if (!isAdminEmail(identity?.email)) notFound();
 
-  return <AdminImportGhost />;
+  return <AdminImport />;
 }
