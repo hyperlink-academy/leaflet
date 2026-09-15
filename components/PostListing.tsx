@@ -26,16 +26,18 @@ import { RecommendButton } from "./Interactions/RecommendButton";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { DiscussionButton } from "./Interactions/DiscussionButton";
 import { InteractionShareButton } from "./Interactions/InteractionShareButton";
-import { PublicationPostItemLarge } from "app/(app)/(published)/lish/[did]/[publication]/PublicationPostItem";
+import {
+  PublicationPostItemLarge,
+  PublicationPostItemMedium,
+} from "app/(app)/(published)/lish/[did]/[publication]/PublicationPostItem";
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
 
 export const PostListing = (
   props: Post & {
     selected?: boolean;
     onOpenInViewer?: () => void;
-    // Reader feeds: open discussions in the post viewer's in-box panel
-    // instead of the standalone DiscussionModal.
     onOpenDiscussionsInViewer?: () => void;
+    compact?: boolean;
   },
 ) => {
   let pubRecord = props.publication?.pubRecord as
@@ -141,7 +143,9 @@ export const PostListing = (
 
   let coverImageSrc = postRecord.coverImage
     ? blobRefToSrc(postRecord.coverImage.ref, postUri.host, undefined, {
-        width: COVER_THUMBNAIL_WIDTH.large,
+        width: props.compact
+          ? COVER_THUMBNAIL_WIDTH.medium
+          : COVER_THUMBNAIL_WIDTH.large,
       })
     : undefined;
 
@@ -159,6 +163,7 @@ export const PostListing = (
         pubRecord={pubRecord}
         uri={props.publication.uri}
         postRecord={postRecord}
+        compact={props.compact}
       />
     ) : undefined;
   let interactions = (
@@ -188,6 +193,22 @@ export const PostListing = (
     </div>
   );
 
+  let itemProps = {
+    href: postUrl,
+    onClick: onPostLinkClick,
+    membersOnly: postHasMembersDelimiter(postRecord),
+    publicationUri: props.publication?.uri,
+    gatePolicy: getGatedPostPolicy(postRecord),
+    title: postRecord.title,
+    description: postRecord.description || getFirstParagraph(postRecord),
+    author,
+    date,
+    interactions,
+    pubInfo,
+    coverImageSrc,
+    coverImageAlt: postRecord.title,
+  };
+
   return (
     <div className="postListing flex flex-col gap-1" {...preloadHandlers}>
       <PublicationThemeWrapper postRecord={postRecord} pubRecord={pubRecord}>
@@ -216,23 +237,11 @@ export const PostListing = (
               : {}
           }
         >
-          <PublicationPostItemLarge
-            href={postUrl}
-            onClick={onPostLinkClick}
-            membersOnly={postHasMembersDelimiter(postRecord)}
-            publicationUri={props.publication?.uri}
-            gatePolicy={getGatedPostPolicy(postRecord)}
-            title={postRecord.title}
-            description={
-              postRecord.description || getFirstParagraph(postRecord)
-            }
-            author={author}
-            date={date}
-            interactions={interactions}
-            pubInfo={pubInfo}
-            coverImageSrc={coverImageSrc}
-            coverImageAlt={postRecord.title}
-          />
+          {props.compact ? (
+            <PublicationPostItemMedium {...itemProps} />
+          ) : (
+            <PublicationPostItemLarge {...itemProps} />
+          )}
         </div>
       </PublicationThemeWrapper>
     </div>
@@ -244,11 +253,36 @@ const PubInfo = (props: {
   pubRecord: NormalizedPublication;
   uri: string;
   postRecord: NormalizedDocument;
+  compact?: boolean;
 }) => {
   let isLeaflet = hasLeafletContent(props.postRecord);
   let cleanUrl = props.pubRecord.url
     ?.replace(/^https?:\/\//, "")
     .replace(/^www\./, "");
+
+  let icon = props.pubRecord.icon
+    ? blobRefToSrc(props.pubRecord.icon.ref, new AtUri(props.uri).host)
+    : undefined;
+
+  // The medium standard-site-post block's pub line: a tiny icon and the name
+  // only, sized to sit above a clamped title rather than heading a card.
+  if (props.compact)
+    return (
+      <Link
+        href={props.href}
+        // `relative w-fit` keeps this clickable above the post's absolute
+        // PostLink overlay while limiting the hit area to just the pub name.
+        className="relative w-fit max-w-full flex items-center gap-1.5 text-accent-contrast font-bold no-underline! text-sm z-[2]"
+      >
+        <PubIcon
+          tiny
+          className="w-3! h-3!"
+          icon={icon}
+          pubName={props.pubRecord.name}
+        />
+        <span className="min-w-0 truncate">{props.pubRecord.name}</span>
+      </Link>
+    );
 
   return (
     <div className="flex justify-between gap-4 w-full pb-1">
@@ -256,18 +290,7 @@ const PubInfo = (props: {
         href={props.href}
         className="text-accent-contrast font-bold no-underline! text-sm flex gap-[6px] items-center relative z-[2] grow w-max shrink-0 min-w-0"
       >
-        <PubIcon
-          tiny
-          icon={
-            props.pubRecord.icon
-              ? blobRefToSrc(
-                  props.pubRecord.icon.ref,
-                  new AtUri(props.uri).host,
-                )
-              : undefined
-          }
-          pubName={props.pubRecord.name}
-        />
+        <PubIcon tiny icon={icon} pubName={props.pubRecord.name} />
         <div className="w-max min-w-0">{props.pubRecord.name}</div>
       </Link>
       {!isLeaflet && (

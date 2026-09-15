@@ -19,6 +19,7 @@ import { DrawerThread, DrawerThreadContext } from "./drawerThreadContext";
 import { useDrawerOpen } from "./useDrawerOpen";
 import { ThreadView } from "../ThreadPage";
 import { StandardSitePostDrawerView } from "./StandardSitePostDrawerView";
+import { TagDrawerView } from "./TagDrawerView";
 import { useDocumentDiscussionData } from "./useDocumentDiscussionData";
 import { useIsMobile } from "src/hooks/isMobile";
 import { MobileSheet } from "components/MobileSheet";
@@ -98,16 +99,6 @@ export const InteractionDrawer = (props: {
   );
 };
 
-// Placeholder for the posts-by-tag view; the tag name itself is rendered by the
-// drawer header above.
-const TagDrawerView = (props: { tag: string }) => {
-  return (
-    <div className="text-tertiary italic text-sm py-8 text-center">
-      Posts tagged {props.tag} will show up here
-    </div>
-  );
-};
-
 const InteractionDrawerContent = (props: {
   showPageBackground: boolean | undefined;
   document_uri: string;
@@ -132,11 +123,6 @@ const InteractionDrawerContent = (props: {
   // present it replaces the comments/mentions tabs.
   const activeThread = threadStack[threadStack.length - 1];
 
-  // A standard-site-post thread shows another post's own discussion. It's always
-  // at the root of the stack (Bluesky threads opened from its mentions become
-  // the active thread instead), so its comments/mentions toggle lives in the
-  // drawer header in place of a Back button. Its data is fetched here too (SWR
-  // dedupes with the view below) to drive that toggle.
   const sspUri =
     activeThread?.type === "standardSitePost" ? activeThread.uri : null;
   const ssp = useDocumentDiscussionData(sspUri ?? "", !!sspUri);
@@ -156,7 +142,7 @@ const InteractionDrawerContent = (props: {
     sspActiveTab = "comments";
 
   const filteredQuotesAndMentions = props.quotesAndMentions.filter((q) => {
-    if (!q.link) return !props.pageId; // Direct mentions without quote context go to main page
+    if (!q.link) return !props.pageId;
     const url = new URL(q.link);
     const quoteParam = url.pathname.split("/l-quote/")[1];
     if (!quoteParam) return !props.pageId;
@@ -164,8 +150,6 @@ const InteractionDrawerContent = (props: {
     return quotePosition?.pageId === props.pageId;
   });
 
-  // commentsSlot is null when comments are disabled by permissions; mentions
-  // are only available when there's something to show on this page.
   const commentsAvailable = props.commentsSlot != null;
   const mentionsAvailable = filteredQuotesAndMentions.length > 0;
   const commentsAndMentionsAvailable = commentsAvailable && mentionsAvailable;
@@ -216,7 +200,7 @@ const InteractionDrawerContent = (props: {
               </h4>
             )
           ) : activeThread?.type === "tag" ? (
-            <h3 className="truncate">{activeThread.tag}</h3>
+            <h3 className="truncate">More posts tagged "{activeThread.tag}"</h3>
           ) : activeThread?.type === "recommends" ? (
             <div className="flex items-center justify-between gap-2">
               <h3>Recommends</h3>

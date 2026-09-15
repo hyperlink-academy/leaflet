@@ -13,47 +13,23 @@ import {
 import { truncatePagesAtMembersDelimiter } from "src/membership";
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
 import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
+import { getTagDocumentUrisByTrending } from "./getTagDocumentUrisByTrending";
 
 export async function getDocumentsByTag(
   tag: string,
+  options?: { orderBy?: "recent" | "trending" },
 ): Promise<{ posts: Post[] }> {
-  // Resolve the tag to document uris first via a function whose plan is
-  // pinned to the document_tags tag index. Ordering by sort_date with a limit
-  // while joining in one query lets the planner walk the sort_date index and
-  // probe every document for the tag — a full table scan for rare tags.
-  // document_tags stores lowercased tags (tag links come from search_tags),
-  // so match on the lowercased tag.
-  const { data: tagged, error: tagError } = await supabaseServerClient.rpc(
-    "get_tag_page_document_uris",
-    { tag_query: tag.toLowerCase(), max_count: 50 },
-  );
-
-  let uris: string[];
-  if (tagError) {
-    // The function ships in a migration that deploys separately from this
-    // code; if it isn't there (yet), degrade to querying document_tags
-    // directly rather than rendering an empty page. The cap keeps the .in()
-    // filter below URL length limits, so a very popular tag may miss some of
-    // its newest posts until the function exists.
-    console.error("Error fetching tag document uris:", tagError);
-    const { data: fallback, error: fallbackError } = await supabaseServerClient
-      .from("document_tags")
-      .select("uri")
-      .eq("tag", tag.toLowerCase())
-      .limit(200);
-    if (fallbackError) {
-      console.error("Error fetching documents by tag:", fallbackError);
-      return { posts: [] };
-    }
-    uris = (fallback || []).map((row) => row.uri);
-  } else {
-    uris = (tagged || []).map((row) => row.uri);
-  }
+  const trending = options?.orderBy === "trending";
+  // document_tags stores lowercased tags (tag links come from search_tags), so
+  // match on the lowercased tag.
+  const uris = trending
+    ? await getTagDocumentUrisByTrending(tag.toLowerCase(), 50)
+    : await getNewestTagDocumentUris(tag.toLowerCase());
   if (uris.length === 0) {
     return { posts: [] };
   }
 
-  const { data: rawDocuments, error } = await supabaseServerClient
+  let query = supabaseServerClient
     .from("documents")
     .select(
       `*,
@@ -63,8 +39,12 @@ export async function getDocumentsByTag(
       documents_in_publications(publications(*))`,
     )
     .in("uri", uris)
-    .order("sort_date", { ascending: false })
     .limit(50);
+  // Trending order is already decided by the ranking query; re-sorting the
+  // batch fetch by sort_date would throw it away.
+  const { data: rawDocuments, error } = await (trending
+    ? query
+    : query.order("sort_date", { ascending: false }));
 
   if (error) {
     console.error("Error fetching documents by tag:", error);
@@ -72,7 +52,14 @@ export async function getDocumentsByTag(
   }
 
   // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
-  const documents = deduplicateByUriOrdered(rawDocuments || []);
+  let documents = deduplicateByUriOrdered(rawDocuments || []);
+
+  if (trending) {
+    const byUri = new Map(documents.map((d) => [d.uri, d]));
+    documents = uris
+      .map((uri) => byUri.get(uri))
+      .filter((d): d is (typeof documents)[number] => !!d);
+  }
 
   const posts = await Promise.all(
     documents.map(async (doc) => {
@@ -131,4 +118,33 @@ export async function getDocumentsByTag(
   return {
     posts: posts.filter((p): p is Post => p !== null),
   };
+}
+
+// Resolve the tag to document uris via a function whose plan is pinned to the
+// document_tags tag index. Ordering by sort_date with a limit while joining in
+// one query lets the planner walk the sort_date index and probe every document
+// for the tag — a full table scan for rare tags.
+async function getNewestTagDocumentUris(tag: string): Promise<string[]> {
+  const { data: tagged, error: tagError } = await supabaseServerClient.rpc(
+    "get_tag_page_document_uris",
+    { tag_query: tag, max_count: 50 },
+  );
+  if (!tagError) return (tagged || []).map((row) => row.uri);
+
+  // The function ships in a migration that deploys separately from this code;
+  // if it isn't there (yet), degrade to querying document_tags directly rather
+  // than rendering an empty page. The cap keeps the .in() filter downstream
+  // within URL length limits, so a very popular tag may miss some of its
+  // newest posts until the function exists.
+  console.error("Error fetching tag document uris:", tagError);
+  const { data: fallback, error: fallbackError } = await supabaseServerClient
+    .from("document_tags")
+    .select("uri")
+    .eq("tag", tag)
+    .limit(200);
+  if (fallbackError) {
+    console.error("Error fetching documents by tag:", fallbackError);
+    return [];
+  }
+  return (fallback || []).map((row) => row.uri);
 }
