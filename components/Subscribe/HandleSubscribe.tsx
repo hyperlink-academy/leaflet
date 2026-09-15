@@ -170,8 +170,6 @@ export const SubscribeWithHandle = (props: {
         onClick={subscribeAtproto}
       >
         {subscribing ? (
-          // DotLoader's default fixed height is taller than the label's line
-          // box, which grows the button while subscribing.
           <DotLoader className="h-auto!" />
         ) : (
           <>

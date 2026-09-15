@@ -97,7 +97,6 @@ export const PubLeafletGraphRecommendations: LexiconDoc = {
           recommendations: {
             type: "array",
             description: "Publications this publication recommends",
-            maxLength: 3,
             items: { type: "string", format: "at-uri" },
           },
         },

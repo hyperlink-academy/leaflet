@@ -21,7 +21,6 @@ import {
   buildRecord,
   type PublicationType,
 } from "src/utils/buildPublicationRecord";
-import { MAX_RECOMMENDATIONS } from "src/utils/publicationRecommendations";
 import { writeRecommendations } from "src/utils/writeRecommendations";
 
 type UpdatePublicationResult =
@@ -144,17 +143,15 @@ export async function updatePublication({
   recommendations?: string[];
 }): Promise<UpdatePublicationResult> {
   if (recommendations !== undefined) {
-    recommendations = [...new Set(recommendations)]
-      .filter((r) => {
-        if (r === uri) return false;
-        try {
-          new AtUri(r);
-          return true;
-        } catch {
-          return false;
-        }
-      })
-      .slice(0, MAX_RECOMMENDATIONS);
+    recommendations = [...new Set(recommendations)].filter((r) => {
+      if (r === uri) return false;
+      try {
+        new AtUri(r);
+        return true;
+      } catch {
+        return false;
+      }
+    });
   }
   return withPublicationUpdate(
     uri,

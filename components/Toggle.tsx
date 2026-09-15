@@ -44,3 +44,35 @@ export const Toggle = (props: {
     </button>
   );
 };
+
+export const ToggleWithLabel = (props: {
+  toggle: boolean;
+  onToggle: () => void;
+  label: React.ReactNode;
+  helpText?: React.ReactNode;
+  disabledColor1?: string;
+  disabledColor2?: string;
+}) => {
+  return (
+    <Toggle
+      fullWidth
+      toggle={props.toggle}
+      onToggle={props.onToggle}
+      disabledColor1={props.disabledColor1}
+      disabledColor2={props.disabledColor2}
+    >
+      <div className="flex flex-col gap-0.5">
+        <div
+          className={`font-bold leading-snug ${props.toggle ? "" : "text-tertiary"}`}
+        >
+          {props.label}
+        </div>
+        {props.helpText && (
+          <div className="text-sm text-tertiary leading-snug">
+            {props.helpText}
+          </div>
+        )}
+      </div>
+    </Toggle>
+  );
+};
