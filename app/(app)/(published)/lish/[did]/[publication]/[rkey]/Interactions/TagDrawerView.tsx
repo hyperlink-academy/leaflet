@@ -10,7 +10,6 @@ const OTHER_PUBLICATIONS_LIMIT = 20;
 
 export function TagDrawerView(props: { tag: string }) {
   const { uri, publication, normalizedPublication } = useDocument();
-  // Publication-level only — a post can't opt its own tag window in or out.
   const showOtherPublications =
     normalizedPublication?.preferences?.showOtherPublicationsInTags !== false;
   const { data, isLoading } = useSWR(["tag-posts", props.tag, "trending"], () =>
@@ -42,8 +41,6 @@ export function TagDrawerView(props: { tag: string }) {
 
   let inPubAndAtmo = samePublication.length > 0 && otherPublications.length > 0;
 
-  // Counts what's actually rendered, not what was fetched — with other
-  // publications turned off the tag can have posts and still show nothing.
   if (samePublication.length + otherPublications.length === 0)
     return (
       <div className="text-tertiary italic text-sm py-8 text-center">
@@ -70,8 +67,6 @@ export function TagDrawerView(props: { tag: string }) {
             <PostListing key={post.documents.uri} {...post} compact />
           ))}
           {hasMore && (
-            // The drawer renders on custom domains too, where /tag would 404,
-            // so link out the way tag chips do.
             <Link
               href={`https://leaflet.pub/tag/${encodeURIComponent(props.tag)}`}
               className="text-sm text-tertiary hover:text-accent-contrast text-center pt-1"
