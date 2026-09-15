@@ -51,7 +51,6 @@ export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
       // covers hover an outline that sits outside their border box — clipping
       // here would shave it off the grid's outer cards.
       className="border-none! p-0! rounded-none! overflow-visible!"
-      inertContent
       extraOptions={<PostsListSettingsButton entityID={props.entityID} />}
     >
       <PostsListBlockContent entityID={props.entityID} />
@@ -110,11 +109,6 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
   let limitFact = useEntity(entityID, "posts-list/limit");
   let limit = limitFact?.data.value;
 
-  // The dashboard already loads every document, so order/filter that in-memory
-  // set, hand the paginated list the full URI ordering, and resolve each batch
-  // locally — no extra round trips, just windowed rendering. Chapter view
-  // groups the same set into prebuilt cards instead, mirroring what the SSR
-  // page ships.
   let listData = useMemo(() => {
     if (!data?.documents) return null;
     let ordered = sortPostsForList(

@@ -13,6 +13,7 @@ export const RecommendedPubsGrid = (props: {
   subscribeSource?: SubscriptionSource;
   compact?: boolean;
   className?: string;
+  disableLinks?: boolean;
 }) => {
   if (props.compact)
     return (
@@ -25,6 +26,7 @@ export const RecommendedPubsGrid = (props: {
               compact
               showSubscribeButton
               subscribeSource={props.subscribeSource}
+              disableLinks={props.disableLinks}
               {...listing}
             />
           </div>
@@ -47,6 +49,7 @@ export const RecommendedPubsGrid = (props: {
             compact
             showSubscribeButton
             subscribeSource={props.subscribeSource}
+            disableLinks={props.disableLinks}
             {...listing}
           />
         </div>

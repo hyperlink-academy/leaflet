@@ -25,6 +25,7 @@ type PubListingProps = Omit<
   // Icon and title on one row, description clamped to two lines, no
   // updated-at — for tight spots like the subscribe-success modal.
   compact?: boolean;
+  disableLinks?: boolean;
   className?: string;
 };
 
@@ -62,7 +63,9 @@ export const PubListing = (props: PubListingProps) => {
           backgroundSize: `${backgroundImageRepeat ? `${backgroundImageSize}px` : "cover"}`,
         }}
       >
-        <a href={record.url} className="absolute inset-0 z-[1]" />
+        {!props.disableLinks && (
+          <a href={record.url} className="absolute inset-0 z-[1]" />
+        )}
         <div
           className={`flex w-full flex-col justify-center text-center ${props.compact ? "p-2 pb-3" : "pt-4 pb-3 px-3"}  rounded-lg relative   ${props.constrainHeight ? "sm:h-[200px] h-full" : props.compact ? "h-full" : "h-fit"} ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""} ${props.className}`}
         >

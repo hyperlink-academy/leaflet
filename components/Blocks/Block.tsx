@@ -497,11 +497,6 @@ const BlockMultiselectIndicator = (props: BlockProps) => {
     );
 };
 
-const swallowActivation = (e: React.MouseEvent) => {
-  e.preventDefault();
-  e.stopPropagation();
-};
-
 export const BlockLayout = (props: {
   isSelected: boolean;
   children: React.ReactNode;
@@ -513,7 +508,6 @@ export const BlockLayout = (props: {
   areYouSure?: boolean;
   setAreYouSure?: (value: boolean) => void;
   extraOptions?: React.ReactNode;
-  inertContent?: boolean;
 }) => {
   let bodyDrag = useBlockBodyDrag();
   return (
@@ -535,12 +529,6 @@ export const BlockLayout = (props: {
       }
     >
       <div
-        {...(props.inertContent
-          ? {
-              onClickCapture: swallowActivation,
-              onAuxClickCapture: swallowActivation,
-            }
-          : {})}
         className={`nonTextBlock ${props.className} p-2 sm:p-3 overflow-hidden
         ${props.hasAlignment ? "w-fit" : "w-full"}
          ${props.isSelected ? "block-border-selected " : "block-border"}
@@ -554,6 +542,9 @@ export const BlockLayout = (props: {
         }
         `}
       >
+        {/* A block's own list marker sits beside its body, so any ListMarker
+            rendered inside (a page link's preview of its page's title) must
+            not inherit the handle and pick this block up. */}
         <ListDragHandleContext.Provider value={null}>
           {props.children}
         </ListDragHandleContext.Provider>

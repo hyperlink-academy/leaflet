@@ -29,7 +29,6 @@ export const RecommendedPubsBlock = (
     <BlockLayout
       isSelected={isSelected}
       className="border-none! p-0! rounded-none! overflow-visible!"
-      inertContent
       extraOptions={<RecommendedPubsSettingsButton entityID={props.entityID} />}
     >
       <RecommendedPubsBlockContent entityID={props.entityID} />
@@ -73,6 +72,7 @@ function RecommendedPubsBlockContent({ entityID }: { entityID: string }) {
     <RecommendedPubsGrid
       listings={listings}
       compact={compact}
+      disableLinks
       subscribeSource={{
         placement: "recommendation",
         publication: publication.uri,
