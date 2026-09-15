@@ -8,6 +8,7 @@ import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { readNavEntries } from "src/utils/publicationNavEntries";
 import { OAuthSessionError, restoreOAuthSession } from "src/atproto-oauth";
+import { loggedFetchHandler } from "src/utils/loggedFetchHandler";
 import { leafletToPublicationPageRecord } from "src/utils/leafletToPublicationPageRecord";
 import {
   extractThemeFromFacts,
@@ -110,7 +111,7 @@ export async function publishPublicationPages({
   }
   const credentialSession = sessionResult.value;
   const agent = new AtpBaseClient(
-    credentialSession.fetchHandler.bind(credentialSession),
+    loggedFetchHandler(credentialSession, { publication_uri, actorDid }),
   );
 
   const { data: existingRows } = await supabaseServerClient

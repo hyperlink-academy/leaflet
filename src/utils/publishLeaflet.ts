@@ -48,6 +48,8 @@ import {
 } from "src/utils/collectionHelpers";
 import { inngest } from "app/api/inngest/client";
 import { withPublishLock } from "src/utils/publishLock";
+import { loggedFetchHandler } from "src/utils/loggedFetchHandler";
+import { XRPCError } from "@atproto/xrpc";
 
 export type PublishError =
   | OAuthSessionError
@@ -100,7 +102,9 @@ export type PublishLeafletArgs = {
 export async function publishLeaflet(
   args: PublishLeafletArgs & { actorDid: string },
 ): Promise<PublishResult> {
-  let result = await withPublishLock(args.leaflet_id, () => publish(args));
+  let result = await withPublishLock(args.leaflet_id, () =>
+    publishLogged(args),
+  );
   if (!result.acquired)
     return {
       success: false,
@@ -110,6 +114,49 @@ export async function publishLeaflet(
       },
     };
   return result.value;
+}
+
+// One summary line per publish, and a PDS rejection (already logged in
+// detail by loggedFetchHandler) becomes a publish_failed result that tells
+// the author the same thing.
+async function publishLogged(
+  args: PublishLeafletArgs & { actorDid: string },
+): Promise<PublishResult> {
+  const started = Date.now();
+  const ids = {
+    leaflet_id: args.leaflet_id,
+    publication_uri: args.publication_uri,
+    actorDid: args.actorDid,
+  };
+  try {
+    const result = await publish(args);
+    console.log(
+      `[publish] ${result.success ? "ok" : `failed: ${result.error.type}`}`,
+      {
+        ...ids,
+        durationMs: Date.now() - started,
+        ...(result.success
+          ? { uri: result.uri }
+          : { message: result.error.message }),
+      },
+    );
+    return result;
+  } catch (e) {
+    console.error("[publish] threw", {
+      ...ids,
+      durationMs: Date.now() - started,
+      error: e instanceof Error ? `${e.name}: ${e.message}` : String(e),
+    });
+    if (e instanceof XRPCError)
+      return {
+        success: false,
+        error: {
+          type: "publish_failed",
+          message: `Your PDS didn't accept this (${e.status} ${e.error}: ${e.message}). Please try again!`,
+        },
+      };
+    throw e;
+  }
 }
 
 async function publish({
@@ -142,7 +189,7 @@ async function publish({
       .eq("uri", publication_uri)
       .eq("leaflets_in_publications.leaflet", leaflet_id)
       .single();
-    console.log(error);
+    if (error) console.error("[publish] publication lookup failed", error);
 
     if (!data) throw new Error("No draft or not publisher");
 
@@ -189,7 +236,11 @@ async function publish({
   }
   let credentialSession = sessionResult.value;
   let agent = new AtpBaseClient(
-    credentialSession.fetchHandler.bind(credentialSession),
+    loggedFetchHandler(credentialSession, {
+      leaflet_id,
+      publication_uri,
+      actorDid,
+    }),
   );
 
   // Heuristic: Remove title entities if this is the first time publishing
@@ -311,7 +362,12 @@ async function publish({
           headers: { "Content-Type": binary.type },
         });
         coverImageBlob = blob.data.blob;
-      }
+      } else
+        console.error(
+          "[publish] cover image fetch failed",
+          imageData.data.src,
+          imageResponse.status,
+        );
     }
   }
 
