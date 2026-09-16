@@ -55,6 +55,12 @@ export const events = {
       }>;
     }>(),
   }),
+  userDeleteRecordsFromPds: eventType("user/delete-records-from-pds", {
+    schema: staticSchema<{
+      did: string;
+      records: Array<{ collection: string; rkey: string }>;
+    }>(),
+  }),
   stripeCheckoutSessionCompleted: eventType(
     "stripe/checkout.session.completed",
     { schema: staticSchema<{ sessionId: string }>() },
