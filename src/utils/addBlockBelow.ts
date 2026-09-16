@@ -28,11 +28,15 @@ export async function addBlockBelow(
   return newEntityID;
 }
 
-// Focus a just-created text block. The delay is load-bearing: the editor
-// mounts asynchronously, and focusing immediately corrupts fast End+Enter
-// split sequences.
-export function focusNewTextBlock(entityID: string) {
+export function focusNewTextBlock(entityID: string, maxAttempts = 30) {
   setTimeout(() => {
-    document.getElementById(elementId.block(entityID).text)?.focus();
+    let attempts = 0;
+    let tick = () => {
+      let el = document.getElementById(elementId.block(entityID).text);
+      if (el) return el.focus();
+      if (++attempts >= maxAttempts) return;
+      requestAnimationFrame(tick);
+    };
+    tick();
   }, 10);
 }

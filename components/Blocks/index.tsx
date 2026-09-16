@@ -1,6 +1,7 @@
 "use client";
 
-import { Fact, useEntity, useReplicache } from "src/replicache";
+import type { Replicache } from "replicache";
+import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 
 import { useIsPageFocused, useUIState } from "src/useUIState";
 import { foldBlocks, unfoldBlocks } from "src/utils/foldBlocks";
@@ -13,6 +14,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { focusBlock } from "src/utils/focusBlock";
 import { addBlockBelow, focusNewTextBlock } from "src/utils/addBlockBelow";
+import { storedBlockTextIsEmpty } from "src/utils/storedBlockTextIsEmpty";
 
 import { Block } from "./Block";
 import { useEffect, useMemo, useState } from "react";
@@ -71,7 +73,21 @@ export function Blocks(props: { entityID: string }) {
     ? blocks.findLast((block) => block.listData?.parent === zoomedBlock)
     : blocks.findLast((block) => !block.listData || block.listData.depth === 1);
 
-  let lastVisibleBlock = visibleBlocks.at(-1);
+  let unfoldOnAppend = zoomedBlock ? undefined : lastRootBlock?.headingPath;
+  let trailingBlock = useMemo(() => {
+    let last = blocks.at(-1);
+    if (!last) return undefined;
+    let stillFolded = foldedBlocks.filter(
+      (entity) =>
+        foldableParentSet.has(entity) && !unfoldOnAppend?.includes(entity),
+    );
+    return isBlockHidden(last, stillFolded) ? visibleBlocks.at(-1) : last;
+  }, [blocks, visibleBlocks, foldedBlocks, foldableParentSet, unfoldOnAppend]);
+
+  let unfoldToReachTrailing =
+    trailingBlock && trailingBlock !== visibleBlocks.at(-1)
+      ? unfoldOnAppend
+      : undefined;
 
   // Make this page a drop target for list items dragged from any open page
   // (the DndContext lives in ListDndProvider, above all pages).
@@ -129,12 +145,15 @@ export function Blocks(props: { entityID: string }) {
       })}
       <NewBlockButton
         lastBlock={lastRootBlock || null}
+        unfoldOnAppend={unfoldOnAppend}
         entityID={zoomedBlock ?? props.entityID}
       />
 
       <BlockListBottom
-        lastVisibleBlock={lastVisibleBlock || undefined}
+        trailingBlock={trailingBlock}
+        unfoldToReachTrailing={unfoldToReachTrailing}
         lastRootBlock={lastRootBlock || undefined}
+        unfoldOnAppend={unfoldOnAppend}
         entityID={zoomedBlock ?? props.entityID}
         areFootnotes={areFootnotes}
       />
@@ -156,7 +175,30 @@ function foldableParents(blocks: Block[]) {
   );
 }
 
-function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
+function appendTextBlock(
+  rep: Replicache<ReplicacheMutators>,
+  args: {
+    parent: string;
+    position: string | null;
+    unfold: string[] | undefined;
+    permission_set: string;
+  },
+) {
+  if (args.unfold?.length) unfoldBlocks(rep, args.unfold);
+  return addBlockBelow(rep, {
+    parent: args.parent,
+    position: args.position,
+    nextPosition: null,
+    permission_set: args.permission_set,
+    type: "text",
+  });
+}
+
+function NewBlockButton(props: {
+  lastBlock: Block | null;
+  unfoldOnAppend: string[] | undefined;
+  entityID: string;
+}) {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
   // Boolean selector so this doesn't re-render on every keystroke in the
@@ -181,12 +223,11 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
         className="h-6 hover:cursor-text italic text-tertiary grow"
         onMouseDown={async () => {
           if (!rep) return;
-          let newEntityID = await addBlockBelow(rep, {
+          let newEntityID = await appendTextBlock(rep, {
             parent: props.entityID,
             position: props.lastBlock?.position || null,
-            nextPosition: null,
+            unfold: props.unfoldOnAppend,
             permission_set: entity_set.set,
-            type: "text",
           });
           focusNewTextBlock(newEntityID);
         }}
@@ -205,7 +246,9 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
 
 const BlockListBottom = (props: {
   lastRootBlock: Block | undefined;
-  lastVisibleBlock: Block | undefined;
+  trailingBlock: Block | undefined;
+  unfoldToReachTrailing: string[] | undefined;
+  unfoldOnAppend: string[] | undefined;
   entityID: string;
   areFootnotes: boolean;
 }) => {
@@ -216,6 +259,12 @@ const BlockListBottom = (props: {
     position: props.lastRootBlock?.position || null,
     nextPosition: null,
   });
+  let trailingBlock = props.trailingBlock;
+  let trailingIsText = !!trailingBlock && !!isTextBlock[trailingBlock.type];
+  let trailingText = useEntity(
+    trailingIsText ? trailingBlock!.entityID : null,
+    "block/text",
+  );
 
   if (!entity_set.permissions.write) return;
   if (props.areFootnotes) return;
@@ -224,24 +273,26 @@ const BlockListBottom = (props: {
     <div
       className="blockListClickableBottomArea grow min-h-[50vh]"
       onClick={() => {
-        if (
-          // if the last visible(not-folded) block is a text block, focus it
-          props.lastRootBlock &&
-          props.lastVisibleBlock &&
-          isTextBlock[props.lastVisibleBlock.type]
-        ) {
-          focusBlock(
-            { ...props.lastVisibleBlock, type: "text" },
-            { type: "end" },
-          );
+        let editor = trailingIsText
+          ? useEditorStates.getState().editorStates[trailingBlock!.entityID]
+              ?.editor
+          : null;
+        let trailingIsEmpty =
+          trailingIsText &&
+          (editor
+            ? editor.doc.content.size <= 2
+            : storedBlockTextIsEmpty(trailingText?.data.value));
+
+        if (trailingIsEmpty) {
+          if (props.unfoldToReachTrailing?.length)
+            unfoldBlocks(rep, props.unfoldToReachTrailing);
+          focusBlock(trailingBlock!, { type: "end" });
         } else if (rep) {
-          // else add a new text block at the end and focus it
-          addBlockBelow(rep, {
+          appendTextBlock(rep, {
             parent: props.entityID,
             position: props.lastRootBlock?.position || null,
-            nextPosition: null,
+            unfold: props.unfoldOnAppend,
             permission_set: entity_set.set,
-            type: "text",
           }).then(focusNewTextBlock);
         }
       }}
