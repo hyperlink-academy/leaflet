@@ -3,7 +3,6 @@ import { elementId } from "src/utils/elementId";
 import { useReplicache, useEntity } from "src/replicache";
 import { isVisible } from "src/utils/isVisible";
 import { TextSelection } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
 import { RenderYJSFragment } from "./RenderYJSFragment";
 import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { BlockProps, BlockLayout } from "../Block";
@@ -94,7 +93,7 @@ export function TextBlock(
       isSelected={!!isSelected}
       areYouSure={props.areYouSure}
       setAreYouSure={props.setAreYouSure}
-      className={`overflow-visible! bg-bg-page ${!isSelected && "border-transparent! bg-transparent"}`}
+      className={`p-0! overflow-visible! bg-bg-page ${!isSelected && "border-transparent! bg-transparent"}`}
     >
       {content}
     </BlockLayout>
