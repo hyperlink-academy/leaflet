@@ -6,7 +6,7 @@ import { TextSelection } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { RenderYJSFragment } from "./RenderYJSFragment";
 import { useHasPageLoaded } from "components/InitialPageLoadProvider";
-import { BlockProps } from "../Block";
+import { BlockProps, BlockLayout } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
 import { addBlockBelow, focusNewTextBlock } from "src/utils/addBlockBelow";
 import { useIsBlockSelected, useUIState } from "src/useUIState";
@@ -52,16 +52,18 @@ export function TextBlock(
   props: BlockProps & {
     className?: string;
     preview?: boolean;
+    areYouSure?: boolean;
+    setAreYouSure?: (value: boolean) => void;
   },
 ) {
   let initialized = useHasPageLoaded();
   let first = props.previousBlock === null;
   let permission = useEntitySetContext().permissions.write;
-  // Stale clients (newer-schema content exists; see ./schemaVersion) keep
-  // rendering but must not mount an editor.
-  let stale = useStaleClient((s) => s.stale);
 
-  return (
+  let stale = useStaleClient((s) => s.stale);
+  let isSelected = useIsBlockSelected(props.entityID);
+
+  let content = (
     <>
       {(!initialized || !permission || props.preview || stale) && (
         <RenderedTextBlock
@@ -76,12 +78,6 @@ export function TextBlock(
       )}
       {permission && !props.preview && !stale && (
         <div
-          // overflow-x-clip keeps the remote-cursor overlay from making the
-          // page scroll sideways on iOS Safari when a cursor sits at the edge.
-          // The padding/negative-margin pair (box-content keeps the text's
-          // width) pushes the clip edge out so a caret centered on the first
-          // or last column isn't cut in half — the caret dot is 7px wide, so
-          // it needs 3.5px of room past the text edge
           className={`yjs-cursor-clip w-full box-content px-1.5 -mx-1.5 relative group ${!initialized ? "hidden" : ""}`}
         >
           <IOSBS {...props} />
@@ -89,6 +85,19 @@ export function TextBlock(
         </div>
       )}
     </>
+  );
+
+  if (props.pageType === "doc" || props.preview) return content;
+
+  return (
+    <BlockLayout
+      isSelected={!!isSelected}
+      areYouSure={props.areYouSure}
+      setAreYouSure={props.setAreYouSure}
+      className={`overflow-visible! bg-bg-page ${!isSelected && "border-transparent! bg-transparent"}`}
+    >
+      {content}
+    </BlockLayout>
   );
 }
 
@@ -100,9 +109,6 @@ function IOSBS(props: BlockProps) {
   if (initialRender || !isIOS()) return null;
   return (
     <div
-      // z-[1] keeps this overlay hit-testable above BaseTextBlock's root div,
-      // which is position:relative and later in the DOM — without it the tap
-      // lands on ProseMirror directly and iOS scroll-jumps on native focus
       className="h-full w-full absolute z-[1] cursor-text group-focus-within:hidden py-[18px]"
       onPointerUp={(e) => {
         e.preventDefault();

@@ -53,6 +53,10 @@ const PageAttributes = {
     type: "number",
     cardinality: "one",
   },
+  "canvas/block/stack-order": {
+    type: "string",
+    cardinality: "one",
+  },
   "canvas/narrow-width": {
     type: "boolean",
     cardinality: "one",

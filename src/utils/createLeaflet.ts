@@ -69,6 +69,11 @@ export async function createLeaflet({
         attribute: "block/type",
         data: { type: "block-type-union", value: "text" },
       },
+      {
+        entity: blockId,
+        attribute: "canvas/block/stack-order",
+        data: { type: "string", value: generateKeyBetween(null, null) },
+      },
     );
   } else {
     const blockSpecs: DefaultBlockSpec[] = firstBlocks ?? ["h1"];

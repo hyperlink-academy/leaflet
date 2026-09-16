@@ -806,6 +806,10 @@ export async function processBlocksToPages(opts: {
             scan.eav(blockEntity, "canvas/block/width")?.[0]?.data.value || 360;
           const rotation = scan.eav(blockEntity, "canvas/block/rotation")?.[0]
             ?.data.value;
+          const stackOrder = scan.eav(
+            blockEntity,
+            "canvas/block/stack-order",
+          )?.[0]?.data.value;
 
           const canvasBlockRecord: PubLeafletPagesCanvas.Block = {
             $type: "pub.leaflet.pages.canvas#block",
@@ -814,6 +818,7 @@ export async function processBlocksToPages(opts: {
             y: Math.floor(position.y),
             width: Math.floor(width),
             ...(rotation !== undefined && { rotation: Math.floor(rotation) }),
+            ...(stackOrder !== undefined && { stackOrder }),
           };
 
           return canvasBlockRecord;

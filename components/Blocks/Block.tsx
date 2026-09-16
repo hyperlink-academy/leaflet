@@ -56,6 +56,7 @@ import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { Separator } from "components/Layout";
 import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
 import { deleteBlock } from "src/utils/deleteBlock";
+import { CanvasLayerControls } from "components/CanvasLayerControls";
 
 const SWIPE_THRESHOLD = 50;
 
@@ -589,7 +590,17 @@ const NonTextBlockOptions = (props: {
     <div
       className={`flex gap-1 absolute -top-[25px] right-2 pb-0.5 pt-1 px-1 rounded-t-md bg-border text-bg-page ${props.optionsClassName}`}
     >
-      {focusedEntityType?.data.value !== "canvas" && (
+      {focusedEntityType?.data.value === "canvas" ? (
+        focusedEntity?.parent && (
+          <>
+            <CanvasLayerControls
+              parent={focusedEntity.parent}
+              entityID={focusedEntity.entityID}
+            />
+            <Separator classname="border-bg-page! h-4! mx-0.5" />
+          </>
+        )
+      ) : (
         <>
           <button
             onClick={async (e) => {

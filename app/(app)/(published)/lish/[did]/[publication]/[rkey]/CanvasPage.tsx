@@ -10,7 +10,10 @@ import { AppBskyFeedDefs } from "@atproto/api";
 import { useMemo } from "react";
 import { PageWrapper } from "components/Pages/Page";
 import { Block } from "./PostContent";
-import { canvasBlockOrder } from "src/utils/canvasBlockOrder";
+import {
+  canvasBlockOrder,
+  canvasStackOrders,
+} from "src/utils/canvasBlockOrder";
 import { CanvasBackgroundPattern } from "components/Canvas";
 import { getQuoteCount, Interactions } from "./Interactions/Interactions";
 import { Separator } from "components/Layout";
@@ -119,6 +122,10 @@ function CanvasContent({
     () => [...blocks].sort(canvasBlockOrder),
     [blocks],
   );
+  let stackOrders = useMemo(
+    () => canvasStackOrders(sortedBlocks),
+    [sortedBlocks],
+  );
   let height =
     sortedBlocks.length > 0 ? Math.max(...sortedBlocks.map((b) => b.y), 0) : 0;
 
@@ -146,6 +153,7 @@ function CanvasContent({
               pageId={pageId}
               pages={pages}
               index={index}
+              stackOrder={stackOrders[index]}
             />
           );
         })}
@@ -164,6 +172,7 @@ function CanvasBlock({
   pageId,
   pages,
   index,
+  stackOrder,
 }: {
   canvasBlock: PubLeafletPagesCanvas.Block;
   did: string;
@@ -174,6 +183,7 @@ function CanvasBlock({
   pageId?: string;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   index: number;
+  stackOrder: number;
 }) {
   let { x, y, width, rotation } = canvasBlock;
   let transform = `translate(${x}px, ${y}px)${rotation ? ` rotate(${rotation}deg)` : ""}`;
@@ -191,6 +201,7 @@ function CanvasBlock({
         top: 0,
         left: 0,
         width,
+        zIndex: stackOrder,
         transform,
       }}
     >

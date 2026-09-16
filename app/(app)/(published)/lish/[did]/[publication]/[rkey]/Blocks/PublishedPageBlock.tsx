@@ -20,7 +20,10 @@ import { openInteractionDrawer } from "../Interactions/Interactions";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { CanvasBackgroundPattern } from "components/Canvas";
 import { CompactPageLink } from "components/Blocks/CompactPageLink";
-import { canvasBlockOrder } from "src/utils/canvasBlockOrder";
+import {
+  canvasBlockOrder,
+  canvasStackOrders,
+} from "src/utils/canvasBlockOrder";
 import {
   pageRecordTextBlocks,
   type PageRecordTextBlock,
@@ -317,6 +320,8 @@ const CanvasLinkBlock = (props: {
   let pageWidth = `var(--page-width-unitless)`;
   let height =
     props.blocks.length > 0 ? Math.max(...props.blocks.map((b) => b.y), 0) : 0;
+  let sortedBlocks = [...props.blocks].sort(canvasBlockOrder);
+  let stackOrders = canvasStackOrders(sortedBlocks);
 
   return (
     <div
@@ -341,45 +346,44 @@ const CanvasLinkBlock = (props: {
           <div className="w-full h-full pointer-events-none">
             <CanvasBackgroundPattern pattern="grid" />
           </div>
-          {[...props.blocks]
-            .sort(canvasBlockOrder)
-            .map((canvasBlock, index) => {
-              let { x, y, width, rotation } = canvasBlock;
-              let transform = `translate(${x}px, ${y}px)${rotation ? ` rotate(${rotation}deg)` : ""}`;
+          {sortedBlocks.map((canvasBlock, index) => {
+            let { x, y, width, rotation } = canvasBlock;
+            let transform = `translate(${x}px, ${y}px)${rotation ? ` rotate(${rotation}deg)` : ""}`;
 
-              // Wrap the block in a LinearDocument.Block structure for compatibility
-              let linearBlock: PubLeafletPagesLinearDocument.Block = {
-                $type: "pub.leaflet.pages.linearDocument#block",
-                block: canvasBlock.block,
-              };
+            // Wrap the block in a LinearDocument.Block structure for compatibility
+            let linearBlock: PubLeafletPagesLinearDocument.Block = {
+              $type: "pub.leaflet.pages.linearDocument#block",
+              block: canvasBlock.block,
+            };
 
-              return (
-                <div
-                  key={index}
-                  className="absolute rounded-lg flex items-stretch origin-center p-3"
-                  style={{
-                    top: 0,
-                    left: 0,
-                    width,
-                    transform,
-                  }}
-                >
-                  <div className="contents">
-                    <Block
-                      pollData={[]}
-                      pageId={props.pageId}
-                      pages={props.pages}
-                      bskyPostData={props.bskyPostData}
-                      standardSitePostData={props.standardSitePostData}
-                      block={linearBlock}
-                      did={props.did}
-                      index={[index]}
-                      preview={true}
-                    />
-                  </div>
+            return (
+              <div
+                key={index}
+                className="absolute rounded-lg flex items-stretch origin-center p-3"
+                style={{
+                  top: 0,
+                  left: 0,
+                  width,
+                  zIndex: stackOrders[index],
+                  transform,
+                }}
+              >
+                <div className="contents">
+                  <Block
+                    pollData={[]}
+                    pageId={props.pageId}
+                    pages={props.pages}
+                    bskyPostData={props.bskyPostData}
+                    standardSitePostData={props.standardSitePostData}
+                    block={linearBlock}
+                    did={props.did}
+                    index={[index]}
+                    preview={true}
+                  />
                 </div>
-              );
-            })}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

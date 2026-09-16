@@ -3,7 +3,8 @@ import type { Fact, ReplicacheMutators } from ".";
 import type { Attribute, Attributes, FilterAttributes } from "./attributes";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
-import { generateKeyBetween } from "fractional-indexing";
+import { generateKeyBetween, generateNKeysBetween } from "fractional-indexing";
+import { canvasStackingOrder } from "src/utils/canvasBlockOrder";
 import { v5, v7 } from "uuid";
 import { localImages } from "src/utils/addImage";
 import { clearImageUploadStatus } from "src/utils/imageUploadStatus";
@@ -49,6 +50,29 @@ type Mutation<T> = (
   ctx: MutationContext,
 ) => Promise<void>;
 
+// The canvas blocks of `page` in paint order, lowest first, each with the
+// fractional index it is layered by — null only for blocks placed before
+// layering existed.
+async function canvasLayers(ctx: MutationContext, page: string) {
+  let blocks = await ctx.scanIndex.eav(page, "canvas/block");
+  // Read one at a time: on the server these reads share a single database
+  // transaction, which can only have one query in flight.
+  let layers = [];
+  for (let fact of blocks) {
+    let stackOrder = await ctx.scanIndex.eav(
+      fact.data.value,
+      "canvas/block/stack-order",
+    );
+    layers.push({
+      entityID: fact.data.value,
+      x: fact.data.position.x,
+      y: fact.data.position.y,
+      stackOrder: stackOrder[0]?.data.value ?? null,
+    });
+  }
+  return layers.sort(canvasStackingOrder);
+}
+
 const addCanvasBlock: Mutation<{
   parent: string;
   permission_set: string;
@@ -75,6 +99,66 @@ const addCanvasBlock: Mutation<{
     entity: args.newEntityID,
     data: { type: "block-type-union", value: args.type },
     attribute: "block/type",
+  });
+  // Every block placed on a canvas gets a layer, so stacking is explicit from
+  // the moment it lands. Unlayered blocks sort first, so the last entry's
+  // index is the highest in use, or null on a canvas that predates layering —
+  // either way the new block goes on top.
+  let layers = await canvasLayers(ctx, args.parent);
+  let top = layers[layers.length - 1]?.stackOrder ?? null;
+  await ctx.assertFact({
+    entity: args.newEntityID,
+    attribute: "canvas/block/stack-order",
+    data: { type: "string", value: generateKeyBetween(top, null) },
+  });
+};
+
+const moveCanvasBlockLayer: Mutation<{
+  parent: string;
+  entityID: string;
+  action: "forward" | "backward" | "front" | "back";
+}> = async (args, ctx) => {
+  let layers = await canvasLayers(ctx, args.parent);
+  let index = layers.findIndex((l) => l.entityID === args.entityID);
+  if (index === -1) return;
+  let up = args.action === "forward" || args.action === "front";
+  if (up ? index === layers.length - 1 : index === 0) return;
+
+  // Blocks placed before layering existed have no index, and a fractional
+  // index can only put a block above them — so "below every sibling" is
+  // inexpressible while any of them are left. The first layering action on
+  // such a canvas freezes their current paint order into explicit indexes,
+  // leaving it looking identical.
+  let unlayered = layers.filter((l) => l.stackOrder === null).length;
+  if (unlayered > 0) {
+    let keys = generateNKeysBetween(
+      null,
+      layers[unlayered]?.stackOrder || null,
+      unlayered,
+    );
+    for (let i = 0; i < unlayered; i++) {
+      layers[i].stackOrder = keys[i];
+      await ctx.assertFact({
+        entity: layers[i].entityID,
+        attribute: "canvas/block/stack-order",
+        data: { type: "string", value: keys[i] },
+      });
+    }
+  }
+
+  let order = layers.map((l) => l.stackOrder as string);
+  let value =
+    args.action === "forward"
+      ? generateKeyBetween(order[index + 1], order[index + 2] || null)
+      : args.action === "backward"
+        ? generateKeyBetween(order[index - 2] || null, order[index - 1])
+        : args.action === "front"
+          ? generateKeyBetween(order[order.length - 1], null)
+          : generateKeyBetween(null, order[0]);
+  await ctx.assertFact({
+    entity: args.entityID,
+    attribute: "canvas/block/stack-order",
+    data: { type: "string", value },
   });
 };
 
@@ -1278,6 +1362,7 @@ export const mutations = {
   retractAttribute,
   addBlock,
   addCanvasBlock,
+  moveCanvasBlockLayer,
   addLastBlock,
   outdentBlock,
   moveBlockUp,

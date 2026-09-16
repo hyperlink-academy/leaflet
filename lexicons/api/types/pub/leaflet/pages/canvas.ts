@@ -86,6 +86,8 @@ export interface Block {
   height?: number
   /** The rotation of the block in degrees */
   rotation?: number
+  /** Fractional index ordering this block against its siblings on the z axis. Blocks without one stack below every block with one, ordered by position. */
+  stackOrder?: string
 }
 
 const hashBlock = 'block'

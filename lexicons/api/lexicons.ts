@@ -2276,6 +2276,11 @@ export const schemaDict = {
             type: 'integer',
             description: 'The rotation of the block in degrees',
           },
+          stackOrder: {
+            type: 'string',
+            description:
+              'Fractional index ordering this block against its siblings on the z axis. Blocks without one stack below every block with one, ordered by position.',
+          },
         },
       },
       textAlignLeft: {
