@@ -12,6 +12,8 @@ export const Tag = (props: {
   selected?: boolean;
   onDelete?: (tag: string) => void;
   onClick?: (tag: string) => void;
+  // Fired on hover and pointer-down, ahead of the click.
+  onPrefetch?: (tag: string) => void;
   // How many posts carry this tag, rendered inside the chip after the name.
   count?: number;
   className?: string;
@@ -32,6 +34,8 @@ export const Tag = (props: {
           }
           aria-label={`Tag: ${props.name}`}
           onClick={() => props.onClick?.(props.name)}
+          onMouseEnter={() => props.onPrefetch?.(props.name)}
+          onPointerDown={() => props.onPrefetch?.(props.name)}
         >
           {props.name}{" "}
         </button>

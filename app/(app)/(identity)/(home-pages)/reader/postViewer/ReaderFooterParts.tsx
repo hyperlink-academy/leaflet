@@ -2,6 +2,7 @@
 import type { ReaderFooterVariantProps } from "./ReaderFooter";
 import { RecommendButton } from "components/Interactions/RecommendButton";
 import { DiscussionButton } from "components/Interactions/DiscussionButton";
+import { TagButton } from "components/Interactions/TagButton";
 import { InteractionShareButton } from "components/Interactions/InteractionShareButton";
 import { SubscribeButton } from "components/Subscribe/SubscribeButton";
 import { Separator } from "components/Layout";
@@ -22,11 +23,15 @@ export const ReaderFooterPostInfo = (
     | "pubIcon"
     | "newsletterMode"
     | "interactions"
-    | "discussionOpen"
-    | "setDiscussionOpen"
+    | "panel"
+    | "setPanel"
   > & { className?: string },
 ) => {
-  let { post, postRecord, postUrl, pubRecord, interactions } = props;
+  let { post, postRecord, postUrl, pubRecord, interactions, panel, setPanel } =
+    props;
+  // Clicking the control for the panel that's already up closes it.
+  let togglePanel = (next: "discussion" | "recommends") =>
+    setPanel(panel?.type === next ? null : { type: next });
 
   if (!post || !post.publication || !pubRecord) return;
   return (
@@ -39,6 +44,7 @@ export const ReaderFooterPostInfo = (
             <RecommendButton
               documentUri={post.documents.uri}
               recommendsCount={interactions.recommendsCount}
+              onOpenRecommends={() => togglePanel("recommends")}
               className="text-sm text-tertiary sm:pr-0 pr-2"
             />
             <DiscussionButton
@@ -49,7 +55,16 @@ export const ReaderFooterPostInfo = (
               showMentions={interactions.showMentions}
               postUrl={postUrl}
               title={postRecord.title}
-              onClick={() => props.setDiscussionOpen(!props.discussionOpen)}
+              onClick={() => togglePanel("discussion")}
+              className="text-sm text-tertiary px-2 sm:px-0"
+            />
+            <TagButton
+              tags={postRecord.tags ?? []}
+              publicationUri={post.publication.uri}
+              showOtherPublications={
+                pubRecord.preferences?.showOtherPublicationsInTags !== false
+              }
+              onTagClick={(tag) => setPanel({ type: "tag", tag })}
               className="text-sm text-tertiary px-2 sm:px-0"
             />
             <InteractionShareButton

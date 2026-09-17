@@ -17,7 +17,11 @@ import { OAuthErrorMessage, isOAuthSessionError } from "../OAuthError";
 import { useIdentityData } from "../IdentityProvider";
 import { LoginModal } from "../LoginButton";
 import { Modal } from "../Modal";
-import { RecommendsList, getDocumentRecommendsKey } from "./RecommendsList";
+import {
+  RecommendsList,
+  getDocumentRecommendsKey,
+  prefetchDocumentRecommends,
+} from "./RecommendsList";
 import { DrawerThreadContext } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
 import {
   InteractionButton,
@@ -206,6 +210,8 @@ export function RecommendButton(props: {
   recommendsCount: number;
   recommendOnly?: boolean;
   large?: boolean;
+  // Takes over showing the recommenders from the drawer / modal.
+  onOpenRecommends?: () => void;
   className?: string;
 }) {
   const { displayRecommended, count, recommendPost, loginOpen, setLoginOpen } =
@@ -239,13 +245,18 @@ export function RecommendButton(props: {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (drawerNav)
+                if (props.onOpenRecommends) props.onOpenRecommends();
+                else if (drawerNav)
                   drawerNav.push({
                     type: "recommends",
                     uri: props.documentUri,
                   });
                 else setRecommendsModalOpen(true);
               }}
+              onMouseEnter={() => prefetchDocumentRecommends(props.documentUri)}
+              onPointerDown={() =>
+                prefetchDocumentRecommends(props.documentUri)
+              }
               className={`relative  z-10 ${props.large ? "" : "hover:text-accent-contrast"}`}
               aria-label="See who recommended this"
             >

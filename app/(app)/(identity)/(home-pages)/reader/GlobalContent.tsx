@@ -40,7 +40,7 @@ export const GlobalContent = (props: {
       </EmptyState>
     );
   }
-  
+
   return (
     <>
       {posts.map((p) => (
@@ -49,8 +49,8 @@ export const GlobalContent = (props: {
           key={p.documents.uri}
           selected={selectedPost?.document_uri === p.documents.uri}
           onOpenInViewer={() => openPostViewer(posts, p.documents.uri)}
-          onOpenDiscussionsInViewer={() =>
-            openPostViewer(posts, p.documents.uri, { discussion: true })
+          onOpenPanelInViewer={(panel) =>
+            openPostViewer(posts, p.documents.uri, { panel })
           }
         />
       ))}

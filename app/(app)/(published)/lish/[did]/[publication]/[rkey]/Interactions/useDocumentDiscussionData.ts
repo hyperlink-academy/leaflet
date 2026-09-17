@@ -1,5 +1,5 @@
 "use client";
-import useSWR from "swr";
+import useSWR, { preload } from "swr";
 import { AtUri } from "@atproto/api";
 import { callRPC } from "app/api/rpc/client";
 import type { DocumentContextValue } from "contexts/DocumentContext";
@@ -18,6 +18,15 @@ type DocumentInteractionsData = {
   publication: NormalizedPublication | null;
 };
 
+const discussionKey = (document_uri: string) =>
+  ["doc_interactions", document_uri] as const;
+const fetchDiscussion = (document_uri: string) =>
+  callRPC("get_document_interactions", { document_uri });
+
+export function prefetchDocumentDiscussion(document_uri: string) {
+  preload(discussionKey(document_uri), () => fetchDiscussion(document_uri));
+}
+
 // Fetches a document's comments and Bluesky mentions and builds the Document /
 // LeafletContent context values that the shared drawer content (Comments /
 // Quotes) reads off `useDocument`. Used by the DiscussionModal and the
@@ -27,8 +36,8 @@ export function useDocumentDiscussionData(
   document_uri: string,
   enabled: boolean,
 ) {
-  const swr = useSWR(enabled ? ["doc_interactions", document_uri] : null, () =>
-    callRPC("get_document_interactions", { document_uri }),
+  const swr = useSWR(enabled ? discussionKey(document_uri) : null, () =>
+    fetchDiscussion(document_uri),
   );
   const data = swr.data as unknown as DocumentInteractionsData | undefined;
 
@@ -40,7 +49,7 @@ export function useDocumentDiscussionData(
   }
 
   const documentRecord = data?.document ?? null;
-  const pages = documentRecord ? (getDocumentPages(documentRecord) ?? []) : [];
+  const pages = documentRecord ? getDocumentPages(documentRecord) ?? [] : [];
 
   const liveComments = (data?.comments ?? []).filter((c) => !c.deleted);
   const commentsCountByPage: Record<string, number> = {};

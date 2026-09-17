@@ -7,6 +7,7 @@ import { CommentEmptyTiny } from "../Icons/CommentEmptyTiny";
 import { CommentFilledSmall } from "../Icons/CommentFilledSmall";
 import { CommentEmptySmall } from "../Icons/CommentEmptySmall";
 import { DiscussionModal } from "./DiscussionModal";
+import { prefetchDocumentDiscussion } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/useDocumentDiscussionData";
 import { DrawerThreadContext } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
 import {
   InteractionButton,
@@ -51,6 +52,12 @@ export function DiscussionButton(props: {
     }
   };
 
+  // The post page's own drawer reads its discussion off the page, so it
+  // passes its own prefetch; everywhere else the modal, drawer view and reader
+  // pane all load through useDocumentDiscussionData.
+  const prefetch =
+    props.onPrefetch ?? (() => prefetchDocumentDiscussion(props.documentUri));
+
   const ButtonWrapper = props.large
     ? LargeInteractionButton
     : InteractionButton;
@@ -72,8 +79,8 @@ export function DiscussionButton(props: {
     <>
       <ButtonWrapper
         onClick={openDiscussions}
-        onMouseEnter={props.onPrefetch}
-        onTouchStart={props.onPrefetch}
+        onMouseEnter={prefetch}
+        onTouchStart={prefetch}
         ariaLabel="Post discussions"
         className={`${props.large ? "" : "hover:text-accent-contrast"} ${props.className ?? ""}`}
       >

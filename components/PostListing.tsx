@@ -16,7 +16,7 @@ import { useEffect, useRef, useState } from "react";
 import { PostByline } from "./PostByline";
 import { namedBylineProfiles } from "src/utils/byline";
 import { useSelectedPostListing } from "src/useSelectedPostState";
-import { useReaderPostViewer } from "src/useReaderPostViewer";
+import { useReaderPostViewer, type ReaderPanel } from "src/useReaderPostViewer";
 import { preload } from "swr";
 import { checkUrlFrameable } from "actions/checkUrlFrameable";
 import { mergePreferences } from "src/utils/mergePreferences";
@@ -25,6 +25,7 @@ import { getDocumentURL } from "src/utils/getPublicationURL";
 import { RecommendButton } from "./Interactions/RecommendButton";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { DiscussionButton } from "./Interactions/DiscussionButton";
+import { TagButton } from "./Interactions/TagButton";
 import { InteractionShareButton } from "./Interactions/InteractionShareButton";
 import {
   PublicationPostItemLarge,
@@ -36,7 +37,7 @@ export const PostListing = (
   props: Post & {
     selected?: boolean;
     onOpenInViewer?: () => void;
-    onOpenDiscussionsInViewer?: () => void;
+    onOpenPanelInViewer?: (panel: ReaderPanel) => void;
     compact?: boolean;
   },
 ) => {
@@ -181,7 +182,11 @@ export const PostListing = (
         documentUri={props.documents.uri}
         document={postRecord}
         publication={pubRecord}
-        openDiscussionsInViewer={props.onOpenDiscussionsInViewer}
+        publicationUri={props.publication?.uri}
+        showOtherPublicationsInTags={
+          pubRecord?.preferences?.showOtherPublicationsInTags !== false
+        }
+        openPanelInViewer={props.onOpenPanelInViewer}
       />
       <InteractionShareButton
         postRecord={postRecord}
@@ -327,13 +332,16 @@ const Interactions = (props: {
   documentUri: string;
   document: NormalizedDocument;
   publication?: NormalizedPublication;
-  openDiscussionsInViewer?: () => void;
+  publicationUri?: string;
+  showOtherPublicationsInTags: boolean;
+  openPanelInViewer?: (panel: ReaderPanel) => void;
 }) => {
   let setSelectedPostListing = useSelectedPostListing(
     (s) => s.setSelectedPostListing,
   );
   let defaultDrawer: "comments" | "quotes" =
     props.showComments && props.commentsCount > 0 ? "comments" : "quotes";
+  let openPanelInViewer = props.openPanelInViewer;
 
   return (
     <div className={`flex gap-4 text-tertiary text-sm  items-center`}>
@@ -341,6 +349,11 @@ const Interactions = (props: {
         <RecommendButton
           documentUri={props.documentUri}
           recommendsCount={props.recommendsCount}
+          onOpenRecommends={
+            openPanelInViewer
+              ? () => openPanelInViewer({ type: "recommends" })
+              : undefined
+          }
         />
         <DiscussionButton
           documentUri={props.documentUri}
@@ -351,8 +364,8 @@ const Interactions = (props: {
           postUrl={props.postUrl}
           title={props.document.title}
           onClick={
-            props.openDiscussionsInViewer
-              ? () => props.openDiscussionsInViewer!()
+            openPanelInViewer
+              ? () => openPanelInViewer({ type: "discussion" })
               : undefined
           }
           onOpenChange={(open) => {
@@ -368,6 +381,14 @@ const Interactions = (props: {
             else setSelectedPostListing(null);
           }}
         />
+        {openPanelInViewer && (
+          <TagButton
+            tags={props.tags ?? []}
+            publicationUri={props.publicationUri}
+            showOtherPublications={props.showOtherPublicationsInTags}
+            onTagClick={(tag) => openPanelInViewer({ type: "tag", tag })}
+          />
+        )}
       </div>
     </div>
   );

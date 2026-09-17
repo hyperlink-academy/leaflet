@@ -23,7 +23,7 @@ export function PublicationPostItemMedium(props: MediumProps) {
 
   return (
     <div className="postItemMedium relative flex w-full flex-col">
-      <PostLink href={props.href} title={props.title} />
+      <PostLink href={props.href} title={props.title} onClick={props.onClick} />
 
       <div className="postItemContent flex w-full items-stretch sm:max-h-36">
         <div

@@ -9,17 +9,11 @@ import { hasLeafletContent } from "lexicons/src/normalize";
 import { ButtonPrimary } from "components/Buttons";
 import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 import { ReaderFooter } from "./ReaderFooter";
-import { PostViewerDiscussion } from "./PostViewerDiscussion";
+import { PostViewerPanel } from "./PostViewerPanel";
 
 export const PostViewer = () => {
-  let {
-    queue,
-    index,
-    closeViewer,
-    preloadUrl,
-    discussionOpen,
-    setDiscussionOpen,
-  } = useReaderPostViewer();
+  let { queue, index, closeViewer, preloadUrl, panel, setPanel } =
+    useReaderPostViewer();
   let post = index === null ? null : queue[index];
   let open = !!post;
   let pathname = usePathname();
@@ -37,12 +31,12 @@ export const PostViewer = () => {
       if (e.key !== "Escape") return;
       let target = e.target as HTMLElement | null;
       if (target?.closest?.("[role='dialog'], [role='menu']")) return;
-      if (discussionOpen) setDiscussionOpen(false);
+      if (panel) setPanel(null);
       else closeViewer();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, discussionOpen, closeViewer]);
+  }, [open, panel, setPanel, closeViewer]);
 
   let postRecord = post?.documents.data ?? null;
   let pubRecord = post?.publication?.pubRecord ?? undefined;
@@ -93,8 +87,8 @@ export const PostViewer = () => {
               className="w-full h-full border-none bg-bg-page"
             />
           )}
-          {discussionOpen && post && postRecord && postUrl && (
-            <PostViewerDiscussion
+          {panel && post && postRecord && postUrl && (
+            <PostViewerPanel
               post={post}
               postRecord={postRecord}
               postUrl={postUrl}

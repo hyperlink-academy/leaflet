@@ -75,8 +75,8 @@ export const NewContent = (props: {
           key={p.documents.uri}
           selected={selectedPost?.document_uri === p.documents.uri}
           onOpenInViewer={() => openPostViewer(allPosts, p.documents.uri)}
-          onOpenDiscussionsInViewer={() =>
-            openPostViewer(allPosts, p.documents.uri, { discussion: true })
+          onOpenPanelInViewer={(panel) =>
+            openPostViewer(allPosts, p.documents.uri, { panel })
           }
         />
       ))}

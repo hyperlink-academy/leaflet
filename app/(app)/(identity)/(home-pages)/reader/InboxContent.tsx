@@ -97,8 +97,8 @@ export const InboxContent = (props: {
           key={p.documents.uri}
           selected={selectedPost?.document_uri === p.documents.uri}
           onOpenInViewer={() => openPostViewer(sortedPosts, p.documents.uri)}
-          onOpenDiscussionsInViewer={() =>
-            openPostViewer(sortedPosts, p.documents.uri, { discussion: true })
+          onOpenPanelInViewer={(panel) =>
+            openPostViewer(sortedPosts, p.documents.uri, { panel })
           }
         />
       ))}

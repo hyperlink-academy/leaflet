@@ -4,7 +4,7 @@ import { useIsMobile } from "src/hooks/isMobile";
 import useSWR from "swr";
 import type { Post } from "actions/reader/getReaderFeed";
 import type { NormalizedPublication } from "lexicons/src/normalize";
-import { useReaderPostViewer } from "src/useReaderPostViewer";
+import { useReaderPostViewer, type ReaderPanel } from "src/useReaderPostViewer";
 import { getPublicationNewsletterMode } from "actions/publications/getNewsletterMode";
 import { getPostInteractions } from "./postInteractions";
 import { ReaderFooterMobile } from "./ReaderFooterMobile";
@@ -34,8 +34,8 @@ export type ReaderFooterVariantProps = {
   prevPost: () => void;
   nextPost: () => void;
   closeViewer: () => void;
-  discussionOpen: boolean;
-  setDiscussionOpen: (open: boolean) => void;
+  panel: ReaderPanel | null;
+  setPanel: (panel: ReaderPanel | null) => void;
 };
 
 export const ReaderFooter = (props: {
@@ -44,15 +44,8 @@ export const ReaderFooter = (props: {
   postUrl: string | null;
 }) => {
   let { post, postRecord, postUrl } = props;
-  let {
-    queue,
-    index,
-    nextPost,
-    prevPost,
-    closeViewer,
-    discussionOpen,
-    setDiscussionOpen,
-  } = useReaderPostViewer();
+  let { queue, index, nextPost, prevPost, closeViewer, panel, setPanel } =
+    useReaderPostViewer();
 
   let pubUri = post?.publication?.uri;
   let { data: newsletterMode } = useSWR(
@@ -83,8 +76,8 @@ export const ReaderFooter = (props: {
     prevPost,
     nextPost,
     closeViewer,
-    discussionOpen,
-    setDiscussionOpen,
+    panel,
+    setPanel,
   };
 
   return isMobile ? (
