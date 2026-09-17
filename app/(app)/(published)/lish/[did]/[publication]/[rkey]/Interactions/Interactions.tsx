@@ -18,6 +18,7 @@ import {
   DrawerThreadContext,
   sameDrawerThread,
 } from "./drawerThreadContext";
+import { drawerThreadFromLocation, serializeDrawerParam } from "./drawerParam";
 import { InteractionShareButton } from "components/Interactions/InteractionShareButton";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 import { ShareSmall } from "components/Icons/ShareSmall";
@@ -90,7 +91,8 @@ export function setInteractionState(
     if (
       typeof window !== "undefined" &&
       (updatedState.drawerOpen !== undefined ||
-        updatedState.drawer !== undefined)
+        updatedState.drawer !== undefined ||
+        updatedState.threadStack !== undefined)
     ) {
       const url = new URL(window.location.href);
       const newDocState = newState[document_uri];
@@ -104,8 +106,17 @@ export function setInteractionState(
         (newDocState.drawerOpen === undefined &&
           url.searchParams.has("interactionDrawer"));
 
-      if (drawerCurrentlyOpen && newDocState.drawer) {
-        url.searchParams.set("interactionDrawer", newDocState.drawer);
+      if (drawerCurrentlyOpen) {
+        url.searchParams.set(
+          "interactionDrawer",
+          serializeDrawerParam(
+            {
+              drawer: newDocState.drawer || "comments",
+              threadStack: newDocState.threadStack,
+            },
+            document_uri,
+          ),
+        );
       } else {
         url.searchParams.delete("interactionDrawer");
       }
@@ -156,9 +167,14 @@ export function openDrawerThread(
 // no-op rather than stacking a duplicate.
 export function pushDrawerThread(document_uri: string, thread: DrawerThread) {
   setInteractionState(document_uri, (s) => {
-    const top = s.threadStack[s.threadStack.length - 1];
+    let stack = s.threadStack;
+    if (stack.length === 0) {
+      const fromUrl = drawerThreadFromLocation(document_uri);
+      if (fromUrl) stack = [fromUrl];
+    }
+    const top = stack[stack.length - 1];
     if (top && sameDrawerThread(top, thread)) return {};
-    return { threadStack: [...s.threadStack, thread] };
+    return { threadStack: [...stack, thread] };
   });
 }
 

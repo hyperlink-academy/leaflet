@@ -15,7 +15,11 @@ import { DoubleArrowRightTiny } from "components/Icons/DoubleArrowRightTiny";
 import { ToggleGroup } from "components/ToggleGroup";
 import { useDocument } from "contexts/DocumentContext";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DrawerThread, DrawerThreadContext } from "./drawerThreadContext";
+import {
+  DrawerThread,
+  DrawerThreadContext,
+  drawerThreadKey,
+} from "./drawerThreadContext";
 import { useDrawerOpen } from "./useDrawerOpen";
 import { ThreadView } from "../ThreadPage";
 import { StandardSitePostDrawerView } from "./StandardSitePostDrawerView";
@@ -34,15 +38,7 @@ export const InteractionDrawer = (props: {
   did: string;
   pageId?: string;
 }) => {
-  // Reset the drawer's scroll to the top whenever we navigate between views, so
-  // a pushed thread (or a back navigation) doesn't start scrolled partway down.
   const scrollRef = useRef<HTMLDivElement>(null);
-  let { threadStack } = useInteractionState(props.document_uri);
-
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: 0 });
-  }, [threadStack.length]);
-
   let isMobile = useIsMobile();
 
   // This component is mounted unconditionally (in PostPages) and reads the
@@ -53,18 +49,24 @@ export const InteractionDrawer = (props: {
     !!drawerState &&
     (props.pageId ? drawerState.pageId === props.pageId : !drawerState.pageId);
 
-  // Remember the last open tab so the content keeps rendering it while the
-  // sheet plays its exit animation (drawerState is already null by then).
+  // Remember the last open tab and thread view so the content keeps rendering
+  // them while the sheet plays its exit animation (drawerState is already null
+  // by then).
   let lastTab = useRef(drawerState?.drawer);
   if (open && drawerState?.drawer) lastTab.current = drawerState.drawer;
   let tab: "comments" | "quotes" =
     lastTab.current === "quotes" ? "quotes" : "comments";
+  let lastThread = useRef(drawerState?.thread);
+  if (open) lastThread.current = drawerState?.thread;
+  let thread = lastThread.current;
 
-  // On mobile the drawer slides up from the bottom as a sheet instead of sitting
-  // inline in the horizontal page sandwich. The content renders its own header
-  // and close button, so the sheet supplies no title/chrome of its own. The
-  // sheet stays mounted with open=false so MobileSheet's spring can play the
-  // slide-out animation before removing the portal.
+  // Reset the drawer's scroll to the top whenever we navigate between views, so
+  // a pushed thread (or a back navigation) doesn't start scrolled partway down.
+  let threadKey = thread ? `${thread.type}:${drawerThreadKey(thread)}` : "";
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [threadKey]);
+
   if (isMobile) {
     return (
       <MobileSheet
@@ -76,7 +78,7 @@ export const InteractionDrawer = (props: {
         id="interaction-drawer"
         contentRef={scrollRef}
       >
-        <InteractionDrawerContent {...props} tab={tab} />
+        <InteractionDrawerContent {...props} tab={tab} thread={thread} />
       </MobileSheet>
     );
   }
@@ -92,7 +94,7 @@ export const InteractionDrawer = (props: {
           id="interaction-drawer"
           className={`relative h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6  overflow-scroll flex flex-col  ${props.showPageBackground ? "light-container rounded-l-none! rounded-r-lg! -ml-[1px]" : " opaque-container rounded-lg! sm:ml-4"}`}
         >
-          <InteractionDrawerContent {...props} tab={tab} />
+          <InteractionDrawerContent {...props} tab={tab} thread={thread} />
         </div>
       </div>
     </>
@@ -107,6 +109,7 @@ const InteractionDrawerContent = (props: {
   did: string;
   pageId?: string;
   tab: "comments" | "quotes";
+  thread: DrawerThread | undefined;
 }) => {
   let { commentsCountByPage, recommendsCount } = useDocument();
   let commentsCount = commentsCountByPage[props.pageId ?? ""] ?? 0;
@@ -121,7 +124,7 @@ const InteractionDrawerContent = (props: {
 
   // The innermost thread/quotes view opened within the drawer, if any. When
   // present it replaces the comments/mentions tabs.
-  const activeThread = threadStack[threadStack.length - 1];
+  const activeThread = props.thread;
 
   const sspUri =
     activeThread?.type === "standardSitePost" ? activeThread.uri : null;

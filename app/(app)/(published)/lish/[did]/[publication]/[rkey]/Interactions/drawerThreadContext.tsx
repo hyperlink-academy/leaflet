@@ -16,12 +16,13 @@ export type DrawerThread =
   | { type: "recommends"; uri: string }
   | { type: "tag"; tag: string };
 
-// Identity for drawer views, used to avoid stacking a duplicate of the view
-// you're already on.
+export function drawerThreadKey(thread: DrawerThread) {
+  return thread.type === "tag" ? thread.tag : thread.uri;
+}
+
 export function sameDrawerThread(a: DrawerThread, b: DrawerThread) {
   if (a.type !== b.type) return false;
-  const key = (t: DrawerThread) => (t.type === "tag" ? t.tag : t.uri);
-  return key(a) === key(b);
+  return drawerThreadKey(a) === drawerThreadKey(b);
 }
 
 type DrawerThreadNav = {

@@ -165,6 +165,7 @@ const QuoteOptionButtons = (props: {
                   drawerOpen: true,
                   pageId: position.pageId,
                   commentBox: { quote: position },
+                  threadStack: [],
                 }),
               );
               scrollIntoView("interaction-drawer");
