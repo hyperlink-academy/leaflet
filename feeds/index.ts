@@ -77,6 +77,29 @@ app.get("/xrpc/parts.page.mention.search", async (c) => {
 // pub.leaflet records the same way normalizeDocument does.
 const SKELETON_COLUMNS = `uri, sort_date, postRef:data->postRef, bskyPostRef:data->bskyPostRef, publishedAt:data->>publishedAt`;
 
+type SkeletonRow = {
+  uri: string;
+  sort_date: string | null;
+  postRef: unknown;
+  bskyPostRef: unknown;
+  publishedAt: unknown;
+};
+
+function skeletonResponse(posts: SkeletonRow[], cursor: string | undefined) {
+  let lastPost = posts[posts.length - 1];
+  let newCursor = lastPost ? `${lastPost.sort_date}::${lastPost.uri}` : null;
+  return {
+    cursor: newCursor || cursor,
+    feed: posts.flatMap((p) => {
+      let ref = (p.bskyPostRef ?? (p.publishedAt ? p.postRef : null)) as {
+        uri?: string;
+      } | null;
+      if (!ref?.uri) return [];
+      return { post: ref.uri };
+    }),
+  };
+}
+
 app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
   let feed = c.req.query("feed");
   if (!feed) return c.json({ feed: [] });
@@ -89,8 +112,6 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
   }
   let limit = parseInt(c.req.query("limit") || "10");
   let feedAtURI = new AtUri(feed);
-  let posts;
-  let query;
   // The quotes feed isn't personalized, so serve it without auth — the bsky
   // appview omits the viewer JWT for logged-out requests, feed previews, and
   // crawlers, and those should still see the feed.
@@ -121,36 +142,8 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
   }
   let auth = await validateAuth(c.req, serviceDid);
   if (!auth) return c.json({ feed: [] });
-  if (feedAtURI.rkey === "bsky-follows-leaflets") {
-    if (!cursor) {
-      console.log("Sending event");
-      await inngest.send({ name: "feeds/index-follows", data: { did: auth } });
-    }
-    // plan-checked: KNOWN DEBT — the follow filter lives in !inner embeds, so
-    // the newest-first limit walks documents_sort_date_idx probing the embeds
-    // per document, scanning the whole table for users whose follows have few
-    // or old posts. Needs a fenced SQL function like get_reader_feed.
-    query = supabaseServerClient
-      .from("documents")
-      // The skeleton only needs the bsky post ref out of each document, so
-      // project just the refs instead of the full record jsonb; the embedded
-      // tables exist purely to filter and select as little as possible.
-      .select(
-        `${SKELETON_COLUMNS},
-         documents_in_publications!inner(
-           publications!inner(uri,
-             identities!publications_identity_did_fkey!inner(
-               bsky_follows!bsky_follows_follows_fkey!inner(identity)
-              )
-            )
-          )`,
-      )
-      .eq(
-        "documents_in_publications.publications.identities.bsky_follows.identity",
-        auth,
-      );
-  } else if (feedAtURI.rkey === "all-leaflets") {
-    query = supabaseServerClient
+  if (feedAtURI.rkey === "all-leaflets") {
+    let query = supabaseServerClient
       .from("documents")
       .select(
         `${SKELETON_COLUMNS},
@@ -159,53 +152,52 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
       .or(
         "record->preferences->showInDiscover.is.null,record->preferences->>showInDiscover.eq.true",
         { referencedTable: "documents_in_publications.publications" },
-      );
-  } else {
-    //the default subscription feed
-    // plan-checked: KNOWN DEBT — same shape as bsky-follows-leaflets above:
-    // subscribers with few or quiet subscriptions scan the whole documents
-    // table. get_reader_feed already fences this exact join for the reader
-    // UI; this skeleton needs the same treatment.
-    query = supabaseServerClient
-      .from("documents")
-      .select(
-        `${SKELETON_COLUMNS},
-          documents_in_publications!inner(publications!inner(uri, publication_subscriptions!inner(identity)))`,
       )
-      .eq(
-        "documents_in_publications.publications.publication_subscriptions.identity",
-        auth,
+      .eq("indexed", true)
+      .or("data->postRef.not.is.null,data->bskyPostRef.not.is.null")
+      .order("sort_date", { ascending: false })
+      .order("uri", { ascending: false })
+      .limit(25);
+    if (parsedCursor)
+      query = query.or(
+        `sort_date.lt.${parsedCursor.date},and(sort_date.eq.${parsedCursor.date},uri.lt.${parsedCursor.uri})`,
       );
+
+    let { data, error } = await query;
+    if (error) console.error("all-leaflets skeleton query error:", error);
+    return c.json(skeletonResponse(data || [], cursor));
   }
-  query = query
-    .eq("indexed", true)
-    .or("data->postRef.not.is.null,data->bskyPostRef.not.is.null")
-    .order("sort_date", { ascending: false })
-    .order("uri", { ascending: false })
-    .limit(25);
-  if (parsedCursor)
-    query = query.or(
-      `sort_date.lt.${parsedCursor.date},and(sort_date.eq.${parsedCursor.date},uri.lt.${parsedCursor.uri})`,
-    );
 
-  let { data, error } = await query;
-  console.log(error);
-  posts = data;
-
-  posts = posts || [];
-
-  let lastPost = posts[posts.length - 1];
-  let newCursor = lastPost ? `${lastPost.sort_date}::${lastPost.uri}` : null;
-  return c.json({
-    cursor: newCursor || cursor,
-    feed: posts.flatMap((p) => {
-      let ref = (p.bskyPostRef ?? (p.publishedAt ? p.postRef : null)) as {
-        uri?: string;
-      } | null;
-      if (!ref?.uri) return [];
-      return { post: ref.uri };
-    }),
-  });
+  let isFollowsFeed = feedAtURI.rkey === "bsky-follows-leaflets";
+  if (isFollowsFeed && !cursor) {
+    console.log("Sending event");
+    await inngest.send({ name: "feeds/index-follows", data: { did: auth } });
+  }
+  // Anything else is the default subscription feed.
+  let { data, error } = await supabaseServerClient.rpc(
+    isFollowsFeed
+      ? "get_follows_feed_skeleton"
+      : "get_subscription_feed_skeleton",
+    {
+      p_identity: auth,
+      p_cursor_timestamp: parsedCursor?.date,
+      p_cursor_uri: parsedCursor?.uri,
+      p_limit: 25,
+    },
+  );
+  if (error) console.error("personalized skeleton rpc error:", error);
+  return c.json(
+    skeletonResponse(
+      (data || []).map((d) => ({
+        uri: d.uri,
+        sort_date: d.sort_date,
+        postRef: d.post_ref,
+        bskyPostRef: d.bsky_post_ref,
+        publishedAt: d.published_at,
+      })),
+      cursor,
+    ),
+  );
 });
 
 const didResolver = new DidResolver({ didCache: new MemoryCache() });

@@ -2336,6 +2336,36 @@ export type Database = {
           publication_name: string
         }[]
       }
+      get_subscription_feed_skeleton: {
+        Args: {
+          p_identity: string
+          p_cursor_timestamp?: string
+          p_cursor_uri?: string
+          p_limit?: number
+        }
+        Returns: {
+          uri: string
+          sort_date: string
+          post_ref: Json
+          bsky_post_ref: Json
+          published_at: string
+        }[]
+      }
+      get_follows_feed_skeleton: {
+        Args: {
+          p_identity: string
+          p_cursor_timestamp?: string
+          p_cursor_uri?: string
+          p_limit?: number
+        }
+        Returns: {
+          uri: string
+          sort_date: string
+          post_ref: Json
+          bsky_post_ref: Json
+          published_at: string
+        }[]
+      }
       get_tag_page_document_uris: {
         Args: {
           tag_query: string
