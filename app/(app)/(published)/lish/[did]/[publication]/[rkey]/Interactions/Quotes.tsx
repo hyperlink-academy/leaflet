@@ -24,7 +24,7 @@ import { useActiveHighlightState } from "../useHighlight";
 import { PostContent } from "../PostContent";
 import { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { flushSync } from "react-dom";
-import { openPage } from "../postPageState";
+import { usePostFrame } from "../postFrame";
 import useSWR, { preload } from "swr";
 import { DotLoader } from "components/utils/DotLoader";
 import { CommentTiny } from "components/Icons/CommentTiny";
@@ -192,6 +192,7 @@ export const QuoteContent = (props: {
   did: string;
 }) => {
   let isMobile = useIsMobile();
+  let frame = usePostFrame();
   const { uri: document_uri } = useDocument();
   const { pages } = useLeafletContent();
 
@@ -219,10 +220,7 @@ export const QuoteContent = (props: {
       <div
         className="quoteSectionQuote text-secondary text-sm text-left hover:cursor-pointer"
         onClick={(e) => {
-          if (props.position.pageId)
-            flushSync(() =>
-              openPage(undefined, { type: "doc", id: props.position.pageId! }),
-            );
+          flushSync(() => frame.showPage(props.position.pageId));
           let scrollMargin = isMobile
             ? 16
             : e.currentTarget.getBoundingClientRect().top;

@@ -22,6 +22,7 @@ import { drawerThreadFromLocation, serializeDrawerParam } from "./drawerParam";
 import { InteractionShareButton } from "components/Interactions/InteractionShareButton";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 import { ShareSmall } from "components/Icons/ShareSmall";
+import { usePostFrame } from "../postFrame";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -143,6 +144,23 @@ export function openInteractionDrawer(
   scrollIntoView("interaction-drawer");
 }
 
+// The discussion buttons' behavior: clicking the one whose drawer is already
+// showing closes it.
+export function toggleInteractionDrawer(
+  drawer: "comments" | "quotes",
+  document_uri: string,
+  pageId?: string,
+) {
+  let current = useInteractionStateStore.getState()[document_uri];
+  if (
+    !current?.drawerOpen ||
+    (current.drawer !== "comments" && current.drawer !== "quotes") ||
+    current.pageId !== pageId
+  )
+    openInteractionDrawer(drawer, document_uri, pageId);
+  else setInteractionState(document_uri, { drawerOpen: false });
+}
+
 // Open the drawer straight onto a thread/quotes view. Used when a Bluesky post
 // in the document body is clicked, so its thread opens in the drawer instead of
 // a new page (mirroring how the post's own comments/mentions open the drawer).
@@ -209,7 +227,7 @@ export const Interactions = (props: {
     publication,
   } = useDocument();
 
-  let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
+  let frame = usePostFrame();
 
   // The canonical url for the post (the publication's own domain), not
   // window.location.href — the reader may be on the /lish route, and the
@@ -229,14 +247,13 @@ export const Interactions = (props: {
       ? "comments"
       : "quotes";
 
-  // Opening the recommenders onto this post's own interaction drawer, mirroring
-  // how the discussion button opens it. RecommendButton reads this off context.
+  // Opening the recommenders wherever the frame shows them, mirroring how the
+  // discussion button opens. RecommendButton reads this off context.
   const recommendsDrawerNav = useMemo(
     () => ({
-      push: (thread: DrawerThread) =>
-        openDrawerThread(document_uri, thread, props.pageId),
+      push: (thread: DrawerThread) => frame.openThread(thread, props.pageId),
     }),
-    [document_uri, props.pageId],
+    [frame, props.pageId],
   );
   const handleQuotePrefetch = () => {
     if (quotesAndMentions) {
@@ -265,19 +282,9 @@ export const Interactions = (props: {
         showMentions={props.showMentions}
         postUrl={postUrl}
         onPrefetch={handleQuotePrefetch}
-        onClick={() => {
-          if (
-            !drawerOpen ||
-            (drawer !== "comments" && drawer !== "quotes") ||
-            pageId !== props.pageId
-          )
-            openInteractionDrawer(
-              defaultDiscussionTab,
-              document_uri,
-              props.pageId,
-            );
-          else setInteractionState(document_uri, { drawerOpen: false });
-        }}
+        onClick={() =>
+          frame.toggleDiscussion(defaultDiscussionTab, props.pageId)
+        }
       />
       <div className="h-full  w-0 spacer" />
       <InteractionShareButton
@@ -309,7 +316,7 @@ export const ExpandedInteractions = (props: {
     publication,
   } = useDocument();
 
-  let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
+  let frame = usePostFrame();
 
   // See Interactions above: share the canonical post url, not location.href.
   let postUrl = getDocumentURL(
@@ -335,14 +342,13 @@ export const ExpandedInteractions = (props: {
       ? "comments"
       : "quotes";
 
-  // Open the recommenders / discussion onto this post's own interaction drawer.
-  // RecommendButton and DiscussionButton read this off context.
+  // Open the recommenders / tags wherever the frame shows them.
+  // RecommendButton reads this off context.
   const drawerNav = useMemo(
     () => ({
-      push: (thread: DrawerThread) =>
-        openDrawerThread(document_uri, thread, props.pageId),
+      push: (thread: DrawerThread) => frame.openThread(thread, props.pageId),
     }),
-    [document_uri, props.pageId],
+    [frame, props.pageId],
   );
 
   let noInteractions = !discussionsAvailable && !props.showRecommends;
@@ -387,19 +393,9 @@ export const ExpandedInteractions = (props: {
               showMentions={props.showMentions}
               postUrl={postUrl}
               onPrefetch={handleQuotePrefetch}
-              onClick={() => {
-                if (
-                  !drawerOpen ||
-                  (drawer !== "comments" && drawer !== "quotes") ||
-                  pageId !== props.pageId
-                )
-                  openInteractionDrawer(
-                    defaultDiscussionTab,
-                    document_uri,
-                    props.pageId,
-                  );
-                else setInteractionState(document_uri, { drawerOpen: false });
-              }}
+              onClick={() =>
+                frame.toggleDiscussion(defaultDiscussionTab, props.pageId)
+              }
             />
 
             <InteractionShareButton

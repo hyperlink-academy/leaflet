@@ -42,28 +42,42 @@ export function DiscussionContent(props: {
   showComments: boolean;
   showMentions: boolean;
   pageId?: string;
+  // Offer the comments view with nothing in it yet, for surfaces where this
+  // is the only place to write the first comment.
+  showWhenEmpty?: boolean;
+  initialTab?: "comments" | "quotes";
+  initialThread?: DrawerThread;
   bgColor?: string;
   // Replaces the header's link to the post, for surfaces that already have it
   // on screen (the reader's post viewer) and need their own control instead.
   postLinkButton?: React.ReactNode;
   headerClassName?: string;
 }) {
-  const commentsAvailable = props.showComments && props.commentsCount > 0;
+  const commentsAvailable =
+    props.showComments && (props.commentsCount > 0 || !!props.showWhenEmpty);
   const mentionsAvailable = props.showMentions && props.quotesCount > 0;
   const bothAvailable = commentsAvailable && mentionsAvailable;
+  const defaultTab: "comments" | "quotes" =
+    props.initialTab === "quotes" && mentionsAvailable
+      ? "quotes"
+      : props.initialTab === "comments" && commentsAvailable
+        ? "comments"
+        : commentsAvailable && (props.commentsCount > 0 || !mentionsAvailable)
+        ? "comments"
+        : "quotes";
 
-  const [tab, setTab] = useState<"comments" | "quotes">(
-    commentsAvailable ? "comments" : "quotes",
-  );
+  const [tab, setTab] = useState(defaultTab);
 
   useEffect(() => {
-    if (props.open) setTab(commentsAvailable ? "comments" : "quotes");
+    if (props.open) setTab(defaultTab);
   }, [props.open]);
 
   const { isLoading, data, did, pages, documentContextValue, comments } =
     useDocumentDiscussionData(props.document_uri, props.open);
 
-  const [threadStack, setThreadStack] = useState<DrawerThread[]>([]);
+  const [threadStack, setThreadStack] = useState<DrawerThread[]>(
+    props.initialThread ? [props.initialThread] : [],
+  );
   const drawerNav = useMemo(
     () => ({
       push: (thread: DrawerThread) =>
@@ -139,7 +153,9 @@ export function DiscussionContent(props: {
           ) : (
             <div className="font-bold text-tertiary text-sm! ">
               {commentsAvailable
-                ? `Comments (${props.commentsCount})`
+                ? props.commentsCount > 0
+                  ? `Comments (${props.commentsCount})`
+                  : "Comments"
                 : `Bluesky Mentions (${props.quotesCount})`}
             </div>
           )}{" "}

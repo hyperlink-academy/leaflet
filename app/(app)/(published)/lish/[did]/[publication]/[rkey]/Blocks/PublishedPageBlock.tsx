@@ -15,8 +15,7 @@ import { AppBskyFeedDefs } from "@atproto/api";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { TextBlock } from "./TextBlock";
 import { useDocument } from "contexts/DocumentContext";
-import { openPage, useOpenPages } from "../postPageState";
-import { openInteractionDrawer } from "../Interactions/Interactions";
+import { usePostFrame } from "../postFrame";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { CanvasBackgroundPattern } from "components/Canvas";
 import { CompactPageLink } from "components/Blocks/CompactPageLink";
@@ -44,8 +43,8 @@ export function PublishedPageLinkBlock(props: {
   pages?: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   display?: PubLeafletBlocksPage.Main["display"];
 }) {
-  let openPages = useOpenPages();
-  let isOpen = openPages.some((p) => p.type === "doc" && p.id === props.pageId);
+  let frame = usePostFrame();
+  let isOpen = frame.openPages.some((p) => p.type === "doc" && p.id === props.pageId);
   // The overlay anchor below needs real anchor text; mirror DocLinkBlock's
   // title derivation (first text-ish block of the page).
   let [titleBlock] = pageRecordTextBlocks(props.blocks, {
@@ -69,7 +68,7 @@ export function PublishedPageLinkBlock(props: {
         e.preventDefault();
         e.stopPropagation();
 
-        openPage(
+        frame.openPage(
           props.parentPageId
             ? { type: "doc", id: props.parentPageId }
             : undefined,
@@ -272,11 +271,8 @@ const Interactions = (props: {
   parentPageId?: string;
   inline?: boolean;
 }) => {
-  const {
-    uri: document_uri,
-    commentsCountByPage,
-    mentions,
-  } = useDocument();
+  const { commentsCountByPage, mentions } = useDocument();
+  let frame = usePostFrame();
   let comments = commentsCountByPage[props.pageId] ?? 0;
   let quotes = mentions.filter((q) => q.link.includes(props.pageId)).length;
 
@@ -293,13 +289,13 @@ const Interactions = (props: {
           e.stopPropagation();
           // Open the subpage itself, then open its interaction panel scoped to
           // comments — rather than popping a standalone discussion modal.
-          openPage(
+          frame.openPage(
             props.parentPageId
               ? { type: "doc", id: props.parentPageId }
               : undefined,
             { type: "doc", id: props.pageId },
           );
-          openInteractionDrawer("comments", document_uri, props.pageId);
+          frame.openDiscussion("comments", props.pageId);
         }}
       >
         <span className="sr-only">Page discussions</span>

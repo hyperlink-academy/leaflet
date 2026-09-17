@@ -15,6 +15,7 @@ import { decodeQuotePosition } from "src/utils/quotePosition";
 import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
 import { PostPrevNextButtons } from "./PostPrevNextButtons";
+import { PageBackButton } from "./PageBackButton";
 
 import {
   collectFootnotesFromBlocks,
@@ -82,6 +83,7 @@ export function LinearDocumentPage({
             profile fetch during an ISR render must not bake a title-less page
             into the CDN (PostHeader degrades to record data alone). */}
         <article className="contents">
+          {props.onBack && <PageBackButton onClick={props.onBack} />}
           {!isSubpage && (
             <PostHeader
               data={document}
@@ -90,7 +92,7 @@ export function LinearDocumentPage({
               preferences={preferences}
             />
           )}
-          <DrawerThreadPageProvider document_uri={document_uri} pageId={pageId}>
+          <DrawerThreadPageProvider pageId={pageId}>
             <PostContent
               pollData={pollData}
               pages={pages as PubLeafletPagesLinearDocument.Main[]}

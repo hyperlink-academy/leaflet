@@ -8,8 +8,10 @@ import { RecommendButton } from "components/Interactions/RecommendButton";
 import { TagPostsList } from "components/Interactions/TagPostsList";
 import { PublicationThemeWrapper } from "components/ThemeManager/PublicationThemeProvider";
 import { ButtonPrimary } from "components/Buttons";
+import { useReaderPost } from "src/readerPost";
+import { getQuoteCount } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/Interactions";
 
-// Panels render inside the viewer's own box (over the iframe) rather than in a
+// Panels render inside the viewer's own box (over the post) rather than in a
 // centered modal, so opening them shifts nothing — the box, toolbar, and close
 // button all stay put.
 export const PostViewerPanel = (props: {
@@ -27,7 +29,20 @@ export const PostViewerPanel = (props: {
     quotesCount,
     recommendsCount,
   } = getPostInteractions(props.post);
+  // A page-scoped discussion counts that page's comments and mentions, which
+  // only the loaded post knows.
+  let pageId = panel?.type === "discussion" ? panel.pageId : undefined;
+  let { data: loadedPost } = useReaderPost(
+    pageId ? props.post.documents.uri : null,
+  );
   if (!panel) return null;
+  if (pageId && loadedPost) {
+    commentsCount = showComments
+      ? loadedPost.document.commentsCountByPage[pageId] ?? 0
+      : 0;
+    quotesCount =
+      getQuoteCount(loadedPost.document.quotesAndMentions, pageId) || 0;
+  }
 
   let pubRecord = props.post.publication?.pubRecord;
   let backToPost = (
@@ -50,7 +65,12 @@ export const PostViewerPanel = (props: {
         <div className="max-w-full sm:px-6  mx-auto pb-24">
           {panel.type === "discussion" ? (
             <DiscussionContent
+              key={JSON.stringify(panel)}
               open
+              showWhenEmpty
+              pageId={panel.pageId}
+              initialTab={panel.tab}
+              initialThread={panel.thread}
               bgColor="bg-bg-page"
               document_uri={props.post.documents.uri}
               postUrl={props.postUrl}

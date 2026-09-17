@@ -23,14 +23,9 @@ import { LinearDocumentPage } from "./LinearDocumentPage";
 import { CanvasPage } from "./CanvasPage";
 import { GlobalImageLightbox } from "./GlobalImageLightbox";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
-import {
-  type OpenPage,
-  getPageKey,
-  useOpenPages,
-  useInitializeOpenPages,
-  openPage as openPageAction,
-  closePage,
-} from "./postPageState";
+import { type OpenPage, getPageKey } from "./postPageState";
+import { usePostFrame } from "./postFrame";
+import { PageBackButton } from "./PageBackButton";
 import { IframePageView } from "components/Pages/IframePageView";
 import { usePostResources } from "./PostDataProvider";
 import type { BylineProfile } from "./PostHeader/PostHeader";
@@ -63,6 +58,8 @@ export type SharedPageProps = {
   hasPageBackground: boolean;
   pageId?: string;
   pageOptions?: React.ReactNode;
+  // Set when this page replaced the one it was opened from.
+  onBack?: () => void;
   allPages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   hasContentToRight?: boolean;
 };
@@ -123,8 +120,8 @@ export function PostPages({
   commentsSlot: React.ReactNode;
 }) {
   let drawer = useInlineDrawer(document_uri);
-  useInitializeOpenPages();
-  let openPageIds = useOpenPages();
+  let frame = usePostFrame();
+  let openPageIds = frame.openPages;
   const { pages } = useLeafletContent();
   // Not props: a members-only unlock swaps the pages and these three channels
   // together, and only PostDataProvider knows when that happened.
@@ -175,6 +172,46 @@ export function PostPages({
       !firstPageIsCanvas,
   };
 
+  if (frame.layout === "single") {
+    let current = openPageIds[openPageIds.length - 1];
+    let onBack = current && (() => frame.closePage(current));
+    let currentDoc =
+      current?.type === "doc"
+        ? (pages.find((p) => (p as typeof firstPage).id === current.id) as
+            | typeof firstPage
+            | undefined)
+        : undefined;
+    let page = currentDoc ?? firstPage;
+    let fullPageScroll =
+      !hasPageBackground && !PubLeafletPagesCanvas.isMain(page);
+    if (current?.type === "iframe")
+      return (
+        <>
+          <BookendSpacer />
+          <IframePageView
+            url={current.url}
+            onOpen={(url) => frame.openPage(current, { type: "iframe", url })}
+            pageOptions={onBack && <PageBackButton chip onClick={onBack} />}
+          />
+          <BookendSpacer />
+        </>
+      );
+    return (
+      <GlobalImageLightbox did={did}>
+        {!fullPageScroll && <BookendSpacer />}
+        <PageRenderer
+          key={currentDoc?.id ?? ""}
+          page={page}
+          {...sharedProps}
+          fullPageScroll={fullPageScroll}
+          pageId={currentDoc?.id}
+          onBack={currentDoc ? onBack : undefined}
+        />
+        {!fullPageScroll && <BookendSpacer />}
+      </GlobalImageLightbox>
+    );
+  }
+
   return (
     <GlobalImageLightbox did={did}>
       {!sharedProps.fullPageScroll && <BookendSpacer />}
@@ -210,11 +247,11 @@ export function PostPages({
               <IframePageView
                 url={openPage.url}
                 onOpen={(url) => {
-                  openPageAction(openPage, { type: "iframe", url });
+                  frame.openPage(openPage, { type: "iframe", url });
                 }}
                 pageOptions={
                   <PageOptions
-                    onClick={() => closePage(openPage)}
+                    onClick={() => frame.closePage(openPage)}
                     hasPageBackground={hasPageBackground}
                   />
                 }
@@ -256,7 +293,7 @@ export function PostPages({
               }
               pageOptions={
                 <PageOptions
-                  onClick={() => closePage(openPage)}
+                  onClick={() => frame.closePage(openPage)}
                   hasPageBackground={hasPageBackground}
                 />
               }

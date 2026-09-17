@@ -1,15 +1,11 @@
 "use client";
 import { getPublicationURL } from "src/utils/getPublicationURL";
-import {
-  Interactions,
-  getQuoteCount,
-  openDrawerThread,
-} from "../Interactions/Interactions";
+import { Interactions, getQuoteCount } from "../Interactions/Interactions";
+import { usePostFrame } from "../postFrame";
 import {
   type DrawerThread,
   DrawerThreadContext,
 } from "../Interactions/drawerThreadContext";
-import { useDocumentOptional } from "contexts/DocumentContext";
 import { PostPageData } from "src/utils/getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { usePostEditLink } from "../usePostEditLink";
@@ -50,6 +46,7 @@ export function PostHeader(props: {
   let profile = props.profile;
   let pub = props.data?.documents_in_publications[0]?.publications;
   let editLink = usePostEditLink(document?.uri, pub?.identity_did);
+  let { headerInteractions } = usePostFrame();
 
   if (!document?.data || !record) return null;
   return (
@@ -86,8 +83,9 @@ export function PostHeader(props: {
             record={record}
             profile={profile}
             contributors={props.contributors}
+            hideTags={!headerInteractions}
           />
-          {!props.isCanvas && (
+          {!props.isCanvas && headerInteractions && (
             <Interactions
               className="sm:mt-0 mt-1"
               showComments={props.preferences.showComments !== false}
@@ -110,6 +108,7 @@ export function PostByline(props: {
   record: NonNullable<PostPageData>["normalizedDocument"];
   profile?: ProfileViewDetailed;
   contributors?: BylineProfile[];
+  hideTags?: boolean;
 }) {
   // Only keep contributors that resolve to a real name (displayName or handle).
   // Unresolved profiles (bare DIDs) would otherwise render empty clickable
@@ -118,17 +117,10 @@ export function PostByline(props: {
   let namedContributors = (props.contributors ?? []).filter(
     (c) => c.displayName || c.handle,
   );
-  const document = useDocumentOptional();
-  const documentUri = document?.uri;
+  const frame = usePostFrame();
   const tagDrawerNav = useMemo(
-    () =>
-      documentUri
-        ? {
-            push: (thread: DrawerThread) =>
-              openDrawerThread(documentUri, thread),
-          }
-        : null,
-    [documentUri],
+    () => ({ push: (thread: DrawerThread) => frame.openThread(thread) }),
+    [frame],
   );
   const record = props.record;
   const formattedDate = useLocalizedDate(
@@ -140,7 +132,7 @@ export function PostByline(props: {
     },
   );
   const tags = record.tags ?? [];
-  const tagCount = tags.length;
+  const tagCount = props.hideTags ? 0 : tags.length;
 
   return (
     <div className="flex flex-row gap-2 items-center">
@@ -183,8 +175,8 @@ export function PostByline(props: {
       {tagCount > 0 && (
         <>
           <Separator classname="h-4!" />
-          {/* TagPopover reads this off context to open the tag in this post's
-              own interaction drawer. */}
+          {/* TagPopover reads this off context to open the tag wherever the
+              post's frame shows tags. */}
           <DrawerThreadContext.Provider value={tagDrawerNav}>
             <TagPopover tags={tags} />
           </DrawerThreadContext.Provider>

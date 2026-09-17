@@ -61,7 +61,7 @@ import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbe
 import { useIframeChannel } from "src/hooks/useIframeChannel";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { useDocument, useDocumentOptional } from "contexts/DocumentContext";
-import { openPage as openPageAction } from "./postPageState";
+import { usePostFrame } from "./postFrame";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { MembersOnlyPaywall } from "./MembersOnlyPaywall";
@@ -798,9 +798,10 @@ function PublishedIframeBlock(props: {
   let parentPage = props.pageId
     ? { type: "doc" as const, id: props.pageId }
     : undefined;
+  let frame = usePostFrame();
   let { iframeRef } = useIframeChannel({
     onOpen: (url) => {
-      openPageAction(parentPage, { type: "iframe", url });
+      frame.openPage(parentPage, { type: "iframe", url });
     },
     onReplaceWith: () => {},
     onAddBelow: () => {},

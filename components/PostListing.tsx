@@ -17,6 +17,7 @@ import { PostByline } from "./PostByline";
 import { namedBylineProfiles } from "src/utils/byline";
 import { useSelectedPostListing } from "src/useSelectedPostState";
 import { useReaderPostViewer, type ReaderPanel } from "src/useReaderPostViewer";
+import { prefetchReaderPost } from "src/readerPost";
 import { preload } from "swr";
 import { checkUrlFrameable } from "actions/checkUrlFrameable";
 import { mergePreferences } from "src/utils/mergePreferences";
@@ -115,17 +116,19 @@ export const PostListing = (
       }
     : undefined;
 
-  // Warm the viewer's hidden iframe (see useReaderPostViewer.preloadUrl) on
-  // hover intent or touch-down. The 150ms hover delay keeps a mouse transiting
-  // the feed from firing a page load per card; the delayed clear on touch-up
-  // outlives the tap's click, and clearing after the viewer opened is a no-op.
+  // Warm the viewer — a leaflet post's data, or the hidden iframe for anything
+  // else (see useReaderPostViewer.preloadUrl) — on hover intent or touch-down.
+  // The 150ms hover delay keeps a mouse transiting the feed from firing a load
+  // per card; the delayed clear on touch-up outlives the tap's click, and
+  // clearing after the viewer opened is a no-op.
   let setPreloadUrl = useReaderPostViewer((s) => s.setPreloadUrl);
   let clearPreloadUrl = useReaderPostViewer((s) => s.clearPreloadUrl);
   let hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   let startPreload = () => {
+    if (hasLeafletContent(postRecord))
+      return prefetchReaderPost(props.documents.uri);
     setPreloadUrl(postUrl);
-    if (!hasLeafletContent(postRecord))
-      preload(`frameable-${postUrl}`, () => checkUrlFrameable(postUrl));
+    preload(`frameable-${postUrl}`, () => checkUrlFrameable(postUrl));
   };
   let preloadHandlers = openInViewer
     ? {

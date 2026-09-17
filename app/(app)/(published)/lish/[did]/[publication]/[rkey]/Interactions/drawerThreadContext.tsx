@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useMemo } from "react";
-import { OpenPage, openPage } from "../postPageState";
-import { openDrawerThread } from "./Interactions";
+import type { OpenPage } from "../postPageState";
+import { usePostFrame } from "../postFrame";
 
 // A thread or quotes view that can be shown inside the interaction drawer.
 // `standardSitePost` shows a referenced post's own discussion (the post itself
@@ -39,29 +39,29 @@ export const DrawerThreadContext = createContext<DrawerThreadNav | null>(null);
 // falls back to opening a new page.
 export function useOpenThread() {
   const drawerNav = useContext(DrawerThreadContext);
+  const frame = usePostFrame();
   return (parent: OpenPage | undefined, thread: DrawerThread) => {
     if (drawerNav) drawerNav.push(thread);
     // standardSitePost, recommends and tag only exist inside the drawer; they
     // have no page form, so they're never reached here without a drawer-aware
     // provider.
     else if (thread.type === "thread" || thread.type === "quotes")
-      openPage(parent, thread);
+      frame.openPage(parent, thread);
   };
 }
 
-// Wraps document-body content so Bluesky posts within it open their thread in
-// the interaction drawer (onto a fresh stack) rather than in a new page.
+// Wraps document-body content so Bluesky posts within it open their thread
+// where the frame shows threads (onto a fresh stack) rather than in a new page.
 export function DrawerThreadPageProvider(props: {
-  document_uri: string;
   pageId?: string;
   children: React.ReactNode;
 }) {
+  const frame = usePostFrame();
   const value = useMemo(
     () => ({
-      push: (thread: DrawerThread) =>
-        openDrawerThread(props.document_uri, thread, props.pageId),
+      push: (thread: DrawerThread) => frame.openThread(thread, props.pageId),
     }),
-    [props.document_uri, props.pageId],
+    [frame, props.pageId],
   );
   return (
     <DrawerThreadContext.Provider value={value}>

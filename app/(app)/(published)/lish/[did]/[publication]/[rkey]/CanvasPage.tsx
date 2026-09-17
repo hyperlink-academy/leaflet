@@ -28,6 +28,8 @@ import { useInlineDrawer } from "./Interactions/useDrawerOpen";
 import { DrawerThreadPageProvider } from "./Interactions/drawerThreadContext";
 import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
+import { usePostFrame } from "./postFrame";
+import { PageBackButton } from "./PageBackButton";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { useIsMobile } from "src/hooks/isMobile";
 
@@ -72,6 +74,7 @@ export function CanvasPage({
       }
       pageOptions={pageOptions}
     >
+      {props.onBack && <PageBackButton chip onClick={props.onBack} />}
       <CanvasMetadata
         pageId={pageId}
         isSubpage={isSubpage}
@@ -83,7 +86,7 @@ export function CanvasPage({
         quotesCount={getQuoteCount(document.quotesAndMentions, pageId)}
         recommendsCount={document.recommendsCount}
       />
-      <DrawerThreadPageProvider document_uri={document_uri} pageId={pageId}>
+      <DrawerThreadPageProvider pageId={pageId}>
         <CanvasContent
           blocks={blocks}
           did={did}
@@ -242,20 +245,24 @@ const CanvasMetadata = (props: {
   recommendsCount: number;
 }) => {
   let isMobile = useIsMobile();
+  // Subpage counts are page-scoped, which no host chrome carries.
+  let hideInteractions = !usePostFrame().headerInteractions && !props.isSubpage;
   return (
     <div className="flex flex-row gap-1 items-center absolute top-3 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
-      <Interactions
-        quotesCount={props.quotesCount || 0}
-        commentsCount={props.commentsCount || 0}
-        recommendsCount={props.recommendsCount}
-        showComments={props.preferences.showComments !== false}
-        showMentions={props.preferences.showMentions !== false}
-        showRecommends={props.preferences.showRecommends !== false}
-        pageId={props.pageId}
-      />
+      {!hideInteractions && (
+        <Interactions
+          quotesCount={props.quotesCount || 0}
+          commentsCount={props.commentsCount || 0}
+          recommendsCount={props.recommendsCount}
+          showComments={props.preferences.showComments !== false}
+          showMentions={props.preferences.showMentions !== false}
+          showRecommends={props.preferences.showRecommends !== false}
+          pageId={props.pageId}
+        />
+      )}
       {!props.isSubpage && (
         <>
-          <Separator classname="h-5" />
+          {!hideInteractions && <Separator classname="h-5" />}
           <Popover
             side="bottom"
             align="end"
