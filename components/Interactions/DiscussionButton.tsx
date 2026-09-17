@@ -56,7 +56,8 @@ export function DiscussionButton(props: {
   // passes its own prefetch; everywhere else the modal, drawer view and reader
   // pane all load through useDocumentDiscussionData.
   const prefetch =
-    props.onPrefetch ?? (() => prefetchDocumentDiscussion(props.documentUri));
+    props.onPrefetch ??
+    (() => prefetchDocumentDiscussion(props.documentUri, props.pageId));
 
   const ButtonWrapper = props.large
     ? LargeInteractionButton

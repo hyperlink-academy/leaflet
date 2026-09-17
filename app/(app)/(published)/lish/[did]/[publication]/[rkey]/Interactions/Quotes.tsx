@@ -25,7 +25,7 @@ import { PostContent } from "../PostContent";
 import { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { flushSync } from "react-dom";
 import { openPage } from "../postPageState";
-import useSWR, { mutate } from "swr";
+import useSWR, { preload } from "swr";
 import { DotLoader } from "components/utils/DotLoader";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
@@ -72,10 +72,7 @@ export function prefetchQuotesData(
 ) {
   const uris = quotesAndMentions.map((q) => q.uri);
   const key = getQuotesSWRKey(uris);
-  if (key) {
-    // Start fetching without blocking
-    mutate(key, fetchBskyPosts(uris), { revalidate: false });
-  }
+  if (key) preload(key, () => fetchBskyPosts(uris));
 }
 
 export const DiscussionDrawerContent = (props: {

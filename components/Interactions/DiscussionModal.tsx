@@ -16,8 +16,10 @@ import {
 import { ThreadView } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/ThreadPage";
 import { StandardSitePostDrawerView } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/StandardSitePostDrawerView";
 import { RecommendsList } from "./RecommendsList";
-import { decodeQuotePosition } from "src/utils/quotePosition";
-import { useDocumentDiscussionData } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/useDocumentDiscussionData";
+import {
+  filterQuotesForPage,
+  useDocumentDiscussionData,
+} from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/useDocumentDiscussionData";
 import { GoToArrow } from "../Icons/GoToArrow";
 import { GoBackTiny } from "../Icons/GoBackTiny";
 import { DoubleArrowRightTiny } from "../Icons/DoubleArrowRightTiny";
@@ -80,14 +82,10 @@ export function DiscussionContent(props: {
     topRef.current?.scrollIntoView({ block: "nearest" });
   }, [threadStack.length]);
 
-  const quotesAndMentions = (data?.quotesAndMentions ?? []).filter((q) => {
-    if (!q.link) return !props.pageId;
-    const url = new URL(q.link);
-    const quoteParam = url.pathname.split("/l-quote/")[1];
-    if (!quoteParam) return !props.pageId;
-    const quotePosition = decodeQuotePosition(quoteParam);
-    return quotePosition?.pageId === props.pageId;
-  });
+  const quotesAndMentions = filterQuotesForPage(
+    data?.quotesAndMentions ?? [],
+    props.pageId,
+  );
 
   return (
     <>
