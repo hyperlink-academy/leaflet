@@ -504,11 +504,16 @@ export const send_post_broadcast = inngest.createFunction(
                   message: r.message,
                 }) as unknown as Json,
           }));
+          // The snapshot step dedupes retries on these rows, so a lost insert
+          // would re-email the whole batch on a resend. Throw so Inngest
+          // retries the (atomic) insert and surfaces exhaustion in onFailure.
           const { error } = await supabaseServerClient
             .from("publication_email_subscriber_events")
             .insert(rows);
           if (error) {
-            console.error("[send_post_broadcast] event insert failed:", error);
+            throw new Error(
+              `event insert failed for batch ${group.key}-${ci}: ${error.message}`,
+            );
           }
         });
 
