@@ -25,6 +25,7 @@ import {
   PubLeafletBlocksPostsList,
   PubLeafletBlocksRecommendedPubs,
   PubLeafletBlocksSignup,
+  PubLeafletBlocksPostHeader,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksWebsite,
@@ -553,6 +554,14 @@ export async function processBlocksToPages(opts: {
       const block: $Typed<PubLeafletBlocksRecommendedPubs.Main> = {
         $type: "pub.leaflet.blocks.recommendedPubs",
         ...(compactFact && { compact: compactFact.data.value }),
+      };
+      return block;
+    },
+    "post-header": async (b) => {
+      const [compactFact] = scan.eav(b.entityID, "post-header/compact");
+      const block: $Typed<PubLeafletBlocksPostHeader.Main> = {
+        $type: ids.PubLeafletBlocksPostHeader,
+        ...(compactFact?.data.value && { compact: true }),
       };
       return block;
     },

@@ -566,6 +566,26 @@ export const PubLeafletBlocksSignup: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksPostHeader: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.postHeader",
+  defs: {
+    main: {
+      type: "object",
+      description:
+        "The post's header (publication, title, description, byline) placed as a block, so canvas posts can position it. Renders the document's own metadata; carries no content of its own.",
+      required: [],
+      properties: {
+        compact: {
+          type: "boolean",
+          description:
+            "Show a condensed header: title and byline only, without the description.",
+        },
+      },
+    },
+  },
+};
+
 export const BlockLexicons = [
   PubLeafletBlocksIFrame,
   PubLeafletBlocksHtml,
@@ -590,6 +610,7 @@ export const BlockLexicons = [
   PubLeafletBlocksSignup,
   PubLeafletBlocksRecommendedPubs,
   PubLeafletBlocksMembersOnlyDelimiter,
+  PubLeafletBlocksPostHeader,
 ];
 export const BlockUnion: LexRefUnion = {
   type: "union",

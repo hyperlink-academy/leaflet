@@ -15,6 +15,7 @@ import { focusElement } from "src/utils/focusElement";
 import { BlockButtonSmall } from "components/Icons/BlockButtonSmall";
 import { BlockCalendarSmall } from "components/Icons/BlockCalendarSmall";
 import { BlockCanvasPageSmall } from "components/Icons/BlockCanvasPageSmall";
+import { BlockPostHeaderSmall } from "components/Icons/BlockPostHeaderSmall";
 import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { BlockEmbedSmall } from "components/Icons/BlockEmbedSmall";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
@@ -110,6 +111,9 @@ type Command = {
   hiddenOnPublicationPage?: boolean;
   hiddenInPost?: boolean;
   publicationOnly?: boolean;
+  // Only offered on canvas pages; linear documents render the equivalent
+  // above their blocks already.
+  canvasOnly?: boolean;
   // Only shown when the publication has paid memberships enabled, the current
   // page is the post's first page, and no delimiter exists yet (gating is
   // computed against the served first page, and one delimiter is enough).
@@ -495,6 +499,19 @@ export const blockCommands: Command[] = [
     onSelect: async (rep, props) => {
       props.entityID && clearCommandSearchText(props.entityID);
       await createBlockWithType(rep, props, "recommended-pubs");
+    },
+  },
+  {
+    name: "Post Title",
+    icon: <BlockPostHeaderSmall />,
+    type: "publication",
+    alternateNames: ["header", "metadata", "byline", "post header"],
+    publicationOnly: true,
+    hiddenOnPublicationPage: true,
+    canvasOnly: true,
+    onSelect: async (rep, props) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      await createBlockWithType(rep, props, "post-header");
     },
   },
   {

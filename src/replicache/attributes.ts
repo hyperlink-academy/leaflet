@@ -381,6 +381,13 @@ const RecommendedPubsBlockAttributes = {
   },
 } as const;
 
+const PostHeaderBlockAttributes = {
+  "post-header/compact": {
+    type: "boolean",
+    cardinality: "one",
+  },
+} as const;
+
 const ThemeAttributes = {
   "theme/heading-font": {
     type: "string",
@@ -484,6 +491,7 @@ export const Attributes = {
   ...PollBlockAttributes,
   ...PostsListBlockAttributes,
   ...RecommendedPubsBlockAttributes,
+  ...PostHeaderBlockAttributes,
 };
 export type Attributes = typeof Attributes;
 export type Attribute = keyof Attributes;
@@ -569,7 +577,8 @@ export type Data<A extends keyof typeof Attributes> = {
       | "posts-list"
       | "recommended-pubs"
       | "signup"
-      | "image-gallery";
+      | "image-gallery"
+      | "post-header";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";

@@ -66,6 +66,8 @@ import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { MembersOnlyPaywall } from "./MembersOnlyPaywall";
 import { PublishedRecommendedPubs } from "./Blocks/PublishedRecommendedPubs";
+import { PostHeader } from "./PostHeader/PostHeader";
+import { usePostHeaderBlockData } from "./PostHeader/postHeaderBlockContext";
 
 // Mirrors HeadingStyle in components/Blocks/TextBlock/index.tsx so published
 // headers match the editor exactly. Keep the two in sync — see the
@@ -206,6 +208,7 @@ export let Block = ({
   let openLightbox = useOpenImageLightbox();
   let canOpenLightbox = !!openLightbox && !preview;
   let document = useDocumentOptional();
+  let postHeaderData = usePostHeaderBlockData();
   let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
     style: {
@@ -402,6 +405,20 @@ export let Block = ({
             }
             publicationDescription={document.normalizedPublication?.description}
             newsletterMode={document.publication.newsletterMode}
+          />
+        </div>
+      );
+    },
+    "pub.leaflet.blocks.postHeader": (block) => {
+      if (!postHeaderData) return null;
+      return (
+        <div className="postHeaderBlock w-full bg-bg-page block-border p-0!">
+          <PostHeader
+            data={postHeaderData.data}
+            profile={postHeaderData.profile}
+            contributors={postHeaderData.contributors}
+            preferences={postHeaderData.preferences}
+            compact={block.compact}
           />
         </div>
       );

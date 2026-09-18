@@ -27,6 +27,7 @@ import { useSubscribe } from "src/replicache/useSubscribe";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { CANVAS_DRAG_STACK_ORDER } from "src/utils/canvasBlockOrder";
 import { useCanvasStackOrders } from "src/hooks/queries/useCanvasStacking";
+import { useCanvasBlocksWithType } from "src/hooks/queries/useBlocks";
 
 export function Canvas(props: {
   entityID: string;
@@ -73,7 +74,7 @@ export function Canvas(props: {
     >
       <AddCanvasBlockButton entityID={props.entityID} entity_set={entity_set} />
 
-      <CanvasMetadata isSubpage={!props.first} />
+      <CanvasMetadata entityID={props.entityID} isSubpage={!props.first} />
 
       <CanvasContent {...props} />
     </div>
@@ -168,9 +169,16 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   );
 }
 
-const CanvasMetadata = (props: { isSubpage: boolean | undefined }) => {
+const CanvasMetadata = (props: {
+  entityID: string;
+  isSubpage: boolean | undefined;
+}) => {
   let { data: pub, normalizedPublication } = useLeafletPublicationData();
   let { rep } = useReplicache();
+  // A post header block on the canvas carries the tags and metadata itself.
+  let hasHeaderBlock = useCanvasBlocksWithType(props.entityID).some(
+    (b) => b.type === "post-header",
+  );
   let postPreferences = useSubscribe(rep, (tx) =>
     tx.get<{
       showComments?: boolean;
@@ -181,6 +189,7 @@ const CanvasMetadata = (props: { isSubpage: boolean | undefined }) => {
   if (!pub || !pub.publications) return null;
 
   if (!normalizedPublication) return null;
+  if (hasHeaderBlock) return null;
   let merged = mergePreferences(
     postPreferences || undefined,
     normalizedPublication.preferences,

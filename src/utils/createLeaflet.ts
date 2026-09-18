@@ -3,6 +3,10 @@ import { v7 } from "uuid";
 import { generateKeyBetween } from "fractional-indexing";
 import { createYjsText } from "src/utils/createYjsText";
 import { insertLeaflet, type LeafletFact } from "src/utils/insertLeaflet";
+import {
+  POST_HEADER_BLOCK_POSITION,
+  POST_HEADER_BLOCK_WIDTH,
+} from "src/utils/postHeaderBlock";
 
 export type DefaultBlockType = "h1" | "text" | "posts-list" | "signup";
 
@@ -21,12 +25,15 @@ export async function createLeaflet({
   rootFacts = [],
   pageFacts = [],
   tailCte,
+  canvasPostHeader,
 }: {
   pageType: "canvas" | "doc";
   firstBlocks?: DefaultBlockSpec[];
   rootFacts?: FactInput[];
   pageFacts?: FactInput[];
   tailCte?: (ids: { permTokenId: string; rootEntityId: string }) => SQL;
+  // Canvas posts in a publication show their metadata in a post header block.
+  canvasPostHeader?: boolean;
 }): Promise<{
   permTokenId: string;
   rootEntityId: string;
@@ -61,7 +68,8 @@ export async function createLeaflet({
         data: {
           type: "spatial-reference",
           value: blockId,
-          position: { x: 8, y: 12 },
+          // Leave room for the post header block above it.
+          position: { x: 8, y: canvasPostHeader ? 200 : 12 },
         },
       },
       {
@@ -75,6 +83,39 @@ export async function createLeaflet({
         data: { type: "string", value: generateKeyBetween(null, null) },
       },
     );
+    if (canvasPostHeader) {
+      const headerId = v7();
+      blockEntityIds.push(headerId);
+      facts.push(
+        {
+          entity: firstPageId,
+          attribute: "canvas/block",
+          data: {
+            type: "spatial-reference",
+            value: headerId,
+            position: POST_HEADER_BLOCK_POSITION,
+          },
+        },
+        {
+          entity: headerId,
+          attribute: "block/type",
+          data: { type: "block-type-union", value: "post-header" },
+        },
+        {
+          entity: headerId,
+          attribute: "canvas/block/width",
+          data: { type: "number", value: POST_HEADER_BLOCK_WIDTH },
+        },
+        {
+          entity: headerId,
+          attribute: "canvas/block/stack-order",
+          data: {
+            type: "string",
+            value: generateKeyBetween(generateKeyBetween(null, null), null),
+          },
+        },
+      );
+    }
   } else {
     const blockSpecs: DefaultBlockSpec[] = firstBlocks ?? ["h1"];
     blockEntityIds = blockSpecs.map(() => v7());

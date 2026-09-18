@@ -39,6 +39,8 @@ import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { YJSFragmentToString } from "src/utils/yjsFragmentToString";
 import { moveLeafletToPublication } from "actions/publications/moveLeafletToPublication";
+import { addPostHeaderBlock } from "src/utils/addPostHeaderBlock";
+import { useEntitySetContext } from "components/EntitySetProvider";
 import { AddTiny } from "components/Icons/AddTiny";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { useLocalPublishedAt } from "components/Pages/Backdater";
@@ -330,7 +332,9 @@ const SaveAsDraftButton = (props: {
   entitiesToDelete: string[];
 }) => {
   let { mutate } = useLeafletPublicationData();
-  let { rep } = useReplicache();
+  let { rep, rootEntity } = useReplicache();
+  let entity_set = useEntitySetContext();
+  let firstPage = useEntity(rootEntity, "root/page")[0]?.data.value;
   let [isLoading, setIsLoading] = useState(false);
 
   return (
@@ -346,6 +350,11 @@ const SaveAsDraftButton = (props: {
           props.metadata,
           props.entitiesToDelete,
         );
+        if (rep && firstPage)
+          await addPostHeaderBlock(rep, {
+            page: firstPage,
+            permission_set: entity_set.set,
+          });
         await Promise.all([rep?.pull(), mutate()]);
         setIsLoading(false);
       }}

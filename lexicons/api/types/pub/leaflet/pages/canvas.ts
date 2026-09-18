@@ -32,6 +32,7 @@ import type * as PubLeafletBlocksPostsList from '../blocks/postsList'
 import type * as PubLeafletBlocksSignup from '../blocks/signup'
 import type * as PubLeafletBlocksRecommendedPubs from '../blocks/recommendedPubs'
 import type * as PubLeafletBlocksMembersOnlyDelimiter from '../blocks/membersOnlyDelimiter'
+import type * as PubLeafletBlocksPostHeader from '../blocks/postHeader'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -79,6 +80,7 @@ export interface Block {
     | $Typed<PubLeafletBlocksSignup.Main>
     | $Typed<PubLeafletBlocksRecommendedPubs.Main>
     | $Typed<PubLeafletBlocksMembersOnlyDelimiter.Main>
+    | $Typed<PubLeafletBlocksPostHeader.Main>
     | { $type: string }
   x: number
   y: number

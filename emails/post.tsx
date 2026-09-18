@@ -1483,6 +1483,8 @@ const BlockRenderer = ({
     "pub.leaflet.blocks.postsList": notSupported,
     "pub.leaflet.blocks.recommendedPubs": notSupported,
     "pub.leaflet.blocks.signup": notSupported,
+    // The email has its own header; the block is nothing in the body.
+    "pub.leaflet.blocks.postHeader": () => null,
   };
   return matchBlock(block, handlers, notSupported);
 };
@@ -2277,6 +2279,7 @@ const MiniBlock = ({
     "pub.leaflet.blocks.postsList": () => null,
     "pub.leaflet.blocks.recommendedPubs": () => null,
     "pub.leaflet.blocks.signup": () => null,
+    "pub.leaflet.blocks.postHeader": () => null,
     "pub.leaflet.blocks.bskyPost": () => null,
     "pub.leaflet.blocks.standardSitePost": () => null,
     "pub.leaflet.blocks.standardSitePublication": () => null,

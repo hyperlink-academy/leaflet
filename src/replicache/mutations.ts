@@ -80,6 +80,7 @@ const addCanvasBlock: Mutation<{
   type: Fact<"block/type">["data"]["value"];
   newEntityID: string;
   position: { x: number; y: number };
+  width?: number;
 }> = async (args, ctx) => {
   await ctx.createEntity({
     entityID: args.newEntityID,
@@ -100,6 +101,12 @@ const addCanvasBlock: Mutation<{
     data: { type: "block-type-union", value: args.type },
     attribute: "block/type",
   });
+  if (args.width !== undefined)
+    await ctx.assertFact({
+      entity: args.newEntityID,
+      attribute: "canvas/block/width",
+      data: { type: "number", value: args.width },
+    });
   // Every block placed on a canvas gets a layer, so stacking is explicit from
   // the moment it lands. Unlayered blocks sort first, so the last entry's
   // index is the highest in use, or null on a canvas that predates layering —

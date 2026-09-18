@@ -49,6 +49,7 @@ import { MembersOnlyDelimiterBlock } from "./MembersOnlyDelimiterBlock";
 import { PostsListBlock } from "./PostsListBlock";
 import { RecommendedPubsBlock } from "./RecommendedPubsBlock";
 import { SubscribeBlock } from "./SubscribeBlock";
+import { PostHeaderBlock } from "./PostHeaderBlock";
 import { deepEquals } from "src/utils/deepEquals";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
@@ -459,6 +460,7 @@ const BlockTypeComponents: {
   "posts-list": PostsListBlock,
   "recommended-pubs": RecommendedPubsBlock,
   signup: SubscribeBlock,
+  "post-header": PostHeaderBlock,
 };
 
 const BlockMultiselectIndicator = (props: BlockProps) => {

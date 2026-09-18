@@ -1711,6 +1711,25 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksPostHeader: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.postHeader',
+    defs: {
+      main: {
+        type: 'object',
+        description:
+          "The post's header (publication, title, description, byline) placed as a block, so canvas posts can position it. Renders the document's own metadata; carries no content of its own.",
+        required: [],
+        properties: {
+          compact: {
+            type: 'boolean',
+            description:
+              'Show a condensed header: title and byline only, without the description.',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksPostsList: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.postsList',
@@ -2258,6 +2277,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.signup',
               'lex:pub.leaflet.blocks.recommendedPubs',
               'lex:pub.leaflet.blocks.membersOnlyDelimiter',
+              'lex:pub.leaflet.blocks.postHeader',
             ],
           },
           x: {
@@ -2373,6 +2393,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.signup',
               'lex:pub.leaflet.blocks.recommendedPubs',
               'lex:pub.leaflet.blocks.membersOnlyDelimiter',
+              'lex:pub.leaflet.blocks.postHeader',
             ],
           },
           alignment: {
@@ -3345,6 +3366,7 @@ export const ids = {
   PubLeafletBlocksOrderedList: 'pub.leaflet.blocks.orderedList',
   PubLeafletBlocksPage: 'pub.leaflet.blocks.page',
   PubLeafletBlocksPoll: 'pub.leaflet.blocks.poll',
+  PubLeafletBlocksPostHeader: 'pub.leaflet.blocks.postHeader',
   PubLeafletBlocksPostsList: 'pub.leaflet.blocks.postsList',
   PubLeafletBlocksRecommendedPubs: 'pub.leaflet.blocks.recommendedPubs',
   PubLeafletBlocksSignup: 'pub.leaflet.blocks.signup',

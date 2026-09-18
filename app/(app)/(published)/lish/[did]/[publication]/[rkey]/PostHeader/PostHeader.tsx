@@ -39,6 +39,7 @@ export function PostHeader(props: {
     showRecommends?: boolean;
   };
   isCanvas?: boolean;
+  compact?: boolean;
 }) {
   let document = props.data;
 
@@ -51,6 +52,7 @@ export function PostHeader(props: {
   if (!document?.data || !record) return null;
   return (
     <PostHeaderLayout
+      compact={props.compact}
       pubLink={
         <>
           {pub && (
@@ -76,7 +78,7 @@ export function PostHeader(props: {
         </>
       }
       postTitle={record.title}
-      postDescription={record.description}
+      postDescription={props.compact ? undefined : record.description}
       postInfo={
         <>
           <PostByline
@@ -186,22 +188,29 @@ export function PostByline(props: {
   );
 }
 
+// `compact` is the post header block's condensed mode: tighter spacing and a
+// smaller title, for a header that shares a canvas with the content.
 export const PostHeaderLayout = (props: {
   pubLink: React.ReactNode;
   postTitle: React.ReactNode | undefined;
   postDescription: React.ReactNode | undefined;
   postInfo: React.ReactNode;
+  compact?: boolean;
 }) => {
   return (
     <header
-      className="postHeader w-full flex flex-col px-3 sm:px-4 sm:pt-3 pt-2 pb-5"
+      className={`postHeader w-full flex flex-col px-3 sm:px-4 ${props.compact ? "pt-2 pb-3" : "sm:pt-3 pt-2 pb-5"}`}
       id="post-header"
     >
-      <div className="pubInfo relative flex text-accent-contrast font-bold justify-between w-full">
+      <div
+        className={`pubInfo relative flex text-accent-contrast font-bold justify-between w-full ${props.compact ? "text-sm" : ""}`}
+      >
         {props.pubLink}
       </div>
       {props.postTitle && (
-        <h1 className="postTitle text-2xl leading-tight pt-0.5 font-bold outline-hidden bg-transparent">
+        <h1
+          className={`postTitle leading-tight pt-0.5 font-bold outline-hidden bg-transparent ${props.compact ? "text-lg" : "text-2xl"}`}
+        >
           {props.postTitle}
         </h1>
       )}
@@ -210,7 +219,9 @@ export const PostHeaderLayout = (props: {
           {props.postDescription}
         </div>
       ) : null}
-      <div className="postInfo text-sm text-tertiary pt-3 flex gap-1 flex-wrap justify-between">
+      <div
+        className={`postInfo text-sm text-tertiary flex gap-1 flex-wrap justify-between ${props.compact ? "pt-1.5" : "pt-3"}`}
+      >
         {props.postInfo}
       </div>
     </header>

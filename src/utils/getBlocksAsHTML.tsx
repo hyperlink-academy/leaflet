@@ -107,6 +107,7 @@ const BlockTypeToHTML: {
   embed: async () => null,
   html: async () => null,
   signup: async () => null,
+  "post-header": async () => null,
   "bluesky-post": async (b, tx) => {
     let [post] = await scanIndex(tx).eav(b.entityID, "block/bluesky-post");
     if (!post) return null;

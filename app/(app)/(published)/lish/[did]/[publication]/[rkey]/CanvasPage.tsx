@@ -31,6 +31,8 @@ import { SharedPageProps } from "./PostPages";
 import { usePostFrame } from "./postFrame";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { useIsMobile } from "src/hooks/isMobile";
+import { PubLeafletBlocksPostHeader } from "lexicons/api";
+import { PostHeaderBlockProvider } from "./PostHeader/postHeaderBlockContext";
 
 export function CanvasPage({
   blocks,
@@ -58,10 +60,19 @@ export function CanvasPage({
     fullPageScroll,
     hasPageBackground,
   } = props;
+  let headerData = useMemo(
+    () => ({ data: document, profile, contributors, preferences }),
+    [document, profile, contributors, preferences],
+  );
   if (!document) return null;
 
   let isSubpage = !!pageId;
   let drawer = useInlineDrawer(document_uri);
+  // A header block on the canvas carries the metadata and interactions the
+  // corner overlay would otherwise show.
+  let hasHeaderBlock = blocks.some((b) =>
+    PubLeafletBlocksPostHeader.isMain(b.block),
+  );
 
   return (
     <PageWrapper
@@ -73,28 +84,32 @@ export function CanvasPage({
       }
       pageOptions={pageOptions}
     >
-      <CanvasMetadata
-        pageId={pageId}
-        isSubpage={isSubpage}
-        data={document}
-        profile={profile}
-        contributors={contributors}
-        preferences={preferences}
-        commentsCount={document.commentsCountByPage[pageId ?? ""] ?? 0}
-        quotesCount={getQuoteCount(document.quotesAndMentions, pageId)}
-        recommendsCount={document.recommendsCount}
-      />
-      <DrawerThreadPageProvider pageId={pageId}>
-        <CanvasContent
-          blocks={blocks}
-          did={did}
-          prerenderedCodeBlocks={prerenderedCodeBlocks}
-          bskyPostData={bskyPostData}
-          standardSitePostData={standardSitePostData}
-          pollData={pollData}
+      {!hasHeaderBlock && (
+        <CanvasMetadata
           pageId={pageId}
-          pages={pages}
+          isSubpage={isSubpage}
+          data={document}
+          profile={profile}
+          contributors={contributors}
+          preferences={preferences}
+          commentsCount={document.commentsCountByPage[pageId ?? ""] ?? 0}
+          quotesCount={getQuoteCount(document.quotesAndMentions, pageId)}
+          recommendsCount={document.recommendsCount}
         />
+      )}
+      <DrawerThreadPageProvider pageId={pageId}>
+        <PostHeaderBlockProvider value={headerData}>
+          <CanvasContent
+            blocks={blocks}
+            did={did}
+            prerenderedCodeBlocks={prerenderedCodeBlocks}
+            bskyPostData={bskyPostData}
+            standardSitePostData={standardSitePostData}
+            pollData={pollData}
+            pageId={pageId}
+            pages={pages}
+          />
+        </PostHeaderBlockProvider>
       </DrawerThreadPageProvider>
     </PageWrapper>
   );
