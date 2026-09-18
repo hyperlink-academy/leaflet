@@ -19,10 +19,9 @@ import type { DrawerThread } from "./Interactions/drawerThreadContext";
 // subpages, embeds opened as pages, the discussion and the threads, recommends
 // and tag lists. Post content only ever asks the frame for them.
 export type PostFrame = {
-  // "carousel": subpages and the interaction drawer open beside the page they
-  // came from. "single": one page on screen at a time, no drawer — the host
-  // shows discussion surfaces itself.
-  layout: "carousel" | "single";
+  // False when the host shows discussion surfaces itself, so no interaction
+  // drawer ever opens beside the pages.
+  drawer: boolean;
   // False when the host's own chrome carries the post-level interactions.
   headerInteractions: boolean;
   openPages: OpenPage[];
@@ -62,7 +61,7 @@ function usePublishedPostFrame(): PostFrame {
   let openPages = useOpenPages();
   return useMemo(
     () => ({
-      layout: "carousel",
+      drawer: true,
       headerInteractions: true,
       openPages,
       openPage,

@@ -23,7 +23,7 @@ export const useDrawerOpen = (uri: string) => {
   } = useInteractionState(uri);
   // Interaction state outlives the surface that set it; a frame with no drawer
   // must not make room for one a published page left open.
-  if (usePostFrame().layout === "single") return null;
+  if (!usePostFrame().drawer) return null;
   if (open === false || (open === undefined && !interactionDrawerSearchParam))
     return null;
   let param = parseDrawerParam(interactionDrawerSearchParam, uri);

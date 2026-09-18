@@ -25,7 +25,6 @@ import { GlobalImageLightbox } from "./GlobalImageLightbox";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { type OpenPage, getPageKey } from "./postPageState";
 import { usePostFrame } from "./postFrame";
-import { PageBackButton } from "./PageBackButton";
 import { IframePageView } from "components/Pages/IframePageView";
 import { usePostResources } from "./PostDataProvider";
 import type { BylineProfile } from "./PostHeader/PostHeader";
@@ -58,8 +57,6 @@ export type SharedPageProps = {
   hasPageBackground: boolean;
   pageId?: string;
   pageOptions?: React.ReactNode;
-  // Set when this page replaced the one it was opened from.
-  onBack?: () => void;
   allPages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   hasContentToRight?: boolean;
 };
@@ -172,46 +169,6 @@ export function PostPages({
       !firstPageIsCanvas,
   };
 
-  if (frame.layout === "single") {
-    let current = openPageIds[openPageIds.length - 1];
-    let onBack = current && (() => frame.closePage(current));
-    let currentDoc =
-      current?.type === "doc"
-        ? (pages.find((p) => (p as typeof firstPage).id === current.id) as
-            | typeof firstPage
-            | undefined)
-        : undefined;
-    let page = currentDoc ?? firstPage;
-    let fullPageScroll =
-      !hasPageBackground && !PubLeafletPagesCanvas.isMain(page);
-    if (current?.type === "iframe")
-      return (
-        <>
-          <BookendSpacer />
-          <IframePageView
-            url={current.url}
-            onOpen={(url) => frame.openPage(current, { type: "iframe", url })}
-            pageOptions={onBack && <PageBackButton chip onClick={onBack} />}
-          />
-          <BookendSpacer />
-        </>
-      );
-    return (
-      <GlobalImageLightbox did={did}>
-        {!fullPageScroll && <BookendSpacer />}
-        <PageRenderer
-          key={currentDoc?.id ?? ""}
-          page={page}
-          {...sharedProps}
-          fullPageScroll={fullPageScroll}
-          pageId={currentDoc?.id}
-          onBack={currentDoc ? onBack : undefined}
-        />
-        {!fullPageScroll && <BookendSpacer />}
-      </GlobalImageLightbox>
-    );
-  }
-
   return (
     <GlobalImageLightbox did={did}>
       {!sharedProps.fullPageScroll && <BookendSpacer />}
@@ -224,17 +181,21 @@ export function PostPages({
         }
       />
 
-      {/* Always mounted: the drawer reads its own open state and, on mobile,
-          needs to stay mounted while its close animation plays. */}
-      <InteractionDrawer
-        showPageBackground={pubRecord?.theme?.showPageBackground}
-        document_uri={document.uri}
-        commentsSlot={preferences.showComments === false ? null : commentsSlot}
-        quotesAndMentions={
-          preferences.showMentions === false ? [] : quotesAndMentions
-        }
-        did={did}
-      />
+      {/* Mounted even while closed: the drawer reads its own open state and,
+          on mobile, needs to stay mounted while its close animation plays. */}
+      {frame.drawer && (
+        <InteractionDrawer
+          showPageBackground={pubRecord?.theme?.showPageBackground}
+          document_uri={document.uri}
+          commentsSlot={
+            preferences.showComments === false ? null : commentsSlot
+          }
+          quotesAndMentions={
+            preferences.showMentions === false ? [] : quotesAndMentions
+          }
+          did={did}
+        />
+      )}
 
       {openPageIds.map((openPage, openPageIndex) => {
         const pageKey = getPageKey(openPage);
@@ -298,18 +259,20 @@ export function PostPages({
                 />
               }
             />
-            <InteractionDrawer
-              showPageBackground={pubRecord?.theme?.showPageBackground}
-              pageId={page.id}
-              document_uri={document.uri}
-              commentsSlot={
-                preferences.showComments === false ? null : commentsSlot
-              }
-              quotesAndMentions={
-                preferences.showMentions === false ? [] : quotesAndMentions
-              }
-              did={did}
-            />
+            {frame.drawer && (
+              <InteractionDrawer
+                showPageBackground={pubRecord?.theme?.showPageBackground}
+                pageId={page.id}
+                document_uri={document.uri}
+                commentsSlot={
+                  preferences.showComments === false ? null : commentsSlot
+                }
+                quotesAndMentions={
+                  preferences.showMentions === false ? [] : quotesAndMentions
+                }
+                did={did}
+              />
+            )}
           </Fragment>
         );
       })}

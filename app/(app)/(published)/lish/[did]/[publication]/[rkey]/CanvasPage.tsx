@@ -29,7 +29,6 @@ import { DrawerThreadPageProvider } from "./Interactions/drawerThreadContext";
 import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
 import { usePostFrame } from "./postFrame";
-import { PageBackButton } from "./PageBackButton";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { useIsMobile } from "src/hooks/isMobile";
 
@@ -74,7 +73,6 @@ export function CanvasPage({
       }
       pageOptions={pageOptions}
     >
-      {props.onBack && <PageBackButton chip onClick={props.onBack} />}
       <CanvasMetadata
         pageId={pageId}
         isSubpage={isSubpage}
