@@ -103,12 +103,17 @@ export function Canvas(props: {
           entity_set={entity_set}
         />
 
-        <CanvasMetadata entityID={props.entityID} isSubpage={!props.first} />
-        {!props.preview && entity_set.permissions.write && (
-          <>
+        <div className="absolute top-6 right-3 sm:top-4 sm:right-4 z-20 flex flex-row gap-2 items-start">
+          {!props.preview && entity_set.permissions.write && (
             <MobileViewToggle entityID={props.entityID} />
-            <CanvasFocusZoom pageEntityID={props.entityID} />
-          </>
+          )}
+          <CanvasMetadata
+            entityID={props.entityID}
+            isSubpage={!props.first}
+          />
+        </div>
+        {!props.preview && entity_set.permissions.write && (
+          <CanvasFocusZoom pageEntityID={props.entityID} />
         )}
 
         <CanvasZoomControls className="absolute left-2 bottom-2 sm:left-4 sm:bottom-4 z-10 bg-bg-page rounded-md px-1 py-0.5" />
@@ -186,7 +191,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
       className="relative h-full w-[1272px]"
     >
       <CanvasBackground entityID={props.entityID} />
-      <MobileViewGuides entityID={props.entityID} preview={props.preview} />
+      <MobileViewGuides entityID={props.entityID} />
       {[...blocks]
         .sort((a, b) => {
           if (a.data.position.y === b.data.position.y) {
@@ -224,11 +229,11 @@ const MobileViewToggle = (props: { entityID: string }) => {
   let fact = useEntity(props.entityID, "canvas/mobile-view");
   let view: CanvasMobileView = fact?.data.value || "unconstrained";
   return (
-    <div className="absolute top-6 left-3 sm:top-4 sm:left-4 z-20">
+    <div>
       <Menu
         asChild
         side="bottom"
-        align="start"
+        align="end"
         trigger={
           <button
             aria-label="Mobile view"
@@ -269,7 +274,7 @@ const MobileViewToggle = (props: { entityID: string }) => {
 
 // Guides for the anchored mobile view area, in canvas px so they scale with
 // the zoom; painted under the blocks.
-const MobileViewGuides = (props: { entityID: string; preview?: boolean }) => {
+const MobileViewGuides = (props: { entityID: string }) => {
   let area = mobileViewArea(
     useEntity(props.entityID, "canvas/mobile-view")?.data.value,
   );
@@ -279,14 +284,7 @@ const MobileViewGuides = (props: { entityID: string; preview?: boolean }) => {
       aria-hidden
       className="canvasMobileViewGuides absolute top-0 bottom-0 pointer-events-none border-x border-dashed border-accent-1"
       style={{ left: area.left, width: area.width }}
-    >
-      <div className="absolute inset-0 bg-accent-1 opacity-[0.04]" />
-      {!props.preview && (
-        <div className="absolute top-2 left-2 text-xs text-accent-contrast opacity-60 select-none">
-          Mobile view · {MOBILE_VIEW_WIDTH}px
-        </div>
-      )}
-    </div>
+    />
   );
 };
 
@@ -320,7 +318,7 @@ const CanvasMetadata = (props: {
   let showRecommends = merged.showRecommends !== false;
 
   return (
-    <div className="flex flex-row gap-3 items-center absolute top-6 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
+    <div className="flex flex-row gap-3 items-center bg-bg-page border-border-light rounded-md px-2 py-1 h-fit">
       {showRecommends && (
         <div className="flex gap-1 text-tertiary items-center">
           <RecommendEmptyTiny className="text-border" /> —
