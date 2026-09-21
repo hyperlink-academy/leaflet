@@ -7,8 +7,11 @@ import {
 import { PostPageData } from "src/utils/getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AppBskyFeedDefs } from "@atproto/api";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { PageWrapper } from "components/Pages/Page";
+import { CanvasZoomProvider } from "src/canvasZoom/CanvasZoomProvider";
+import { CanvasZoomLayer } from "src/canvasZoom/CanvasZoomLayer";
+import { CanvasZoomControls } from "components/CanvasZoomControls";
 import { Block } from "./PostContent";
 import {
   canvasBlockOrder,
@@ -108,6 +111,7 @@ export function CanvasPage({
             pollData={pollData}
             pageId={pageId}
             pages={pages}
+            zoomKey={pageId ? `${document_uri}#${pageId}` : document_uri}
           />
         </PostHeaderBlockProvider>
       </DrawerThreadPageProvider>
@@ -124,6 +128,7 @@ function CanvasContent({
   pageId,
   pollData,
   pages,
+  zoomKey,
 }: {
   blocks: PubLeafletPagesCanvas.Block[];
   did: string;
@@ -133,7 +138,9 @@ function CanvasContent({
   standardSitePostData: StandardSitePostData[];
   pageId?: string;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
+  zoomKey: string;
 }) {
+  let scrollerRef = useRef<HTMLDivElement>(null);
   let sortedBlocks = useMemo(
     () => [...blocks].sort(canvasBlockOrder),
     [blocks],
@@ -146,35 +153,46 @@ function CanvasContent({
     sortedBlocks.length > 0 ? Math.max(...sortedBlocks.map((b) => b.y), 0) : 0;
 
   return (
-    <div className="canvasWrapper h-full w-fit overflow-y-scroll postContent">
+    <CanvasZoomProvider pageKey={zoomKey} scrollerRef={scrollerRef}>
+      {/* w-[1272px] max-w-full: the page keeps its full-canvas width while
+          the zoomed-out spacer shrinks, and the scroller (not the page card
+          around it) carries the horizontal overflow when zoomed in. */}
       <div
-        style={{
-          minHeight: height + 512,
-          contain: "size layout paint",
-        }}
-        className="relative h-full w-[1272px]"
+        ref={scrollerRef}
+        className="canvasWrapper h-full w-[1272px] max-w-full overflow-y-scroll touch-pan-x touch-pan-y postContent"
       >
-        <CanvasBackground />
+        <CanvasZoomLayer contentHeight={height + 512}>
+          <div
+            style={{
+              minHeight: height + 512,
+              contain: "size layout paint",
+            }}
+            className="relative h-full w-[1272px]"
+          >
+            <CanvasBackground />
 
-        {sortedBlocks.map((canvasBlock, index) => {
-          return (
-            <CanvasBlock
-              key={index}
-              canvasBlock={canvasBlock}
-              did={did}
-              pollData={pollData}
-              prerenderedCodeBlocks={prerenderedCodeBlocks}
-              bskyPostData={bskyPostData}
-              standardSitePostData={standardSitePostData}
-              pageId={pageId}
-              pages={pages}
-              index={index}
-              stackOrder={stackOrders[index]}
-            />
-          );
-        })}
+            {sortedBlocks.map((canvasBlock, index) => {
+              return (
+                <CanvasBlock
+                  key={index}
+                  canvasBlock={canvasBlock}
+                  did={did}
+                  pollData={pollData}
+                  prerenderedCodeBlocks={prerenderedCodeBlocks}
+                  bskyPostData={bskyPostData}
+                  standardSitePostData={standardSitePostData}
+                  pageId={pageId}
+                  pages={pages}
+                  index={index}
+                  stackOrder={stackOrders[index]}
+                />
+              );
+            })}
+          </div>
+        </CanvasZoomLayer>
       </div>
-    </div>
+      <CanvasZoomControls className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-20 bg-bg-page border border-border-light rounded-md px-1 py-0.5" />
+    </CanvasZoomProvider>
   );
 }
 
@@ -230,6 +248,7 @@ function CanvasBlock({
           standardSitePostData={standardSitePostData}
           block={linearBlock}
           did={did}
+          canvasWidth={width}
           index={[index]}
           preview={false}
           prerenderedCodeBlocks={prerenderedCodeBlocks}

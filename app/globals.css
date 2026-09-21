@@ -1110,7 +1110,6 @@ body > iframe[src*="js.stripe.com"] {
   pointer-events: auto !important;
 }
 
-
 /* Print. On screen the app is a fixed-height viewport with nested scroll
    containers (viewport wrapper → theme wrappers → page carousel → each page),
    so the browser's print engine sees one screen's worth of content and clips
@@ -1182,7 +1181,10 @@ body > iframe[src*="js.stripe.com"] {
      carousel (published) or sits inside a display:contents theme wrapper
      (editor), so match both shapes; the first page never breaks. */
   .pagesWrapper > :is(.pageWrapper, :has(> .pageWrapper)) ~ .pageWrapper,
-  .pagesWrapper > :is(.pageWrapper, :has(> .pageWrapper)) ~ :has(> .pageWrapper) > .pageWrapper {
+  .pagesWrapper
+    > :is(.pageWrapper, :has(> .pageWrapper))
+    ~ :has(> .pageWrapper)
+    > .pageWrapper {
     break-before: page;
   }
 
@@ -1288,5 +1290,66 @@ body > iframe[src*="js.stripe.com"] {
 
   .selection-highlight {
     background: transparent !important;
+  }
+}
+
+/* Canvas zoom. --canvas-zoom is set inline by the zoom engine; until then it
+   falls back to fit-to-width capped at 100%, computed from the scroller's
+   inline size so the server-rendered page is already at the right scale.
+   tan(atan2()) divides two lengths into a plain number. */
+.canvasWrapper {
+  container-type: size;
+}
+/* Not inherited: a zoom write then restyles only the spacer and the layer,
+   not every element of the canvas. */
+@property --canvas-zoom {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+.canvasZoomSpacer,
+.canvasZoomLayer {
+  --canvas-zoom: 1;
+}
+.canvasZoomSpacer {
+  min-width: 100%;
+  min-height: 100%;
+  overflow: clip;
+  width: calc(var(--canvas-content-width, 1272) * 1px * var(--canvas-zoom));
+  height: calc(var(--canvas-content-height, 0) * 1px * var(--canvas-zoom));
+}
+@supports (opacity: tan(atan2(1px, 1px))) {
+  .canvasZoomSpacer,
+  .canvasZoomLayer {
+    --canvas-zoom: min(
+      1,
+      tan(atan2(100cqw, calc(var(--canvas-content-width, 1272) * 1px)))
+    );
+  }
+}
+.canvasAnimatedImage {
+  will-change: transform;
+}
+.canvasZoomLayer {
+  display: grid;
+  /* Permanently composited: the raster is scaled on the GPU during a gesture
+     instead of being redrawn (and its images re-decoded) every frame. The
+     layer is also never resized by script, since a resize discards that
+     raster: it is tall enough to fill the viewport at the smallest zoom
+     (0.25 floor, MIN_ZOOM_FLOOR in math.ts) and the spacer clips the rest. */
+  will-change: transform;
+  width: calc(var(--canvas-content-width, 1272) * 1px);
+  transform-origin: 0 0;
+  transform: scale(var(--canvas-zoom));
+}
+@supports (opacity: tan(atan2(1px, 1px))) {
+  .canvasZoomLayer {
+    min-height: calc(
+      100cqh /
+        min(
+          0.25,
+          tan(atan2(100cqw, calc(var(--canvas-content-width, 1272) * 1px)))
+        )
+    );
   }
 }

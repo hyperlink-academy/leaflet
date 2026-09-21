@@ -6,6 +6,7 @@ import { supabaseBrowserClient } from "supabase/browserClient";
 import { localImages, uploadImageAndFinalize } from "src/utils/addImage";
 import { setImageUploadStatus } from "src/utils/imageUploadStatus";
 import { rgbaToThumbHash, thumbHashToDataURL } from "thumbhash";
+import { getCanvasZoom } from "src/canvasZoom/session";
 
 // Helper function to load image dimensions and thumbhash
 const processImage = async (
@@ -77,8 +78,9 @@ export const useHandleCanvasDrop = (entityID: string) => {
       if (imageFiles.length === 0) return;
 
       const parentRect = e.currentTarget.getBoundingClientRect();
-      const dropX = Math.max(e.clientX - parentRect.left, 0);
-      const dropY = Math.max(e.clientY - parentRect.top, 0);
+      const zoom = getCanvasZoom(entityID);
+      const dropX = Math.max((e.clientX - parentRect.left) / zoom, 0);
+      const dropY = Math.max((e.clientY - parentRect.top) / zoom, 0);
 
       const SPACING = 0;
       const DEFAULT_WIDTH = 360;

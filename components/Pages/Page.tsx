@@ -162,7 +162,7 @@ export const PageWrapper = (props: {
       publicationScrollContainer
       grow relative
       shrink-0 snap-center
-      ${props.flow ? "" : props.overflow === "hidden" ? "overflow-hidden" : "overflow-y-scroll"}
+      ${props.flow ? "" : props.overflow === "hidden" || props.pageType === "canvas" ? "overflow-hidden" : "overflow-y-scroll"}
       ${
         !cardBorderHidden &&
         `border
@@ -177,7 +177,7 @@ export const PageWrapper = (props: {
     ${
       props.pageType === "canvas" &&
       !props.fullPageScroll &&
-      "max-w-[var(--page-width-units)] sm:max-w-[calc(var(--leaflet-layout-width,100vw)-128px)] lg:max-w-fit lg:w-[calc(var(--page-width-units)*2 + 24px))]"
+      "max-w-[var(--page-width-units)] sm:max-w-[calc(var(--leaflet-layout-width,100vw)-128px)] lg:max-w-[calc(var(--leaflet-layout-width,100vw)-48px)]"
     }
 
 `}

@@ -36,12 +36,16 @@ export const LeafletLayout = (props: {
 export const BookendSpacer = (props: {
   onClick?: (e: React.MouseEvent) => void;
   children?: React.ReactNode;
+  // A lone page wider than --page-width-units (a canvas) plus two fixed
+  // spacers overflows the carousel, which then scrolls and snaps back on
+  // every sideways gesture. Shrinking spacers keep it exactly full.
+  shrink?: boolean;
 }) => {
   // these spacers go at the end of the first and last pages so that those pages can be scrolled to the center of the screen.
   // --leaflet-layout-width lets a host that isn't the full viewport (the reader's post viewer) center against its own box.
   return (
     <div
-      className="spacer shrink-0 flex justify-end items-start"
+      className={`spacer flex justify-end items-start ${props.shrink ? "shrink min-w-0" : "shrink-0"}`}
       style={{
         width: `calc((var(--leaflet-layout-width, 100vw) - var(--page-width-units)) / 2)`,
       }}

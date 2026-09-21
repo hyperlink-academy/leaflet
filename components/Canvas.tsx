@@ -28,6 +28,12 @@ import { mergePreferences } from "src/utils/mergePreferences";
 import { CANVAS_DRAG_STACK_ORDER } from "src/utils/canvasBlockOrder";
 import { useCanvasStackOrders } from "src/hooks/queries/useCanvasStacking";
 import { useCanvasBlocksWithType } from "src/hooks/queries/useBlocks";
+import {
+  CanvasZoomProvider,
+  getCanvasZoom,
+} from "src/canvasZoom/CanvasZoomProvider";
+import { CanvasZoomLayer } from "src/canvasZoom/CanvasZoomLayer";
+import { CanvasZoomControls } from "./CanvasZoomControls";
 
 export function Canvas(props: {
   entityID: string;
@@ -36,6 +42,8 @@ export function Canvas(props: {
 }) {
   let entity_set = useEntitySetContext();
   let ref = useRef<HTMLDivElement>(null);
+  let blocks = useEntity(props.entityID, "canvas/block");
+  let contentHeight = canvasContentHeight(blocks);
   useEffect(() => {
     let abort = new AbortController();
     let isTouch = false;
@@ -68,15 +76,24 @@ export function Canvas(props: {
       id={elementId.page(props.entityID).canvasScrollArea}
       className={`
         canvasWrapper
-        h-full w-fit
-        overflow-y-scroll
+        h-full w-[1272px] max-w-full
+        overflow-y-scroll touch-pan-x touch-pan-y
       `}
     >
-      <AddCanvasBlockButton entityID={props.entityID} entity_set={entity_set} />
+      <CanvasZoomProvider pageKey={props.entityID} scrollerRef={ref}>
+        <AddCanvasBlockButton
+          entityID={props.entityID}
+          entity_set={entity_set}
+        />
 
-      <CanvasMetadata entityID={props.entityID} isSubpage={!props.first} />
+        <CanvasMetadata entityID={props.entityID} isSubpage={!props.first} />
 
-      <CanvasContent {...props} />
+        <CanvasZoomControls className="absolute left-2 bottom-2 sm:left-4 sm:bottom-4 z-10 bg-bg-page rounded-md px-1 py-0.5" />
+
+        <CanvasZoomLayer contentHeight={contentHeight}>
+          <CanvasContent {...props} />
+        </CanvasZoomLayer>
+      </CanvasZoomProvider>
     </div>
   );
 }
@@ -85,7 +102,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   let blocks = useEntity(props.entityID, "canvas/block");
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
-  let height = Math.max(...blocks.map((f) => f.data.position.y), 0);
+  let contentHeight = canvasContentHeight(blocks);
   let handleDrop = useHandleCanvasDrop(props.entityID);
   let stackOrders = useCanvasStackOrders(props.entityID);
 
@@ -105,6 +122,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
           });
         if (e.detail === 2 || e.ctrlKey || e.metaKey) {
           let parentRect = e.currentTarget.getBoundingClientRect();
+          let zoom = getCanvasZoom(props.entityID);
           let newEntityID = v7();
           // addCanvasBlock writes a fact per attribute; grouping keeps placing
           // a block a single Cmd-Z rather than one per fact.
@@ -113,8 +131,8 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
               newEntityID,
               parent: props.entityID,
               position: {
-                x: Math.max(e.clientX - parentRect.left, 0),
-                y: Math.max(e.clientY - parentRect.top - 12, 0),
+                x: Math.max((e.clientX - parentRect.left) / zoom, 0),
+                y: Math.max((e.clientY - parentRect.top) / zoom - 12, 0),
               },
               factID: v7(),
               type: "text",
@@ -139,7 +157,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
         !props.preview && entity_set.permissions.write ? handleDrop : undefined
       }
       style={{
-        minHeight: height + 512,
+        minHeight: contentHeight,
         contain: "size layout paint",
       }}
       className="relative h-full w-[1272px]"
@@ -261,6 +279,7 @@ const AddCanvasBlockButton = (props: {
             elementId.page(props.entityID).canvasScrollArea,
           );
           if (!page) return;
+          let zoom = getCanvasZoom(props.entityID);
           let newEntityID = v7();
           // The group stays open until the mutation settles, so every fact
           // addCanvasBlock writes lands in one Cmd-Z step.
@@ -269,8 +288,8 @@ const AddCanvasBlockButton = (props: {
               newEntityID,
               parent: props.entityID,
               position: {
-                x: page?.clientWidth + page?.scrollLeft - 468,
-                y: 32 + page.scrollTop,
+                x: (page.clientWidth + page.scrollLeft) / zoom - 468,
+                y: 32 + page.scrollTop / zoom,
               },
               factID: v7(),
               type: "text",
@@ -309,9 +328,11 @@ function CanvasBlock(props: {
   let isMobile = useIsMobile();
 
   let { permissions } = useEntitySetContext();
+  // Drag deltas arrive in screen px; block positions and widths are canvas px.
   let onDragEnd = useCallback(
     (dragPosition: { x: number; y: number }) => {
       if (!permissions.write) return;
+      let zoom = getCanvasZoom(props.parent);
       rep?.mutate.assertFact({
         id: props.factID,
         entity: props.parent,
@@ -320,8 +341,8 @@ function CanvasBlock(props: {
           type: "spatial-reference",
           value: props.entityID,
           position: {
-            x: props.position.x + dragPosition.x,
-            y: props.position.y + dragPosition.y,
+            x: props.position.x + dragPosition.x / zoom,
+            y: props.position.y + dragPosition.y / zoom,
           },
         },
       });
@@ -339,7 +360,7 @@ function CanvasBlock(props: {
         attribute: "canvas/block/width",
         data: {
           type: "number",
-          value: width + dragPosition.x,
+          value: width + dragPosition.x / getCanvasZoom(props.parent),
         },
       });
     },
@@ -406,8 +427,9 @@ function CanvasBlock(props: {
       ) *
       (180 / Math.PI);
   }
-  let x = props.position.x + (dragDelta?.x || 0);
-  let y = props.position.y + (dragDelta?.y || 0);
+  let liveZoom = getCanvasZoom(props.parent);
+  let x = props.position.x + (dragDelta?.x || 0) / liveZoom;
+  let y = props.position.y + (dragDelta?.y || 0) / liveZoom;
   let transform = `translate(${x}px, ${y}px) rotate(${rotation + angle}deg) scale(${!dragDelta ? "1.0" : "1.02"})`;
   let [areYouSure, setAreYouSure] = useState(false);
   let blockProps = useMemo(() => {
@@ -444,7 +466,7 @@ function CanvasBlock(props: {
       ref={ref}
       {...(!props.preview ? { ...longPressHandlers, ...mouseHandlers } : {})}
       id={props.preview ? undefined : elementId.block(props.entityID).container}
-      className={`canvasBlockWrapper absolute group/canvas-block will-change-transform rounded-lg flex items-stretch origin-center p-3`}
+      className={`canvasBlockWrapper absolute group/canvas-block rounded-lg flex items-stretch origin-center p-3`}
       style={{
         top: 0,
         left: 0,
@@ -452,7 +474,7 @@ function CanvasBlock(props: {
         // focus too would hide the effect of the layering buttons, which act
         // on the block that is focused.
         zIndex: dragDelta ? CANVAS_DRAG_STACK_ORDER : props.stackOrder,
-        width: width + (widthHandle.dragDelta?.x || 0),
+        width: width + (widthHandle.dragDelta?.x || 0) / liveZoom,
         transform,
       }}
     >
@@ -646,6 +668,12 @@ const Gripper = (props: {
     </div>
   );
 };
+
+// The content div has size containment, so its laid-out height is exactly
+// this min-height; the zoom spacer is sized from the same number.
+function canvasContentHeight(blocks: { data: { position: { y: number } } }[]) {
+  return Math.max(...blocks.map((f) => f.data.position.y), 0) + 512;
+}
 
 type P = { x: number; y: number };
 function find_angle(P2: P, P1: P, P3: P) {

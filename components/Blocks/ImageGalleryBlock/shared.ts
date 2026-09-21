@@ -17,6 +17,7 @@ export type GalleryImage = {
   // Canonical storage URL from the fact (editor only) — the key upload status
   // is tracked under, even while `src` is the local object URL.
   factSrc?: string;
+  mimeType?: string;
   alt: string;
   width: number;
   height: number;

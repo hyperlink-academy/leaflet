@@ -169,9 +169,11 @@ export function PostPages({
       !firstPageIsCanvas,
   };
 
+  let loneCanvas = firstPageIsCanvas && openPageIds.length === 0 && !drawer;
+
   return (
     <GlobalImageLightbox did={did}>
-      {!sharedProps.fullPageScroll && <BookendSpacer />}
+      {!sharedProps.fullPageScroll && <BookendSpacer shrink={loneCanvas} />}
 
       <PageRenderer
         page={firstPage}
@@ -277,7 +279,7 @@ export function PostPages({
         );
       })}
 
-      {!sharedProps.fullPageScroll && <BookendSpacer />}
+      {!sharedProps.fullPageScroll && <BookendSpacer shrink={loneCanvas} />}
     </GlobalImageLightbox>
   );
 }

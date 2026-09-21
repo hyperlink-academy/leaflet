@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { GalleryImage, GalleryItemClasses, useGalleryImage } from "./shared";
 import { ImageAltButton } from "../ImageAltButton";
 import { ImageStatusOverlay } from "../ImageStatusOverlay";
+import { useCanvasImage } from "src/canvasZoom/CanvasZoomProvider";
 
 // The image-plus-overlay unit shared by every gallery format, editor and
 // published alike. Each format supplies its own wrapper/button/img classes; the
@@ -15,6 +16,10 @@ export function GalleryImageItem(
   } & GalleryItemClasses,
 ) {
   let { image } = props;
+  let { decoding, className: canvasImageClass } = useCanvasImage(
+    image.src,
+    image.mimeType,
+  );
   return (
     <div className={`relative group/image ${props.className ?? ""}`}>
       <button
@@ -29,12 +34,12 @@ export function GalleryImageItem(
       >
         <img
           loading="lazy"
-          decoding="async"
+          decoding={decoding}
           alt={image.alt}
           src={image.src}
           width={image.width}
           height={image.height}
-          className={props.imgClassName}
+          className={`${props.imgClassName ?? ""} ${canvasImageClass}`}
         />
       </button>
       {props.overlay}

@@ -31,6 +31,7 @@ export function PublishedImageGallery(props: {
           width: POST_BODY_IMAGE_WIDTH,
         }),
         fullSrc: blobRefToSrc(i.image.ref, did),
+        mimeType: i.image.mimeType,
         alt: i.alt || "",
         width: i.aspectRatio.width,
         height: i.aspectRatio.height,

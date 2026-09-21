@@ -29,6 +29,7 @@ import {
   blobRefToSrc,
   POST_BODY_IMAGE_WIDTH,
 } from "src/utils/blobRefToSrc";
+import { snapToImageWidth } from "supabase/imageSizes";
 import { srcDocSandbox } from "src/utils/srcDocSandbox";
 import { TextBlock } from "./Blocks/TextBlock";
 import { StaticMathBlock } from "./Blocks/StaticMathBlock";
@@ -184,8 +185,11 @@ export let Block = ({
   postsListData,
   isFirst,
   isLast,
+  canvasWidth,
 }: {
   pageId?: string;
+  /** Canvas px the block is laid out at; requests images sized for it. */
+  canvasWidth?: number;
   preview?: boolean;
   index: number[];
   block: PubLeafletPagesLinearDocument.Block;
@@ -599,8 +603,13 @@ export let Block = ({
       );
     },
     "pub.leaflet.blocks.image": (block) => {
+      // A canvas block has a fixed width and the zoom layer is rasterized at
+      // 1 canvas px per CSS px, so a body-column-sized image only costs
+      // decode time (the first zoom-out decodes every image on the page).
       let src = blobRefToSrc(block.image.ref, did, undefined, {
-        width: POST_BODY_IMAGE_WIDTH,
+        width: canvasWidth
+          ? snapToImageWidth(Math.ceil(canvasWidth * 2))
+          : POST_BODY_IMAGE_WIDTH,
       });
       let cid = blobRefCid(block.image.ref);
       let isFullBleed = block.fullBleed;
@@ -632,6 +641,7 @@ export let Block = ({
             height={block.aspectRatio?.height}
             width={block.aspectRatio?.width}
             displayWidth={block.width}
+            mimeType={block.image.mimeType}
             isFullBleed={isFullBleed}
             className={className}
             // The first block of a page is the one image plausibly above the

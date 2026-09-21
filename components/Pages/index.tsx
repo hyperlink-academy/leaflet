@@ -26,6 +26,8 @@ export function Pages(props: { rootPage: string; flow?: boolean }) {
   let firstPageIsCanvas = useEntity(firstPage, "page/type");
   let fullPageScroll =
     !!cardBorderHidden && pages.length === 0 && !firstPageIsCanvas;
+  let loneCanvas =
+    firstPageIsCanvas?.data.value === "canvas" && pages.length === 0;
 
   return (
     // One drag context above every open page, so list items can be dragged
@@ -34,6 +36,7 @@ export function Pages(props: { rootPage: string; flow?: boolean }) {
       <LeafletSidebar />
       {!fullPageScroll && !props.flow && (
         <BookendSpacer
+          shrink={loneCanvas}
           onClick={(e) => {
             e.currentTarget === e.target && blurPage();
           }}
@@ -101,6 +104,7 @@ export function Pages(props: { rootPage: string; flow?: boolean }) {
       })}
       {!fullPageScroll && !props.flow && (
         <BookendSpacer
+          shrink={loneCanvas}
           onClick={(e) => {
             e.currentTarget === e.target && blurPage();
           }}
