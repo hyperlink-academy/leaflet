@@ -33,6 +33,7 @@ import {
   getCanvasZoom,
 } from "src/canvasZoom/CanvasZoomProvider";
 import { CanvasZoomLayer } from "src/canvasZoom/CanvasZoomLayer";
+import { CanvasFocusZoom } from "src/canvasZoom/CanvasFocusZoom";
 import { CanvasZoomControls } from "./CanvasZoomControls";
 import {
   type CanvasMobileView,
@@ -94,6 +95,8 @@ export function Canvas(props: {
         pageKey={props.entityID}
         scrollerRef={ref}
         initialArea={mobileArea}
+        // Writers double tap empty canvas to add a block.
+        doubleTapZoom={!!props.preview || !entity_set.permissions.write}
       >
         <AddCanvasBlockButton
           entityID={props.entityID}
@@ -102,7 +105,10 @@ export function Canvas(props: {
 
         <CanvasMetadata entityID={props.entityID} isSubpage={!props.first} />
         {!props.preview && entity_set.permissions.write && (
-          <MobileViewToggle entityID={props.entityID} />
+          <>
+            <MobileViewToggle entityID={props.entityID} />
+            <CanvasFocusZoom pageEntityID={props.entityID} />
+          </>
         )}
 
         <CanvasZoomControls className="absolute left-2 bottom-2 sm:left-4 sm:bottom-4 z-10 bg-bg-page rounded-md px-1 py-0.5" />

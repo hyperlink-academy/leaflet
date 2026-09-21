@@ -88,6 +88,7 @@ import {
 import { getCanvasZoom, hasCanvasZoom, setCanvasZoom } from "./session";
 import type { CanvasArea } from "./mobileView";
 import { useCanvasZoomGestures } from "./useCanvasZoomGestures";
+import { useCanvasDoubleTap } from "./useCanvasDoubleTap";
 
 export { getCanvasZoom, isCanvasPinching } from "./session";
 
@@ -171,6 +172,8 @@ const useIsomorphicLayoutEffect =
 
 export function CanvasZoomProvider(props: {
   pageKey: string;
+  /** Double tap zooms in (touch); off where a double tap means something else. */
+  doubleTapZoom?: boolean;
   scrollerRef: RefObject<HTMLElement | null>;
   contentWidth?: number;
   /**
@@ -522,6 +525,7 @@ export function CanvasZoomProvider(props: {
   }, [engine, scrollerRef, contentWidth]);
 
   useCanvasZoomGestures(engine);
+  useCanvasDoubleTap(engine, props.doubleTapZoom ?? true);
 
   let setZoom = useCallback(
     (z: number, anchor?: Point) =>
