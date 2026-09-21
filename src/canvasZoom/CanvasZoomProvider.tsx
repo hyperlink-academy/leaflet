@@ -35,7 +35,8 @@
  * translate on top of the scale, so the browser has no style, layout or
  * paint work per frame. Wheel, keyboard and button targets are eased toward
  * per frame (approachZoom); a pinch target is `immediate` and tracks the
- * fingers. The spacer resize,
+ * fingers. Playing videos in the layer are paused for the gesture (WebKit
+ * re-renders them on every ancestor transform change). The spacer resize,
  * the real scroll write and the React state update happen once at settle,
  * IDLE_MS after the last event, at touch end, or at once on a native scroll,
  * pixel-identical to the last frame.
@@ -110,6 +111,7 @@ type Gesture = {
   scroll0: Scroll;
   pad0: Scroll;
   virtual: Scroll;
+  pausedMedia: HTMLMediaElement[];
   clientWidth: number;
   clientHeight: number;
   contentHeight: number;
@@ -222,10 +224,16 @@ export function CanvasZoomProvider(props: {
         scroll0,
         pad0,
         virtual: { left: scroll0.left - pad0.left, top: scroll0.top - pad0.top },
+        pausedMedia: [],
         clientWidth: scroller.clientWidth,
         clientHeight: scroller.clientHeight,
         contentHeight: spacerContentHeight(spacer),
       };
+      for (let media of layer.querySelectorAll("video")) {
+        if (media.paused || media.ended) continue;
+        media.pause();
+        g.pausedMedia.push(media);
+      }
       gesture.current = g;
       scroller.addEventListener("scroll", onNativeScroll, { once: true });
       return g;
@@ -266,6 +274,13 @@ export function CanvasZoomProvider(props: {
           left: scroll.left + pad.left,
           top: scroll.top + pad.top,
         });
+        // Resumed a frame later so the restart does not share the settle's
+        // layout frame.
+        let paused = g.pausedMedia;
+        if (paused.length)
+          window.requestAnimationFrame(() => {
+            for (let media of paused) media.play().catch(() => {});
+          });
       }
       setZoomState(zoomRef.current);
     };
