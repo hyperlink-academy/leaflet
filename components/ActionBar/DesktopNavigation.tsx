@@ -1,12 +1,8 @@
 "use client";
 import { usePathname } from "next/navigation";
 import { useIdentityData } from "components/IdentityProvider";
-import {
-  NotificationButton,
-  ReaderButton,
-  WriterButton,
-  useIsOnWriterPage,
-} from "./NavigationButtons";
+import { NotificationButton, useIsOnWriterPage } from "./NavigationButtons";
+import { NavigationBanner } from "./NavigationBanner";
 import { PublicationButtons } from "./Publications";
 import { Sidebar } from "./Sidebar";
 import { LoginModal } from "components/LoginButton";
@@ -106,13 +102,7 @@ export const NavigationContent = (props: NavigationProps) => {
       )}
       {onWriterPage && <PublicationButtons />}
       <div className="flex-1" />
-      <WriterButton />
-      <ReaderButton
-        subs={
-          identity?.publication_subscriptions?.length !== 0 &&
-          identity?.publication_subscriptions?.length !== undefined
-        }
-      />
+      <NavigationBanner />
       {identity?.atp_did && <NotificationButton />}
       <div className="flex gap-1 items-center">
         {identity ? (

@@ -262,6 +262,7 @@ export const identities = pgTable("identities", {
 	atp_did: text("atp_did"),
 	interface_state: jsonb("interface_state"),
 	metadata: jsonb("metadata"),
+	tutorial: boolean("tutorial").default(true).notNull(),
 },
 (table) => {
 	return {

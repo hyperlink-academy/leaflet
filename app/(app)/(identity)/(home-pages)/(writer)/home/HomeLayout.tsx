@@ -22,6 +22,9 @@ import {
   LeafletCardReplicache,
 } from "./LeafletList/LeafletCardReplicache";
 import { EmptyState } from "components/EmptyState";
+import { TutorialBanner } from "./Tutorial/TutorialBanner";
+import { TutorialTakeover } from "./Tutorial/TutorialTakeover";
+import { useTutorial } from "./Tutorial/useTutorial";
 
 export type Leaflet = {
   added_at: string;
@@ -80,6 +83,7 @@ export const HomeContent = (props: {
   );
 
   let { identity } = useIdentityData();
+  let { tutorial, hasContent } = useTutorial();
 
   let hasPubs =
     (identity?.publications.length ?? 0) > 0 ||
@@ -92,6 +96,19 @@ export const HomeContent = (props: {
       (identity.contributor_leaflets ?? []).some((row) =>
         row.permission_tokens.leaflets_in_publications?.some((l) => l.archived),
       ));
+
+  // The takeover owns the whole content area — no header, no search, no
+  // create button — leaving only the surrounding shell's navigation.
+  if (tutorial && !hasContent)
+    return (
+      <DashboardPageLayout
+        scrollKey="dashboard-home"
+        pageTitle="Home"
+        showHeader={false}
+      >
+        <TutorialTakeover />
+      </DashboardPageLayout>
+    );
 
   return (
     <DashboardPageLayout
@@ -115,6 +132,7 @@ export const HomeContent = (props: {
         titles={props.titles}
         searchValue={debouncedSearchValue}
       />
+      {tutorial && <TutorialBanner />}
     </DashboardPageLayout>
   );
 };

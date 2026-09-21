@@ -1,5 +1,7 @@
 "use client";
+import { useContext } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { DashboardIdContext } from "components/PageLayouts/dashboardState";
 import { ActionButton } from "./ActionButton";
 import { useIdentityData } from "components/IdentityProvider";
 import { ReaderUnreadSmall } from "components/Icons/ReaderSmall";
@@ -21,6 +23,20 @@ export function useIsOnWriterPage() {
   return WRITER_PATHS.some((p) => pathname.startsWith(p));
 }
 
+// The reader-side dashboards, keyed by the id their shell registers. Profile
+// and tag count as reading even though they aren't under /reader — their own
+// sidebar tabs are the reader's (Inbox/Trending/New). Everything else — the
+// writer pages, publication dashboards (whose id is the publication uri) —
+// is writing.
+const READER_DASHBOARD_IDS = ["reader", "tag", "profile"];
+
+export function useNavSide(): "reader" | "writer" {
+  let dashboardId = useContext(DashboardIdContext);
+  return dashboardId && READER_DASHBOARD_IDS.includes(dashboardId)
+    ? "reader"
+    : "writer";
+}
+
 export const WriterButton = () => {
   let current = useIsOnWriterPage();
   return (
@@ -35,7 +51,7 @@ export const WriterButton = () => {
   );
 };
 
-export const ReaderButton = (props: { subs: boolean }) => {
+export const ReaderButton = () => {
   let current = useIsActive("/reader");
   return (
     <SpeedyLink eager href={"/reader"} className="hover:no-underline!">
