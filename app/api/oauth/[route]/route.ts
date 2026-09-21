@@ -4,7 +4,7 @@ import { recommendAction } from "actions/recommendAction";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextRequest, NextResponse } from "next/server";
-import { createOauthClient } from "src/atproto-oauth";
+import { createOauthClient, describeOAuthError } from "src/atproto-oauth";
 import {
   AUTH_TOKEN_COOKIE,
   resolveAuthToken,
@@ -29,6 +29,9 @@ import { trackUserEvent } from "src/activeUserAnalytics";
 type OauthRequestClientState = {
   redirect: string | null;
   action: ActionAfterSignIn | null;
+  // What the user typed, carried through so the callback log can name the
+  // account even when the PDS never returns one.
+  handle?: string;
   link?: boolean;
   // Auto-confirm a cross-identity merge instead of routing to /merge-accounts.
   // Set when the caller already showed an in-context "link this account?"
@@ -100,6 +103,7 @@ export async function GET(
       let state: OauthRequestClientState = {
         redirect,
         action,
+        handle: handle || undefined,
         link,
         autoMerge,
         addAccount,
@@ -108,15 +112,27 @@ export async function GET(
       // Revoke any pending authentication requests if the connection is closed (optional)
       const ac = new AbortController();
 
-      const url = await client.authorize(handle || "https://bsky.social", {
-        scope:
-          "atproto account:email?action=read include:pub.leaflet.authFullPermissions include:site.standard.authFull include:app.bsky.authCreatePosts include:app.bsky.authViewAll?aud=did:web:api.bsky.app%23bsky_appview rpc:parts.page.mention.search?aud=* blob:*/*",
-        signal: ac.signal,
-        state: JSON.stringify(state),
-        ...(signup ? { prompt: "create" } : {}),
-      });
-
-      return NextResponse.redirect(url);
+      const flags = { handle, signup, link, addAccount, reauth };
+      try {
+        const url = await client.authorize(handle || "https://bsky.social", {
+          scope:
+            "atproto account:email?action=read include:pub.leaflet.authFullPermissions include:site.standard.authFull include:app.bsky.authCreatePosts include:app.bsky.authViewAll?aud=did:web:api.bsky.app%23bsky_appview rpc:parts.page.mention.search?aud=* blob:*/*",
+          signal: ac.signal,
+          state: JSON.stringify(state),
+          ...(signup ? { prompt: "create" } : {}),
+        });
+        console.log("[oauth/login] authorize", {
+          ...flags,
+          issuer: url.origin,
+        });
+        return NextResponse.redirect(url);
+      } catch (e) {
+        console.error("[oauth/login] authorize failed", {
+          ...flags,
+          ...describeOAuthError(e),
+        });
+        throw e;
+      }
     }
     case "callback": {
       const params = new URLSearchParams(req.url.split("?")[1]);
@@ -126,6 +142,14 @@ export async function GET(
         const { session, state } = await client.callback(params);
         let s: OauthRequestClientState = JSON.parse(state || "{}");
         redirectPath = s.redirect || "/";
+        console.log("[oauth/callback] authorized", {
+          did: session.did,
+          handle: s.handle,
+          issuer: session.serverMetadata.issuer,
+          link: s.link,
+          addAccount: s.addAccount,
+          scope: (await session.getTokenInfo()).scope,
+        });
         let { data: identity } = await supabaseServerClient
           .from("identities")
           .select()
@@ -296,7 +320,18 @@ export async function GET(
           (e as { digest: string }).digest.startsWith("NEXT_REDIRECT")
         )
           throw e;
-        console.log(e);
+        let handle: string | undefined;
+        try {
+          const cbState = (e as { state?: string | null }).state;
+          if (cbState) handle = JSON.parse(cbState).handle;
+        } catch {}
+        console.error("[oauth/callback] failed", {
+          handle,
+          iss: params.get("iss"),
+          error: params.get("error"),
+          error_description: params.get("error_description"),
+          ...describeOAuthError(e),
+        });
         redirect(redirectPath);
       }
     }
