@@ -65,6 +65,10 @@ const PageAttributes = {
     type: "canvas-pattern-union",
     cardinality: "one",
   },
+  "canvas/mobile-view": {
+    type: "canvas-mobile-view-union",
+    cardinality: "one",
+  },
 } as const;
 
 const BlockAttributes = {
@@ -583,6 +587,10 @@ export type Data<A extends keyof typeof Attributes> = {
   "canvas-pattern-union": {
     type: "canvas-pattern-union";
     value: "dot" | "grid" | "plain";
+  };
+  "canvas-mobile-view-union": {
+    type: "canvas-mobile-view-union";
+    value: "unconstrained" | "left" | "center";
   };
   "list-style-union": {
     type: "list-style-union";

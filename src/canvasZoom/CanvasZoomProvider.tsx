@@ -21,8 +21,8 @@
  * transform`) is scaled with a CSS transform inside a spacer sized content x
  * zoom, which gives the scroller its scrollable extent. Only the layer's
  * content is scaled: overlays that are siblings of the layer keep their
- * screen size. The stylesheet defaults `--canvas-zoom` to fit-to-width so
- * server-rendered HTML is already
+ * screen size. The stylesheet defaults `--canvas-zoom` to fit-to-width (or
+ * to the canvas's anchored mobile area) so server-rendered HTML is already
  * at the right scale; on a fresh mount the engine adopts the scale on
  * screen rather than rewriting it, since a fractionally different value
  * makes Chrome re-raster the layer. The provider attaches its listeners to
@@ -86,6 +86,7 @@ import {
   trimPads,
 } from "./math";
 import { getCanvasZoom, hasCanvasZoom, setCanvasZoom } from "./session";
+import type { CanvasArea } from "./mobileView";
 import { useCanvasZoomGestures } from "./useCanvasZoomGestures";
 
 export { getCanvasZoom, isCanvasPinching } from "./session";
@@ -172,9 +173,17 @@ export function CanvasZoomProvider(props: {
   pageKey: string;
   scrollerRef: RefObject<HTMLElement | null>;
   contentWidth?: number;
+  /**
+   * Area a fresh mount frames: the stylesheet already fits its width (via
+   * `--canvas-mobile-area` on the layer's spacer), and the scroller is put
+   * on its left edge here. A zoom kept from an earlier mount wins.
+   */
+  initialArea?: CanvasArea | null;
   children: ReactNode;
 }) {
   let { pageKey, scrollerRef } = props;
+  let initialArea = useRef(props.initialArea);
+  initialArea.current = props.initialArea;
   let contentWidth = props.contentWidth ?? CONTENT_WIDTH;
   let layerRef = useRef<HTMLDivElement>(null);
   let spacerRef = useRef<HTMLDivElement>(null);
@@ -447,11 +456,25 @@ export function CanvasZoomProvider(props: {
       spacer.style.setProperty("--canvas-zoom", String(z));
       layer.style.setProperty("--canvas-zoom", String(z));
     }
+    let area = initialArea.current;
+    if (!restored && area && area.left > 0) scroller.scrollLeft = area.left * z;
     zoomRef.current = z;
     setCanvasZoom(pageKey, z);
     setZoomState(z);
     setReady(true);
   }, [pageKey, scrollerRef, contentWidth]);
+
+  // The stylesheet's default zoom follows the mobile area, but a mounted canvas
+  // keeps the zoom the engine already holds; the area only frames fresh loads.
+  let areaWidth = props.initialArea?.width ?? null;
+  let mountedArea = useRef(areaWidth);
+  useIsomorphicLayoutEffect(() => {
+    if (mountedArea.current === areaWidth) return;
+    mountedArea.current = areaWidth;
+    let z = String(zoomRef.current);
+    spacerRef.current?.style.setProperty("--canvas-zoom", z);
+    layerRef.current?.style.setProperty("--canvas-zoom", z);
+  }, [areaWidth]);
 
   useEffect(() => {
     let scroller = scrollerRef.current;

@@ -75,6 +75,7 @@ function PageRenderer({
       <CanvasPage
         {...sharedProps}
         blocks={(page as PubLeafletPagesCanvas.Main).blocks || []}
+        mobileView={(page as PubLeafletPagesCanvas.Main).mobileView}
         pages={sharedProps.allPages}
       />
     );

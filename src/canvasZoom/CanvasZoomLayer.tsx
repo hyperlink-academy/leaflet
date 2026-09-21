@@ -1,6 +1,7 @@
 "use client";
 import type { CSSProperties, ReactNode } from "react";
 import { useCanvasZoomEngine } from "./CanvasZoomProvider";
+import type { CanvasArea } from "./mobileView";
 
 /**
  * The zoom itself is never rendered by React: the stylesheet defaults
@@ -11,6 +12,8 @@ import { useCanvasZoomEngine } from "./CanvasZoomProvider";
  */
 export function CanvasZoomLayer(props: {
   contentHeight: number;
+  /** Anchored mobile view area; the stylesheet's default zoom fits it. */
+  mobileArea?: CanvasArea | null;
   children: ReactNode;
 }) {
   let { layerRef, spacerRef, contentWidth } = useCanvasZoomEngine();
@@ -22,6 +25,7 @@ export function CanvasZoomLayer(props: {
         {
           "--canvas-content-width": contentWidth,
           "--canvas-content-height": props.contentHeight,
+          "--canvas-mobile-area": props.mobileArea?.width,
         } as CSSProperties
       }
     >

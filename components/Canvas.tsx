@@ -34,6 +34,13 @@ import {
 } from "src/canvasZoom/CanvasZoomProvider";
 import { CanvasZoomLayer } from "src/canvasZoom/CanvasZoomLayer";
 import { CanvasZoomControls } from "./CanvasZoomControls";
+import {
+  type CanvasMobileView,
+  MOBILE_VIEW_WIDTH,
+  mobileViewArea,
+} from "src/canvasZoom/mobileView";
+import { Menu, RadioMenuGroup, RadioMenuItem } from "./Menu";
+import { MobileViewSmall } from "./Icons/MobileViewSmall";
 
 export function Canvas(props: {
   entityID: string;
@@ -44,6 +51,9 @@ export function Canvas(props: {
   let ref = useRef<HTMLDivElement>(null);
   let blocks = useEntity(props.entityID, "canvas/block");
   let contentHeight = canvasContentHeight(blocks);
+  let mobileArea = mobileViewArea(
+    useEntity(props.entityID, "canvas/mobile-view")?.data.value,
+  );
   useEffect(() => {
     let abort = new AbortController();
     let isTouch = false;
@@ -80,17 +90,24 @@ export function Canvas(props: {
         overflow-y-scroll touch-pan-x touch-pan-y
       `}
     >
-      <CanvasZoomProvider pageKey={props.entityID} scrollerRef={ref}>
+      <CanvasZoomProvider
+        pageKey={props.entityID}
+        scrollerRef={ref}
+        initialArea={mobileArea}
+      >
         <AddCanvasBlockButton
           entityID={props.entityID}
           entity_set={entity_set}
         />
 
         <CanvasMetadata entityID={props.entityID} isSubpage={!props.first} />
+        {!props.preview && entity_set.permissions.write && (
+          <MobileViewToggle entityID={props.entityID} />
+        )}
 
         <CanvasZoomControls className="absolute left-2 bottom-2 sm:left-4 sm:bottom-4 z-10 bg-bg-page rounded-md px-1 py-0.5" />
 
-        <CanvasZoomLayer contentHeight={contentHeight}>
+        <CanvasZoomLayer contentHeight={contentHeight} mobileArea={mobileArea}>
           <CanvasContent {...props} />
         </CanvasZoomLayer>
       </CanvasZoomProvider>
@@ -163,6 +180,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
       className="relative h-full w-[1272px]"
     >
       <CanvasBackground entityID={props.entityID} />
+      <MobileViewGuides entityID={props.entityID} preview={props.preview} />
       {[...blocks]
         .sort((a, b) => {
           if (a.data.position.y === b.data.position.y) {
@@ -186,6 +204,85 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
     </div>
   );
 }
+
+const MOBILE_VIEW_LABELS: Record<CanvasMobileView, string> = {
+  unconstrained: "Fit whole canvas",
+  left: "Anchor to left edge",
+  center: "Anchor to center",
+};
+
+// Picks how a phone frames this canvas; the anchored views draw their
+// area on the canvas as guides.
+const MobileViewToggle = (props: { entityID: string }) => {
+  let { rep } = useReplicache();
+  let fact = useEntity(props.entityID, "canvas/mobile-view");
+  let view: CanvasMobileView = fact?.data.value || "unconstrained";
+  return (
+    <div className="absolute top-6 left-3 sm:top-4 sm:left-4 z-20">
+      <Menu
+        asChild
+        side="bottom"
+        align="start"
+        trigger={
+          <button
+            aria-label="Mobile view"
+            title="Mobile view"
+            className={`flex items-center rounded-md p-1 bg-bg-page border border-border-light hover:text-accent-contrast ${view === "unconstrained" ? "text-tertiary" : "text-accent-contrast"}`}
+          >
+            <MobileViewSmall />
+          </button>
+        }
+      >
+        <div className="px-2 pt-1 pb-0.5 text-xs text-tertiary">
+          Mobile view
+        </div>
+        <RadioMenuGroup
+          value={view}
+          onValueChange={(value) => {
+            rep?.mutate.assertFact({
+              id: fact?.id,
+              entity: props.entityID,
+              attribute: "canvas/mobile-view",
+              data: {
+                type: "canvas-mobile-view-union",
+                value: value as CanvasMobileView,
+              },
+            });
+          }}
+        >
+          {(Object.keys(MOBILE_VIEW_LABELS) as CanvasMobileView[]).map((v) => (
+            <RadioMenuItem key={v} value={v} selected={v === view}>
+              {MOBILE_VIEW_LABELS[v]}
+            </RadioMenuItem>
+          ))}
+        </RadioMenuGroup>
+      </Menu>
+    </div>
+  );
+};
+
+// Guides for the anchored mobile view area, in canvas px so they scale with
+// the zoom; painted under the blocks.
+const MobileViewGuides = (props: { entityID: string; preview?: boolean }) => {
+  let area = mobileViewArea(
+    useEntity(props.entityID, "canvas/mobile-view")?.data.value,
+  );
+  if (!area) return null;
+  return (
+    <div
+      aria-hidden
+      className="canvasMobileViewGuides absolute top-0 bottom-0 pointer-events-none border-x border-dashed border-accent-1"
+      style={{ left: area.left, width: area.width }}
+    >
+      <div className="absolute inset-0 bg-accent-1 opacity-[0.04]" />
+      {!props.preview && (
+        <div className="absolute top-2 left-2 text-xs text-accent-contrast opacity-60 select-none">
+          Mobile view · {MOBILE_VIEW_WIDTH}px
+        </div>
+      )}
+    </div>
+  );
+};
 
 const CanvasMetadata = (props: {
   entityID: string;

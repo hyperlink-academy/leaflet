@@ -384,6 +384,7 @@ async function publish({
         $type: "pub.leaflet.pages.canvas" as const,
         id: p.id,
         blocks: p.blocks as PubLeafletPagesCanvas.Block[],
+        ...(p.mobileView ? { mobileView: p.mobileView } : {}),
       };
     } else {
       return {

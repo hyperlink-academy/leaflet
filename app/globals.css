@@ -1296,7 +1296,8 @@ body > iframe[src*="js.stripe.com"] {
 /* Canvas zoom. --canvas-zoom is written inline by the zoom engine
    (src/canvasZoom); the stylesheet default below is fit-to-width capped at
    100%, from the scroller's inline size, so server-rendered HTML is already
-   at the right scale.
+   at the right scale. --canvas-mobile-area (inline on the spacer, inherited)
+   narrows what has to fit to the canvas's anchored mobile area.
    tan(atan2()) divides two lengths into a plain number. */
 .canvasWrapper {
   container-type: size;
@@ -1346,7 +1347,7 @@ body > iframe[src*="js.stripe.com"] {
         atan2(
           100cqw,
           calc(
-            var(--canvas-content-width, 1272) * 1px
+            var(--canvas-mobile-area, var(--canvas-content-width, 1272)) * 1px
           )
         )
       )

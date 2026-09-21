@@ -11,6 +11,7 @@ import { useMemo, useRef } from "react";
 import { PageWrapper } from "components/Pages/Page";
 import { CanvasZoomProvider } from "src/canvasZoom/CanvasZoomProvider";
 import { CanvasZoomLayer } from "src/canvasZoom/CanvasZoomLayer";
+import { mobileViewArea, type CanvasArea } from "src/canvasZoom/mobileView";
 import { CanvasZoomControls } from "components/CanvasZoomControls";
 import { Block } from "./PostContent";
 import {
@@ -40,9 +41,11 @@ import { PostHeaderBlockProvider } from "./PostHeader/postHeaderBlockContext";
 export function CanvasPage({
   blocks,
   pages,
+  mobileView,
   ...props
 }: Omit<SharedPageProps, "allPages"> & {
   blocks: PubLeafletPagesCanvas.Block[];
+  mobileView?: PubLeafletPagesCanvas.Main["mobileView"];
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) {
   const {
@@ -112,6 +115,7 @@ export function CanvasPage({
             pageId={pageId}
             pages={pages}
             zoomKey={pageId ? `${document_uri}#${pageId}` : document_uri}
+            mobileArea={mobileViewArea(mobileView)}
           />
         </PostHeaderBlockProvider>
       </DrawerThreadPageProvider>
@@ -129,6 +133,7 @@ function CanvasContent({
   pollData,
   pages,
   zoomKey,
+  mobileArea,
 }: {
   blocks: PubLeafletPagesCanvas.Block[];
   did: string;
@@ -139,6 +144,7 @@ function CanvasContent({
   pageId?: string;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   zoomKey: string;
+  mobileArea: CanvasArea | null;
 }) {
   let scrollerRef = useRef<HTMLDivElement>(null);
   let sortedBlocks = useMemo(
@@ -153,7 +159,11 @@ function CanvasContent({
     sortedBlocks.length > 0 ? Math.max(...sortedBlocks.map((b) => b.y), 0) : 0;
 
   return (
-    <CanvasZoomProvider pageKey={zoomKey} scrollerRef={scrollerRef}>
+    <CanvasZoomProvider
+      pageKey={zoomKey}
+      scrollerRef={scrollerRef}
+      initialArea={mobileArea}
+    >
       {/* w-[1272px] max-w-full: the page keeps its full-canvas width while
           the zoomed-out spacer shrinks, and the scroller (not the page card
           around it) carries the horizontal overflow when zoomed in. */}
@@ -161,7 +171,7 @@ function CanvasContent({
         ref={scrollerRef}
         className="canvasWrapper h-full w-[1272px] max-w-full overflow-y-scroll touch-pan-x touch-pan-y postContent"
       >
-        <CanvasZoomLayer contentHeight={height + 512}>
+        <CanvasZoomLayer contentHeight={height + 512} mobileArea={mobileArea}>
           <div
             style={{
               minHeight: height + 512,

@@ -85,6 +85,7 @@ type ProcessBlocksToPagesResult = {
       | PubLeafletPagesLinearDocument.Block[]
       | PubLeafletPagesCanvas.Block[];
     type: "doc" | "canvas";
+    mobileView?: PubLeafletPagesCanvas.Main["mobileView"];
   }[];
 };
 
@@ -224,6 +225,7 @@ export async function processBlocksToPages(opts: {
           id: page.data.value,
           blocks: canvasBlocks,
           type: "canvas",
+          mobileView: canvasMobileView(page.data.value),
         });
       } else {
         const blocks = getBlocksWithTypeLocal(facts, page.data.value);
@@ -585,6 +587,7 @@ export async function processBlocksToPages(opts: {
       id: startPage,
       blocks: canvasBlocks,
       type: "canvas",
+      mobileView: canvasMobileView(startPage),
     });
   } else {
     const blocks = getBlocksWithTypeLocal(facts, startPage);
@@ -784,6 +787,12 @@ export async function processBlocksToPages(opts: {
       return undefined;
     }
     return blockTypeToRecord[b.type](b, membersOnly);
+  }
+
+  // The default is left off the record.
+  function canvasMobileView(pageID: string) {
+    const view = scan.eav(pageID, "canvas/mobile-view")?.[0]?.data.value;
+    return view && view !== "unconstrained" ? view : undefined;
   }
 
   async function canvasBlocksToRecord(

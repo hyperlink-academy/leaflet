@@ -11,6 +11,12 @@ export const PubLeafletPagesCanvasDocument: LexiconDoc = {
       properties: {
         id: { type: "string" },
         blocks: { type: "array", items: { type: "ref", ref: "#block" } },
+        mobileView: {
+          type: "string",
+          knownValues: ["unconstrained", "left", "center"],
+          description:
+            "How a narrow viewport frames the canvas: the whole canvas scaled to fit the width (unconstrained, the default), or a phone-width area anchored to the canvas's left edge or centered on it, shown at up to 1:1.",
+        },
       },
     },
     block: {

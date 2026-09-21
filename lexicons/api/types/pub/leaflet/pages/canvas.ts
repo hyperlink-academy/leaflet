@@ -42,6 +42,8 @@ export interface Main {
   $type?: 'pub.leaflet.pages.canvas'
   id?: string
   blocks: Block[]
+  /** How a narrow viewport frames the canvas: the whole canvas scaled to fit the width (unconstrained, the default), or a phone-width area anchored to the canvas's left edge or centered on it, shown at up to 1:1. */
+  mobileView?: 'unconstrained' | 'left' | 'center' | (string & {})
 }
 
 const hashMain = 'main'
