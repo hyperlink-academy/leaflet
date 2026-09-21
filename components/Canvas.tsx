@@ -56,6 +56,10 @@ export function Canvas(props: {
   let entity_set = useEntitySetContext();
   let ref = useRef<HTMLDivElement>(null);
   let blocks = useEntity(props.entityID, "canvas/block");
+  // Readers on a view-only link get the same lock as published viewers.
+  let lockViewerZoom =
+    !!useEntity(props.entityID, "canvas/lock-viewer-zoom")?.data.value &&
+    !entity_set.permissions.write;
   let contentHeight = canvasContentHeight(blocks);
   let mobileArea = mobileViewArea(
     useEntity(props.entityID, "canvas/mobile-view")?.data.value,
@@ -100,6 +104,7 @@ export function Canvas(props: {
         pageKey={props.entityID}
         scrollerRef={ref}
         initialArea={mobileArea}
+        lockViewerZoom={lockViewerZoom}
         // Writers double tap empty canvas to add a block.
         doubleTapZoom={!!props.preview || !entity_set.permissions.write}
       >
