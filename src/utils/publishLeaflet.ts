@@ -385,6 +385,7 @@ async function publish({
         id: p.id,
         blocks: p.blocks as PubLeafletPagesCanvas.Block[],
         ...(p.mobileView ? { mobileView: p.mobileView } : {}),
+        ...(p.lockViewerZoom ? { lockViewerZoom: true } : {}),
       };
     } else {
       return {

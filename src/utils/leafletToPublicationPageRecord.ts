@@ -37,6 +37,7 @@ export async function leafletToPublicationPageRecord(opts: {
         id: p.id,
         blocks: p.blocks as PubLeafletPagesCanvas.Block[],
         ...(p.mobileView ? { mobileView: p.mobileView } : {}),
+        ...(p.lockViewerZoom ? { lockViewerZoom: true } : {}),
       };
     }
     return {

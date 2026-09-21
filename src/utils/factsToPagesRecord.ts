@@ -86,6 +86,7 @@ type ProcessBlocksToPagesResult = {
       | PubLeafletPagesCanvas.Block[];
     type: "doc" | "canvas";
     mobileView?: PubLeafletPagesCanvas.Main["mobileView"];
+    lockViewerZoom?: boolean;
   }[];
 };
 
@@ -226,6 +227,7 @@ export async function processBlocksToPages(opts: {
           blocks: canvasBlocks,
           type: "canvas",
           mobileView: canvasMobileView(page.data.value),
+          lockViewerZoom: canvasLockViewerZoom(page.data.value),
         });
       } else {
         const blocks = getBlocksWithTypeLocal(facts, page.data.value);
@@ -588,6 +590,7 @@ export async function processBlocksToPages(opts: {
       blocks: canvasBlocks,
       type: "canvas",
       mobileView: canvasMobileView(startPage),
+      lockViewerZoom: canvasLockViewerZoom(startPage),
     });
   } else {
     const blocks = getBlocksWithTypeLocal(facts, startPage);
@@ -793,6 +796,11 @@ export async function processBlocksToPages(opts: {
   function canvasMobileView(pageID: string) {
     const view = scan.eav(pageID, "canvas/mobile-view")?.[0]?.data.value;
     return view && view !== "unconstrained" ? view : undefined;
+  }
+  function canvasLockViewerZoom(pageID: string) {
+    return scan.eav(pageID, "canvas/lock-viewer-zoom")?.[0]?.data.value
+      ? true
+      : undefined;
   }
 
   async function canvasBlocksToRecord(

@@ -1,3 +1,4 @@
+import { useIsMobile } from "src/hooks/isMobile";
 import { useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { v7 } from "uuid";
@@ -9,7 +10,6 @@ import { focusBlock } from "src/utils/focusBlock";
 import { elementId } from "src/utils/elementId";
 import { useUIState } from "src/useUIState";
 import useMeasure from "react-use-measure";
-import { useIsMobile } from "src/hooks/isMobile";
 import { Media } from "./Media";
 import { TooltipButton } from "./Buttons";
 import { useBlockKeyboardHandlers } from "./Blocks/useBlockKeyboardHandlers";
@@ -39,7 +39,13 @@ import {
   type CanvasMobileView,
   mobileViewArea,
 } from "src/canvasZoom/mobileView";
-import { Menu, RadioMenuGroup, RadioMenuItem } from "./Menu";
+import {
+  CheckboxMenuItem,
+  Menu,
+  MenuSeparator,
+  RadioMenuGroup,
+  RadioMenuItem,
+} from "./Menu";
 import { MobileViewSmall } from "./Icons/MobileViewSmall";
 
 export function Canvas(props: {
@@ -227,6 +233,8 @@ const MobileViewToggle = (props: { entityID: string }) => {
   let { rep } = useReplicache();
   let fact = useEntity(props.entityID, "canvas/mobile-view");
   let view: CanvasMobileView = fact?.data.value || "unconstrained";
+  let lockFact = useEntity(props.entityID, "canvas/lock-viewer-zoom");
+  let locked = !!lockFact?.data.value;
   return (
     <div>
       <Menu
@@ -266,6 +274,22 @@ const MobileViewToggle = (props: { entityID: string }) => {
             </RadioMenuItem>
           ))}
         </RadioMenuGroup>
+        <MenuSeparator />
+        <CheckboxMenuItem
+          compact
+          checked={locked}
+          onSelect={(e) => {
+            e.preventDefault();
+            rep?.mutate.assertFact({
+              id: lockFact?.id,
+              entity: props.entityID,
+              attribute: "canvas/lock-viewer-zoom",
+              data: { type: "boolean", value: !locked },
+            });
+          }}
+        >
+          Lock viewer zoom
+        </CheckboxMenuItem>
       </Menu>
     </div>
   );

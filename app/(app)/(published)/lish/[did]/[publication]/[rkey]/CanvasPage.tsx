@@ -1,4 +1,5 @@
 "use client";
+import { useIsMobile } from "src/hooks/isMobile";
 import {
   PubLeafletPagesCanvas,
   PubLeafletPagesLinearDocument,
@@ -34,7 +35,6 @@ import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
 import { usePostFrame } from "./postFrame";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
-import { useIsMobile } from "src/hooks/isMobile";
 import { PubLeafletBlocksPostHeader } from "lexicons/api";
 import { PostHeaderBlockProvider } from "./PostHeader/postHeaderBlockContext";
 
@@ -42,10 +42,12 @@ export function CanvasPage({
   blocks,
   pages,
   mobileView,
+  lockViewerZoom,
   ...props
 }: Omit<SharedPageProps, "allPages"> & {
   blocks: PubLeafletPagesCanvas.Block[];
   mobileView?: PubLeafletPagesCanvas.Main["mobileView"];
+  lockViewerZoom?: boolean;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) {
   const {
@@ -116,6 +118,7 @@ export function CanvasPage({
             pages={pages}
             zoomKey={pageId ? `${document_uri}#${pageId}` : document_uri}
             mobileArea={mobileViewArea(mobileView)}
+            lockViewerZoom={!!lockViewerZoom}
           />
         </PostHeaderBlockProvider>
       </DrawerThreadPageProvider>
@@ -134,6 +137,7 @@ function CanvasContent({
   pages,
   zoomKey,
   mobileArea,
+  lockViewerZoom,
 }: {
   blocks: PubLeafletPagesCanvas.Block[];
   did: string;
@@ -145,6 +149,7 @@ function CanvasContent({
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   zoomKey: string;
   mobileArea: CanvasArea | null;
+  lockViewerZoom: boolean;
 }) {
   let scrollerRef = useRef<HTMLDivElement>(null);
   let sortedBlocks = useMemo(
@@ -163,6 +168,7 @@ function CanvasContent({
       pageKey={zoomKey}
       scrollerRef={scrollerRef}
       initialArea={mobileArea}
+      lockViewerZoom={lockViewerZoom}
     >
       {/* w-[1272px] max-w-full: the page keeps its full-canvas width while
           the zoomed-out spacer shrinks, and the scroller (not the page card

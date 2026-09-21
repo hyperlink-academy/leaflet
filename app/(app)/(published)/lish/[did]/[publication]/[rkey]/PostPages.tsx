@@ -76,6 +76,7 @@ function PageRenderer({
         {...sharedProps}
         blocks={(page as PubLeafletPagesCanvas.Main).blocks || []}
         mobileView={(page as PubLeafletPagesCanvas.Main).mobileView}
+        lockViewerZoom={(page as PubLeafletPagesCanvas.Main).lockViewerZoom}
         pages={sharedProps.allPages}
       />
     );

@@ -5,8 +5,10 @@ import { SubtractTiny } from "./Icons/SubtractTiny";
 import { useCanvasZoom } from "src/canvasZoom/CanvasZoomProvider";
 
 export function CanvasZoomControls(props: { className?: string }) {
-  let { zoom, min, max, ready, zoomIn, zoomOut, reset } = useCanvasZoom();
+  let { zoom, min, max, ready, locked, zoomIn, zoomOut, reset } =
+    useCanvasZoom();
   let percent = Math.round(zoom * 100);
+  if (locked) return null;
   return (
     <div
       className={`canvasZoomControls flex flex-row items-center gap-1 text-tertiary ${ready ? "" : "invisible"} ${props.className || ""}`}

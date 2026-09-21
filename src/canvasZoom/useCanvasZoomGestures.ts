@@ -43,10 +43,13 @@ function touchPoints(touches: TouchList) {
   };
 }
 
-export function useCanvasZoomGestures(engine: CanvasZoomEngine) {
+export function useCanvasZoomGestures(
+  engine: CanvasZoomEngine,
+  enabled = true,
+) {
   useEffect(() => {
     let scroller = engine.scrollerRef.current;
-    if (!scroller) return;
+    if (!scroller || !enabled) return;
     let abort = new AbortController();
     let signal = abort.signal;
 
@@ -224,5 +227,5 @@ export function useCanvasZoomGestures(engine: CanvasZoomEngine) {
       abort.abort();
       endPinch();
     };
-  }, [engine]);
+  }, [engine, enabled]);
 }

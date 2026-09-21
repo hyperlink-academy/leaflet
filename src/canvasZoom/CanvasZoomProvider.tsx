@@ -155,6 +155,8 @@ type CanvasZoomContextValue = {
   max: number;
   /** False until the client has read the on-screen zoom. */
   ready: boolean;
+  /** Gestures and controls are off. */
+  locked: boolean;
   zoomRef: RefObject<number>;
   zoomIn: () => void;
   zoomOut: () => void;
@@ -174,6 +176,8 @@ export function CanvasZoomProvider(props: {
   pageKey: string;
   /** Double tap zooms in (touch); off where a double tap means something else. */
   doubleTapZoom?: boolean;
+  /** Viewers get no zoom gestures or controls; the initial framing stays. */
+  lockViewerZoom?: boolean;
   scrollerRef: RefObject<HTMLElement | null>;
   contentWidth?: number;
   /**
@@ -524,8 +528,9 @@ export function CanvasZoomProvider(props: {
     };
   }, [engine, scrollerRef, contentWidth]);
 
-  useCanvasZoomGestures(engine);
-  useCanvasDoubleTap(engine, props.doubleTapZoom ?? true);
+  let locked = !!props.lockViewerZoom;
+  useCanvasZoomGestures(engine, !locked);
+  useCanvasDoubleTap(engine, (props.doubleTapZoom ?? true) && !locked);
 
   let setZoom = useCallback(
     (z: number, anchor?: Point) =>
@@ -548,13 +553,14 @@ export function CanvasZoomProvider(props: {
       min,
       max: MAX_ZOOM,
       ready,
+      locked,
       zoomRef,
       zoomIn,
       zoomOut,
       reset,
       setZoom,
     }),
-    [zoom, min, ready, zoomIn, zoomOut, reset, setZoom],
+    [zoom, min, ready, locked, zoomIn, zoomOut, reset, setZoom],
   );
 
   return (

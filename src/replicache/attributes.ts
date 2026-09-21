@@ -69,6 +69,10 @@ const PageAttributes = {
     type: "canvas-mobile-view-union",
     cardinality: "one",
   },
+  "canvas/lock-viewer-zoom": {
+    type: "boolean",
+    cardinality: "one",
+  },
 } as const;
 
 const BlockAttributes = {
