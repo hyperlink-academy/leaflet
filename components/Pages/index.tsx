@@ -33,14 +33,17 @@ export function Pages(props: { rootPage: string; flow?: boolean }) {
     // One drag context above every open page, so list items can be dragged
     // between them (e.g. into an open subpage).
     <ListDndProvider>
-      <LeafletSidebar />
-      {!fullPageScroll && !props.flow && (
+      {fullPageScroll || props.flow ? (
+        <LeafletSidebar floating />
+      ) : (
         <BookendSpacer
           shrink={loneCanvas}
           onClick={(e) => {
             e.currentTarget === e.target && blurPage();
           }}
-        />
+        >
+          <LeafletSidebar />
+        </BookendSpacer>
       )}
 
       <Page
