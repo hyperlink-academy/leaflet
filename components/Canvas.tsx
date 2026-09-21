@@ -751,7 +751,11 @@ const Gripper = (props: {
   return (
     <div
       onMouseDown={props.onMouseDown}
-      onPointerDown={props.onMouseDown}
+      // A cancelled pointerdown suppresses the mousedown the wrapper selects
+      // the block on, so a mouse starts its drag from mousedown instead.
+      onPointerDown={(e) => {
+        if (e.pointerType !== "mouse") props.onMouseDown(e);
+      }}
       className="gripper w-[9px] shrink-0 py-1 mr-1 cursor-grab touch-none"
     >
       <div className="h-full grid grid-cols-1 grid-rows-1 ">
