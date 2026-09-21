@@ -112,21 +112,72 @@ export function anchoredScroll(args: {
   return scrollForAnchor({ anchorViewport, anchorCanvas, zoom: args.zNew });
 }
 
-export function clampScroll(args: {
-  scrollLeft: number;
-  scrollTop: number;
-  clientWidth: number;
-  clientHeight: number;
+export type Scroll = { left: number; top: number };
+export type Size = { width: number; height: number };
+export type Pads = { top: number; right: number; bottom: number; left: number };
+
+export const NO_PADS: Pads = { top: 0, right: 0, bottom: 0, left: 0 };
+
+// The spacer's content box: the zoomed canvas, never smaller than the
+// viewport (the stylesheet's min-width/min-height: 100%).
+export function contentBox(args: {
+  zoom: number;
   contentWidth: number;
   contentHeight: number;
-  zoom: number;
-}) {
-  let maxLeft = Math.max(0, args.contentWidth * args.zoom - args.clientWidth);
-  let maxTop = Math.max(0, args.contentHeight * args.zoom - args.clientHeight);
+  clientWidth: number;
+  clientHeight: number;
+}): Size {
   return {
-    scrollLeft: Math.min(maxLeft, Math.max(0, args.scrollLeft)),
-    scrollTop: Math.min(maxTop, Math.max(0, args.scrollTop)),
+    width: Math.max(args.contentWidth * args.zoom, args.clientWidth),
+    height: Math.max(args.contentHeight * args.zoom, args.clientHeight),
   };
+}
+
+// Spacer padding that makes a pad-free offset (content at the scroller's
+// origin; negative or past the content when the anchor sits near an edge)
+// a valid scroll position: exactly the empty space it leaves on each side,
+// none once the content covers the viewport again.
+export function padsForScroll(scroll: Scroll, client: Size, box: Size): Pads {
+  return {
+    left: Math.max(0, -scroll.left),
+    top: Math.max(0, -scroll.top),
+    right: Math.max(0, scroll.left + client.width - box.width),
+    bottom: Math.max(0, scroll.top + client.height - box.height),
+  };
+}
+
+// Pads a native scroll has moved fully off screen, dropped: the left/top pad
+// once the offset is past it (which shifts the offset by the pad so nothing
+// moves on screen), the right/bottom pad once the content's end is back in
+// view. Null when every pad is still in use.
+export function trimPads(
+  pads: Pads,
+  scroll: Scroll,
+  client: Size,
+  box: Size,
+): { pads: Pads; shift: Scroll } | null {
+  let next = { ...pads };
+  let shift = { left: 0, top: 0 };
+  if (pads.left && scroll.left >= pads.left) {
+    next.left = 0;
+    shift.left = pads.left;
+  }
+  if (pads.top && scroll.top >= pads.top) {
+    next.top = 0;
+    shift.top = pads.top;
+  }
+  if (pads.right && scroll.left + client.width <= pads.left + box.width)
+    next.right = 0;
+  if (pads.bottom && scroll.top + client.height <= pads.top + box.height)
+    next.bottom = 0;
+  if (
+    next.left === pads.left &&
+    next.top === pads.top &&
+    next.right === pads.right &&
+    next.bottom === pads.bottom
+  )
+    return null;
+  return { pads: next, shift };
 }
 
 // One frame of exponential smoothing in log space (so a 2x step looks the

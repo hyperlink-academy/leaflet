@@ -1,8 +1,9 @@
 "use client";
 /**
- * Zoom engine for canvas pages. Native scroll stays on the existing scroller;
- * the content is scaled inside it and the scroll offsets are rewritten so the
- * point under the cursor / pinch / viewport center stays put.
+ * Zoom engine for canvas pages. Native scroll stays on the existing scroller
+ * (page snapping, scrollIntoView and momentum scrolling depend on it); the
+ * content is scaled inside it and the scroll offset is rewritten so the
+ * point under the cursor, pinch or viewport center stays put.
  *
  * Usage:
  *
@@ -16,35 +17,38 @@
  *     </CanvasZoomProvider>
  *   </div>
  *
- * The provider attaches all gesture listeners to `scrollerRef.current` in an
- * effect, so the scroller must be mounted in the same commit as the provider.
- * It also writes the scroller's inline width to `contentWidth` plus the
- * scrollbar gutter, so a classic (non-overlay) vertical scrollbar does not
- * leave the scroller a few px narrower than the content and scrollable
- * sideways; a `max-width` on the scroller still caps it on narrow screens.
- * Only the direct content of `CanvasZoomLayer` is scaled: overlays that are
- * siblings of the layer inside the scroller (add button, metadata bar) keep
- * their screen size. The layer's spacer has `min-width: 100%` so a `w-fit`
- * scroller does not shrink when zoomed out. The layer is a grid whose
- * min-height tracks the scroller's height in canvas px, so the content it
- * stretches always covers the viewport at any zoom (percentage heights inside
- * the content, e.g. a background, resolve against it).
+ * Layout. The layer (`.canvasZoomLayer`, permanently `will-change:
+ * transform`) is scaled with a CSS transform inside a spacer sized content x
+ * zoom, which gives the scroller its scrollable extent. Only the layer's
+ * content is scaled: overlays that are siblings of the layer keep their
+ * screen size. The stylesheet defaults `--canvas-zoom` to fit-to-width so
+ * server-rendered HTML is already
+ * at the right scale; on a fresh mount the engine adopts the scale on
+ * screen rather than rewriting it, since a fractionally different value
+ * makes Chrome re-raster the layer. The provider attaches its listeners to
+ * `scrollerRef.current` in an effect, so the scroller must mount in the
+ * same commit, and it widens the scroller by a classic scrollbar's gutter
+ * so the gutter does not eat into the canvas width.
  *
- * Frames during a gesture touch nothing but the layer's inline transform: the
- * scroll offset the anchor calls for is folded into a translate on top of the
- * scale, so the browser has no style, layout or paint work per frame and the
- * compositor just re-draws the layer's existing raster. Resizing the spacer
- * and writing the real scroll offset (which force a layout, repaint the
- * scroller and scrollbars, and recalc every descendant through the inherited
- * `--canvas-zoom`) happen once, when the gesture settles, with the same
- * on-screen result. A native scroll mid-gesture settles immediately so the
- * content keeps following the scroller.
+ * Gestures. A frame of a running gesture writes only the layer's inline
+ * transform: the scroll offset the anchor calls for is folded into a
+ * translate on top of the scale, so the browser has no style, layout or
+ * paint work per frame. Wheel, keyboard and button targets are eased toward
+ * per frame (approachZoom); a pinch target is `immediate` and tracks the
+ * fingers. The spacer resize,
+ * the real scroll write and the React state update happen once at settle,
+ * IDLE_MS after the last event, at touch end, or at once on a native scroll,
+ * pixel-identical to the last frame.
+ *
+ * Empty space. The offset the anchor asks for can fall outside the content
+ * (zooming out near a corner, or in around empty space). Rather than clamp
+ * it, which would slide the content, the settle writes spacer padding equal
+ * to the space left on each side, so the offset is always in range; that
+ * padding is real scrollable space and is dropped again once a native
+ * scroll has moved it fully off screen.
  *
  * Reading zoom:
- *   - `useCanvasZoom().zoom` is the settled value (React state, committed once
- *     ~200ms after the last gesture event).
- *   Wheel, keyboard and button targets are eased toward per frame
- *   (approachZoom); a pinch target is `immediate` and tracks the fingers.
+ *   - `useCanvasZoom().zoom` is the settled value (React state).
  *   - `useCanvasZoomRef()` / `getCanvasZoom(pageKey)` return the live value,
  *     for hot paths (drag deltas, drop placement, ProseMirror scrolling).
  *   Client px -> canvas px is `(clientX - layerRect.left) / zoom`; the layer
@@ -66,13 +70,19 @@ import {
 import {
   CONTENT_WIDTH,
   MAX_ZOOM,
+  NO_PADS,
+  type Pads,
   type Point,
+  type Scroll,
   anchorToCanvas,
   approachZoom,
   clampZoom,
+  contentBox,
   minZoom,
   nextStep,
+  padsForScroll,
   scrollForAnchor,
+  trimPads,
 } from "./math";
 import { getCanvasZoom, hasCanvasZoom, setCanvasZoom } from "./session";
 import { useCanvasZoomGestures } from "./useCanvasZoomGestures";
@@ -80,6 +90,8 @@ import { useCanvasZoomGestures } from "./useCanvasZoomGestures";
 export { getCanvasZoom, isCanvasPinching } from "./session";
 
 const IDLE_MS = 200;
+// Debounce backing up `scrollend` for the padding trim (Safari lacks it).
+const SCROLL_END_MS = 150;
 
 export type ZoomTarget = {
   zoom: number;
@@ -89,14 +101,11 @@ export type ZoomTarget = {
   immediate?: boolean;
 };
 
-type Scroll = { left: number; top: number };
-
-// Scroll geometry captured on a gesture's first frame; `scroll0` is what the
-// scroller really sits on while the gesture runs, `pad0` the spacer padding
-// the content then sat behind, and `virtual` the offset the anchor asks for
-// as if the content began at the scroller's origin: it can be negative or
-// beyond the content, and the settle turns that excess into padding.
-// settle will write.
+// Geometry captured on a gesture's first frame. `scroll0` is what the
+// scroller really sits on while the gesture runs and `pad0` the padding the
+// content then sat behind; `virtual` is the offset the anchor asks for as if
+// the content began at the scroller's origin, which the settle writes (with
+// padding for any part outside the content).
 type Gesture = {
   scroll0: Scroll;
   pad0: Scroll;
@@ -117,12 +126,23 @@ export type CanvasZoomEngine = {
   targetZoom: () => number;
   /** Viewport-relative point of the scroller's client box. */
   toViewport: (clientX: number, clientY: number) => Point;
+  viewportCenter: () => Point;
   /** Canvas point currently under a viewport-relative point. */
   canvasPointAt: (anchorViewport: Point) => Point;
   clamp: (z: number) => number;
   schedule: (target: ZoomTarget) => void;
+  /** Zooms (clamped) keeping the canvas point under a viewport point put. */
+  zoomAt: (zoom: number, anchorViewport: Point, immediate?: boolean) => void;
+  zoomAtClient: (
+    zoom: number,
+    clientX: number,
+    clientY: number,
+    immediate?: boolean,
+  ) => void;
   /** Reconciles a running gesture now instead of after the idle delay. */
   settleNow: () => void;
+  /** Drops settle padding a native scroll has moved off screen. */
+  trimPads: () => void;
 };
 
 type CanvasZoomContextValue = {
@@ -166,30 +186,45 @@ export function CanvasZoomProvider(props: {
 
   let pending = useRef<ZoomTarget | null>(null);
   let gesture = useRef<Gesture | null>(null);
+  // Offset the engine last wrote: its scroll event, reported a frame later,
+  // must not pass for a native scroll.
   let writtenScroll = useRef<Scroll | null>(null);
-  // Spacer padding on the left/top: empty space a settle left before the
-  // content so the anchor could stay put near an edge. Only the engine
-  // writes it, so it is tracked here instead of read back from style.
-  let pads = useRef<Scroll>({ left: 0, top: 0 });
+  // Only the engine writes the spacer padding, so it is tracked here rather
+  // than read back from style on hot paths.
+  let pads = useRef<Pads>(NO_PADS);
   let lastFrame = useRef(0);
   let raf = useRef(0);
   let idleTimer = useRef(0);
 
   let engine = useMemo<CanvasZoomEngine>(() => {
-    let beginGesture = (scroller: HTMLElement, spacer: HTMLElement) => {
+    let writePads = (spacer: HTMLElement, next: Pads) => {
+      pads.current = next;
+      spacer.style.padding = `${next.top}px ${next.right}px ${next.bottom}px ${next.left}px`;
+    };
+
+    let writeScroll = (scroller: HTMLElement, scroll: Scroll) => {
+      scroller.scrollLeft = scroll.left;
+      scroller.scrollTop = scroll.top;
+      writtenScroll.current = {
+        left: scroller.scrollLeft,
+        top: scroller.scrollTop,
+      };
+    };
+
+    let beginGesture = (
+      scroller: HTMLElement,
+      layer: HTMLElement,
+      spacer: HTMLElement,
+    ) => {
       let scroll0 = { left: scroller.scrollLeft, top: scroller.scrollTop };
+      let pad0 = { left: pads.current.left, top: pads.current.top };
       let g: Gesture = {
         scroll0,
-        pad0: { ...pads.current },
-        virtual: {
-          left: scroll0.left - pads.current.left,
-          top: scroll0.top - pads.current.top,
-        },
+        pad0,
+        virtual: { left: scroll0.left - pad0.left, top: scroll0.top - pad0.top },
         clientWidth: scroller.clientWidth,
         clientHeight: scroller.clientHeight,
-        contentHeight:
-          Number(spacer.style.getPropertyValue("--canvas-content-height")) ||
-          0,
+        contentHeight: spacerContentHeight(spacer),
       };
       gesture.current = g;
       scroller.addEventListener("scroll", onNativeScroll, { once: true });
@@ -209,39 +244,32 @@ export function CanvasZoomProvider(props: {
         scroller.removeEventListener("scroll", onNativeScroll);
         // Read before the spacer resizes, which can clamp or anchor the
         // offset; the difference is a native scroll made mid-gesture.
-        let x = Math.round(g.virtual.left) + scroller.scrollLeft - g.scroll0.left;
-        let y = Math.round(g.virtual.top) + scroller.scrollTop - g.scroll0.top;
-        let z = zoomRef.current;
-        // Padding is exactly the empty space the anchor leaves on each side
-        // (none once the content covers the viewport again), so the written
-        // offset is always in range and the content never slides to fit.
-        let boxWidth = Math.max(contentWidth * z, g.clientWidth);
-        let boxHeight = Math.max(g.contentHeight * z, g.clientHeight);
-        let pad = {
-          left: Math.max(0, -x),
-          top: Math.max(0, -y),
-          right: Math.max(0, x + g.clientWidth - boxWidth),
-          bottom: Math.max(0, y + g.clientHeight - boxHeight),
+        let scroll = {
+          left: Math.round(g.virtual.left) + scroller.scrollLeft - g.scroll0.left,
+          top: Math.round(g.virtual.top) + scroller.scrollTop - g.scroll0.top,
         };
-        pads.current = { left: pad.left, top: pad.top };
-        spacer.style.padding = `${pad.top}px ${pad.right}px ${pad.bottom}px ${pad.left}px`;
+        let z = zoomRef.current;
+        let client = { width: g.clientWidth, height: g.clientHeight };
+        let box = contentBox({
+          zoom: z,
+          contentWidth,
+          contentHeight: g.contentHeight,
+          clientWidth: client.width,
+          clientHeight: client.height,
+        });
+        let pad = padsForScroll(scroll, client, box);
+        writePads(spacer, pad);
         spacer.style.setProperty("--canvas-zoom", String(z));
         layer.style.setProperty("--canvas-zoom", String(z));
         layer.style.transform = "";
-        scroller.scrollLeft = x + pad.left;
-        scroller.scrollTop = y + pad.top;
-        writtenScroll.current = {
-          left: scroller.scrollLeft,
-          top: scroller.scrollTop,
-        };
+        writeScroll(scroller, {
+          left: scroll.left + pad.left,
+          top: scroll.top + pad.top,
+        });
       }
       setZoomState(zoomRef.current);
     };
 
-    // `pending` holds the latest target until the shown zoom reaches it;
-    // the frame loop keeps running on its own in between.
-    // The settle's own scroll write reports back as a scroll event a frame
-    // later; if a new gesture has begun by then it must not be cut short.
     let onNativeScroll = () => {
       let scroller = scrollerRef.current;
       let w = writtenScroll.current;
@@ -259,6 +287,8 @@ export function CanvasZoomProvider(props: {
       engine.settleNow();
     };
 
+    // `pending` holds the latest target until the shown zoom reaches it; the
+    // frame loop keeps running on its own in between.
     let tick = (now: number, snap = false) => {
       raf.current = 0;
       let target = pending.current;
@@ -266,7 +296,7 @@ export function CanvasZoomProvider(props: {
       let layer = layerRef.current;
       let spacer = spacerRef.current;
       if (!target || !scroller || !layer || !spacer) return;
-      let g = gesture.current ?? beginGesture(scroller, spacer);
+      let g = gesture.current ?? beginGesture(scroller, layer, spacer);
       let dt = lastFrame.current ? now - lastFrame.current : 0;
       lastFrame.current = now;
       let zoom =
@@ -299,26 +329,32 @@ export function CanvasZoomProvider(props: {
       contentWidth,
       targetZoom: () => pending.current?.zoom ?? zoomRef.current,
       toViewport: (clientX, clientY) => {
-        let rect = scrollerRef.current?.getBoundingClientRect();
-        if (!rect) return { x: clientX, y: clientY };
+        let scroller = scrollerRef.current;
+        let rect = scroller?.getBoundingClientRect();
+        if (!scroller || !rect) return { x: clientX, y: clientY };
         return {
-          x: clientX - rect.left - (scrollerRef.current?.clientLeft || 0),
-          y: clientY - rect.top - (scrollerRef.current?.clientTop || 0),
+          x: clientX - rect.left - scroller.clientLeft,
+          y: clientY - rect.top - scroller.clientTop,
+        };
+      },
+      viewportCenter: () => {
+        let scroller = scrollerRef.current;
+        return {
+          x: (scroller?.clientWidth || 0) / 2,
+          y: (scroller?.clientHeight || 0) / 2,
         };
       },
       canvasPointAt: (anchorViewport) => {
         let scroller = scrollerRef.current;
         let g = gesture.current;
-        let scrollLeft = g
-          ? g.virtual.left
-          : (scroller?.scrollLeft || 0) - pads.current.left;
-        let scrollTop = g
-          ? g.virtual.top
-          : (scroller?.scrollTop || 0) - pads.current.top;
         return anchorToCanvas({
           anchorViewport,
-          scrollLeft,
-          scrollTop,
+          scrollLeft: g
+            ? g.virtual.left
+            : (scroller?.scrollLeft || 0) - pads.current.left,
+          scrollTop: g
+            ? g.virtual.top
+            : (scroller?.scrollTop || 0) - pads.current.top,
           zoom: zoomRef.current,
         });
       },
@@ -327,11 +363,44 @@ export function CanvasZoomProvider(props: {
         pending.current = target;
         if (!raf.current) raf.current = window.requestAnimationFrame(tick);
       },
+      zoomAt: (zoom, anchorViewport, immediate) =>
+        engine.schedule({
+          zoom: engine.clamp(zoom),
+          anchorViewport,
+          anchorCanvas: engine.canvasPointAt(anchorViewport),
+          immediate,
+        }),
+      zoomAtClient: (zoom, clientX, clientY, immediate) =>
+        engine.zoomAt(zoom, engine.toViewport(clientX, clientY), immediate),
       settleNow: () => {
         if (raf.current) window.cancelAnimationFrame(raf.current);
         raf.current = 0;
         if (pending.current) tick(performance.now(), true);
         if (gesture.current) settle();
+      },
+      trimPads: () => {
+        let scroller = scrollerRef.current;
+        let spacer = spacerRef.current;
+        if (gesture.current || !scroller || !spacer) return;
+        let scroll = { left: scroller.scrollLeft, top: scroller.scrollTop };
+        let client = {
+          width: scroller.clientWidth,
+          height: scroller.clientHeight,
+        };
+        let box = contentBox({
+          zoom: zoomRef.current,
+          contentWidth,
+          contentHeight: spacerContentHeight(spacer),
+          clientWidth: client.width,
+          clientHeight: client.height,
+        });
+        let trimmed = trimPads(pads.current, scroll, client, box);
+        if (!trimmed) return;
+        writePads(spacer, trimmed.pads);
+        writeScroll(scroller, {
+          left: scroll.left - trimmed.shift.left,
+          top: scroll.top - trimmed.shift.top,
+        });
       },
     };
     return engine;
@@ -340,27 +409,25 @@ export function CanvasZoomProvider(props: {
   // Runs before paint so a restored zoom never flashes. React attaches refs
   // bottom-up, so the scroller (an ancestor) has no ref yet in this layout
   // effect and is found from the spacer instead.
-  //
-  // On a fresh load nothing is written: the stylesheet already applied
-  // fit-to-width, and rewriting it from JS (which only sees an integer
-  // clientWidth) would move the scale by a fraction of a percent and make
-  // Chrome re-raster the whole layer, which showed as the images blinking.
-  // The engine instead adopts whatever scale is on screen.
   useIsomorphicLayoutEffect(() => {
     let layer = layerRef.current;
     let spacer = spacerRef.current;
     let scroller = scrollerRef.current ?? nearestScroller(spacer);
     if (!scroller || !layer || !spacer) return;
     fitScrollerToGutter(scroller, contentWidth);
-    pads.current = { left: 0, top: 0 };
+    pads.current = NO_PADS;
     spacer.style.padding = "";
     minRef.current = minZoom(scroller.clientWidth, contentWidth);
     setMin(minRef.current);
     let applied = appliedScale(layer);
-    let z = hasCanvasZoom(pageKey)
+    let restored = hasCanvasZoom(pageKey);
+    let z = restored
       ? clampZoom(getCanvasZoom(pageKey), minRef.current, MAX_ZOOM)
       : applied;
-    // Also skipped when a remount restores the value already on screen.
+    // Nothing is written when the value already on screen is kept: the
+    // stylesheet's fit-to-width differs from what JS computes from the
+    // integer clientWidth by a fraction of a percent, and a rewrite makes
+    // Chrome re-raster the whole layer (images blink).
     if (Math.abs(z - applied) > 1e-6) {
       spacer.style.setProperty("--canvas-zoom", String(z));
       layer.style.setProperty("--canvas-zoom", String(z));
@@ -373,9 +440,10 @@ export function CanvasZoomProvider(props: {
 
   useEffect(() => {
     let scroller = scrollerRef.current;
-    let layer = layerRef.current;
-    let spacer = spacerRef.current;
-    if (!scroller || !layer || !spacer) return;
+    if (!scroller || !layerRef.current || !spacerRef.current) return;
+    let abort = new AbortController();
+    let signal = abort.signal;
+
     let scrollerObserver = new ResizeObserver(() => {
       fitScrollerToGutter(scroller, contentWidth);
       let m = minZoom(scroller.clientWidth, contentWidth);
@@ -384,8 +452,28 @@ export function CanvasZoomProvider(props: {
       setMin(m);
     });
     scrollerObserver.observe(scroller);
+
+    // Trimming mid-momentum would stutter, so it waits for the scroll to end.
+    let trimTimer = 0;
+    let trimNow = () => {
+      if (trimTimer) window.clearTimeout(trimTimer);
+      trimTimer = 0;
+      engine.trimPads();
+    };
+    let trimSoon = () => {
+      if (gesture.current) return;
+      if (trimTimer) window.clearTimeout(trimTimer);
+      trimTimer = window.setTimeout(trimNow, SCROLL_END_MS);
+    };
+    scroller.addEventListener("scroll", trimSoon, { passive: true, signal });
+    scroller.addEventListener("scrollend", trimNow, { signal });
+    scroller.addEventListener("pointerup", trimSoon, { signal });
+    scroller.addEventListener("touchend", trimSoon, { passive: true, signal });
+
     return () => {
+      abort.abort();
       scrollerObserver.disconnect();
+      if (trimTimer) window.clearTimeout(trimTimer);
       if (raf.current) window.cancelAnimationFrame(raf.current);
       if (idleTimer.current) window.clearTimeout(idleTimer.current);
       raf.current = 0;
@@ -393,24 +481,14 @@ export function CanvasZoomProvider(props: {
       pending.current = null;
       gesture.current = null;
     };
-  }, [scrollerRef, contentWidth]);
+  }, [engine, scrollerRef, contentWidth]);
 
   useCanvasZoomGestures(engine);
 
   let setZoom = useCallback(
-    (z: number, anchor?: Point) => {
-      let scroller = scrollerRef.current;
-      let anchorViewport = anchor ?? {
-        x: (scroller?.clientWidth || 0) / 2,
-        y: (scroller?.clientHeight || 0) / 2,
-      };
-      engine.schedule({
-        zoom: engine.clamp(z),
-        anchorViewport,
-        anchorCanvas: engine.canvasPointAt(anchorViewport),
-      });
-    },
-    [engine, scrollerRef],
+    (z: number, anchor?: Point) =>
+      engine.zoomAt(z, anchor ?? engine.viewportCenter()),
+    [engine],
   );
   let zoomIn = useCallback(
     () => setZoom(nextStep(engine.targetZoom(), 1)),
@@ -446,13 +524,15 @@ export function CanvasZoomProvider(props: {
   );
 }
 
-// The vertical scrollbar is carved out of the scroller's box, so a scroller
-// exactly `contentWidth` wide has fewer client px than the content and
-// scrolls sideways by the gutter. Idempotent: once the width includes the
-// gutter, `offsetWidth - clientWidth` is unchanged and the same value is
-// written again.
-// A classic scrollbar would otherwise eat into the canvas width; overlay
-// scrollbars leave the stylesheet width untouched.
+// Canvas px; CanvasZoomLayer sets it inline from the laid-out content.
+function spacerContentHeight(spacer: HTMLElement) {
+  return Number(spacer.style.getPropertyValue("--canvas-content-height")) || 0;
+}
+
+// A classic (non-overlay) vertical scrollbar is carved out of the scroller's
+// box, so a scroller exactly `contentWidth` wide has fewer client px than
+// the content and scrolls sideways by the gutter. Idempotent: once the width
+// includes the gutter, `offsetWidth - clientWidth` is unchanged.
 function fitScrollerToGutter(scroller: HTMLElement, contentWidth: number) {
   let gutter = scroller.offsetWidth - scroller.clientWidth;
   let width = gutter > 0 ? `${contentWidth + gutter}px` : "";
@@ -489,13 +569,11 @@ function isAnimatedImage(src: string | undefined, mimeType?: string) {
 
 /**
  * Attributes for an <img> that may sit inside the scaled canvas layer.
- * Every re-raster of that layer (settle, large scale changes) needs its
- * images decoded again at the new scale; with async decoding Chrome paints
- * the frame without them first, so they blink. And an animating image
- * invalidates the layer's tiles every frame, so when the settle re-raster
- * lands there is no valid old tile to keep showing and the whole layer goes
- * blank; giving it its own compositor layer keeps its frames out of the
- * canvas raster.
+ * A re-raster of that layer needs its images decoded again at the new
+ * scale; with async decoding Chrome paints the frame without them first, so
+ * they blink. An animating image invalidates the layer's tiles every frame,
+ * so giving it its own compositor layer keeps its frames out of the canvas
+ * raster.
  */
 export function useCanvasImage(
   src: string | undefined,

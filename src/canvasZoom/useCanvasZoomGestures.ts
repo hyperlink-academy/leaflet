@@ -55,33 +55,6 @@ export function useCanvasZoomGestures(engine: CanvasZoomEngine) {
     let safariGestureStartZoom = 1;
     let pinch: Pinch | null = null;
 
-    let scheduleAt = (
-      zoom: number,
-      clientX: number,
-      clientY: number,
-      immediate = false,
-    ) => {
-      let anchorViewport = engine.toViewport(clientX, clientY);
-      engine.schedule({
-        zoom: engine.clamp(zoom),
-        anchorViewport,
-        anchorCanvas: engine.canvasPointAt(anchorViewport),
-        immediate,
-      });
-    };
-
-    let scheduleAtCenter = (zoom: number) => {
-      let anchorViewport = {
-        x: scroller.clientWidth / 2,
-        y: scroller.clientHeight / 2,
-      };
-      engine.schedule({
-        zoom: engine.clamp(zoom),
-        anchorViewport,
-        anchorCanvas: engine.canvasPointAt(anchorViewport),
-      });
-    };
-
     scroller.addEventListener(
       "wheel",
       (e) => {
@@ -92,7 +65,7 @@ export function useCanvasZoomGestures(engine: CanvasZoomEngine) {
         let deltaY = e.deltaY;
         let deltaMode = e.deltaMode;
         let factor = wheelToZoomFactor(deltaY, deltaMode);
-        scheduleAt(engine.targetZoom() * factor, e.clientX, e.clientY);
+        engine.zoomAtClient(engine.targetZoom() * factor, e.clientX, e.clientY);
       },
       { passive: false, signal },
     );
@@ -112,7 +85,12 @@ export function useCanvasZoomGestures(engine: CanvasZoomEngine) {
         (e) => {
           e.preventDefault();
           let g = e as SafariGestureEvent;
-          scheduleAt(safariGestureStartZoom * g.scale, g.clientX, g.clientY, true);
+          engine.zoomAtClient(
+            safariGestureStartZoom * g.scale,
+            g.clientX,
+            g.clientY,
+            true,
+          );
         },
         { passive: false, signal },
       );
@@ -128,12 +106,11 @@ export function useCanvasZoomGestures(engine: CanvasZoomEngine) {
 
     // Touch events rather than pointer events track the pinch: once the
     // browser starts a native scroll it fires pointercancel and stops
-    // delivering pointermove, while touchmove keeps flowing, and cancelling
-    // the second finger's touchstart is what keeps the sequence cancelable.
-    // Cancelling the touch events is what stops native scrolling and
-    // selection for the sequence; inline touch-action / user-select toggles
-    // would only add a subtree style recalc and a full layer repaint at each
-    // end of the pinch.
+    // delivering pointermove, while touchmove keeps flowing. Cancelling the
+    // second finger's touchstart keeps the sequence cancelable, and
+    // cancelling the moves is what stops native scrolling and selection for
+    // it (an inline touch-action toggle would only add a style recalc and a
+    // full layer repaint at each end of the pinch).
     let endPinch = () => {
       if (!pinch) return;
       pinch = null;
@@ -237,8 +214,8 @@ export function useCanvasZoomGestures(engine: CanvasZoomEngine) {
           dir = 0;
         if (dir === null) return;
         e.preventDefault();
-        if (dir === 0) scheduleAtCenter(1);
-        else scheduleAtCenter(nextStep(engine.targetZoom(), dir));
+        let zoom = dir === 0 ? 1 : nextStep(engine.targetZoom(), dir);
+        engine.zoomAt(zoom, engine.viewportCenter());
       },
       { capture: true, signal },
     );

@@ -4,7 +4,10 @@ import {
   MAX_ZOOM,
   ZOOM_STEPS,
   anchoredScroll,
-  clampScroll,
+  contentBox,
+  NO_PADS,
+  padsForScroll,
+  trimPads,
   clampZoom,
   fitToWidth,
   minZoom,
@@ -222,19 +225,70 @@ describe("fitToWidth / minZoom", () => {
   });
 });
 
-describe("clampScroll", () => {
-  it("keeps scroll within the zoomed content bounds", () => {
+describe("padsForScroll / trimPads", () => {
+  let client = { width: 1000, height: 800 };
+  let box = contentBox({
+    zoom: 0.5,
+    contentWidth: 1272,
+    contentHeight: 3000,
+    clientWidth: 1000,
+    clientHeight: 800,
+  });
+
+  it("content box is the zoomed canvas but never smaller than the viewport", () => {
+    expect(box).toEqual({ width: 1000, height: 1500 });
     expect(
-      clampScroll({
-        scrollLeft: -20,
-        scrollTop: 5000,
-        clientWidth: 800,
-        clientHeight: 600,
+      contentBox({
+        zoom: 2,
         contentWidth: 1272,
-        contentHeight: 2000,
-        zoom: 0.5,
+        contentHeight: 3000,
+        clientWidth: 1000,
+        clientHeight: 800,
       }),
-    ).toEqual({ scrollLeft: 0, scrollTop: 400 });
+    ).toEqual({ width: 2544, height: 6000 });
+  });
+
+  it("an in-range offset needs no padding", () => {
+    expect(padsForScroll({ left: 0, top: 300 }, client, box)).toEqual(NO_PADS);
+  });
+
+  it("a negative offset becomes left/top padding", () => {
+    expect(padsForScroll({ left: -77, top: -51 }, client, box)).toEqual({
+      ...NO_PADS,
+      left: 77,
+      top: 51,
+    });
+  });
+
+  it("an offset past the content becomes right/bottom padding", () => {
+    expect(padsForScroll({ left: 200, top: 1000 }, client, box)).toEqual({
+      ...NO_PADS,
+      right: 200,
+      bottom: 300,
+    });
+  });
+
+  it("drops a left/top pad scrolled off screen and shifts the offset by it", () => {
+    let pads = { ...NO_PADS, left: 77, top: 51 };
+    expect(trimPads(pads, { left: 80, top: 60 }, client, box)).toEqual({
+      pads: NO_PADS,
+      shift: { left: 77, top: 51 },
+    });
+  });
+
+  it("drops a right/bottom pad once the content end is back in view", () => {
+    let pads = { ...NO_PADS, right: 200, bottom: 300 };
+    expect(trimPads(pads, { left: 0, top: 0 }, client, box)).toEqual({
+      pads: NO_PADS,
+      shift: { left: 0, top: 0 },
+    });
+  });
+
+  it("keeps a pad that is still partly on screen", () => {
+    let pads = { ...NO_PADS, left: 77, top: 51 };
+    expect(trimPads(pads, { left: 40, top: 20 }, client, box)).toBeNull();
+    let trailing = { ...NO_PADS, right: 200, bottom: 300 };
+    expect(trimPads(trailing, { left: 150, top: 900 }, client, box)).toBeNull();
   });
 });
 
