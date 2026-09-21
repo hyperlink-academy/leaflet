@@ -7,7 +7,7 @@ import { RecommendsList } from "components/Interactions/RecommendsList";
 import { RecommendButton } from "components/Interactions/RecommendButton";
 import { TagPostsList } from "components/Interactions/TagPostsList";
 import { PublicationThemeWrapper } from "components/ThemeManager/PublicationThemeProvider";
-import { ButtonPrimary } from "components/Buttons";
+import { ButtonSecondary } from "components/Buttons";
 import { useReaderPost } from "src/readerPost";
 import { getQuoteCount } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/Interactions";
 
@@ -46,14 +46,14 @@ export const PostViewerPanel = (props: {
 
   let pubRecord = props.post.publication?.pubRecord;
   let backToPost = (
-    <ButtonPrimary
+    <ButtonSecondary
       className="text-sm!"
       compact
       aria-label="Back to post"
       onClick={() => setPanel(null)}
     >
       Back to Post
-    </ButtonPrimary>
+    </ButtonSecondary>
   );
 
   return (
