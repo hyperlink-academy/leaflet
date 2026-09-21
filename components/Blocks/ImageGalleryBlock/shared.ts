@@ -18,6 +18,8 @@ export type GalleryImage = {
   // is tracked under, even while `src` is the local object URL.
   factSrc?: string;
   mimeType?: string;
+  /** Video rendition of an animated GIF (published only). */
+  videoSrc?: string;
   alt: string;
   width: number;
   height: number;

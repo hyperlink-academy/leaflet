@@ -612,6 +612,10 @@ export let Block = ({
           : POST_BODY_IMAGE_WIDTH,
       });
       let cid = blobRefCid(block.image.ref);
+      let videoSrc =
+        block.image.mimeType === "image/gif"
+          ? blobRefToSrc(block.image.ref, did, undefined, { format: "mp4" })
+          : undefined;
       let isFullBleed = block.fullBleed;
       let prevIsFullBleed =
         previousBlock?.block &&
@@ -642,6 +646,7 @@ export let Block = ({
             width={block.aspectRatio?.width}
             displayWidth={block.width}
             mimeType={block.image.mimeType}
+            videoSrc={videoSrc}
             isFullBleed={isFullBleed}
             className={className}
             // The first block of a page is the one image plausibly above the

@@ -3,10 +3,7 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServerClient } from "supabase/serverClient";
 import { snapToImageWidth } from "supabase/imageSizes";
-import {
-  encodeImageVariant,
-  parseImageFormat,
-} from "src/utils/serverImageEncoding";
+import { encodeImageVariant } from "src/utils/serverImageEncoding";
 
 // Downscaling for storage images, used by the next/image loader
 // (supabase/supabase-image-loader.js). Resizing here with sharp instead of
@@ -50,7 +47,10 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const path = url.searchParams.get("path") ?? "";
   const width = parseDimension(url.searchParams.get("width"));
-  const format = parseImageFormat(url.searchParams.get("format"));
+  // Only the email transcode applies to storage images; the video rendition
+  // exists for PDS blobs (/api/atproto_images).
+  const format =
+    url.searchParams.get("format") === "email" ? "email" : undefined;
 
   const bucket = path.split("/")[0];
   if (!SOURCE_BUCKETS.has(bucket) || path.includes(".."))

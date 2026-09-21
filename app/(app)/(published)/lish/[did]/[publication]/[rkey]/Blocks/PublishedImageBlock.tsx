@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ReadOnlyAltText } from "components/Blocks/ReadOnlyAltText";
 import { ImageErrorState, useImageLoadStatus } from "components/ImageLoadState";
 import { useCanvasImage } from "src/canvasZoom/CanvasZoomProvider";
+import { AnimatedImageVideo } from "components/Blocks/AnimatedImageVideo";
 
 export function PublishedImageBlock(props: {
   src: string;
@@ -15,6 +16,8 @@ export function PublishedImageBlock(props: {
   className?: string;
   loading?: "lazy" | "eager";
   mimeType?: string;
+  /** Video rendition of an animated GIF, played in place of the image. */
+  videoSrc?: string;
   onOpenLightbox?: () => void;
   onOpenAltInLightbox?: () => void;
 }) {
@@ -44,17 +47,26 @@ export function PublishedImageBlock(props: {
         className={`block ${props.isFullBleed ? "w-full" : "w-fit"} ${props.onOpenLightbox ? "cursor-pointer" : ""}`}
         onClick={props.onOpenLightbox}
       >
-        <img
-          {...imgProps}
-          alt={props.alt ?? ""}
-          loading={props.loading}
-          decoding={decoding}
-          height={props.height}
+        <AnimatedImageVideo
+          videoSrc={props.videoSrc}
+          alt={props.alt}
           width={props.width}
-          className={`${mediaClassName} ${canvasImageClass}`}
-          src={src}
+          height={props.height}
+          className={mediaClassName}
           style={imageStyle}
-        />
+        >
+          <img
+            {...imgProps}
+            alt={props.alt ?? ""}
+            loading={props.loading}
+            decoding={decoding}
+            height={props.height}
+            width={props.width}
+            className={`${mediaClassName} ${canvasImageClass}`}
+            src={src}
+            style={imageStyle}
+          />
+        </AnimatedImageVideo>
       </button>
       {status === "error" && (
         <ImageErrorState
