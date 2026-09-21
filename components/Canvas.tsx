@@ -37,7 +37,6 @@ import { CanvasFocusZoom } from "src/canvasZoom/CanvasFocusZoom";
 import { CanvasZoomControls } from "./CanvasZoomControls";
 import {
   type CanvasMobileView,
-  MOBILE_VIEW_WIDTH,
   mobileViewArea,
 } from "src/canvasZoom/mobileView";
 import { Menu, RadioMenuGroup, RadioMenuItem } from "./Menu";
