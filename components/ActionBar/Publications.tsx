@@ -13,8 +13,7 @@ import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { LoginModal } from "components/LoginButton";
-import useSWR from "swr";
-import { getHomeDocs } from "src/utils/homeDocsStorage";
+import { TutorialNavTooltip } from "app/(app)/(identity)/(home-pages)/(writer)/home/Tutorial/TutorialNavTooltip";
 
 export const PublicationButtons = (props: { className?: string }) => {
   let { identity } = useIdentityData();
@@ -23,13 +22,6 @@ export const PublicationButtons = (props: { className?: string }) => {
       f.permission_tokens.leaflets_to_documents &&
       f.permission_tokens.leaflets_to_documents[0]?.document,
   );
-  let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
-    fallbackData: [],
-  });
-  let hasDocs = identity
-    ? identity.permission_token_on_homepage.length > 0
-    : localLeaflets.filter((d) => !d.hidden).length > 0;
-
   let ownedPubs = identity?.publications ?? [];
   let contributorPubs = identity?.contributor_publications ?? [];
   let ownedUris = new Set(ownedPubs.map((p) => p.uri));
@@ -38,20 +30,21 @@ export const PublicationButtons = (props: { className?: string }) => {
   );
   let allPubs = [...ownedPubs, ...extraContributorPubs];
 
-  // don't show pub list button if
-  // no pubs or looseleafs but has docs
-  // if they don't have docs, the empty state of the homepage prompts them to make publications
-  // we show a "start a pub" banner instead
-  if (!hasLooseleafs && hasDocs && allPubs.length === 0)
-    return <PubListEmptyContent />;
-
-  if (!hasLooseleafs && !hasDocs && allPubs.length === 0) return null;
+  // With nothing to list, the section becomes a prompt to start a publication
+  // instead — docs or no docs, there's always something here.
+  if (!hasLooseleafs && allPubs.length === 0)
+    return (
+      <TutorialNavTooltip target="publications">
+        <PubListEmptyContent />
+      </TutorialNavTooltip>
+    );
 
   return (
     <>
       <hr className="border-border-light mt-2" />
 
-      <div
+      <TutorialNavTooltip
+        target="publications"
         className={`pubListWrapper w-full flex flex-col gap-1 -mt-1 sm:bg-transparent grow overflow-y-auto min-h-0 py-2
           ${props.className}`}
       >
@@ -96,7 +89,7 @@ export const PublicationButtons = (props: { className?: string }) => {
             className="text-tertiary!"
           />
         </SpeedyLink>
-      </div>
+      </TutorialNavTooltip>
     </>
   );
 };

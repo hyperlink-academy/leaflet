@@ -6,6 +6,7 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { ReaderButton, WriterButton, useNavSide } from "./NavigationButtons";
 import { WriterSmall } from "components/Icons/WriterSmall";
 import { ReaderUnreadSmall } from "components/Icons/ReaderSmall";
+import { TutorialNavTooltip } from "app/(app)/(identity)/(home-pages)/(writer)/home/Tutorial/TutorialNavTooltip";
 
 export function NavigationBanner() {
   let { identity } = useIdentityData();
@@ -66,8 +67,11 @@ const ReaderBanner = () => {
 
 const BannerContainer = (props: { children: React.ReactNode }) => {
   return (
-    <div className="navigationBanner accent-container flex flex-col justify-center gap-1 px-2 py-3 text-center text-sm leading-snug mb-2">
+    <TutorialNavTooltip
+      target="banner"
+      className="navigationBanner accent-container flex flex-col justify-center gap-1 px-2 py-3 text-center text-sm leading-snug mb-2"
+    >
       {props.children}
-    </div>
+    </TutorialNavTooltip>
   );
 };

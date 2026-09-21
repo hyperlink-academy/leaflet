@@ -6,21 +6,26 @@ import {
   refreshIdentityData,
   useIdentityData,
 } from "components/IdentityProvider";
+import useSWR from "swr";
+import { getHomeDocs } from "src/utils/homeDocsStorage";
 
 export function useTutorial() {
   let { identity, mutate } = useIdentityData();
+  let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs());
 
-  // A user with nothing yet gets the full-bleed takeover; once they have any
-  // publication or leaflet the tutorial steps aside into a banner under their
-  // real content.
-  let hasContent =
-    (identity?.publications.length ?? 0) > 0 ||
-    (identity?.contributor_publications?.length ?? 0) > 0 ||
-    (identity?.permission_token_on_homepage.length ?? 0) > 0 ||
-    (identity?.contributor_leaflets?.length ?? 0) > 0;
+
+  let hasContent = identity
+    ? identity.publications.length > 0 ||
+      (identity.contributor_publications?.length ?? 0) > 0 ||
+      identity.permission_token_on_homepage.length > 0 ||
+      (identity.contributor_leaflets?.length ?? 0) > 0
+    : !!localLeaflets?.some((d) => !d.hidden);
 
   return {
-    tutorial: !!identity?.tutorial,
+
+    tutorial: identity
+      ? !!identity.tutorial
+      : localLeaflets !== undefined && !hasContent,
     hasContent,
     removeTutorial: async () => {
       // Optimistic without a revalidate: a refetch racing the write below
