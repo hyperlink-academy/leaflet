@@ -1312,6 +1312,9 @@ body > iframe[src*="js.stripe.com"] {
   --canvas-zoom: 1;
 }
 .canvasZoomSpacer {
+  /* Padding (engine-written) is empty space around the content, on top of
+     the content-sized box below. */
+  box-sizing: content-box;
   min-width: 100%;
   min-height: 100%;
   overflow: clip;

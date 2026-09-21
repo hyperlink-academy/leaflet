@@ -69,7 +69,6 @@ import {
   type Point,
   anchorToCanvas,
   approachZoom,
-  clampScroll,
   clampZoom,
   minZoom,
   nextStep,
@@ -93,10 +92,14 @@ export type ZoomTarget = {
 type Scroll = { left: number; top: number };
 
 // Scroll geometry captured on a gesture's first frame; `scroll0` is what the
-// scroller really sits on while the gesture runs and `virtual` the offset the
+// scroller really sits on while the gesture runs, `pad0` the spacer padding
+// the content then sat behind, and `virtual` the offset the anchor asks for
+// as if the content began at the scroller's origin: it can be negative or
+// beyond the content, and the settle turns that excess into padding.
 // settle will write.
 type Gesture = {
   scroll0: Scroll;
+  pad0: Scroll;
   virtual: Scroll;
   clientWidth: number;
   clientHeight: number;
@@ -164,6 +167,10 @@ export function CanvasZoomProvider(props: {
   let pending = useRef<ZoomTarget | null>(null);
   let gesture = useRef<Gesture | null>(null);
   let writtenScroll = useRef<Scroll | null>(null);
+  // Spacer padding on the left/top: empty space a settle left before the
+  // content so the anchor could stay put near an edge. Only the engine
+  // writes it, so it is tracked here instead of read back from style.
+  let pads = useRef<Scroll>({ left: 0, top: 0 });
   let lastFrame = useRef(0);
   let raf = useRef(0);
   let idleTimer = useRef(0);
@@ -173,7 +180,11 @@ export function CanvasZoomProvider(props: {
       let scroll0 = { left: scroller.scrollLeft, top: scroller.scrollTop };
       let g: Gesture = {
         scroll0,
-        virtual: scroll0,
+        pad0: { ...pads.current },
+        virtual: {
+          left: scroll0.left - pads.current.left,
+          top: scroll0.top - pads.current.top,
+        },
         clientWidth: scroller.clientWidth,
         clientHeight: scroller.clientHeight,
         contentHeight:
@@ -198,14 +209,27 @@ export function CanvasZoomProvider(props: {
         scroller.removeEventListener("scroll", onNativeScroll);
         // Read before the spacer resizes, which can clamp or anchor the
         // offset; the difference is a native scroll made mid-gesture.
-        let left = g.virtual.left + scroller.scrollLeft - g.scroll0.left;
-        let top = g.virtual.top + scroller.scrollTop - g.scroll0.top;
+        let x = Math.round(g.virtual.left) + scroller.scrollLeft - g.scroll0.left;
+        let y = Math.round(g.virtual.top) + scroller.scrollTop - g.scroll0.top;
         let z = zoomRef.current;
+        // Padding is exactly the empty space the anchor leaves on each side
+        // (none once the content covers the viewport again), so the written
+        // offset is always in range and the content never slides to fit.
+        let boxWidth = Math.max(contentWidth * z, g.clientWidth);
+        let boxHeight = Math.max(g.contentHeight * z, g.clientHeight);
+        let pad = {
+          left: Math.max(0, -x),
+          top: Math.max(0, -y),
+          right: Math.max(0, x + g.clientWidth - boxWidth),
+          bottom: Math.max(0, y + g.clientHeight - boxHeight),
+        };
+        pads.current = { left: pad.left, top: pad.top };
+        spacer.style.padding = `${pad.top}px ${pad.right}px ${pad.bottom}px ${pad.left}px`;
         spacer.style.setProperty("--canvas-zoom", String(z));
         layer.style.setProperty("--canvas-zoom", String(z));
         layer.style.transform = "";
-        scroller.scrollLeft = left;
-        scroller.scrollTop = top;
+        scroller.scrollLeft = x + pad.left;
+        scroller.scrollTop = y + pad.top;
         writtenScroll.current = {
           left: scroller.scrollLeft,
           top: scroller.scrollTop,
@@ -254,22 +278,13 @@ export function CanvasZoomProvider(props: {
       zoomRef.current = zoom;
       setCanvasZoom(pageKey, zoom);
       let next = scrollForAnchor({ ...target, zoom });
-      let clamped = clampScroll({
-        ...next,
-        clientWidth: g.clientWidth,
-        clientHeight: g.clientHeight,
-        contentWidth,
-        contentHeight: g.contentHeight,
-        zoom,
-      });
-      // Chrome lands scroll offsets on whole CSS px, so the settle's write
-      // is exact only if the gesture already sat on one.
-      g.virtual = {
-        left: Math.round(clamped.scrollLeft),
-        top: Math.round(clamped.scrollTop),
-      };
-      let tx = g.scroll0.left - g.virtual.left;
-      let ty = g.scroll0.top - g.virtual.top;
+      // Kept exact: each wheel event re-derives its anchor from this, and a
+      // rounding error there is amplified by every later zoom-in step.
+      g.virtual = { left: next.scrollLeft, top: next.scrollTop };
+      // Chrome lands scroll offsets on whole CSS px, so the frame shows the
+      // offset the settle will be able to write.
+      let tx = g.scroll0.left - g.pad0.left - Math.round(g.virtual.left);
+      let ty = g.scroll0.top - g.pad0.top - Math.round(g.virtual.top);
       layer.style.transform = `translate(${tx}px, ${ty}px) scale(${zoom})`;
       if (idleTimer.current) window.clearTimeout(idleTimer.current);
       idleTimer.current = window.setTimeout(settle, IDLE_MS);
@@ -294,8 +309,12 @@ export function CanvasZoomProvider(props: {
       canvasPointAt: (anchorViewport) => {
         let scroller = scrollerRef.current;
         let g = gesture.current;
-        let scrollLeft = g ? g.virtual.left : scroller?.scrollLeft || 0;
-        let scrollTop = g ? g.virtual.top : scroller?.scrollTop || 0;
+        let scrollLeft = g
+          ? g.virtual.left
+          : (scroller?.scrollLeft || 0) - pads.current.left;
+        let scrollTop = g
+          ? g.virtual.top
+          : (scroller?.scrollTop || 0) - pads.current.top;
         return anchorToCanvas({
           anchorViewport,
           scrollLeft,
@@ -333,6 +352,8 @@ export function CanvasZoomProvider(props: {
     let scroller = scrollerRef.current ?? nearestScroller(spacer);
     if (!scroller || !layer || !spacer) return;
     fitScrollerToGutter(scroller, contentWidth);
+    pads.current = { left: 0, top: 0 };
+    spacer.style.padding = "";
     minRef.current = minZoom(scroller.clientWidth, contentWidth);
     setMin(minRef.current);
     let applied = appliedScale(layer);
