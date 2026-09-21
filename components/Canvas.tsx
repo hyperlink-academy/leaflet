@@ -201,7 +201,9 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
       className="relative h-full w-[1272px]"
     >
       <CanvasBackground entityID={props.entityID} />
-      <MobileViewGuides entityID={props.entityID} />
+      {!props.preview && entity_set.permissions.write && (
+        <MobileViewGuides entityID={props.entityID} />
+      )}
       {[...blocks]
         .sort((a, b) => {
           if (a.data.position.y === b.data.position.y) {
