@@ -30,15 +30,6 @@ export const PublicationButtons = (props: { className?: string }) => {
   );
   let allPubs = [...ownedPubs, ...extraContributorPubs];
 
-  // With nothing to list, the section becomes a prompt to start a publication
-  // instead — docs or no docs, there's always something here.
-  if (!hasLooseleafs && allPubs.length === 0)
-    return (
-      <TutorialNavTooltip target="publications">
-        <PubListEmptyContent />
-      </TutorialNavTooltip>
-    );
-
   return (
     <>
       <hr className="border-border-light mt-2" />

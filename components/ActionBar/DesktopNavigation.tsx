@@ -1,8 +1,11 @@
 "use client";
 import { usePathname } from "next/navigation";
 import { useIdentityData } from "components/IdentityProvider";
-import { NotificationButton, useIsOnWriterPage } from "./NavigationButtons";
-import { NavigationBanner } from "./NavigationBanner";
+import {
+  NavigationButton,
+  NotificationButton,
+  useIsOnWriterPage,
+} from "./NavigationButtons";
 import { PublicationButtons } from "./Publications";
 import { Sidebar } from "./Sidebar";
 import { LoginModal } from "components/LoginButton";
@@ -103,7 +106,6 @@ export const NavigationContent = (props: NavigationProps) => {
       )}
       {onWriterPage && <PublicationButtons />}
       <div className="flex-1" />
-      <NavigationBanner />
       {identity?.atp_did && <NotificationButton />}
       <div className="flex gap-1 items-center">
         <TutorialNavTooltip target="account" className="grow min-w-0">
@@ -115,7 +117,6 @@ export const NavigationContent = (props: NavigationProps) => {
               trigger={
                 <ActionButton
                   className="w-full! grow"
-                  secondary
                   icon={<AccountSmall />}
                   label="Log In/Sign Up"
                 />
@@ -125,6 +126,8 @@ export const NavigationContent = (props: NavigationProps) => {
         </TutorialNavTooltip>
         <HelpPopover />
       </div>
+      <hr className="my-2" />
+      <NavigationButton />
     </>
   );
 };

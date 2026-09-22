@@ -11,6 +11,10 @@ import {
 } from "components/Icons/NotificationSmall";
 import { SpeedyLink } from "components/SpeedyLink";
 import { WriterSmall } from "components/Icons/WriterSmall";
+import { ButtonPrimary } from "components/Buttons";
+import { LoginModal } from "components/LoginButton";
+import { GoToArrowLined } from "components/Icons/GoToArrowLined";
+import { TutorialNavTooltip } from "app/(app)/(identity)/(home-pages)/(writer)/home/Tutorial/TutorialNavTooltip";
 function useIsActive(href: string) {
   let pathname = usePathname();
   return pathname === href || pathname.startsWith(href + "/");
@@ -37,30 +41,85 @@ export function useNavSide(): "reader" | "writer" {
     : "writer";
 }
 
+export function NavigationButton() {
+  let side = useNavSide();
+  return side === "reader" ? <WriterButton /> : <ReaderButton />;
+}
+
 export const WriterButton = () => {
+  let { identity } = useIdentityData();
   let current = useIsOnWriterPage();
+  let hasDocs =
+    (identity?.permission_token_on_homepage.length ?? 0) > 0 ||
+    (identity?.contributor_leaflets?.length ?? 0) > 0;
+
+  if (identity && hasDocs)
+    return (
+      <SpeedyLink eager href={"/home"} className="hover:!no-underline">
+        <ActionButton
+          className={"w-full!"}
+          icon={<WriterSmall />}
+          label="Write"
+          active={current}
+        />
+      </SpeedyLink>
+    );
+
   return (
-    <SpeedyLink eager href={"/home"} className="hover:!no-underline">
-      <ActionButton
-        className={"w-full!"}
-        icon={<WriterSmall />}
-        label="Write"
-        active={current}
-      />
-    </SpeedyLink>
+    <TutorialNavTooltip
+      target="banner"
+      className="accent-container flex flex-col justify-center gap-1 px-2 py-3 text-center text-sm leading-snug mb-2"
+    >
+      <WriterSmall className="mx-auto" />
+      <h4 className="leading-snug">Start a Publication with Leaflet</h4>
+      <small className="text-secondary pb-2">
+        A blog, newsletter, comic, novel, course, log, journal, zine…
+      </small>
+      {identity ? (
+        <SpeedyLink eager href="/home" className="hover:no-underline!">
+          <ButtonPrimary fullWidth className="mx-auto ">
+            Start Writing! <GoToArrowLined />
+          </ButtonPrimary>
+        </SpeedyLink>
+      ) : (
+        <LoginModal
+          asChild
+          redirectRoute="/home"
+          trigger={
+            <ButtonPrimary fullWidth className="mx-auto ">
+              Start Writing!
+              <GoToArrowLined />
+            </ButtonPrimary>
+          }
+        />
+      )}
+    </TutorialNavTooltip>
   );
 };
 
 export const ReaderButton = () => {
+  let { identity } = useIdentityData();
   let current = useIsActive("/reader");
+  let hasSubs = (identity?.publication_subscriptions?.length ?? 0) > 0;
+
+  if (identity && hasSubs)
+    return (
+      <SpeedyLink eager href={"/reader"} className="hover:no-underline!">
+        <ActionButton
+          className="w-full!"
+          icon={<ReaderUnreadSmall />}
+          label="Read"
+          active={current}
+        />
+      </SpeedyLink>
+    );
+
   return (
-    <SpeedyLink eager href={"/reader"} className="hover:no-underline!">
-      <ActionButton
-        className="w-full!"
-        icon={<ReaderUnreadSmall />}
-        label="Read"
-        active={current}
-      />
+    <SpeedyLink eager href="/reader/trending" className="hover:no-underline!">
+      <ButtonPrimary fullWidth className="mx-auto">
+        <ReaderUnreadSmall />
+        Explore Pubs <GoToArrowLined />
+      </ButtonPrimary>
     </SpeedyLink>
   );
 };

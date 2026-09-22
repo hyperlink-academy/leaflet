@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { create } from "zustand";
-import { Tooltip } from "components/Tooltip";
+import { Tooltip, TOOLTIP_SIDE_OFFSET } from "components/Tooltip";
 import { useIsMobile } from "src/hooks/isMobile";
 
 export type TutorialNavTarget =
@@ -41,6 +41,8 @@ const TOUR_COPY: {
     showOn: "mobile" | "desktop";
     side: "top" | "right";
     align: "start" | "center";
+    xOffset?: number;
+    yOffset?: number;
   };
 } = {
   "new-doc": {
@@ -56,7 +58,8 @@ const TOUR_COPY: {
       "A blog, newsletter, or zine of your own — every publication you make or help write lives here.",
     showOn: "desktop",
     side: "right",
-    align: "center",
+    align: "start",
+    yOffset: 30,
   },
   banner: {
     title: "Read along",
@@ -73,6 +76,7 @@ const TOUR_COPY: {
     showOn: "desktop",
     side: "right",
     align: "center",
+    xOffset: 24,
   },
   "sidebar-trigger": {
     title: "Everything's in here",
@@ -83,6 +87,22 @@ const TOUR_COPY: {
     align: "start",
   },
 };
+
+// Radix offsets a tooltip along its own side and align axes, so which screen
+// axis each one moves flips with the side: on a right-side tooltip the side
+// axis is x and align is y, on a top-side one the side axis is y pointing up.
+function tourOffsets(target: TutorialNavTarget) {
+  let { side, xOffset = 0, yOffset = 0 } = TOUR_COPY[target];
+  return side === "right"
+    ? {
+        sideOffset: TOOLTIP_SIDE_OFFSET + xOffset,
+        alignOffset: yOffset,
+      }
+    : {
+        sideOffset: TOOLTIP_SIDE_OFFSET - yOffset,
+        alignOffset: xOffset,
+      };
+}
 
 // Wraps a piece of the navigation in a tooltip that's pinned open for the
 // duration of the tutorial's navigation step. Always renders the wrapping div,
@@ -105,6 +125,7 @@ export function TutorialNavTooltip(props: {
       open
       side={side}
       align={align}
+      {...tourOffsets(props.target)}
       className="w-56 text-center"
       trigger={anchor}
     >
