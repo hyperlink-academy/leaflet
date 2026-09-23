@@ -499,7 +499,7 @@ export let Block = ({
     },
     "pub.leaflet.blocks.unorderedList": (block) => {
       return (
-        <ul className="-ml-px sm:ml-[9px] pb-2">
+        <ul className="pb-2">
           {block.children.map((child, i) => (
             <ListItem
               pollData={pollData}
@@ -521,7 +521,7 @@ export let Block = ({
     },
     "pub.leaflet.blocks.orderedList": (block) => {
       return (
-        <ol className="-ml-px sm:ml-[9px] pb-2" start={block.startIndex || 1}>
+        <ol className="pb-2" start={block.startIndex || 1}>
           {block.children.map((child, i) => (
             <OrderedListItem
               pollData={pollData}
@@ -891,6 +891,13 @@ function PublishedIframeBlock(props: {
   );
 }
 
+// Mirrors the editor's ListMarker: each level indents by --list-marker-width
+// (38px) past its parent's text, whose marker column is 32px plus the li's 8px
+// gap, and a checkbox widens only its own row, not its children's.
+function nestedListIndent(parentIsChecklist: boolean) {
+  return parentIsChecklist ? "-ml-[22px]" : "-ml-[2px]";
+}
+
 function ListItem(props: {
   index: number[];
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
@@ -904,8 +911,9 @@ function ListItem(props: {
   pageId?: string;
   footnoteIndexMap?: Map<string, number>;
 }) {
+  let isChecklist = props.item.checked !== undefined;
   let children = props.item.children?.length ? (
-    <ul className="-ml-[7px] sm:ml-[7px]">
+    <ul className={nestedListIndent(isChecklist)}>
       {props.item.children.map((child, index) => (
         <ListItem
           pages={props.pages}
@@ -925,7 +933,7 @@ function ListItem(props: {
     </ul>
   ) : null;
   let orderedChildren = props.item.orderedListChildren?.children?.length ? (
-    <ol className="-ml-[7px] sm:ml-[7px]">
+    <ol className={nestedListIndent(isChecklist)}>
       {props.item.orderedListChildren.children.map((child, index) => (
         <OrderedListItem
           pages={props.pages}
@@ -945,7 +953,6 @@ function ListItem(props: {
       ))}
     </ol>
   ) : null;
-  let isChecklist = props.item.checked !== undefined;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
       {/* One box for the marker and the checkbox, so the li's gap only
@@ -954,9 +961,11 @@ function ListItem(props: {
           the first text line; mt-1 stands in for the top margin the published
           renderer puts on the content block instead of the row. */}
       <div className="flex shrink-0">
-        <div
-          className={`listMarker shrink-0 mx-3 z-1 mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
-        />
+        <div className="flex justify-end w-8 shrink-0">
+          <div
+            className={`listMarker shrink-0 mr-3 z-1 mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
+          />
+        </div>
         {isChecklist && (
           <div
             className={`shrink-0 flex items-center h-3 mt-1 pt-[12px] pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}
@@ -1002,8 +1011,9 @@ function OrderedListItem(props: {
 }) {
   const calculatedIndex =
     (props.startIndex || 1) + props.index[props.index.length - 1];
+  let isChecklist = props.item.checked !== undefined;
   let children = props.item.children?.length ? (
-    <ol className="-ml-[7px] sm:ml-[7px]">
+    <ol className={nestedListIndent(isChecklist)}>
       {props.item.children.map((child, index) => (
         <OrderedListItem
           pages={props.pages}
@@ -1024,7 +1034,7 @@ function OrderedListItem(props: {
     </ol>
   ) : null;
   let unorderedChildren = props.item.unorderedListChildren?.children?.length ? (
-    <ul className="-ml-[7px] sm:ml-[7px]">
+    <ul className={nestedListIndent(isChecklist)}>
       {props.item.unorderedListChildren.children.map((child, index) => (
         <ListItem
           pages={props.pages}
@@ -1043,11 +1053,10 @@ function OrderedListItem(props: {
       ))}
     </ul>
   ) : null;
-  let isChecklist = props.item.checked !== undefined;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
       <div className="flex shrink-0">
-        <div className="listMarker shrink-0 ml-2 z-1 mt-[4px]">
+        <div className="listMarker shrink-0 w-8 text-right z-1 mt-[4px]">
           {calculatedIndex}.
         </div>
         {isChecklist && (
