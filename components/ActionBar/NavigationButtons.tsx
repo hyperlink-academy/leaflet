@@ -43,7 +43,11 @@ export function useNavSide(): "reader" | "writer" {
 
 export function NavigationButton() {
   let side = useNavSide();
-  return side === "reader" ? <WriterButton /> : <ReaderButton />;
+  return (
+    <TutorialNavTooltip target="banner" className="w-full">
+      {side === "reader" ? <WriterButton /> : <ReaderButton />}
+    </TutorialNavTooltip>
+  );
 }
 
 export const WriterButton = () => {
@@ -66,10 +70,7 @@ export const WriterButton = () => {
     );
 
   return (
-    <TutorialNavTooltip
-      target="banner"
-      className="accent-container flex flex-col justify-center gap-1 px-2 py-3 text-center text-sm leading-snug mb-2"
-    >
+    <div className="accent-container flex flex-col justify-center gap-1 px-2 py-3 text-center text-sm leading-snug mb-2">
       <WriterSmall className="mx-auto" />
       <h4 className="leading-snug">Start a Publication with Leaflet</h4>
       <small className="text-secondary pb-2">
@@ -93,7 +94,7 @@ export const WriterButton = () => {
           }
         />
       )}
-    </TutorialNavTooltip>
+    </div>
   );
 };
 

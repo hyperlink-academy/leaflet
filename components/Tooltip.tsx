@@ -3,8 +3,6 @@ import { PopoverArrow } from "./Icons/PopoverArrow";
 import { theme } from "tailwind.config";
 import { NestedCardThemeProvider } from "./ThemeManager/ThemeProvider";
 
-export const TOOLTIP_SIDE_OFFSET = 4;
-
 export const Tooltip = (props: {
   trigger: React.ReactNode;
   disabled?: boolean;
@@ -12,9 +10,7 @@ export const Tooltip = (props: {
   delayDuration?: number;
   skipDelayDuration?: number;
   align?: "start" | "end" | "center";
-  alignOffset?: number;
   side?: "top" | "bottom" | "left" | "right";
-  sideOffset?: number;
   background?: string;
   border?: string;
   className?: string;
@@ -48,8 +44,7 @@ export const Tooltip = (props: {
         `}
               side={props.side}
               align={props.align ? props.align : "center"}
-              alignOffset={props.alignOffset}
-              sideOffset={props.sideOffset ?? TOOLTIP_SIDE_OFFSET}
+              sideOffset={4}
               collisionPadding={16}
             >
               {props.children}

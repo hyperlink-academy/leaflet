@@ -34,12 +34,16 @@ export const PublicationButtons = (props: { className?: string }) => {
     <>
       <hr className="border-border-light mt-2" />
 
-      <TutorialNavTooltip
-        target="publications"
+      <div
         className={`pubListWrapper w-full flex flex-col gap-1 -mt-1 sm:bg-transparent grow overflow-y-auto min-h-0 py-2
           ${props.className}`}
       >
-        <div className="text-tertiary uppercase text-sm px-1">PUBLICATIONS</div>
+        <TutorialNavTooltip
+          target="publications"
+          className="text-tertiary uppercase text-sm px-1"
+        >
+          PUBLICATIONS
+        </TutorialNavTooltip>
         {hasLooseleafs && (
           <>
             <SpeedyLink
@@ -80,7 +84,7 @@ export const PublicationButtons = (props: { className?: string }) => {
             className="text-tertiary!"
           />
         </SpeedyLink>
-      </TutorialNavTooltip>
+      </div>
     </>
   );
 };

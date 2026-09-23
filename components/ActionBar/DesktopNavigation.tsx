@@ -24,7 +24,6 @@ import { BlueskySmall } from "components/Icons/BlueskySmall";
 import { Separator } from "components/Layout";
 import { LeafletTiny } from "components/Icons/LeafletTiny";
 import { ButtonPrimary } from "components/Buttons";
-import { TutorialNavTooltip } from "app/(app)/(identity)/(home-pages)/(writer)/home/Tutorial/TutorialNavTooltip";
 
 type NavigationProps = {
   pageTitle: React.ReactNode;
@@ -108,7 +107,7 @@ export const NavigationContent = (props: NavigationProps) => {
       <div className="flex-1" />
       {identity?.atp_did && <NotificationButton />}
       <div className="flex gap-1 items-center">
-        <TutorialNavTooltip target="account" className="grow min-w-0">
+        <div className="grow min-w-0">
           {identity ? (
             <ProfileButton />
           ) : (
@@ -123,7 +122,7 @@ export const NavigationContent = (props: NavigationProps) => {
               }
             />
           )}
-        </TutorialNavTooltip>
+        </div>
         <HelpPopover />
       </div>
       <hr className="my-2" />

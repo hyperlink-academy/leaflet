@@ -2,14 +2,13 @@
 
 import { useEffect } from "react";
 import { create } from "zustand";
-import { Tooltip, TOOLTIP_SIDE_OFFSET } from "components/Tooltip";
+import { Tooltip } from "components/Tooltip";
 import { useIsMobile } from "src/hooks/isMobile";
 
 export type TutorialNavTarget =
   | "new-doc"
   | "publications"
   | "banner"
-  | "account"
   | "sidebar-trigger";
 
 // The tutorial lives in the page content area but points at the sidebar, which
@@ -40,73 +39,41 @@ const TOUR_COPY: {
     description: string;
     showOn: "mobile" | "desktop";
     side: "top" | "right";
-    align: "start" | "center";
-    xOffset?: number;
-    yOffset?: number;
+    align: "start" | "center" | "end";
   };
 } = {
   "new-doc": {
-    title: "Start something new",
-    description: "Write a doc, or open a canvas to arrange things spatially.",
+    title: "Create documents",
+    description: "Add them to publications, or use them as notes.",
     showOn: "desktop",
     side: "right",
-    align: "center",
+    align: "end",
   },
   publications: {
     title: "Your publications",
     description:
-      "A blog, newsletter, or zine of your own — every publication you make or help write lives here.",
+      "Create and manage a blog, newsletter, comic, novel, zine, etc!",
     showOn: "desktop",
     side: "right",
     align: "start",
-    yOffset: 30,
   },
   banner: {
-    title: "Read along",
-    description:
-      "Follow other writers on the Atmosphere and their posts land in your reader.",
+    title: "Explore the Network",
+    description: "Discover and subscribe to other writers on the Atmosphere!",
     showOn: "desktop",
     side: "right",
     align: "center",
-  },
-  account: {
-    title: "You, and your settings",
-    description:
-      "Your profile, subscriptions, and account settings are all in here.",
-    showOn: "desktop",
-    side: "right",
-    align: "center",
-    xOffset: 24,
   },
   "sidebar-trigger": {
-    title: "Everything's in here",
+    title: "Everything's in here!",
     description:
-      "Tap to open your sidebar — new docs, your publications, and your account settings.",
+      "Tap to open the sidebar. You'll be able to make new docs, find your publications, and manage your settings",
     showOn: "mobile",
     side: "top",
     align: "start",
   },
 };
 
-// Radix offsets a tooltip along its own side and align axes, so which screen
-// axis each one moves flips with the side: on a right-side tooltip the side
-// axis is x and align is y, on a top-side one the side axis is y pointing up.
-function tourOffsets(target: TutorialNavTarget) {
-  let { side, xOffset = 0, yOffset = 0 } = TOUR_COPY[target];
-  return side === "right"
-    ? {
-        sideOffset: TOOLTIP_SIDE_OFFSET + xOffset,
-        alignOffset: yOffset,
-      }
-    : {
-        sideOffset: TOOLTIP_SIDE_OFFSET - yOffset,
-        alignOffset: xOffset,
-      };
-}
-
-// Wraps a piece of the navigation in a tooltip that's pinned open for the
-// duration of the tutorial's navigation step. Always renders the wrapping div,
-// tour or not, so turning the tour on doesn't shift the layout around.
 export function TutorialNavTooltip(props: {
   target: TutorialNavTarget;
   className?: string;
@@ -125,7 +92,6 @@ export function TutorialNavTooltip(props: {
       open
       side={side}
       align={align}
-      {...tourOffsets(props.target)}
       className="w-56 text-center"
       trigger={anchor}
     >
