@@ -2289,7 +2289,10 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.recommendedPubs',
               'lex:pub.leaflet.blocks.membersOnlyDelimiter',
               'lex:pub.leaflet.blocks.postHeader',
+              'lex:pub.leaflet.pages.linearDocument',
             ],
+            description:
+              'A single block, or a linear document: blocks grouped in reading order that are positioned, sized and rotated on the canvas as one.',
           },
           x: {
             type: 'integer',

@@ -28,7 +28,12 @@ export const PubLeafletPagesCanvasDocument: LexiconDoc = {
       type: "object",
       required: ["block", "x", "y", "width"],
       properties: {
-        block: BlockUnion,
+        block: {
+          ...BlockUnion,
+          description:
+            "A single block, or a linear document: blocks grouped in reading order that are positioned, sized and rotated on the canvas as one.",
+          refs: [...BlockUnion.refs, "pub.leaflet.pages.linearDocument"],
+        },
         x: { type: "integer" },
         y: { type: "integer" },
         width: { type: "integer" },
