@@ -12,6 +12,10 @@ import {
   PubLeafletPagesLinearDocument,
   PubLeafletBlocksCode,
 } from "lexicons/api";
+import {
+  pageBlocksInOrder,
+  type IndexedBlock,
+} from "src/utils/pageBlocksInOrder";
 import { useDocument } from "contexts/DocumentContext";
 import { useLeafletContent } from "contexts/LeafletContentContext";
 import {
@@ -196,17 +200,15 @@ export const QuoteContent = (props: {
   const { uri: document_uri } = useDocument();
   const { pages } = useLeafletContent();
 
-  let page: PubLeafletPagesLinearDocument.Main | undefined = (
-    props.position.pageId
-      ? pages.find(
-          (p) =>
-            (p as PubLeafletPagesLinearDocument.Main).id ===
-            props.position.pageId,
-        )
-      : pages[0]
-  ) as PubLeafletPagesLinearDocument.Main;
+  let page = props.position.pageId
+    ? pages.find(
+        (p) =>
+          (p as PubLeafletPagesLinearDocument.Main).id ===
+          props.position.pageId,
+      )
+    : pages[0];
   // Extract blocks within the quote range
-  const content = extractQuotedBlocks(page.blocks || [], props.position, []);
+  const content = extractQuotedBlocks(pageBlocksInOrder(page!), props.position);
   return (
     <div
       className="quoteSection"
@@ -266,15 +268,12 @@ export const QuoteContent = (props: {
 };
 
 function extractQuotedBlocks(
-  blocks: PubLeafletPagesLinearDocument.Block[],
+  blocks: IndexedBlock[],
   quotePosition: QuotePosition,
-  currentPath: number[],
 ): PubLeafletPagesLinearDocument.Block[] {
   const result: PubLeafletPagesLinearDocument.Block[] = [];
 
-  blocks.forEach((block, index) => {
-    const blockPath = [...currentPath, index];
-
+  blocks.forEach(({ block, index: blockPath }) => {
     // Handle different block types
     if (PubLeafletBlocksUnorderedList.isMain(block.block)) {
       // For lists, recursively extract quoted items

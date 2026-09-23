@@ -1,5 +1,6 @@
 "use client";
 import { useUIState } from "src/useUIState";
+import { pageOfParent } from "src/utils/blockGroups";
 import { Media } from "./Media";
 import { Toolbar } from "./Toolbar";
 import { FootnoteToolbar } from "./Toolbar/FootnoteToolbarWrapper";
@@ -41,7 +42,7 @@ export function DesktopPageFooter(props: { pageID: string; flow?: boolean }) {
         focusedEntity.entityType === "block" &&
         hasBlockToolbar(blockType) &&
         entity_set.permissions.write &&
-        focusedBlockParentID === props.pageID && (
+        pageOfParent(focusedBlockParentID) === props.pageID && (
           <div
             className="pointer-events-auto w-fit mx-auto py-1 px-3 h-9 bg-bg-page border border-border rounded-full shadow-sm"
             onMouseDown={(e) => {
@@ -50,7 +51,7 @@ export function DesktopPageFooter(props: { pageID: string; flow?: boolean }) {
           >
             <Toolbar
               blockType={blockType}
-              pageID={focusedBlockParentID}
+              pageID={focusedEntity.parent}
               blockID={focusedEntity.entityID}
             />
           </div>

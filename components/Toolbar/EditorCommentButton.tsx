@@ -1,9 +1,8 @@
-import { useEditorStates } from "src/state/useEditorState";
+import { pageOfParent } from "src/utils/blockGroups";
 import { useUIState } from "src/useUIState";
 import { useEntity } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { startEditorCommentDraft } from "components/EditorComments/editorCommentDraftActions";
-import { useEditorCommentSheetStore } from "components/EditorComments/editorCommentStores";
+import { startFocusedBlockCommentDraft } from "components/EditorComments/editorCommentDraftActions";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { ToolbarButton } from ".";
 
@@ -11,7 +10,9 @@ export function EditorCommentButton() {
   let { permissions } = useEntitySetContext();
   let focusedBlock = useUIState((s) => s.focusedEntity);
   let pageID =
-    focusedBlock?.entityType === "block" ? focusedBlock.parent : null;
+    focusedBlock?.entityType === "block"
+      ? pageOfParent(focusedBlock.parent)
+      : null;
   let pageType = useEntity(pageID, "page/type")?.data.value || "doc";
 
   // Commenting is a write interaction; hide the affordance without write access
@@ -24,20 +25,7 @@ export function EditorCommentButton() {
       tooltipContent={"Add Comment"}
       onClick={(e) => {
         e.preventDefault();
-        if (!focusedBlock || focusedBlock.entityType !== "block") return;
-        let editorState =
-          useEditorStates.getState().editorStates[focusedBlock.entityID];
-        if (!editorState?.view) return;
-        startEditorCommentDraft(
-          editorState.view,
-          focusedBlock.entityID,
-          focusedBlock.parent,
-        );
-        // Where there's no side column (mobile, canvas), draft in the sheet
-        let isDesktop = window.matchMedia("(min-width: 1280px)").matches;
-        if (!isDesktop || pageType === "canvas") {
-          useEditorCommentSheetStore.getState().openSheet(focusedBlock.parent);
-        }
+        startFocusedBlockCommentDraft(focusedBlock, pageType);
       }}
     >
       <CommentTiny className="w-6 h-6 p-0.5" />

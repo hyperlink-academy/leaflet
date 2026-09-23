@@ -13,7 +13,7 @@ import {
   dracula,
 } from "@react-email/components";
 import type { PrismLanguage } from "@react-email/code-block";
-import { UnicodeString, type AppBskyFeedDefs } from "@atproto/api";
+import { UnicodeString, type $Typed, type AppBskyFeedDefs } from "@atproto/api";
 import React, { Fragment, type CSSProperties } from "react";
 import {
   PubLeafletBlocksBlockquote,
@@ -38,6 +38,7 @@ import {
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { matchBlock, type BlockHandlers } from "src/utils/blockDispatch";
 import { canvasBlockOrder } from "src/utils/canvasBlockOrder";
+import { canvasBlockBlocks } from "src/utils/pageBlocksInOrder";
 import { normalizePageLinkDisplay } from "src/utils/pageLinkDisplay";
 import { pageRecordTextBlocks } from "src/utils/pageRecordTextBlocks";
 import { atUriToUrl, didToBlueskyUrl } from "src/utils/mentionUtils";
@@ -65,16 +66,10 @@ import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_si
 import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import { supabaseServerClient } from "supabase/serverClient";
 
-/**
- * A document page in the shape both send paths already have on hand: the
- * broadcast's lexicon record pages and the preview's processBlocksToPages
- * output both carry an id plus a typed block list.
- */
-export type PostEmailPage = {
-  id: string;
-  type: "doc" | "canvas";
-  blocks: PubLeafletPagesLinearDocument.Block[] | PubLeafletPagesCanvas.Block[];
-};
+/** A document page as both the broadcast's record and the preview's draft conversion produce it. */
+export type PostEmailPage =
+  | $Typed<PubLeafletPagesLinearDocument.Main>
+  | $Typed<PubLeafletPagesCanvas.Main>;
 
 type PostEmailProps = {
   publicationName: string;
@@ -670,8 +665,8 @@ const defaultProps: PostEmailProps = {
   ],
   pages: [
     {
+      $type: "pub.leaflet.pages.linearDocument",
       id: "preview-subpage",
-      type: "doc",
       blocks: [
         headingBlock("A sub-page with a title", 2),
         textBlock(
@@ -691,8 +686,8 @@ const defaultProps: PostEmailProps = {
       ],
     },
     {
+      $type: "pub.leaflet.pages.canvas",
       id: "preview-canvas",
-      type: "canvas",
       blocks: [
         {
           $type: "pub.leaflet.pages.canvas#block",
@@ -1842,7 +1837,7 @@ const PageLinkEmailBlock = ({
   colors: ResolvedColors;
   assetsBaseUrl: string;
 }) => {
-  const isCanvas = page.type === "canvas";
+  const isCanvas = PubLeafletPagesCanvas.isMain(page);
   const cellLinkStyle: CSSProperties = {
     color: "inherit",
     display: "block",
@@ -1924,7 +1919,7 @@ const PageLinkEmailBlock = ({
         {isCanvas ? (
           <Link href={href} style={{ ...cellLinkStyle, height: "100%" }}>
             <CanvasThumbnail
-              blocks={page.blocks as PubLeafletPagesCanvas.Block[]}
+              blocks={page.blocks}
               did={did}
               theme={theme}
               colors={colors}
@@ -1943,7 +1938,7 @@ const PageLinkEmailBlock = ({
                 }}
               >
                 <DocLinkLines
-                  blocks={page.blocks as PubLeafletPagesLinearDocument.Block[]}
+                  blocks={page.blocks}
                   theme={theme}
                   assetsBaseUrl={assetsBaseUrl}
                 />
@@ -1960,7 +1955,7 @@ const PageLinkEmailBlock = ({
                 style={{ ...cellLinkStyle, height: PAGE_LINK_DOC_HEIGHT }}
               >
                 <DocThumbnail
-                  blocks={page.blocks as PubLeafletPagesLinearDocument.Block[]}
+                  blocks={page.blocks}
                   did={did}
                   theme={theme}
                   colors={colors}
@@ -2124,14 +2119,17 @@ const CanvasThumbnail = ({
             width: canvasBlock.width * scale,
           }}
         >
-          <MiniBlock
-            block={canvasBlock.block}
-            scale={scale}
-            did={did}
-            theme={theme}
-            colors={colors}
-            assetsBaseUrl={assetsBaseUrl}
-          />
+          {canvasBlockBlocks(canvasBlock, i).map((b, j) => (
+            <MiniBlock
+              key={j}
+              block={b.block.block}
+              scale={scale}
+              did={did}
+              theme={theme}
+              colors={colors}
+              assetsBaseUrl={assetsBaseUrl}
+            />
+          ))}
         </div>
       ))}
     </div>

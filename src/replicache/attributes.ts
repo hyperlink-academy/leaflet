@@ -586,7 +586,10 @@ export type Data<A extends keyof typeof Attributes> = {
       | "recommended-pubs"
       | "signup"
       | "image-gallery"
-      | "post-header";
+      | "post-header"
+      // A canvas-only container whose card/block children form a linear
+      // document, positioned on the canvas as a single block.
+      | "group";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";

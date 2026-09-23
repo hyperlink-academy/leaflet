@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from "react";
+import { pageOfParent } from "src/utils/blockGroups";
 import { elementId } from "src/utils/elementId";
 import { useReplicache, useEntity } from "src/replicache";
 import { isVisible } from "src/utils/isVisible";
@@ -123,7 +124,7 @@ function IOSBS(props: BlockProps) {
           let vis = await isVisible(target as Element);
           if (!vis) {
             let parentEl = document.getElementById(
-              elementId.page(props.parent).container,
+              elementId.page(pageOfParent(props.parent)).container,
             );
             if (!parentEl) return;
             parentEl?.scrollBy({
@@ -144,6 +145,7 @@ export function RenderedTextBlock(props: {
   pageType?: "canvas" | "doc";
   type: BlockProps["type"];
   previousBlock?: BlockProps["previousBlock"];
+  /** The block's parent; a group resolves to its canvas page. */
   pageID?: string;
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
@@ -212,7 +214,7 @@ export function RenderedTextBlock(props: {
         if (store.activeFootnoteID === footnoteID) {
           store.close();
         } else {
-          store.open(footnoteID, footnoteRef, props.pageID);
+          store.open(footnoteID, footnoteRef, pageOfParent(props.pageID));
         }
       }}
       className={`

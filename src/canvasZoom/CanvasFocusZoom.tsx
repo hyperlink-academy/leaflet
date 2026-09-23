@@ -1,5 +1,6 @@
 "use client";
 import { useEffect } from "react";
+import { pageOfParent } from "src/utils/blockGroups";
 import { useUIState } from "src/useUIState";
 import { elementId } from "src/utils/elementId";
 import { useCanvasZoomEngine } from "./CanvasZoomProvider";
@@ -17,7 +18,7 @@ export function CanvasFocusZoom(props: { pageEntityID: string }) {
   let engine = useCanvasZoomEngine();
   let focused = useUIState((s) =>
     s.focusedEntity?.entityType === "block" &&
-    s.focusedEntity.parent === props.pageEntityID
+    pageOfParent(s.focusedEntity.parent) === props.pageEntityID
       ? s.focusedEntity.entityID
       : null,
   );

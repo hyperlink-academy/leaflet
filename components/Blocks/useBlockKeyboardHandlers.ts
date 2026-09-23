@@ -4,7 +4,6 @@ import { useEditorStates } from "src/state/useEditorState";
 
 import { isTextBlock } from "src/utils/isTextBlock";
 import { focusBlock } from "src/utils/focusBlock";
-import { elementId } from "src/utils/elementId";
 import { indent, outdent } from "src/utils/list-operations";
 import { addBlockBelow, focusNewTextBlock } from "src/utils/addBlockBelow";
 import { generateKeyBetween } from "fractional-indexing";
@@ -14,8 +13,9 @@ import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { Replicache } from "replicache";
 import { deleteBlock } from "src/utils/deleteBlock";
-import { entities } from "drizzle/schema";
-import { scanIndex } from "src/replicache/utils";
+import { UndoManager } from "src/undoManager";
+import { groupCanvasBlockAndAddBelow } from "src/utils/groupCanvasBlock";
+import { isBlockGroup, pageOfParent } from "src/utils/blockGroups";
 
 export function useBlockKeyboardHandlers(
   props: BlockProps & { preview?: boolean },
@@ -78,6 +78,7 @@ export function useBlockKeyboardHandlers(
           e,
           props,
           rep,
+          undoManager,
           entity_set,
           areYouSure,
           setAreYouSure,
@@ -93,6 +94,7 @@ type Args = {
   e: KeyboardEvent;
   props: BlockProps;
   rep: Replicache<ReplicacheMutators>;
+  undoManager: UndoManager;
   entity_set: { set: string };
   areYouSure: boolean;
   setAreYouSure: (value: boolean) => void;
@@ -189,13 +191,21 @@ async function Backspace({ e, props, rep, areYouSure, setAreYouSure }: Args) {
   }
 
   e.preventDefault();
-  await rep.mutate.removeBlock({ blockEntity: props.entityID });
+  await rep.mutate.removeBlock({
+    blockEntity: props.entityID,
+    parent: props.parent,
+  });
   useUIState.getState().closePage(props.entityID);
   let prevBlock = props.previousBlock;
   if (prevBlock) focusBlock(prevBlock, { type: "end" });
+  else if (isBlockGroup(props.parent) && !props.nextBlock)
+    useUIState.getState().setFocusedBlock({
+      entityType: "page",
+      entityID: pageOfParent(props.parent),
+    });
 }
 
-async function Enter({ e, props, rep, entity_set }: Args) {
+async function Enter({ e, props, rep, entity_set, undoManager }: Args) {
   let newEntityID = v7();
   let position;
   let el = e.target as HTMLElement;
@@ -216,30 +226,17 @@ async function Enter({ e, props, rep, entity_set }: Args) {
     return;
   }
   if (props.pageType === "canvas") {
-    let el = document.getElementById(elementId.block(props.entityID).container);
-    let [position] =
-      (await rep?.query((tx) =>
-        scanIndex(tx).vae(props.entityID, "canvas/block"),
-      )) || [];
-    if (!position || !el) return;
-
-    let box = el.getBoundingClientRect();
-
-    await rep.mutate.addCanvasBlock({
+    // Like a text block, a lone canvas block becomes the first block of a
+    // group and the new block follows it there.
+    if (props.type === "group") return;
+    await groupCanvasBlockAndAddBelow(rep, undoManager, {
+      page: props.parent,
+      blockEntity: props.entityID,
       newEntityID,
-      factID: v7(),
       permission_set: entity_set.set,
-      parent: props.parent,
       type: "text",
-      position: {
-        x: position.data.position.x,
-        y: position.data.position.y + box.height + 12,
-      },
     });
-    focusBlock(
-      { type: "text", entityID: newEntityID, parent: props.parent },
-      { type: "start" },
-    );
+    focusNewTextBlock(newEntityID);
     return;
   }
 
@@ -292,6 +289,6 @@ function Escape({ e, props, areYouSure, setAreYouSure }: Args) {
 
   useUIState.setState({ selectedBlocks: [] });
   useUIState.setState({
-    focusedEntity: { entityType: "page", entityID: props.parent },
+    focusedEntity: { entityType: "page", entityID: pageOfParent(props.parent) },
   });
 }

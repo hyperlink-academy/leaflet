@@ -1,4 +1,5 @@
 import { BlockProps } from "../Block";
+import { isBlockGroup, pageOfParent } from "src/utils/blockGroups";
 import { focusBlock } from "src/utils/focusBlock";
 import { EditorView } from "prosemirror-view";
 import { generateKeyBetween } from "fractional-indexing";
@@ -14,7 +15,6 @@ import {
 import { RefObject } from "react";
 import { Replicache } from "replicache";
 import type { Fact, ReplicacheMutators } from "src/replicache";
-import { elementId } from "src/utils/elementId";
 import { schema } from "./schema";
 import { isZoomedBlockRoot, useUIState } from "src/useUIState";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
@@ -26,6 +26,7 @@ import { unfoldBlocks } from "src/utils/foldBlocks";
 import { getViewBlocks } from "components/SelectionManager/selectionState";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { UndoManager } from "src/undoManager";
+import { groupCanvasBlockAndAddBelow } from "src/utils/groupCanvasBlock";
 type PropsRef = RefObject<
   BlockProps & {
     entity_set: { set: string };
@@ -52,7 +53,7 @@ export const TextBlockKeymap = (
       useUIState.setState(() => ({
         focusedEntity: {
           entityType: "page",
-          entityID: propsRef.current.parent,
+          entityID: pageOfParent(propsRef.current.parent),
         },
         selectedBlocks: [],
       }));
@@ -422,6 +423,24 @@ const backspace =
           }),
         );
       }
+      if (
+        isBlockGroup(propsRef.current.parent) &&
+        state.doc.textContent.length === 0
+      ) {
+        let next = propsRef.current.nextBlock;
+        mutate(
+          repRef.current?.mutate.removeBlock({
+            blockEntity: propsRef.current.entityID,
+            parent: propsRef.current.parent,
+          }),
+        );
+        if (next) focusBlock(next, { type: "start" });
+        else
+          useUIState.getState().setFocusedBlock({
+            entityType: "page",
+            entityID: pageOfParent(propsRef.current.parent),
+          });
+      }
       return finish(true);
     }
 
@@ -687,59 +706,45 @@ const enter =
     dispatch?.(tr);
 
     let newEntityID = v7();
+    let parent = propsRef.current.parent;
     let position: string;
     let asyncRun = async () => {
       let blockType =
         propsRef.current.type === "heading" && state.selection.anchor <= 2
           ? ("heading" as const)
           : ("text" as const);
-      if (propsRef.current.pageType === "canvas") {
-        let el = document.getElementById(
-          elementId.block(propsRef.current.entityID).container,
-        );
-        let [position] =
-          (await repRef.current?.query((tx) =>
-            scanIndex(tx).vae(propsRef.current.entityID, "canvas/block"),
-          )) || [];
-        if (!position || !el) return;
-
-        let box = el.getBoundingClientRect();
-
-        await repRef.current?.mutate.addCanvasBlock({
-          newEntityID,
-          factID: v7(),
-          permission_set: propsRef.current.entity_set.set,
-          parent: propsRef.current.parent,
-          type: blockType,
-          position: {
-            x: position.data.position.x,
-            y: position.data.position.y + box.height,
-          },
-        });
-        if (propsRef.current.listData) {
-          await repRef.current?.mutate.assertFact({
-            entity: newEntityID,
-            attribute: "block/is-list",
-            data: { type: "boolean", value: true },
-          });
-          // Copy list style for canvas blocks
-          let listStyle = await repRef.current?.query((tx) =>
-            scanIndex(tx).eav(propsRef.current.entityID, "block/list-style"),
-          );
-          if (listStyle?.[0]) {
-            await repRef.current?.mutate.assertFact({
-              entity: newEntityID,
-              attribute: "block/list-style",
-              data: {
-                type: "list-style-union",
-                value: listStyle[0].data.value,
-              },
-            });
-          }
-        }
-        return;
-      }
+      // A new list item carries the style of the one it split from.
+      let list;
       if (propsRef.current.listData) {
+        let [listStyle] =
+          (await repRef.current?.query((tx) =>
+            scanIndex(tx).eav(propsRef.current.entityID, "block/list-style"),
+          )) || [];
+        let [checked] =
+          (await repRef.current?.query((tx) =>
+            scanIndex(tx).eav(propsRef.current.entityID, "block/check-list"),
+          )) || [];
+        list = {
+          listStyle: listStyle?.data.value,
+          checklist: checked
+            ? state.selection.anchor === 1
+              ? checked.data.value
+              : false
+            : undefined,
+        };
+      }
+      if (propsRef.current.pageType === "canvas") {
+        let rep = repRef.current;
+        if (!rep) return;
+        parent = await groupCanvasBlockAndAddBelow(rep, um, {
+          page: propsRef.current.parent,
+          blockEntity: propsRef.current.entityID,
+          newEntityID,
+          permission_set: propsRef.current.entity_set.set,
+          type: blockType,
+          list,
+        });
+      } else if (propsRef.current.listData) {
         let createChild =
           isZoomedBlockRoot(propsRef.current.entityID) ||
           (propsRef.current.nextBlock?.listData &&
@@ -779,14 +784,6 @@ const enter =
             children[0]?.data.position || null,
           );
         }
-        let [listStyle] =
-          (await repRef.current?.query((tx) =>
-            scanIndex(tx).eav(propsRef.current.entityID, "block/list-style"),
-          )) || [];
-        let [checked] =
-          (await repRef.current?.query((tx) =>
-            scanIndex(tx).eav(propsRef.current.entityID, "block/check-list"),
-          )) || [];
         await repRef.current?.mutate.addBlock({
           newEntityID,
           factID: v7(),
@@ -796,14 +793,7 @@ const enter =
             : propsRef.current.listData.parent,
           type: blockType,
           position,
-          list: {
-            listStyle: listStyle?.data.value,
-            checklist: checked
-              ? state.selection.anchor === 1
-                ? checked.data.value
-                : false
-              : undefined,
-          },
+          list,
         });
         if (
           !createChild &&
@@ -818,9 +808,8 @@ const enter =
             after: null,
           });
         }
-      }
-      // if the block is not a list, add a new text block after it
-      if (!propsRef.current.listData) {
+      } else {
+        // if the block is not a list, add a new text block after it
         position = generateKeyBetween(
           propsRef.current.position,
           propsRef.current.nextPosition,
@@ -902,7 +891,7 @@ const enter =
         focusBlock(
           {
             entityID: newEntityID,
-            parent: propsRef.current.parent,
+            parent,
             type: "text",
           },
           { type: "start" },
@@ -915,7 +904,7 @@ const enter =
       .then(() => {
         useUIState.getState().setSelectedBlock({
           entityID: newEntityID,
-          parent: propsRef.current.parent,
+          parent,
         });
 
         // The split's tracked delete transaction refocuses the source block on

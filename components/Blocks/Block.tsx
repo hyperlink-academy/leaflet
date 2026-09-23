@@ -58,6 +58,7 @@ import { Separator } from "components/Layout";
 import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
 import { deleteBlock } from "src/utils/deleteBlock";
 import { CanvasLayerControls } from "components/CanvasLayerControls";
+import { Blocks } from "./index";
 
 const SWIPE_THRESHOLD = 50;
 
@@ -461,7 +462,27 @@ const BlockTypeComponents: {
   "recommended-pubs": RecommendedPubsBlock,
   signup: SubscribeBlock,
   "post-header": PostHeaderBlock,
+  group: GroupBlock,
 };
+
+// Only rendered on canvases. The Blocks list pads each block for a page; pull
+// it back out so a block keeps its place on the canvas when it becomes the
+// first block of a group.
+function GroupBlock(props: BlockProps & { preview?: boolean }) {
+  let focused = useUIState(
+    (s) =>
+      s.focusedEntity?.entityID === props.entityID ||
+      (s.focusedEntity?.entityType === "block" &&
+        s.focusedEntity.parent === props.entityID),
+  );
+  return (
+    <div
+      className={`canvasBlockGroup -mx-3 sm:-mx-4 -mt-2 sm:-mt-3 -mb-3 sm:-mb-4 ${focused ? "bg-bg-page rounded-md" : ""}`}
+    >
+      <Blocks entityID={props.entityID} group preview={props.preview} />
+    </div>
+  );
+}
 
 const BlockMultiselectIndicator = (props: BlockProps) => {
   let first = props.previousBlock === null;

@@ -1,13 +1,12 @@
 "use client";
 
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { pageOfParent } from "src/utils/blockGroups";
 import { useEntity } from "src/replicache";
-import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { SelectionActionPopover } from "components/SelectionActionPopover";
-import { startEditorCommentDraft } from "./editorCommentDraftActions";
-import { useEditorCommentSheetStore } from "./editorCommentStores";
+import { startFocusedBlockCommentDraft } from "./editorCommentDraftActions";
 
 // Selecting text in a document text block floats a popover over the selection
 // with a Comment action. It reuses the published-post selection toolbar
@@ -35,7 +34,9 @@ export function EditorCommentSelectionPopover() {
 function EditorCommentSelectionButton() {
   let focusedBlock = useUIState((s) => s.focusedEntity);
   let pageID =
-    focusedBlock?.entityType === "block" ? focusedBlock.parent : null;
+    focusedBlock?.entityType === "block"
+      ? pageOfParent(focusedBlock.parent)
+      : null;
   let pageType = useEntity(pageID, "page/type")?.data.value || "doc";
 
   return (
@@ -46,20 +47,7 @@ function EditorCommentSelectionButton() {
       // act on mousedown.
       onMouseDown={(e) => {
         e.preventDefault();
-        if (!focusedBlock || focusedBlock.entityType !== "block") return;
-        let editorState =
-          useEditorStates.getState().editorStates[focusedBlock.entityID];
-        if (!editorState?.view) return;
-        startEditorCommentDraft(
-          editorState.view,
-          focusedBlock.entityID,
-          focusedBlock.parent,
-        );
-        // Where there's no side column (mobile, canvas), draft in the sheet
-        let isDesktop = window.matchMedia("(min-width: 1280px)").matches;
-        if (!isDesktop || pageType === "canvas") {
-          useEditorCommentSheetStore.getState().openSheet(focusedBlock.parent);
-        }
+        startFocusedBlockCommentDraft(focusedBlock, pageType);
       }}
     >
       <CommentTiny /> Comment

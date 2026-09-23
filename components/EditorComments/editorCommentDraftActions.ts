@@ -6,6 +6,8 @@ import { generateKeyBetween } from "fractional-indexing";
 import { Replicache } from "replicache";
 import type { ReplicacheMutators } from "src/replicache";
 import type { UndoManager } from "src/undoManager";
+import type { FocusedEntity } from "src/useUIState";
+import { pageOfParent } from "src/utils/blockGroups";
 import { schema } from "components/Blocks/TextBlock/schema";
 import {
   commentDraftKey,
@@ -47,6 +49,24 @@ export function startEditorCommentDraft(
 
   view.dispatch(view.state.tr.setMeta(commentDraftKey, { from, to }));
   useEditorCommentDraftStore.setState({ draft: { blockID, pageID } });
+}
+
+// The toolbar button and the selection popover both start a draft on the
+// focused block this way.
+export function startFocusedBlockCommentDraft(
+  focusedBlock: FocusedEntity | null | undefined,
+  pageType: string,
+) {
+  if (!focusedBlock || focusedBlock.entityType !== "block") return;
+  let editorState =
+    useEditorStates.getState().editorStates[focusedBlock.entityID];
+  if (!editorState?.view) return;
+  let page = pageOfParent(focusedBlock.parent);
+  startEditorCommentDraft(editorState.view, focusedBlock.entityID, page);
+  // Where there's no side column (mobile, canvas), draft in the sheet
+  let isDesktop = window.matchMedia("(min-width: 1280px)").matches;
+  if (!isDesktop || pageType === "canvas")
+    useEditorCommentSheetStore.getState().openSheet(page);
 }
 
 function clearDraftDecoration(blockID: string) {
