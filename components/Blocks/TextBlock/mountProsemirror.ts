@@ -6,7 +6,6 @@ import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { ySyncPlugin, ySyncPluginKey } from "y-prosemirror";
 import { Replicache } from "replicache";
-import { produce } from "immer";
 
 import { schema } from "./schema";
 import { UndoManager } from "src/undoManager";
@@ -14,7 +13,7 @@ import { TextBlockKeymap } from "./keymap";
 import { inputrules } from "./inputRules";
 import { highlightSelectionPlugin } from "./plugins";
 import { autolink } from "./autolink-plugin";
-import { useEditorStates } from "src/state/useEditorState";
+import { restoreEditorState, useEditorStates } from "src/state/useEditorState";
 import {
   useEntity,
   useReplicache,
@@ -339,14 +338,11 @@ export function useMountProsemirror({
 
         // Handle undo/redo history with timeout-based grouping
         let isBulkOp = tr.getMeta("bulkOp");
-        let setState = (s: EditorState) => () =>
-          useEditorStates.setState(
-            produce((draft) => {
-              let view = draft.editorStates[entityID]?.view;
-              if (!view?.hasFocus() && !isBulkOp) view?.focus();
-              draft.editorStates[entityID]!.editor = s;
-            }),
-          );
+        let setState = (s: EditorState) => () => {
+          let view = useEditorStates.getState().editorStates[entityID]?.view;
+          if (!view?.hasFocus() && !isBulkOp) view?.focus();
+          restoreEditorState(entityID, s);
+        };
 
         trackUndoRedo(
           tr,

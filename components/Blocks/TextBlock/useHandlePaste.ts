@@ -1,7 +1,11 @@
 import { MutableRefObject, useCallback } from "react";
 import { Fact, ReplicacheMutators, useReplicache } from "src/replicache";
 import { EditorView } from "prosemirror-view";
-import { setEditorState, useEditorStates } from "src/state/useEditorState";
+import {
+  restoreEditorState,
+  setEditorState,
+  useEditorStates,
+} from "src/state/useEditorState";
 import {
   DOMParser as ProsemirrorDOMParser,
   Node as ProsemirrorNode,
@@ -386,12 +390,12 @@ async function bulkPaste({
         undo: () => {
           const view = useEditorStates.getState().editorStates[activeID]?.view;
           if (view && !view.hasFocus()) view.focus();
-          setEditorState(activeID, { editor: oldEditorState });
+          restoreEditorState(activeID, oldEditorState);
         },
         redo: () => {
           const view = useEditorStates.getState().editorStates[activeID]?.view;
           if (view && !view.hasFocus()) view.focus();
-          setEditorState(activeID, { editor: newEditorState });
+          restoreEditorState(activeID, newEditorState);
         },
       });
     }
