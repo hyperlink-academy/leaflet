@@ -1,0 +1,30 @@
+/* A transform makes the tooltip the containing block for Radix's absolutely
+   positioned arrow, which the shared Tooltip's overflow-y-scroll then clips.
+   The arrow sits outside the content box by design, so these opt out. */
+.tooltip {
+  overflow: visible;
+  animation: enter 250ms ease-out both;
+}
+
+/* `both` above holds the from-state through the delay — without it a staggered
+   tooltip paints fully opaque and only then animates. */
+.delay0 {
+  animation-delay: 0ms;
+}
+.delay1 {
+  animation-delay: 60ms;
+}
+.delay2 {
+  animation-delay: 120ms;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

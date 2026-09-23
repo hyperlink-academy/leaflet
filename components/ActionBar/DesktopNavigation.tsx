@@ -24,6 +24,7 @@ import { BlueskySmall } from "components/Icons/BlueskySmall";
 import { Separator } from "components/Layout";
 import { LeafletTiny } from "components/Icons/LeafletTiny";
 import { ButtonPrimary } from "components/Buttons";
+import { useTutorialNavTour } from "app/(app)/(identity)/(home-pages)/(writer)/home/Tutorial/TutorialNavTooltip";
 
 type NavigationProps = {
   pageTitle: React.ReactNode;
@@ -232,8 +233,14 @@ export const PageTitle = (props: {
 };
 
 export const DesktopNavigation = (props: NavigationProps) => {
+  let blurred = useTutorialNavTour((s) => s.blurred);
   return (
-    <Sidebar alwaysOpen>
+    <Sidebar
+      alwaysOpen
+      className={`transition-[filter] duration-300 ${
+        blurred ? "blur-[8px] pointer-events-none" : ""
+      }`}
+    >
       <NavigationContent {...props} />
     </Sidebar>
   );

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { create } from "zustand";
 import { Tooltip } from "components/Tooltip";
 import { useIsMobile } from "src/hooks/isMobile";
+import styles from "./TutorialNavTooltip.module.css";
 
 export type TutorialNavTarget =
   | "new-doc"
@@ -17,9 +18,13 @@ export type TutorialNavTarget =
 export const useTutorialNavTour = create<{
   active: boolean;
   setActive: (active: boolean) => void;
+  blurred: boolean;
+  setBlurred: (blurred: boolean) => void;
 }>((set) => ({
   active: false,
   setActive: (active) => set({ active }),
+  blurred: false,
+  setBlurred: (blurred) => set({ blurred }),
 }));
 
 export function useActivateTutorialNavTour() {
@@ -30,9 +35,15 @@ export function useActivateTutorialNavTour() {
   }, [setActive]);
 }
 
-// On mobile the sidebar is behind the footer's menu button, so the tour there
-// is the single tooltip pointing at that button; the pieces it opens up get
-// their own tooltips only on desktop, where they're always on screen.
+export function useBlurTutorialNav(blurred: boolean) {
+  let setBlurred = useTutorialNavTour((s) => s.setBlurred);
+  useEffect(() => {
+    setBlurred(blurred);
+    return () => setBlurred(false);
+  }, [blurred, setBlurred]);
+}
+
+
 const TOUR_COPY: {
   [key in TutorialNavTarget]: {
     title: string;
@@ -74,6 +85,9 @@ const TOUR_COPY: {
   },
 };
 
+const ENTER_ORDER: TutorialNavTarget[] = ["new-doc", "publications", "banner"];
+const DELAY_CLASSES = [styles.delay0, styles.delay1, styles.delay2];
+
 export function TutorialNavTooltip(props: {
   target: TutorialNavTarget;
   className?: string;
@@ -86,13 +100,15 @@ export function TutorialNavTooltip(props: {
   let anchor = <div className={props.className}>{props.children}</div>;
   if (!active || (showOn === "mobile") !== isMobile) return anchor;
 
+  let delayIndex = Math.max(ENTER_ORDER.indexOf(props.target), 0);
+
   return (
     <Tooltip
       asChild
       open
       side={side}
       align={align}
-      className="w-56 text-center"
+      className={`${styles.tooltip} ${DELAY_CLASSES[delayIndex]} w-56 text-center`}
       trigger={anchor}
     >
       <div className="font-bold">{title}</div>

@@ -7,7 +7,10 @@ import {
   ButtonTertiary,
 } from "components/Buttons";
 import { GoToArrowLined } from "components/Icons/GoToArrowLined";
-import { useActivateTutorialNavTour } from "./TutorialNavTooltip";
+import {
+  useActivateTutorialNavTour,
+  useBlurTutorialNav,
+} from "./TutorialNavTooltip";
 import { useTutorial } from "./useTutorial";
 
 type Step = "welcome" | "home" | "nav" | "create";
@@ -29,6 +32,7 @@ const SkipTutorial = () => {
 
 export function TutorialTakeover() {
   let [step, setStep] = useState<Step>("welcome");
+  useBlurTutorialNav(step === "welcome" || step === "home");
 
   return (
     <div className="tutorialTakeover grow w-full flex flex-col items-center justify-center gap-4 text-center">
