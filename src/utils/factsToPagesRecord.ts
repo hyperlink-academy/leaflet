@@ -822,7 +822,7 @@ export async function processBlocksToPages(opts: {
             x: Math.floor(position.x),
             y: Math.floor(position.y),
             width: Math.floor(width),
-            ...(rotation !== undefined && { rotation: Math.floor(rotation) }),
+            ...(rotation !== undefined && { rotation: Math.round(rotation) }),
             ...(stackOrder !== undefined && { stackOrder }),
           };
 

@@ -411,8 +411,11 @@ function CanvasBlock(props: {
 }) {
   let width =
     useEntity(props.entityID, "canvas/block/width")?.data.value || 360;
-  let rotation =
-    useEntity(props.entityID, "canvas/block/rotation")?.data.value || 0;
+  // Published records store whole degrees, so the editor shows and saves
+  // exactly what will publish.
+  let rotation = Math.round(
+    useEntity(props.entityID, "canvas/block/rotation")?.data.value || 0,
+  );
   let [ref, rect] = useMeasure();
   let type = useEntity(props.entityID, "block/type");
   let isGroup = type?.data.value === "group";
@@ -469,7 +472,7 @@ function CanvasBlock(props: {
         attribute: "canvas/block/rotation",
         data: {
           type: "number",
-          value: (rotation + rotationDelta(rect, dragDelta)) % 360,
+          value: Math.round(rotation + rotationDelta(rect, dragDelta)) % 360,
         },
       });
     },
@@ -497,7 +500,7 @@ function CanvasBlock(props: {
   let liveZoom = getCanvasZoom(props.parent);
   let x = props.position.x + (dragDelta?.x || 0) / liveZoom;
   let y = props.position.y + (dragDelta?.y || 0) / liveZoom;
-  let transform = `translate(${x}px, ${y}px) rotate(${rotation + angle}deg) scale(${!dragDelta ? "1.0" : "1.02"})`;
+  let transform = `translate(${x}px, ${y}px) rotate(${Math.round(rotation + angle)}deg) scale(${!dragDelta ? "1.0" : "1.02"})`;
   let [areYouSure, setAreYouSure] = useState(false);
   let blockProps = useMemo(() => {
     return {
