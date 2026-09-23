@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  useBlocks,
-  useCanvasBlocksWithType,
-} from "src/hooks/queries/useBlocks";
+import { usePageReadingOrder } from "src/hooks/queries/useBlocks";
 import { useEntity, useReplicache } from "src/replicache";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
@@ -20,11 +17,10 @@ export function UpdateLeafletTitle(props: { entityID: string }) {
   let firstPage = useEntity(props.entityID, "root/page")[0];
   let entityID = firstPage?.data.value || props.entityID;
 
-  let blocks = useBlocks(entityID).filter(
+  let firstBlock = usePageReadingOrder(entityID).find(
     (b) => b.type === "text" || b.type === "heading",
   );
-  let firstBlock = blocks[0];
-  let title = usePageTitle(entityID);
+  let title = usePageTitle(entityID, firstBlock?.entityID ?? null);
   let { rep, permission_token } = useReplicache();
   let hasWrite = permission_token?.permission_token_rights?.some(
     (r) => r.write,
@@ -67,17 +63,8 @@ export function UpdateLeafletTitle(props: { entityID: string }) {
   return null;
 }
 
-const usePageTitle = (entityID: string) => {
+const usePageTitle = (entityID: string, firstBlockEntity: string | null) => {
   let [title, setTitle] = useState("");
-  let canvasBlocks = useCanvasBlocksWithType(entityID).filter(
-    (b) => b.type === "text" || b.type === "heading",
-  );
-  let blocks = useBlocks(entityID).filter(
-    (b) => b.type === "text" || b.type === "heading",
-  );
-  // Canvas items are fact data (entity in .value); linear blocks are Blocks
-  // (entity in .entityID) — read each arm's own field.
-  let firstBlockEntity = canvasBlocks[0]?.value ?? blocks[0]?.entityID ?? null;
   let content = useEntity(firstBlockEntity, "block/text");
   useEffect(() => {
     if (content) {
