@@ -95,7 +95,12 @@ function CanvasBlockContent({
   let isGroup = PubLeafletPagesLinearDocument.isMain(canvasBlock.block);
   let blocks = canvasBlockBlocks(canvasBlock, index);
   return (
-    <div className={isGroup ? "flow-root w-full" : "contents"}>
+    // The editor's canvas block ends at its content's last line, and its
+    // height sets the rotation origin, so drop the page-flow margins at the
+    // edges and the taller minimum a published paragraph keeps for spacing.
+    <div
+      className={`${isGroup ? "flow-root w-full" : "contents"} [&>*:first-child]:mt-0! [&>*:last-child]:mb-0! [&>*:last-child]:min-h-6!`}
+    >
       {blocks.map((b, i) => (
         <Block
           {...props}

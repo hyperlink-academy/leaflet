@@ -739,7 +739,7 @@ const Gripper = (props: {
       onPointerDown={(e) => {
         if (e.pointerType !== "mouse") props.onMouseDown(e);
       }}
-      className="gripper relative z-10 w-[9px] shrink-0 py-1 mr-1 cursor-grab touch-none"
+      className="gripper absolute z-10 left-0 top-3 bottom-3 w-[9px] py-1 cursor-grab touch-none"
     >
       <div className="h-full grid grid-cols-1 grid-rows-1 ">
         {/* the gripper is two svg's stacked on top of each other.
