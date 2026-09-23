@@ -1,4 +1,5 @@
 "use client";
+import { blockSpacingClassName, type SpacingKind } from "src/utils/blockSpacing";
 import {
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
@@ -246,34 +247,31 @@ export let Block = ({
   )
     alignment = "text-center justify-center";
 
-  let isHeading = PubLeafletBlocksHeader.isMain(b.block);
 
-  // Headers carry a level-based top margin so they read as a new section,
-  // matching the editor (components/Blocks/Block.tsx). Tightened to mt-1 after
-  // another heading, and dropped entirely right after a horizontal rule.
-  let topMargin: string;
-  if (PubLeafletBlocksHeader.isMain(b.block)) {
-    let prevBlock = previousBlock?.block;
-    topMargin = isFirst
-      ? "mt-1 sm:mt-2"
-      : PubLeafletBlocksHorizontalRule.isMain(prevBlock)
-        ? ""
-        : PubLeafletBlocksHeader.isMain(prevBlock)
-          ? "mt-1"
-          : { 1: "mt-5 sm:mt-6", 2: "mt-4 sm:mt-5", 3: "mt-2 sm:mt-3" }[
-              b.block.level ?? 1
-            ] ?? "mt-2 sm:mt-3";
-  } else {
-    topMargin = isFirst ? "mt-0" : "mt-1";
-  }
-
+  let previousKind = previousBlock && spacingKind(previousBlock.block);
   let className = `
     postBlockWrapper
-    min-h-7
-    ${topMargin} ${isLast ? "mb-3 sm:mb-4" : isHeading ? "mb-0!" : "mb-2"}
-    ${isList && "isListItem mb-0! "}
+    ${blockSpacingClassName({
+      kind: spacingKind(b.block),
+      headingLevel: PubLeafletBlocksHeader.isMain(b.block)
+        ? b.block.level
+        : undefined,
+      previous: previousKind,
+      isFirst: !!isFirst,
+      isLast: !!isLast,
+      isListItem: isList,
+    })}
+    ${isList && "isListItem"}
     ${alignment}
     `;
+
+  // A list item's top margin sits inside its flex row, so unlike a paragraph's
+  // it can't collapse into the previous block's bottom margin; pull the list up
+  // by that margin so it spaces like the editor's list rows.
+  let listPullUp =
+    previousKind && previousKind !== "heading" && previousKind !== "list"
+      ? "-mt-1"
+      : "";
 
   const handlers: BlockHandlers<React.ReactNode> = {
     "pub.leaflet.blocks.page": (block) => {
@@ -499,7 +497,7 @@ export let Block = ({
     },
     "pub.leaflet.blocks.unorderedList": (block) => {
       return (
-        <ul className="pb-2">
+        <ul className={`pb-2 ${listPullUp}`}>
           {block.children.map((child, i) => (
             <ListItem
               pollData={pollData}
@@ -521,7 +519,7 @@ export let Block = ({
     },
     "pub.leaflet.blocks.orderedList": (block) => {
       return (
-        <ol className="pb-2" start={block.startIndex || 1}>
+        <ol className={`pb-2 ${listPullUp}`} start={block.startIndex || 1}>
           {block.children.map((child, i) => (
             <OrderedListItem
               pollData={pollData}
@@ -675,7 +673,7 @@ export let Block = ({
       return (
         // all this margin stuff is a highly unfortunate hack so that the border-l on blockquote is the height of just the text rather than the height of the block, which includes padding.
         <blockquote
-          className={`blockquote whitespace-pre-wrap py-0! mb-2! ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-3! pt-3!" : "mt-1!"}`}
+          className={`blockquote whitespace-pre-wrap py-0! ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) && !isList ? "pt-3!" : ""}`}
           {...blockProps}
         >
           <TextBlock
@@ -889,6 +887,20 @@ function PublishedIframeBlock(props: {
       loading="lazy"
     />
   );
+}
+
+function spacingKind(
+  block: PubLeafletPagesLinearDocument.Block["block"],
+): SpacingKind {
+  if (PubLeafletBlocksHeader.isMain(block)) return "heading";
+  if (PubLeafletBlocksBlockquote.isMain(block)) return "blockquote";
+  if (PubLeafletBlocksHorizontalRule.isMain(block)) return "horizontal-rule";
+  if (
+    PubLeafletBlocksUnorderedList.isMain(block) ||
+    PubLeafletBlocksOrderedList.isMain(block)
+  )
+    return "list";
+  return "other";
 }
 
 // Mirrors the editor's ListMarker: each level indents by --list-marker-width

@@ -13,6 +13,7 @@ import {
   canvasStackOrders,
 } from "src/utils/canvasBlockOrder";
 import { CanvasBackgroundPattern } from "components/Canvas";
+import { canvasBlockEdges } from "src/utils/blockSpacing";
 import { Block } from "./PostContent";
 import { PollData } from "./fetchPollData";
 
@@ -95,11 +96,8 @@ function CanvasBlockContent({
   let isGroup = PubLeafletPagesLinearDocument.isMain(canvasBlock.block);
   let blocks = canvasBlockBlocks(canvasBlock, index);
   return (
-    // The editor's canvas block ends at its content's last line, and its
-    // height sets the rotation origin, so drop the page-flow margins at the
-    // edges and the taller minimum a published paragraph keeps for spacing.
     <div
-      className={`${isGroup ? "flow-root w-full" : "contents"} [&>*:first-child]:mt-0! [&>*:last-child]:mb-0! [&>*:last-child]:min-h-6!`}
+      className={`${isGroup ? "flow-root w-full" : "contents"} ${canvasBlockEdges}`}
     >
       {blocks.map((b, i) => (
         <Block

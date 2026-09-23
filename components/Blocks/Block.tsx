@@ -59,6 +59,7 @@ import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
 import { deleteBlock } from "src/utils/deleteBlock";
 import { CanvasLayerControls } from "components/CanvasLayerControls";
 import { Blocks } from "./index";
+import { blockSpacingClassName, type SpacingKind } from "src/utils/blockSpacing";
 
 const SWIPE_THRESHOLD = 50;
 
@@ -223,41 +224,28 @@ export const Block = memo(function Block(
       className={`
         blockWrapper group/blockWrapper relative
         flex flex-row gap-2
-        px-3 sm:px-4 pt-1
+        px-3 sm:px-4
 
         z-1 w-full
         ${isDragSource ? "opacity-30" : ""}
         ${props.listData && focused ? "touch-pan-y" : ""}
       ${alignmentStyle}
+      ${blockSpacingClassName({
+        kind: spacingKind(props),
+        headingLevel: props.headingLevel,
+        previous: props.previousBlock
+          ? spacingKind(props.previousBlock)
+          : undefined,
+        isFirst: !props.listData && !props.previousBlock,
+        isLast: !props.nextBlock,
+        isListItem: !!props.listData,
+      })}
       ${
-        !props.nextBlock
-          ? "pb-3 sm:pb-4"
-          : displayedAsHeading || (props.listData && props.nextBlock?.listData)
-            ? "pb-0"
-            : "pb-2"
+        // A published list closes with its <ul>'s bottom padding, which,
+        // unlike a margin, adds to the next block's top margin.
+        props.listData && !props.nextBlock?.listData ? "box-content pb-2" : ""
       }
-      ${!displayedAsHeading && props.type === "blockquote" && props.previousBlock?.type === "blockquote" ? (!props.listData ? "-mt-3" : "-mt-1") : ""}
-      ${
-        displayedAsHeading &&
-        props.previousBlock &&
-        props.previousBlock.type !== "horizontal-rule"
-          ? props.previousBlock.type !== "heading"
-            ? {
-                1: "mt-5 sm:mt-6",
-                2: "mt-4 sm:mt-5",
-                3: "mt-2 sm:mt-3",
-                4: "mt-2 sm:mt-3",
-              }[props.headingLevel || 1]
-            : "mt-1"
-          : ""
-      }
-      ${
-        !props.previousBlock
-          ? displayedAsHeading || props.type === "text"
-            ? "mt-1 sm:mt-2"
-            : "mt-2 sm:mt-3"
-          : ""
-      }`}
+      ${props.listData ? "isListItem" : ""}`}
     >
       {!props.preview && <BlockMultiselectIndicator {...props} />}
       {dropIndicator && <ListDropIndicator indicator={dropIndicator} />}
@@ -477,11 +465,19 @@ function GroupBlock(props: BlockProps & { preview?: boolean }) {
   );
   return (
     <div
-      className={`canvasBlockGroup -mx-3 sm:-mx-4 -mt-2 sm:-mt-3 -mb-3 sm:-mb-4 ${focused ? "bg-bg-page rounded-md" : ""}`}
+      className={`canvasBlockGroup -mx-3 sm:-mx-4 ${focused ? "bg-bg-page rounded-md" : ""}`}
     >
       <Blocks entityID={props.entityID} group preview={props.preview} />
     </div>
   );
+}
+
+function spacingKind(block: Pick<Block, "type" | "listData">): SpacingKind {
+  if (block.type === "blockquote") return "blockquote";
+  if (block.listData) return "list";
+  if (block.type === "heading") return "heading";
+  if (block.type === "horizontal-rule") return "horizontal-rule";
+  return "other";
 }
 
 const BlockMultiselectIndicator = (props: BlockProps) => {
@@ -512,8 +508,8 @@ const BlockMultiselectIndicator = (props: BlockProps) => {
           blockSelectionBG multiselected selected
           pointer-events-none
           bg-border-light
-          absolute right-2 left-2 bottom-0
-          ${first ? "top-1" : "top-0"}
+          absolute right-2 left-2 -bottom-1
+          ${first ? "top-0" : "-top-1"}
           ${!multiselectState.includes("p") && "rounded-t-md"}
           ${!multiselectState.includes("n") && "rounded-b-md"}
           `}
@@ -696,10 +692,10 @@ const HeadingFoldButton = (props: { entityID: string }) => {
     .value;
   let top =
     headingLevel === 1
-      ? "top-[16px]"
+      ? "top-[12px]"
       : headingLevel === 2
-        ? "top-[11px]"
-        : "top-[8px]";
+        ? "top-[7px]"
+        : "top-[4px]";
   return (
     <button
       className={`headingFoldButton absolute -left-1 ${top} p-0.5 pl-[3px] rounded-r-full text-bg-page  transition-opacity
