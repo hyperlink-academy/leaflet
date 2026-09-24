@@ -1406,7 +1406,7 @@ export const schemaDict = {
           color: {
             type: 'string',
             description:
-              "A CSS hex color, or primary or accent for the document theme's text or accent color.",
+              "A CSS hex color, or one of the document theme's colors: primary (text), tertiary (faded text), accent, or border-light (the faintest text tint).",
           },
           size: {
             type: 'integer',

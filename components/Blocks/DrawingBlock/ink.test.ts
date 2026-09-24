@@ -74,6 +74,8 @@ describe("strokes", () => {
 
   it("only passes through theme tokens and hex colors", () => {
     expect(inkColor("primary")).toBe("rgb(var(--primary))");
+    expect(inkColor("border-light")).toContain("color-mix");
+    expect(inkColor("constructor")).toBe("currentColor");
     expect(inkColor("#fff")).toBe("#fff");
     expect(inkColor("url(https://example.com)")).toBe("currentColor");
   });

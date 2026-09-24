@@ -19,15 +19,26 @@ export const DRAWING_PADDING = 12;
 // Sizes are canvas px, so a stroke looks the same weight at any zoom.
 export const INK_SIZES = [2, 4, 8] as const;
 
+// Theme colors, resolved against whichever theme renders the drawing. The
+// mixes mirror the tertiary and border-light tokens in app/globals.css.
+const THEME_INK: Record<string, string> = {
+  primary: "rgb(var(--primary))",
+  tertiary: "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 55%)",
+  accent: "rgb(var(--accent-1))",
+  "border-light":
+    "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 85%)",
+};
+
 export const INK_COLORS: { value: string; label: string }[] = [
-  { value: "primary", label: "Text" },
+  { value: "primary", label: "Primary" },
+  { value: "tertiary", label: "Tertiary" },
   { value: "accent", label: "Accent" },
-  { value: "#E5484D", label: "Red" },
+  { value: "border-light", label: "Light" },
 ];
 
 export function inkColor(color: string) {
-  if (color === "primary") return "rgb(var(--primary))";
-  if (color === "accent") return "rgb(var(--accent-1))";
+  if (Object.prototype.hasOwnProperty.call(THEME_INK, color))
+    return THEME_INK[color];
   if (/^#[0-9a-f]{3,8}$/i.test(color)) return color;
   return "currentColor";
 }

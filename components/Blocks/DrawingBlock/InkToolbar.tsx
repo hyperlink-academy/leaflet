@@ -11,6 +11,7 @@ import {
 import { useReplicache } from "src/replicache";
 import { thumbStyle } from "components/ThemeManager/Pickers/ColorPicker";
 import { Popover } from "components/Popover";
+import { Separator } from "components/Layout";
 import { EraserSmall } from "components/Icons/EraserSmall";
 import { PaintSmall } from "components/Icons/PaintSmall";
 import { CloseTiny } from "components/Icons/CloseTiny";
@@ -47,19 +48,23 @@ export function InkToolbar(props: { pageID: string }) {
         }
       >
         <div className="flex flex-col gap-2">
-          <div className="flex gap-1.5">
-            {[...INK_COLORS, { value: customColor, label: "Custom" }].map(
-              (c) => (
-                <button
-                  key={c.label}
-                  aria-label={c.label}
-                  title={c.label}
-                  onClick={() => setColor(c.value)}
-                  className={`w-6 h-6 shrink-0 rounded-full border border-border outline-2 outline-offset-1 ${color === c.value ? "outline-accent-contrast" : "outline-transparent hover:outline-border"}`}
-                  style={{ backgroundColor: inkColor(c.value) }}
-                />
-              ),
-            )}
+          <div className="flex items-center gap-1.5">
+            {INK_COLORS.map((c) => (
+              <Swatch
+                key={c.value}
+                label={c.label}
+                color={c.value}
+                selected={color === c.value}
+                onSelect={() => setColor(c.value)}
+              />
+            ))}
+            <Separator classname="h-5! ml-auto" />
+            <Swatch
+              label="Custom color"
+              color={customColor}
+              selected={color === customColor}
+              onSelect={() => setColor(customColor)}
+            />
           </div>
           <ColorPicker
             value={parseColor(customColor)}
@@ -133,5 +138,22 @@ export function InkToolbar(props: { pageID: string }) {
         </button>
       )}
     </div>
+  );
+}
+
+function Swatch(props: {
+  label: string;
+  color: string;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      aria-label={props.label}
+      title={props.label}
+      onClick={props.onSelect}
+      className={`w-6 h-6 shrink-0 rounded-full border border-border outline-2 outline-offset-1 ${props.selected ? "outline-accent-contrast" : "outline-transparent hover:outline-border"}`}
+      style={{ backgroundColor: inkColor(props.color) }}
+    />
   );
 }
