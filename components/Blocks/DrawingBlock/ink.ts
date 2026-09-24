@@ -22,15 +22,7 @@ export const INK_SIZES = [2, 4, 8] as const;
 export const INK_COLORS: { value: string; label: string }[] = [
   { value: "primary", label: "Text" },
   { value: "accent", label: "Accent" },
-  { value: "#1F1F1F", label: "Black" },
-  { value: "#8B8D98", label: "Gray" },
   { value: "#E5484D", label: "Red" },
-  { value: "#F76B15", label: "Orange" },
-  { value: "#FFC53D", label: "Yellow" },
-  { value: "#30A46C", label: "Green" },
-  { value: "#0090FF", label: "Blue" },
-  { value: "#8E4EC6", label: "Purple" },
-  { value: "#FFFFFF", label: "White" },
 ];
 
 export function inkColor(color: string) {

@@ -16,6 +16,8 @@ export const useInkSession = create(
       tool: "pen" as InkTool,
       color: INK_COLORS[0].value,
       size: INK_SIZES[1] as number,
+      // The color picker's last pick, kept while a built-in color is in use.
+      customColor: "#0090FF",
       // Strokes an eraser gesture has swept, hidden until it lifts and they
       // are retracted together.
       erasing: [] as string[],
@@ -33,6 +35,8 @@ export const useInkSession = create(
       setSnapshot: (snapshot: DrawingState) => set({ snapshot }),
       setTool: (tool: InkTool) => set({ tool }),
       setColor: (color: string) => set({ color, tool: "pen" }),
+      setCustomColor: (customColor: string) =>
+        set({ customColor, color: customColor, tool: "pen" }),
       setSize: (size: number) => set({ size, tool: "pen" }),
       setErasing: (erasing: string[]) => set({ erasing }),
     }),

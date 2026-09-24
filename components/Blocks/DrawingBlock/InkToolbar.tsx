@@ -1,4 +1,15 @@
+import {
+  ColorArea,
+  ColorField,
+  ColorPicker,
+  ColorSlider,
+  ColorThumb,
+  Input,
+  SliderTrack,
+  parseColor,
+} from "react-aria-components";
 import { useReplicache } from "src/replicache";
+import { thumbStyle } from "components/ThemeManager/Pickers/ColorPicker";
 import { Popover } from "components/Popover";
 import { EraserSmall } from "components/Icons/EraserSmall";
 import { PaintSmall } from "components/Icons/PaintSmall";
@@ -13,8 +24,9 @@ export function InkToolbar(props: { pageID: string }) {
   let tool = useInkSession((s) => s.tool);
   let color = useInkSession((s) => s.color);
   let size = useInkSession((s) => s.size);
+  let customColor = useInkSession((s) => s.customColor);
   let hasTarget = useInkSession((s) => !!s.target);
-  let { setColor, setSize, setTool } = useInkSession.getState();
+  let { setColor, setCustomColor, setSize, setTool } = useInkSession.getState();
   if (!active) return null;
 
   return (
@@ -34,17 +46,47 @@ export function InkToolbar(props: { pageID: string }) {
           </button>
         }
       >
-        <div className="flex flex-wrap gap-1.5">
-          {INK_COLORS.map((c) => (
-            <button
-              key={c.value}
-              aria-label={c.label}
-              title={c.label}
-              onClick={() => setColor(c.value)}
-              className={`w-6 h-6 shrink-0 rounded-full border border-border outline-2 outline-offset-1 ${color === c.value ? "outline-accent-contrast" : "outline-transparent hover:outline-border"}`}
-              style={{ backgroundColor: inkColor(c.value) }}
-            />
-          ))}
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-1.5">
+            {[...INK_COLORS, { value: customColor, label: "Custom" }].map(
+              (c) => (
+                <button
+                  key={c.label}
+                  aria-label={c.label}
+                  title={c.label}
+                  onClick={() => setColor(c.value)}
+                  className={`w-6 h-6 shrink-0 rounded-full border border-border outline-2 outline-offset-1 ${color === c.value ? "outline-accent-contrast" : "outline-transparent hover:outline-border"}`}
+                  style={{ backgroundColor: inkColor(c.value) }}
+                />
+              ),
+            )}
+          </div>
+          <ColorPicker
+            value={parseColor(customColor)}
+            onChange={(c) => setCustomColor(c.toString("hex"))}
+          >
+            <ColorArea
+              className="w-full h-[128px] rounded-md"
+              colorSpace="hsb"
+              xChannel="saturation"
+              yChannel="brightness"
+            >
+              <ColorThumb className={thumbStyle} />
+            </ColorArea>
+            <ColorSlider colorSpace="hsb" className="w-full" channel="hue">
+              <SliderTrack className="h-2 w-full rounded-md">
+                <ColorThumb className={`${thumbStyle} mt-[4px]`} />
+              </SliderTrack>
+            </ColorSlider>
+            <ColorField aria-label="Hex color" className="w-full">
+              <Input
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                }}
+                className="input-with-border w-full py-0.5! text-sm"
+              />
+            </ColorField>
+          </ColorPicker>
         </div>
       </Popover>
 
