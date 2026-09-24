@@ -575,7 +575,7 @@ img.ProseMirror-separator {
 }
 
 .light-container {
-  background: var(--color-bg-light);
+  @apply bg-bg-light;
   @apply border;
   @apply border-border-light;
   @apply rounded-md;

@@ -53,7 +53,7 @@ export function PublicationDraftEditor(props: {
       >
         <SelectionManager />
         <FoldStateProvider>
-          <LeafletThemeProvider entityID={props.leaflet_id} local>
+          <LeafletThemeProvider entityID={props.leaflet_id}>
             <div className="flex flex-col h-full w-full bg-accent-1">
               <PublicationEditHeader
                 did={props.did}
