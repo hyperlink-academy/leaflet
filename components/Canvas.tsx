@@ -144,7 +144,7 @@ export function Canvas(props: {
           <InkToolbar pageID={props.entityID} />
         )}
 
-        <CanvasZoomControls className="absolute left-2 bottom-2 sm:left-4 sm:bottom-4 z-10 bg-bg-page rounded-md px-1 py-0.5" />
+        <CanvasZoomControls className="absolute left-2 bottom-16 sm:left-4 sm:bottom-[88px] z-10 bg-bg-page rounded-md px-1 py-0.5" />
 
         <CanvasZoomLayer contentHeight={contentHeight} mobileArea={mobileArea}>
           <CanvasContent {...props} />
