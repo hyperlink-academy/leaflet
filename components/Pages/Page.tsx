@@ -66,10 +66,23 @@ export function Page(props: {
           <PageWrapper
             onClickAction={(e) => {
               if (e.defaultPrevented) return;
-              if (rep) {
-                if (isFocused) return;
-                focusPage(props.entityID, rep);
+              if (!rep) return;
+              let target = e.target as Element;
+              if (
+                e.currentTarget.contains(target) &&
+                !target.closest(".blocks, .canvasWrapper") &&
+                window.getSelection()?.isCollapsed !== false
+              ) {
+                useUIState.setState(() => ({
+                  selectedBlocks: [],
+                  focusedEntity: {
+                    entityType: "page",
+                    entityID: props.entityID,
+                  },
+                }));
               }
+              if (isFocused) return;
+              focusPage(props.entityID, rep);
             }}
             id={elementId.page(props.entityID).container}
             drawerOpen={!!drawerOpen}
@@ -105,7 +118,6 @@ export function Page(props: {
               first={props.first}
               zoomedBlock={zoomedBlock}
             />
-
           </PageWrapper>
           <DesktopPageFooter pageID={props.entityID} flow={props.flow} />
           <FootnotePopover pageID={props.entityID} />
@@ -184,7 +196,7 @@ export const PageWrapper = (props: {
       >
         <div
           className={`postPageContent static
-          ${props.fullPageScroll ? "h-full sm:max-w-[var(--page-width-units)] mx-auto" : ` contents w-full ${props.flow ? "" : "h-full"}`}
+          ${props.fullPageScroll ? `${props.pageType === "doc" ? "min-h-full" : "h-full"} sm:max-w-[var(--page-width-units)] mx-auto` : ` contents w-full ${props.flow ? "" : "h-full"}`}
         `}
         >
           {props.children}

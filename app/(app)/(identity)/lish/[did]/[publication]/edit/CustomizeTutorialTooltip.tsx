@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { create } from "zustand";
 import { Tooltip } from "components/Tooltip";
+import { NestedCardThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { useUIState } from "src/useUIState";
 import { useIsMobile } from "src/hooks/isMobile";
@@ -92,18 +94,17 @@ type TooltipPlacement = {
   yOffset?: number;
 };
 
-// `mobile` overrides any of the placement fields below the sm breakpoint;
-// anything left out falls back to the desktop value.
 const TOUR_COPY: {
   [key in CustomizeTutorialTarget]: TooltipPlacement & {
     title: string;
     description?: string;
     mobile?: Partial<TooltipPlacement>;
+    mobileFixed?: boolean;
   };
 } = {
   theme: {
     title: "Set a theme",
-    description: "Colors, font, and background!",
+    description: "Colors, font, background!",
     side: "bottom",
     align: "center",
   },
@@ -112,7 +113,7 @@ const TOUR_COPY: {
     description: "Like an about page, annoucements, or subsets of posts.",
     side: "right",
     align: "center",
-    mobile: { side: "bottom", align: "center", xOffset: 0 },
+    mobile: { side: "top", align: "center", xOffset: 0, yOffset: 4 },
   },
   content: {
     title: "Edit your content",
@@ -120,7 +121,7 @@ const TOUR_COPY: {
     side: "right",
     align: "center",
     yOffset: 48,
-    mobile: { side: "bottom", align: "center", yOffset: 240 },
+    mobileFixed: true,
   },
   text: {
     title: "Add content blocks",
@@ -133,7 +134,7 @@ const TOUR_COPY: {
     description:
       "Your published posts show up here. Change how it looks with the gear icon",
     side: "right",
-    align: "start",
+    align: "center",
     xOffset: 48,
     mobile: { side: "top", align: "end", yOffset: 0 },
   },
@@ -142,8 +143,6 @@ const TOUR_COPY: {
 const ENTER_ORDER: CustomizeTutorialTarget[] = ["theme", "new-page", "content"];
 const DELAY_CLASSES = [styles.delay0, styles.delay1, styles.delay2];
 
-// Block tooltips show only while their own block is focused; the rest step
-// aside while the user is writing and return when they leave the content.
 const BLOCK_TARGETS: CustomizeTutorialTarget[] = ["text", "posts-list"];
 
 export function useTutorialOpen(
@@ -160,32 +159,15 @@ export function useTutorialOpen(
   );
 }
 
-function TutorialTooltip(props: {
-  target: CustomizeTutorialTarget;
-  open: boolean;
-  trigger: React.ReactNode;
-}) {
-  let isMobile = useIsMobile();
-  let { title, description, mobile, ...desktop } = TOUR_COPY[props.target];
-  let { side, align, xOffset, yOffset } = isMobile
-    ? { ...desktop, ...mobile }
-    : desktop;
-  let delay = DELAY_CLASSES[ENTER_ORDER.indexOf(props.target)] ?? styles.delay0;
+function TutorialTooltipContent(props: { target: CustomizeTutorialTarget }) {
+  let { title, description } = TOUR_COPY[props.target];
   let dismiss = useCustomizeTutorial((s) => s.dismiss);
   // The content is portaled, but React still bubbles its events up to the
   // blocks the tooltip lives in, which would focus or select them.
   let stop = (e: React.SyntheticEvent) => e.stopPropagation();
 
   return (
-    <Tooltip
-      asChild
-      open={props.open}
-      side={side}
-      align={align}
-      className={`${styles.tooltip} ${delay} w-fit max-w-56! text-left`}
-      style={{ translate: `${xOffset ?? 0}px ${yOffset ?? 0}px` }}
-      trigger={props.trigger}
-    >
+    <>
       <div className="flex items-start justify-between gap-2">
         <div className="font-bold">{title}</div>
         <button
@@ -207,6 +189,64 @@ function TutorialTooltip(props: {
         </button>
       </div>
       <div className="text-secondary text-sm leading-snug">{description}</div>
+    </>
+  );
+}
+
+function FixedBottomTooltip(props: {
+  target: CustomizeTutorialTarget;
+  open: boolean;
+}) {
+  if (!props.open) return null;
+  let delay = DELAY_CLASSES[ENTER_ORDER.indexOf(props.target)] ?? styles.delay0;
+  let stop = (e: React.SyntheticEvent) => e.stopPropagation();
+  return createPortal(
+    <NestedCardThemeProvider>
+      <div
+        role="tooltip"
+        className={`${styles.tooltip} ${delay} portalStyles light-container fixed z-20 bottom-4 inset-x-4 mx-auto max-w-sm px-3 py-2 bg-bg-page border border-border rounded-md shadow-md text-left`}
+        onPointerDown={stop}
+        onMouseDown={stop}
+        onClick={stop}
+      >
+        <TutorialTooltipContent target={props.target} />
+      </div>
+    </NestedCardThemeProvider>,
+    document.body,
+  );
+}
+
+function TutorialTooltip(props: {
+  target: CustomizeTutorialTarget;
+  open: boolean;
+  trigger: React.ReactNode;
+}) {
+  let isMobile = useIsMobile();
+  let { mobile, mobileFixed, title, description, ...desktop } =
+    TOUR_COPY[props.target];
+  if (isMobile && mobileFixed)
+    return (
+      <>
+        {props.trigger}
+        <FixedBottomTooltip target={props.target} open={props.open} />
+      </>
+    );
+  let { side, align, xOffset, yOffset } = isMobile
+    ? { ...desktop, ...mobile }
+    : desktop;
+  let delay = DELAY_CLASSES[ENTER_ORDER.indexOf(props.target)] ?? styles.delay0;
+
+  return (
+    <Tooltip
+      asChild
+      open={props.open}
+      side={side}
+      align={align}
+      className={`${styles.tooltip} ${delay} w-fit max-w-56! text-left`}
+      style={{ translate: `${xOffset ?? 0}px ${yOffset ?? 0}px` }}
+      trigger={props.trigger}
+    >
+      <TutorialTooltipContent target={props.target} />
     </Tooltip>
   );
 }
