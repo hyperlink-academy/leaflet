@@ -27,6 +27,14 @@
           ],
           "description": "How a narrow viewport frames the canvas: the whole canvas scaled to fit the width (unconstrained, the default), or a phone-width area anchored to the canvas's left edge or centered on it, shown at up to 1:1."
         },
+        "width": {
+          "type": "integer",
+          "description": "Fixed canvas width in canvas px. With height, bounds the canvas: blocks are clipped to the area. Absent, the canvas is 1272px wide and grows with its content."
+        },
+        "height": {
+          "type": "integer",
+          "description": "Fixed canvas height in canvas px; see width."
+        },
         "lockViewerZoom": {
           "type": "boolean",
           "description": "Viewers cannot zoom the canvas: no wheel, pinch, double-tap or zoom controls."
@@ -62,6 +70,7 @@
             "pub.leaflet.blocks.standardSitePost",
             "pub.leaflet.blocks.standardSitePublication",
             "pub.leaflet.blocks.page",
+            "pub.leaflet.blocks.embeddedCanvas",
             "pub.leaflet.blocks.poll",
             "pub.leaflet.blocks.button",
             "pub.leaflet.blocks.postsList",
@@ -69,6 +78,7 @@
             "pub.leaflet.blocks.recommendedPubs",
             "pub.leaflet.blocks.membersOnlyDelimiter",
             "pub.leaflet.blocks.postHeader",
+            "pub.leaflet.blocks.drawing",
             "pub.leaflet.pages.linearDocument"
           ],
           "description": "A single block, or a linear document: blocks grouped in reading order that are positioned, sized and rotated on the canvas as one."

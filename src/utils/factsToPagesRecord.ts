@@ -11,6 +11,8 @@ import {
   PubLeafletBlocksStandardSitePublication,
   PubLeafletBlocksButton,
   PubLeafletBlocksCode,
+  PubLeafletBlocksDrawing,
+  PubLeafletBlocksEmbeddedCanvas,
   PubLeafletBlocksHeader,
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksHtml,
@@ -220,6 +222,16 @@ export async function processBlocksToPages(opts: {
       };
       if (display && display.data.value !== DEFAULT_PAGE_LINK_DISPLAY)
         block.display = display.data.value;
+      return block;
+    },
+    "embedded-canvas": async (b, membersOnly) => {
+      const [page] = scan.eav(b.entityID, "block/card");
+      if (!page) return;
+      pages.push(await pageToRecord(page.data.value, membersOnly));
+      const block: $Typed<PubLeafletBlocksEmbeddedCanvas.Main> = {
+        $type: ids.PubLeafletBlocksEmbeddedCanvas,
+        id: page.data.value,
+      };
       return block;
     },
     "bluesky-post": async (b) => {
@@ -436,6 +448,30 @@ export async function processBlocksToPages(opts: {
       };
       return block;
     },
+    drawing: async (b) => {
+      const [viewBox] = scan.eav(b.entityID, "drawing/view-box");
+      const strokes = scan
+        .eav(b.entityID, "drawing/stroke")
+        .toSorted((x, y) => (x.id < y.id ? -1 : 1));
+      if (!viewBox || strokes.length === 0) return;
+      const box = viewBox.data.value;
+      const block: $Typed<PubLeafletBlocksDrawing.Main> = {
+        $type: "pub.leaflet.blocks.drawing",
+        viewBox: {
+          x: Math.round(box.x),
+          y: Math.round(box.y),
+          width: Math.max(1, Math.round(box.width)),
+          height: Math.max(1, Math.round(box.height)),
+        },
+        strokes: strokes.map(({ data: { value: stroke } }) => ({
+          points: stroke.points.map(Math.round),
+          color: stroke.color,
+          size: Math.max(1, Math.round(stroke.size)),
+          ...(stroke.simulatePressure && { simulatePressure: true }),
+        })),
+      };
+      return block;
+    },
     math: async (b) => {
       const [math] = scan.eav(b.entityID, "block/math");
       const block: $Typed<PubLeafletBlocksMath.Main> = {
@@ -574,10 +610,15 @@ export async function processBlocksToPages(opts: {
         ),
       };
     const mobileView = scan.eav(pageID, "canvas/mobile-view")[0]?.data.value;
+    const fixedWidth = scan.eav(pageID, "canvas/fixed-width")[0]?.data.value;
+    const fixedHeight = scan.eav(pageID, "canvas/fixed-height")[0]?.data.value;
     return {
       $type: "pub.leaflet.pages.canvas",
       id: pageID,
       blocks: await canvasBlocksToRecord(pageID, membersOnly),
+      ...(fixedWidth && fixedHeight
+        ? { width: Math.floor(fixedWidth), height: Math.floor(fixedHeight) }
+        : {}),
       ...(mobileView && mobileView !== "unconstrained" ? { mobileView } : {}),
       ...(scan.eav(pageID, "canvas/lock-viewer-zoom")[0]?.data.value
         ? { lockViewerZoom: true }

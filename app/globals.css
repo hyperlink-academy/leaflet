@@ -1323,6 +1323,19 @@ body > iframe[src*="js.stripe.com"] {
   width: calc(var(--canvas-content-width, 1272) * 1px * var(--canvas-zoom));
   height: calc(var(--canvas-content-height, 0) * 1px * var(--canvas-zoom));
 }
+/* A fixed-size canvas sits centered on each axis it fits, and flush once
+   zoomed past the viewport; centerOffset in src/canvasZoom/math.ts mirrors
+   this for the engine. 100cq* is the scroller's client box. */
+.canvasZoomCentered > .canvasZoomLayer {
+  margin-left: max(
+    0px,
+    (100cqw - var(--canvas-content-width, 1272) * 1px * var(--canvas-zoom)) / 2
+  );
+  margin-top: max(
+    0px,
+    (100cqh - var(--canvas-content-height, 0) * 1px * var(--canvas-zoom)) / 2
+  );
+}
 .canvasAnimatedImage {
   will-change: transform;
 }

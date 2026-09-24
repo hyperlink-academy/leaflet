@@ -132,6 +132,7 @@ function createFeedRenderContext(
     // get them on the web.
     "pub.leaflet.blocks.html": () => "",
     "pub.leaflet.blocks.poll": () => "",
+    "pub.leaflet.blocks.drawing": () => "",
     "pub.leaflet.blocks.signup": () => "",
     // The feed item already carries the post's title and metadata.
     "pub.leaflet.blocks.postHeader": () => "",
@@ -140,6 +141,8 @@ function createFeedRenderContext(
     "pub.leaflet.blocks.standardSitePost": () => "",
     "pub.leaflet.blocks.standardSitePublication": () => "",
     "pub.leaflet.blocks.page": () => "",
+    // A laid-out canvas has no portable HTML form.
+    "pub.leaflet.blocks.embeddedCanvas": () => "",
     "pub.leaflet.blocks.membersOnlyDelimiter": () => "",
   };
 
@@ -176,6 +179,7 @@ const plainTextExtractors: BlockHandlers<string> = {
   "pub.leaflet.blocks.iframe": () => "",
   "pub.leaflet.blocks.html": () => "",
   "pub.leaflet.blocks.poll": () => "",
+  "pub.leaflet.blocks.drawing": () => "",
   "pub.leaflet.blocks.signup": () => "",
   "pub.leaflet.blocks.postHeader": () => "",
   "pub.leaflet.blocks.postsList": () => "",
@@ -183,6 +187,7 @@ const plainTextExtractors: BlockHandlers<string> = {
   "pub.leaflet.blocks.standardSitePost": () => "",
   "pub.leaflet.blocks.standardSitePublication": () => "",
   "pub.leaflet.blocks.page": () => "",
+  "pub.leaflet.blocks.embeddedCanvas": () => "",
   "pub.leaflet.blocks.membersOnlyDelimiter": () => "",
 };
 

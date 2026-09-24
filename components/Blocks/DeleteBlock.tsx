@@ -39,6 +39,8 @@ export const AreYouSure = (props: {
             "Blocks"
           ) : props.type === "card" ? (
             <span>Page</span>
+          ) : props.type === "embedded-canvas" ? (
+            <span>Drawing</span>
           ) : props.type === "mailbox" ? (
             <span>Mailbox and Posts</span>
           ) : (
@@ -72,4 +74,3 @@ export const AreYouSure = (props: {
     </div>
   );
 };
-

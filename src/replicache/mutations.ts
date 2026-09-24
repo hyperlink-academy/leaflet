@@ -547,6 +547,39 @@ const outdentBlock: Mutation<{
   });
 };
 
+const addEmbeddedCanvasBlock: Mutation<{
+  permission_set: string;
+  blockEntity: string;
+  pageEntity: string;
+  width: number;
+  height: number;
+}> = async (args, ctx) => {
+  await ctx.createEntity({
+    entityID: args.pageEntity,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    entity: args.blockEntity,
+    attribute: "block/card",
+    data: { type: "reference", value: args.pageEntity },
+  });
+  await ctx.assertFact({
+    attribute: "page/type",
+    entity: args.pageEntity,
+    data: { type: "page-type-union", value: "canvas" },
+  });
+  await ctx.assertFact({
+    entity: args.pageEntity,
+    attribute: "canvas/fixed-width",
+    data: { type: "number", value: args.width },
+  });
+  await ctx.assertFact({
+    entity: args.pageEntity,
+    attribute: "canvas/fixed-height",
+    data: { type: "number", value: args.height },
+  });
+};
+
 const addPageLinkBlock: Mutation<{
   type: "canvas" | "doc";
   permission_set: string;
@@ -1478,6 +1511,7 @@ export const mutations = {
   moveBlockUp,
   moveBlockDown,
   addPageLinkBlock,
+  addEmbeddedCanvasBlock,
   addPublicationNavPage,
   addPublicationNavLink,
   removePublicationNavEntry,

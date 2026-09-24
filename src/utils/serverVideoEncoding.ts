@@ -51,8 +51,11 @@ export async function transcodeGifToMp4(
   try {
     await writeFile(inPath, input);
     await new Promise<void>((resolve, reject) => {
+      // The binary path is only known at runtime, which would make Turbopack
+      // trace the whole project; next.config.js's outputFileTracingIncludes
+      // ships the binary instead.
       execFile(
-        ffmpegPath(),
+        /*turbopackIgnore: true*/ ffmpegPath(),
         [
           "-v", "error", "-y",
           "-i", inPath,

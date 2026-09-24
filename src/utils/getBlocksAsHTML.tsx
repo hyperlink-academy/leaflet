@@ -110,6 +110,7 @@ const BlockTypeToHTML: {
   html: async () => null,
   signup: async () => null,
   "post-header": async () => null,
+  drawing: async () => null,
   group: async (b, tx) => {
     let facts = await getAllFacts(tx, b.entityID);
     let html = await renderBlocks(
@@ -270,6 +271,18 @@ const BlockTypeToHTML: {
         data-facts={JSON.stringify(facts)}
         data-entityid={card.data.value}
         data-display={display?.data.value}
+      />
+    );
+  },
+  "embedded-canvas": async (b, tx) => {
+    let [card] = await scanIndex(tx).eav(b.entityID, "block/card");
+    if (!card) return "";
+    let facts = await getAllFacts(tx, card.data.value);
+    return (
+      <div
+        data-type="embedded-canvas"
+        data-facts={JSON.stringify(facts)}
+        data-entityid={card.data.value}
       />
     );
   },

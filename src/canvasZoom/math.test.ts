@@ -13,6 +13,8 @@ import {
   minZoom,
   nextStep,
   wheelToZoomFactor,
+  centerOffset,
+  centeredScroll,
 } from "./math";
 
 const DOM_DELTA_PIXEL = 0;
@@ -310,5 +312,41 @@ describe("approachZoom", () => {
   });
   it("does not move without elapsed time", () => {
     expect(approachZoom(1, 2, 0)).toBe(1);
+  });
+});
+
+describe("centered canvases", () => {
+  let content = { width: 600, height: 400 };
+  let client = { width: 800, height: 600 };
+
+  it("center the content on an axis it fits, flush once it overflows", () => {
+    expect(centerOffset(1, content, client)).toEqual({ left: 100, top: 100 });
+    expect(centerOffset(2, content, client)).toEqual({ left: 0, top: 0 });
+    expect(centerOffset(0.5, content, client)).toEqual({ left: 250, top: 200 });
+  });
+
+  it("ignore the anchor while the content fits", () => {
+    expect(centeredScroll({ left: 37, top: -80 }, 1, content, client)).toEqual({
+      left: -100,
+      top: -100,
+    });
+  });
+
+  it("keep an overflowing axis inside the content", () => {
+    // 1200 x 800 at zoom 2: scrolls 0-400 across, 0-200 down.
+    expect(centeredScroll({ left: -50, top: 500 }, 2, content, client)).toEqual(
+      { left: 0, top: 200 },
+    );
+    expect(centeredScroll({ left: 120, top: 90 }, 2, content, client)).toEqual({
+      left: 120,
+      top: 90,
+    });
+  });
+
+  it("meet without a jump where the content matches the viewport", () => {
+    let z = client.width / content.width;
+    expect(
+      centeredScroll({ left: 300, top: 0 }, z, content, client).left,
+    ).toBeCloseTo(0);
   });
 });

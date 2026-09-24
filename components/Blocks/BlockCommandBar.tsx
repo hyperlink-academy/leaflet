@@ -81,7 +81,9 @@ export const BlockCommandBar = ({
     const hiddenOnPubPage =
       !!command.hiddenOnPublicationPage && inPublicationEdit;
     const hiddenInPubPost = !!command.hiddenInPost && !inPublicationEdit;
-    const allowedOnPage = !command.canvasOnly || isCanvas;
+    const allowedOnPage = isCanvas
+      ? !command.hiddenOnCanvas
+      : !command.canvasOnly;
 
     return (
       matchesSearch &&

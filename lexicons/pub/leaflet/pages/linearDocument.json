@@ -46,13 +46,15 @@
             "pub.leaflet.blocks.standardSitePost",
             "pub.leaflet.blocks.standardSitePublication",
             "pub.leaflet.blocks.page",
+            "pub.leaflet.blocks.embeddedCanvas",
             "pub.leaflet.blocks.poll",
             "pub.leaflet.blocks.button",
             "pub.leaflet.blocks.postsList",
             "pub.leaflet.blocks.signup",
             "pub.leaflet.blocks.recommendedPubs",
             "pub.leaflet.blocks.membersOnlyDelimiter",
-            "pub.leaflet.blocks.postHeader"
+            "pub.leaflet.blocks.postHeader",
+            "pub.leaflet.blocks.drawing"
           ]
         },
         "alignment": {
