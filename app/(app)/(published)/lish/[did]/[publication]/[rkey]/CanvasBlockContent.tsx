@@ -14,6 +14,7 @@ import {
 } from "src/utils/canvasBlockOrder";
 import { CanvasBackgroundPattern } from "components/Canvas";
 import { canvasBlockEdges } from "src/utils/blockSpacing";
+import { CONTENT_WIDTH } from "src/canvasZoom/math";
 import { Block } from "./PostContent";
 import { PollData } from "./fetchPollData";
 
@@ -31,7 +32,7 @@ type BlockDataProps = {
 // A published canvas laid out at full size: the grid and the blocks, placed
 // and stacked, in reading order (which block indexes are counted against).
 // The canvas page scrolls and zooms this; a page link scales it down. A
-// sized canvas (an embedded canvas) is clipped to its size and shown without the grid.
+// drawing passes its size, which clips it and drops the grid.
 export function CanvasBlocks({
   blocks,
   size,
@@ -40,6 +41,10 @@ export function CanvasBlocks({
   blocks: PubLeafletPagesCanvas.Block[];
   size?: { width: number; height: number };
 }) {
+  let { width, height } = size ?? {
+    width: CONTENT_WIDTH,
+    height: canvasContentHeight(blocks),
+  };
   let sortedBlocks = useMemo(
     () => [...blocks].sort(canvasBlockOrder),
     [blocks],
@@ -51,12 +56,12 @@ export function CanvasBlocks({
   return (
     <div
       style={{
-        ...(size
-          ? { width: size.width, height: size.height }
-          : { minHeight: canvasContentHeight(blocks) }),
+        width,
+        minHeight: height,
+        height: size ? height : "100%",
         contain: "size layout paint",
       }}
-      className={`relative ${size ? "" : "h-full w-[1272px]"}`}
+      className="relative"
     >
       {!size && (
         <div className="w-full h-full pointer-events-none">

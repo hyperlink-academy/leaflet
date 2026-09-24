@@ -1,4 +1,6 @@
 export type CanvasSize = { width: number; height: number };
+// A canvas page's size; `fixed` for a drawing, whose blocks are clipped to it.
+export type CanvasBounds = CanvasSize & { fixed: boolean };
 
 // The default page width, so a drawing's text reads at body size inline.
 export const EMBEDDED_CANVAS_WIDTH = 624;
@@ -23,19 +25,24 @@ export function embeddedCanvasSizeName(
   return null;
 }
 
-// How much of a block must stay inside a fixed canvas, so a drag can't lose
-// it past an edge where nothing can reach it.
+// How much of a block must stay inside a drawing, so a drawing's edge can't
+// lose it where nothing can reach it. Other canvases grow to fit.
 const MIN_VISIBLE = 24;
 
-export function clampToCanvasSize(
+export function clampToCanvas(
   position: { x: number; y: number },
   block: { width: number; height: number },
-  size: CanvasSize,
+  canvas: CanvasBounds,
 ) {
+  if (!canvas.fixed) return position;
   let clamp = (v: number, min: number, max: number) =>
     Math.min(Math.max(v, min), Math.max(min, max));
   return {
-    x: clamp(position.x, MIN_VISIBLE - block.width, size.width - MIN_VISIBLE),
-    y: clamp(position.y, MIN_VISIBLE - block.height, size.height - MIN_VISIBLE),
+    x: clamp(position.x, MIN_VISIBLE - block.width, canvas.width - MIN_VISIBLE),
+    y: clamp(
+      position.y,
+      MIN_VISIBLE - block.height,
+      canvas.height - MIN_VISIBLE,
+    ),
   };
 }
