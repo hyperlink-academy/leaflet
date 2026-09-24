@@ -196,24 +196,25 @@ export function approachZoom(
   return current * Math.exp(gap * (1 - Math.exp(-dtMs / tau)));
 }
 
-// Where a centered canvas's content sits inside the spacer: centered on an
-// axis while it fits the viewport, flush once it is larger. Mirrors the
-// .canvasZoomCentered margins in globals.css.
-export function centerOffset(
-  zoom: number,
-  content: Size,
-  client: Size,
-): Scroll {
+// A centered canvas is surrounded by half a viewport of empty space on
+// every side (the .canvasZoomCentered spacer and layer margins in
+// globals.css), so any point of it can be scrolled to the viewport's
+// center: this is the offset of the content inside the spacer.
+export function centerOffset(client: Size): Scroll {
+  return { left: client.width / 2, top: client.height / 2 };
+}
+
+// The spacer's content box around a centered canvas: the zoomed content
+// plus its margins.
+export function centeredBox(zoom: number, content: Size, client: Size): Size {
   return {
-    left: Math.max(0, (client.width - content.width * zoom) / 2),
-    top: Math.max(0, (client.height - content.height * zoom) / 2),
+    width: content.width * zoom + client.width,
+    height: content.height * zoom + client.height,
   };
 }
 
-// The pad-free offset a centered canvas settles on: centered on an axis the
-// content fits (whatever the anchor asked for), otherwise kept inside the
-// content so no empty space opens beside it. Continuous where the two meet,
-// so zooming across the viewport's size doesn't jump.
+// Keeps a content-origin offset within the margins, so the viewport's
+// center never leaves the content.
 export function centeredScroll(
   scroll: Scroll,
   zoom: number,
@@ -221,9 +222,7 @@ export function centeredScroll(
   client: Size,
 ): Scroll {
   let axis = (s: number, size: number, clientSize: number) =>
-    size * zoom <= clientSize
-      ? -(clientSize - size * zoom) / 2
-      : Math.min(Math.max(s, 0), size * zoom - clientSize);
+    Math.min(Math.max(s, -clientSize / 2), size * zoom - clientSize / 2);
   return {
     left: axis(scroll.left, content.width, client.width),
     top: axis(scroll.top, content.height, client.height),

@@ -14,6 +14,7 @@ import {
   nextStep,
   wheelToZoomFactor,
   centerOffset,
+  centeredBox,
   centeredScroll,
 } from "./math";
 
@@ -319,34 +320,28 @@ describe("centered canvases", () => {
   let content = { width: 600, height: 400 };
   let client = { width: 800, height: 600 };
 
-  it("center the content on an axis it fits, flush once it overflows", () => {
-    expect(centerOffset(1, content, client)).toEqual({ left: 100, top: 100 });
-    expect(centerOffset(2, content, client)).toEqual({ left: 0, top: 0 });
-    expect(centerOffset(0.5, content, client)).toEqual({ left: 250, top: 200 });
-  });
-
-  it("ignore the anchor while the content fits", () => {
-    expect(centeredScroll({ left: 37, top: -80 }, 1, content, client)).toEqual({
-      left: -100,
-      top: -100,
+  it("surround the content with half a viewport", () => {
+    expect(centerOffset(client)).toEqual({ left: 400, top: 300 });
+    expect(centeredBox(2, content, client)).toEqual({
+      width: 2000,
+      height: 1400,
     });
   });
 
-  it("keep an overflowing axis inside the content", () => {
-    // 1200 x 800 at zoom 2: scrolls 0-400 across, 0-200 down.
-    expect(centeredScroll({ left: -50, top: 500 }, 2, content, client)).toEqual(
-      { left: 0, top: 200 },
-    );
-    expect(centeredScroll({ left: 120, top: 90 }, 2, content, client)).toEqual({
-      left: 120,
-      top: 90,
-    });
-  });
-
-  it("meet without a jump where the content matches the viewport", () => {
-    let z = client.width / content.width;
+  it("let any point of the content reach the viewport's center", () => {
+    // Content's top-left corner at the center.
     expect(
-      centeredScroll({ left: 300, top: 0 }, z, content, client).left,
-    ).toBeCloseTo(0);
+      centeredScroll({ left: -400, top: -300 }, 1, content, client),
+    ).toEqual({ left: -400, top: -300 });
+    // Bottom-right corner at the center, at 2x.
+    expect(centeredScroll({ left: 800, top: 500 }, 2, content, client)).toEqual(
+      { left: 800, top: 500 },
+    );
+  });
+
+  it("stop once the viewport's center would leave the content", () => {
+    expect(
+      centeredScroll({ left: -900, top: 900 }, 1, content, client),
+    ).toEqual({ left: -400, top: 100 });
   });
 });

@@ -79,6 +79,7 @@ import {
   anchorToCanvas,
   approachZoom,
   centerOffset,
+  centeredBox,
   centeredScroll,
   clampZoom,
   contentBox,
@@ -227,16 +228,21 @@ export function CanvasZoomProvider(props: {
   let idleTimer = useRef(0);
 
   let engine = useMemo<CanvasZoomEngine>(() => {
-    // The centered layer's margin at a zoom: offset between the spacer's
-    // content box and the content, on top of the pads.
-    let margin = (zoom: number, client: Size, contentHeight: number) =>
+    // Empty space around a centered canvas's content inside the spacer.
+    let margin = (client: Size) =>
+      centered ? centerOffset(client) : { left: 0, top: 0 };
+    // The spacer's content box, which for a centered canvas includes the
+    // margins.
+    let spacerBox = (zoom: number, client: Size, contentHeight: number) =>
       centered
-        ? centerOffset(
+        ? centeredBox(zoom, { width: contentWidth, height: contentHeight }, client)
+        : contentBox({
             zoom,
-            { width: contentWidth, height: contentHeight },
-            client,
-          )
-        : { left: 0, top: 0 };
+            contentWidth,
+            contentHeight,
+            clientWidth: client.width,
+            clientHeight: client.height,
+          });
 
     let writePads = (spacer: HTMLElement, next: Pads) => {
       pads.current = next;
@@ -263,9 +269,7 @@ export function CanvasZoomProvider(props: {
         height: scroller.clientHeight,
       };
       let contentHeight = spacerContentHeight(spacer);
-      // The layer's margin stays at the settled zoom's until the settle, so
-      // it counts as padding for the whole gesture.
-      let m = margin(zoomRef.current, client, contentHeight);
+      let m = margin(client);
       let pad0 = {
         left: pads.current.left + m.left,
         top: pads.current.top + m.top,
@@ -308,19 +312,11 @@ export function CanvasZoomProvider(props: {
         };
         let z = zoomRef.current;
         let client = { width: g.clientWidth, height: g.clientHeight };
-        let box = contentBox({
-          zoom: z,
-          contentWidth,
-          contentHeight: g.contentHeight,
-          clientWidth: client.width,
-          clientHeight: client.height,
-        });
+        let box = spacerBox(z, client, g.contentHeight);
         if (centered) {
-          // Offsets into the spacer, past the new margin; recomputed rather
-          // than taken from the rounded frame so a centered axis lands on 0.
           let content = { width: contentWidth, height: g.contentHeight };
           let v = centeredScroll(scroll, z, content, client);
-          let m = margin(z, client, g.contentHeight);
+          let m = margin(client);
           scroll = {
             left: Math.round(v.left + m.left),
             top: Math.round(v.top + m.top),
@@ -430,16 +426,13 @@ export function CanvasZoomProvider(props: {
       },
       canvasPointAt: (anchorViewport) => {
         let scroller = scrollerRef.current;
-        let spacer = spacerRef.current;
         let g = gesture.current;
-        let m =
-          scroller && spacer
-            ? margin(
-                zoomRef.current,
-                { width: scroller.clientWidth, height: scroller.clientHeight },
-                spacerContentHeight(spacer),
-              )
-            : { left: 0, top: 0 };
+        let m = scroller
+          ? margin({
+              width: scroller.clientWidth,
+              height: scroller.clientHeight,
+            })
+          : { left: 0, top: 0 };
         return anchorToCanvas({
           anchorViewport,
           scrollLeft: g
@@ -480,13 +473,11 @@ export function CanvasZoomProvider(props: {
           width: scroller.clientWidth,
           height: scroller.clientHeight,
         };
-        let box = contentBox({
-          zoom: zoomRef.current,
-          contentWidth,
-          contentHeight: spacerContentHeight(spacer),
-          clientWidth: client.width,
-          clientHeight: client.height,
-        });
+        let box = spacerBox(
+          zoomRef.current,
+          client,
+          spacerContentHeight(spacer),
+        );
         let trimmed = trimPads(pads.current, scroll, client, box);
         if (!trimmed) return;
         writePads(spacer, trimmed.pads);
@@ -527,11 +518,16 @@ export function CanvasZoomProvider(props: {
     }
     let area = initialArea.current;
     if (!restored && area && area.left > 0) scroller.scrollLeft = area.left * z;
+    // Opens with the content centered in its margins.
+    if (centered) {
+      scroller.scrollLeft = (contentWidth * z) / 2;
+      scroller.scrollTop = (spacerContentHeight(spacer) * z) / 2;
+    }
     zoomRef.current = z;
     setCanvasZoom(pageKey, z);
     setZoomState(z);
     setReady(true);
-  }, [pageKey, scrollerRef, contentWidth]);
+  }, [pageKey, scrollerRef, contentWidth, centered]);
 
   // The stylesheet's default zoom follows the mobile area, but a mounted canvas
   // keeps the zoom the engine already holds; the area only frames fresh loads.
