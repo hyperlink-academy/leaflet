@@ -152,7 +152,7 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
   if (!listData || listData.posts.length === 0)
     return (
       <div className="flex flex-col gap-2">
-        <EmptyState container="none" className="p-0!">
+        <EmptyState container="light" className="px-2 py-1! mb-1">
           You haven't published any posts yet! When you do, they'll show here.
         </EmptyState>
         <PostsListEmptyPlaceholder
