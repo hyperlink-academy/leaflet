@@ -20,20 +20,17 @@ export const DRAWING_PADDING = 12;
 export const INK_SIZES = [2, 4, 8] as const;
 
 // Theme colors, resolved against whichever theme renders the drawing. The
-// mixes mirror the tertiary and border-light tokens in app/globals.css.
+// tertiary mix mirrors the tertiary token in app/globals.css.
 const THEME_INK: Record<string, string> = {
   primary: "rgb(var(--primary))",
-  tertiary: "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 55%)",
   accent: "rgb(var(--accent-1))",
-  "border-light":
-    "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 85%)",
+  tertiary: "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 55%)",
 };
 
 export const INK_COLORS: { value: string; label: string }[] = [
   { value: "primary", label: "Primary" },
-  { value: "tertiary", label: "Tertiary" },
   { value: "accent", label: "Accent" },
-  { value: "border-light", label: "Light" },
+  { value: "tertiary", label: "Tertiary" },
 ];
 
 export function inkColor(color: string) {

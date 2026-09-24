@@ -35,7 +35,7 @@ export function InkToolbar(props: { pageID: string }) {
       <Popover
         asChild
         side="bottom"
-        className="w-[184px]"
+        className="w-[172px]"
         trigger={
           <button
             aria-label="Ink color"
@@ -58,7 +58,7 @@ export function InkToolbar(props: { pageID: string }) {
                 onSelect={() => setColor(c.value)}
               />
             ))}
-            <Separator classname="h-5! ml-auto" />
+            <Separator classname="h-5! mx-0.5" />
             <Swatch
               label="Custom color"
               color={customColor}

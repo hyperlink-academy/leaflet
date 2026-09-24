@@ -54,7 +54,7 @@ export interface Stroke {
   $type?: 'pub.leaflet.blocks.drawing#stroke'
   /** Flattened input points as x, y, pressure triples: x and y in drawing space, pressure from 0 to 1000. */
   points: number[]
-  /** A CSS hex color, or one of the document theme's colors: primary (text), tertiary (faded text), accent, or border-light (the faintest text tint). */
+  /** A CSS hex color, or one of the document theme's colors: primary (text), accent, or tertiary (faded text). */
   color: string
   /** The stroke's base diameter in drawing space. */
   size: number
