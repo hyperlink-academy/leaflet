@@ -3,7 +3,14 @@ import { useEntitySetContext } from "./EntitySetProvider";
 import { v7 } from "uuid";
 import { BaseBlock } from "./Blocks/Block";
 import { registerBlockGroup } from "src/utils/blockGroups";
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useDrag } from "src/hooks/useDrag";
 import { useLongPress } from "src/hooks/useLongPress";
 import { focusBlock } from "src/utils/focusBlock";
@@ -86,11 +93,19 @@ export function Canvas(props: {
     <div
       ref={ref}
       id={elementId.page(props.entityID).canvasScrollArea}
-      style={fixedSize ? { width: fixedSize.width } : undefined}
+      // A class rather than an inline width: the zoom engine owns the
+      // scroller's inline width, which it rewrites to fit a scrollbar gutter.
+      style={
+        fixedSize
+          ? ({
+              "--canvas-fixed-width": `${fixedSize.width}px`,
+            } as CSSProperties)
+          : undefined
+      }
       className={`
         canvasWrapper
         h-full max-w-full
-        ${fixedSize ? "bg-border-light" : "w-[1272px]"}
+        ${fixedSize ? "w-(--canvas-fixed-width) bg-border-light" : "w-[1272px]"}
         overflow-y-scroll touch-pan-x touch-pan-y
       `}
     >
