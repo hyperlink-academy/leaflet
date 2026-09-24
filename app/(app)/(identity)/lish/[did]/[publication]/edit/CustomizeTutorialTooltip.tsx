@@ -138,7 +138,6 @@ const TOUR_COPY: {
       "Your published posts show up here. Change how it looks with the gear icon",
     side: "right",
     align: "center",
-    xOffset: 48,
     mobile: { side: "top", align: "end", yOffset: 0 },
   },
 };

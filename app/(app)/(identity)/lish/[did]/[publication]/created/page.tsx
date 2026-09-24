@@ -2,7 +2,12 @@ import { AtUri } from "@atproto/syntax";
 import { getIdentityData } from "actions/getIdentityData";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
-import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
+import {
+  PublicationThemeProvider,
+  PublicationBackgroundProvider,
+} from "components/ThemeManager/PublicationThemeProvider";
+import { FontLoader } from "components/FontLoader";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { supabaseServerClient } from "supabase/serverClient";
 import { PublicationSWRDataProvider } from "../dashboard/PublicationSWRProvider";
 import { PublicationCreatedContent } from "./PublicationCreatedContent";
@@ -34,17 +39,30 @@ export default async function PublicationCreatedPage(props: {
     );
 
   let uri = new AtUri(publication.uri);
+  let pubRecord = normalizePublicationRecord(publication.record);
   return (
     <PublicationSWRDataProvider
       publication_did={uri.host}
       publication_rkey={uri.rkey}
       publication_data={publication_data}
     >
-      <ThemeProvider entityID={null}>
-        <PublicationCreatedContent
-          dashboardHref={`/lish/${params.did}/${params.publication}/dashboard`}
-        />
-      </ThemeProvider>
+      <FontLoader
+        headingFontId={pubRecord?.theme?.headingFont}
+        bodyFontId={pubRecord?.theme?.bodyFont}
+      />
+      <PublicationThemeProvider
+        record={pubRecord}
+        pub_creator={publication.identity_did}
+      >
+        <PublicationBackgroundProvider
+          record={pubRecord}
+          pub_creator={publication.identity_did}
+        >
+          <PublicationCreatedContent
+            dashboardHref={`/lish/${params.did}/${params.publication}/dashboard`}
+          />
+        </PublicationBackgroundProvider>
+      </PublicationThemeProvider>
     </PublicationSWRDataProvider>
   );
 }

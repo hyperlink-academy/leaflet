@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SpeedyLink } from "components/SpeedyLink";
 import { GoToArrowLined } from "components/Icons/GoToArrowLined";
 import { publishPublicationPages } from "actions/publishPublicationPages";
@@ -39,6 +39,10 @@ export function PublicationEditHeader(props: {
   let dashboardHref = `/lish/${props.did}/${props.publicationName}/dashboard`;
   let createdHref = `/lish/${props.did}/${props.publicationName}/created`;
 
+  useEffect(() => {
+    if (props.createFlow) router.prefetch(createdHref);
+  }, [props.createFlow, createdHref, router]);
+
   async function handlePublish() {
     if (!publicationUri || status === "publishing") return;
     setStatus("publishing");
@@ -47,12 +51,12 @@ export function PublicationEditHeader(props: {
         publication_uri: publicationUri,
       });
       if (result.success) {
-        setStatus("success");
-        mutate();
         if (props.createFlow) {
           router.push(createdHref);
           return;
         }
+        setStatus("success");
+        mutate();
         setTimeout(() => setStatus("idle"), 2000);
         toaster({
           type: "success",
