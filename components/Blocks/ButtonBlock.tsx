@@ -155,7 +155,7 @@ const ButtonBlockSettings = (props: BlockProps) => {
         isSelected={!!isSelected}
         borderOnHover
         hasBackground="accent"
-        className="buttonBlockSettings text-tertiar hover:cursor-pointer border-dashed! p-0!"
+        className="buttonBlockSettings text-tertiary hover:cursor-pointer border-dashed! p-0!"
       >
         <form
           className={`w-full`}

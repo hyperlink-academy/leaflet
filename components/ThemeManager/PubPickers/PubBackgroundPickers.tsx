@@ -260,7 +260,7 @@ const ImageSettings = (props: {
             <div className="flex flex-col w-full">
               <div className="flex gap-2">
                 <div
-                  className={`shink-0 grow-0 w-fit z-10 cursor-pointer ${props.bgImage?.repeat ? "text-[#595959]" : " text-[#969696]"}`}
+                  className={`shrink-0 grow-0 w-fit z-10 cursor-pointer ${props.bgImage?.repeat ? "text-[#595959]" : " text-[#969696]"}`}
                 >
                   repeat
                 </div>

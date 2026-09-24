@@ -428,7 +428,7 @@ const PubSelector = (props: {
               <div className="text-border text-sm font-normal">
                 Publish to a blog on AT Proto
               </div>
-              <hr className="my-2 drashed border-border-light border-dashed" />
+              <hr className="my-2 border-border-light border-dashed" />
               <div className="text-tertiary text-sm font-normal ">
                 You don't have any Publications yet.{" "}
                 <a target="_blank" href="/lish/createPub">
