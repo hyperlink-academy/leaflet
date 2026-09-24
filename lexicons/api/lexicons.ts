@@ -1745,6 +1745,12 @@ export const schemaDict = {
           highlightFirstPost: {
             type: 'boolean',
           },
+          showPageCount: {
+            type: 'boolean',
+            default: true,
+            description:
+              'In the chapter view, show the number of pages under each chapter.',
+          },
           filterByTags: {
             type: 'array',
             items: {

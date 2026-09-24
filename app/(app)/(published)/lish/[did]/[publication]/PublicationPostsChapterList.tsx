@@ -23,6 +23,7 @@ export function ChapterShelf({
   cards,
   latestPost,
   highlightLatest = false,
+  showPageCount = true,
   disableLinks = false,
   className,
 }: {
@@ -33,6 +34,7 @@ export function ChapterShelf({
   // carry their posts.
   latestPost?: PublicationPostsListPost;
   highlightLatest?: boolean;
+  showPageCount?: boolean;
   disableLinks?: boolean;
   className?: string;
 }) {
@@ -59,6 +61,7 @@ export function ChapterShelf({
       <PublicationPostsChapterList
         cards={cards}
         pageWidth={publicationRecord?.theme?.pageWidth}
+        showPageCount={showPageCount}
         disableLinks={disableLinks}
       />
     </div>
@@ -76,14 +79,13 @@ export function ChapterShelf({
 export function PublicationPostsChapterList({
   cards,
   pageWidth,
+  showPageCount = true,
   disableLinks = false,
 }: {
   cards: ChapterCard[];
-  // The publication theme's page width, used to size the grid until the
-  // container has been measured.
+
   pageWidth?: number;
-  // In the editor the shelf is something you're laying out, not reading, so
-  // covers render as plain cards that don't navigate away from the page.
+  showPageCount?: boolean;
   disableLinks?: boolean;
 }) {
   const gridRef = useRef<HTMLDivElement>(null);
@@ -117,7 +119,12 @@ export function PublicationPostsChapterList({
       }}
     >
       {cards.map((card) => (
-        <ChapterItem key={card.key} card={card} disableLinks={disableLinks} />
+        <ChapterItem
+          key={card.key}
+          card={card}
+          showPageCount={showPageCount}
+          disableLinks={disableLinks}
+        />
       ))}
     </div>
   );
@@ -125,9 +132,11 @@ export function PublicationPostsChapterList({
 
 function ChapterItem({
   card,
+  showPageCount,
   disableLinks,
 }: {
   card: ChapterCard;
+  showPageCount?: boolean;
   disableLinks?: boolean;
 }) {
   const cardClassName =
@@ -169,9 +178,11 @@ function ChapterItem({
         <div className="chapterTitle text-primary font-bold leading-snug line-clamp-2">
           {card.label}
         </div>
+        {showPageCount && (
           <div className="chapterPageCount text-tertiary text-sm leading-snug pt-0.5">
             {card.pageCount} page{card.pageCount > 1 && "s"}
           </div>
+        )}
       </div>
     </>
   );

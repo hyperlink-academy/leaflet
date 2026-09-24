@@ -348,6 +348,10 @@ const PostsListBlockAttributes = {
     type: "boolean",
     cardinality: "one",
   },
+  "posts-list/show-page-count": {
+    type: "boolean",
+    cardinality: "one",
+  },
   "posts-list/filter-tag": {
     type: "string",
     cardinality: "many",

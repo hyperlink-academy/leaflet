@@ -97,6 +97,9 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
   );
   let highlightFirst = highlightFirstFact?.data.value ?? false;
 
+  let showPageCount =
+    useEntity(entityID, "posts-list/show-page-count")?.data.value ?? true;
+
   let filterTagFacts = useEntity(entityID, "posts-list/filter-tag");
   let filterTags = useMemo(
     () => filterTagFacts.map((f) => f.data.value),
@@ -152,6 +155,7 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
         cards={listData.chapterCards ?? []}
         latestPost={listData.latestPost}
         highlightLatest={highlightFirst}
+        showPageCount={showPageCount}
         disableLinks
       />
     );
@@ -205,6 +209,10 @@ function PostsListSettingsButton(props: { entityID: string }) {
     "posts-list/highlight-first-post",
   );
   let highlightFirst = highlightFirstFact?.data.value ?? false;
+
+  let showPageCount =
+    useEntity(props.entityID, "posts-list/show-page-count")?.data.value ??
+    true;
 
   let filterTagFacts = useEntity(props.entityID, "posts-list/filter-tag");
   let selectedTags = useMemo(
@@ -334,6 +342,20 @@ function PostsListSettingsButton(props: { entityID: string }) {
           });
         }}
       />
+      {view === "chapter" && (
+        <ToggleWithLabel
+          label="Show Page Count"
+          toggle={showPageCount}
+          onToggle={() => {
+            if (!rep) return;
+            rep.mutate.assertFact({
+              entity: props.entityID,
+              attribute: "posts-list/show-page-count",
+              data: { type: "boolean", value: !showPageCount },
+            });
+          }}
+        />
+      )}
 
       {view !== "chapter" && (
         <div className="flex flex-col gap-1">

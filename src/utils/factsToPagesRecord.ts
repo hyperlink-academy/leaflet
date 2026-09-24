@@ -514,6 +514,10 @@ export async function processBlocksToPages(opts: {
         b.entityID,
         "posts-list/highlight-first-post",
       );
+      const [showPageCountFact] = scan.eav(
+        b.entityID,
+        "posts-list/show-page-count",
+      );
       const filterTagFacts = scan.eav(b.entityID, "posts-list/filter-tag");
       const filterByTags = filterTagFacts.map((f) => f.data.value);
       const [limitFact] = scan.eav(b.entityID, "posts-list/limit");
@@ -536,6 +540,7 @@ export async function processBlocksToPages(opts: {
         $type: "pub.leaflet.blocks.postsList",
         ...(viewFact && { view: viewFact.data.value }),
         ...(highlightFact && { highlightFirstPost: highlightFact.data.value }),
+        ...(showPageCountFact && { showPageCount: showPageCountFact.data.value }),
         ...(filterByTags.length > 0 && { filterByTags }),
         ...(limit && limit > 0 && { limit }),
         // The sub-flags only mean anything under readerControls, and each

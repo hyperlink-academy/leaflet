@@ -486,6 +486,12 @@ export const PubLeafletBlocksPostsList: LexiconDoc = {
       properties: {
         view: { type: "string", knownValues: ["small", "medium", "chapter"] },
         highlightFirstPost: { type: "boolean" },
+        showPageCount: {
+          type: "boolean",
+          default: true,
+          description:
+            "In the chapter view, show the number of pages under each chapter.",
+        },
         filterByTags: { type: "array", items: { type: "string" } },
         limit: {
           type: "integer",

@@ -449,6 +449,7 @@ export let Block = ({
               cards={seed.chapters ?? []}
               latestPost={seed.latestPost}
               highlightLatest={!!block.highlightFirstPost}
+              showPageCount={block.showPageCount ?? true}
             />
           </div>
         );
