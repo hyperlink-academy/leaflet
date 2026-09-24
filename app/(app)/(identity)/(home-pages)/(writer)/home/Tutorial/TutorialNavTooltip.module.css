@@ -17,6 +17,9 @@
 .delay2 {
   animation-delay: 120ms;
 }
+.delay3 {
+  animation-delay: 180ms;
+}
 
 @keyframes enter {
   from {

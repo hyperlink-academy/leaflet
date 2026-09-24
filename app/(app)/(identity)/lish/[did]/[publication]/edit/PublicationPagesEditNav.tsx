@@ -30,6 +30,7 @@ import {
 } from "components/Buttons";
 import { InputWithLabel } from "components/Input";
 import { Popover } from "components/Popover";
+import { CustomizeTutorialTooltip } from "./CustomizeTutorialTooltip";
 import { EditTiny } from "components/Icons/EditTiny";
 import { useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
@@ -188,13 +189,15 @@ export function PublicationPagesEditNav(props: {
               ))}
             </SortableContext>
           </DndContext>
-          <AddPageButton
-            entries={entries}
-            publicationUrl={props.publicationUrl}
-            onCreated={(entity, external) => {
-              if (!external) props.onSelectPage(entity);
-            }}
-          />
+          <CustomizeTutorialTooltip target="new-page" className="shrink-0">
+            <AddPageButton
+              entries={entries}
+              publicationUrl={props.publicationUrl}
+              onCreated={(entity, external) => {
+                if (!external) props.onSelectPage(entity);
+              }}
+            />
+          </CustomizeTutorialTooltip>
         </div>
         {props.hideSubscribeInHeader && (
           <div className="pointer-events-none">

@@ -26,6 +26,7 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 import { EmptyState } from "components/EmptyState";
 import { ShortcutKey } from "components/Layout";
 import { HelpSmall } from "components/Icons/HelpSmall";
+import { CustomizeTutorialTooltip } from "app/(app)/(identity)/lish/[did]/[publication]/edit/CustomizeTutorialTooltip";
 
 export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
   let isSelected = useIsBlockSelected(props.entityID);
@@ -50,7 +51,9 @@ export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
       className="border-none! p-0! rounded-none! overflow-visible!"
       extraOptions={<PostsListSettingsButton entityID={props.entityID} />}
     >
-      <PostsListBlockContent entityID={props.entityID} />
+      <CustomizeTutorialTooltip target="posts-list">
+        <PostsListBlockContent entityID={props.entityID} />
+      </CustomizeTutorialTooltip>
     </BlockLayout>
   );
 };
