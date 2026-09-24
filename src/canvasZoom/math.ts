@@ -118,18 +118,26 @@ export type Pads = { top: number; right: number; bottom: number; left: number };
 
 export const NO_PADS: Pads = { top: 0, right: 0, bottom: 0, left: 0 };
 
-// The spacer's content box: the zoomed canvas, never smaller than the
-// viewport (the stylesheet's min-width/min-height: 100%).
+// The spacer's content box: the zoomed canvas and its margins, never
+// smaller than the viewport (the stylesheet's min-width/min-height: 100%).
 export function contentBox(args: {
   zoom: number;
   contentWidth: number;
   contentHeight: number;
   clientWidth: number;
   clientHeight: number;
+  margin?: Scroll;
 }): Size {
+  let margin = args.margin ?? { left: 0, top: 0 };
   return {
-    width: Math.max(args.contentWidth * args.zoom, args.clientWidth),
-    height: Math.max(args.contentHeight * args.zoom, args.clientHeight),
+    width: Math.max(
+      args.contentWidth * args.zoom + 2 * margin.left,
+      args.clientWidth,
+    ),
+    height: Math.max(
+      args.contentHeight * args.zoom + 2 * margin.top,
+      args.clientHeight,
+    ),
   };
 }
 
@@ -196,19 +204,11 @@ export function approachZoom(
   return current * Math.exp(gap * (1 - Math.exp(-dtMs / tau)));
 }
 
-// A centered canvas is surrounded by half a viewport of empty space on
-// every side (the .canvasZoomCentered spacer and layer margins in
-// globals.css), so any point of it can be scrolled to the viewport's
-// center: this is the offset of the content inside the spacer.
-export function centerOffset(client: Size): Scroll {
+// Empty space the spacer keeps around the content on each side, besides
+// the engine's padding (--canvas-margin-x/y in globals.css). A centered
+// canvas keeps half a viewport, so any point of it can be scrolled to the
+// viewport's center at any zoom.
+export function contentMargin(centered: boolean, client: Size): Scroll {
+  if (!centered) return { left: 0, top: 0 };
   return { left: client.width / 2, top: client.height / 2 };
-}
-
-// The spacer's content box around a centered canvas: the zoomed content
-// plus its margins.
-export function centeredBox(zoom: number, content: Size, client: Size): Size {
-  return {
-    width: content.width * zoom + client.width,
-    height: content.height * zoom + client.height,
-  };
 }

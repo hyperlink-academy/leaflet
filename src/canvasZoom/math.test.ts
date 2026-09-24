@@ -13,8 +13,7 @@ import {
   minZoom,
   nextStep,
   wheelToZoomFactor,
-  centerOffset,
-  centeredBox,
+  contentMargin,
 } from "./math";
 
 const DOM_DELTA_PIXEL = 0;
@@ -316,14 +315,24 @@ describe("approachZoom", () => {
 });
 
 describe("centered canvases", () => {
-  let content = { width: 600, height: 400 };
   let client = { width: 800, height: 600 };
 
   it("surround the content with half a viewport", () => {
-    expect(centerOffset(client)).toEqual({ left: 400, top: 300 });
-    expect(centeredBox(2, content, client)).toEqual({
-      width: 2000,
-      height: 1400,
-    });
+    let margin = contentMargin(true, client);
+    expect(margin).toEqual({ left: 400, top: 300 });
+    expect(
+      contentBox({
+        zoom: 2,
+        contentWidth: 600,
+        contentHeight: 400,
+        clientWidth: client.width,
+        clientHeight: client.height,
+        margin,
+      }),
+    ).toEqual({ width: 2000, height: 1400 });
+  });
+
+  it("keep no margin on other canvases", () => {
+    expect(contentMargin(false, client)).toEqual({ left: 0, top: 0 });
   });
 });
