@@ -48,7 +48,7 @@ export function MathBlock(props: BlockProps) {
         autoCapitalize="none"
         autoCorrect="off"
         className="h-full w-full  whitespace-nowrap overflow-auto!"
-        placeholder="write some Tex here…"
+        placeholder="write some TeX here…"
         value={content?.data.value}
         onChange={async (e) => {
           // Update the entity with the new value
@@ -71,7 +71,7 @@ export function MathBlock(props: BlockProps) {
       hasBackground="accent"
       className="min-h-[48px]"
     >
-      <div className="text-tertiary italic w-full ">write some Tex here...</div>
+      <div className="text-tertiary italic w-full ">write some TeX here...</div>
     </BlockLayout>
   );
 }

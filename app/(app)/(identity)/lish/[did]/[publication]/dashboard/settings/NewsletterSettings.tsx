@@ -202,7 +202,7 @@ function NewsletterOptions(props: {
 
   return (
     <SettingsSection title="Newsletter Options">
-      <div>Newsletters allows your subscribers to opt into email updates.</div>
+      <div>Newsletters allow your subscribers to opt into email updates.</div>
        <div>If you have questions, or you want to import an existing email list, <a href="mailto:contact@leaflet.pub">contact us</a>!</div>
       <div className="flex flex-col gap-4">
         <InputSetting label="Sender Name">
@@ -395,7 +395,7 @@ const EmbedFormSnippet = (props: {
         publication directly from there.
       </p>
       <p className="text-secondary leading-snug">
-        After submitting, they&apos;re sent to Leaflet to confirm thier email,
+        After submitting, they&apos;re sent to Leaflet to confirm their email,
         then sent back to your webpage.
       </p>
       <InputSetting label="HTML Snippet">

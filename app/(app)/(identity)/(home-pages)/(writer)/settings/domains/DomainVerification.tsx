@@ -81,7 +81,7 @@ export function DomainVerification(props: { domain: string }) {
         To verify this domain, add the following record to your DNS provider for{" "}
         <strong>{props.domain}</strong>.
       </div>
-      <div>Verfication may take up to a few hours to process.</div>
+      <div>Verification may take up to a few hours to process.</div>
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)] border border-border-light rounded-md text-left my-2 text-sm">
         <div className="px-2 py-1 text-tertiary font-bold">Type</div>
         <div className="px-2 py-1 text-tertiary font-bold">Name</div>

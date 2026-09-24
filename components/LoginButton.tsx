@@ -112,7 +112,7 @@ export const LoginContent = (props: {
       toaster({
         content: (
           <div className="font-bold">
-            We couldnt send the email. Please try again!
+            We couldn&apos;t send the email. Please try again!
           </div>
         ),
         type: "error",

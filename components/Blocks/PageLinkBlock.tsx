@@ -38,7 +38,7 @@ export function PageLinkBlock(
 
   let isOpen = useUIState((s) => s.openPages.includes(page?.data.value || ""));
   if (!page)
-    return <div>An error occured, there should be a page linked here!</div>;
+    return <div>An error occurred, there should be a page linked here!</div>;
 
   return (
     <CardThemeProvider entityID={page?.data.value}>
