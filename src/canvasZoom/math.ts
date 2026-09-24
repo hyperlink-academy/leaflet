@@ -195,3 +195,37 @@ export function approachZoom(
   if (Math.abs(gap) < ZOOM_SNAP_RATIO) return target;
   return current * Math.exp(gap * (1 - Math.exp(-dtMs / tau)));
 }
+
+// Where a centered canvas's content sits inside the spacer: centered on an
+// axis while it fits the viewport, flush once it is larger. Mirrors the
+// .canvasZoomCentered margins in globals.css.
+export function centerOffset(
+  zoom: number,
+  content: Size,
+  client: Size,
+): Scroll {
+  return {
+    left: Math.max(0, (client.width - content.width * zoom) / 2),
+    top: Math.max(0, (client.height - content.height * zoom) / 2),
+  };
+}
+
+// The pad-free offset a centered canvas settles on: centered on an axis the
+// content fits (whatever the anchor asked for), otherwise kept inside the
+// content so no empty space opens beside it. Continuous where the two meet,
+// so zooming across the viewport's size doesn't jump.
+export function centeredScroll(
+  scroll: Scroll,
+  zoom: number,
+  content: Size,
+  client: Size,
+): Scroll {
+  let axis = (s: number, size: number, clientSize: number) =>
+    size * zoom <= clientSize
+      ? -(clientSize - size * zoom) / 2
+      : Math.min(Math.max(s, 0), size * zoom - clientSize);
+  return {
+    left: axis(scroll.left, content.width, client.width),
+    top: axis(scroll.top, content.height, client.height),
+  };
+}

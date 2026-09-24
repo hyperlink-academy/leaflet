@@ -16,11 +16,11 @@ export function CanvasZoomLayer(props: {
   mobileArea?: CanvasArea | null;
   children: ReactNode;
 }) {
-  let { layerRef, spacerRef, contentWidth } = useCanvasZoomEngine();
+  let { layerRef, spacerRef, contentWidth, centered } = useCanvasZoomEngine();
   return (
     <div
       ref={spacerRef}
-      className="canvasZoomSpacer"
+      className={`canvasZoomSpacer ${centered ? "canvasZoomCentered" : ""}`}
       style={
         {
           "--canvas-content-width": contentWidth,

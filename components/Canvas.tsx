@@ -113,6 +113,7 @@ export function Canvas(props: {
         pageKey={props.entityID}
         scrollerRef={ref}
         contentWidth={fixedSize?.width}
+        centered={!!fixedSize}
         initialArea={mobileArea}
         lockViewerZoom={lockViewerZoom}
         // Writers double tap empty canvas to add a block.

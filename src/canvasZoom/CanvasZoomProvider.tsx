@@ -75,8 +75,11 @@ import {
   type Pads,
   type Point,
   type Scroll,
+  type Size,
   anchorToCanvas,
   approachZoom,
+  centerOffset,
+  centeredScroll,
   clampZoom,
   contentBox,
   minZoom,
@@ -126,6 +129,8 @@ export type CanvasZoomEngine = {
   zoomRef: RefObject<number>;
   minRef: RefObject<number>;
   contentWidth: number;
+  /** The content is centered in the viewport while it fits. */
+  centered: boolean;
   /** Zoom the next rendered frame will show (pending target or live). */
   targetZoom: () => number;
   /** Viewport-relative point of the scroller's client box. */
@@ -181,6 +186,12 @@ export function CanvasZoomProvider(props: {
   scrollerRef: RefObject<HTMLElement | null>;
   contentWidth?: number;
   /**
+   * Centers the content on each axis it fits in the viewport (the layer's
+   * margins, see .canvasZoomCentered) and never leaves empty space beside
+   * it on an axis it overflows. For fixed-size canvases.
+   */
+  centered?: boolean;
+  /**
    * Area a fresh mount frames: the stylesheet already fits its width (via
    * `--canvas-mobile-area` on the layer's spacer), and the scroller is put
    * on its left edge here. A zoom kept from an earlier mount wins.
@@ -192,6 +203,7 @@ export function CanvasZoomProvider(props: {
   let initialArea = useRef(props.initialArea);
   initialArea.current = props.initialArea;
   let contentWidth = props.contentWidth ?? CONTENT_WIDTH;
+  let centered = !!props.centered;
   let layerRef = useRef<HTMLDivElement>(null);
   let spacerRef = useRef<HTMLDivElement>(null);
   let zoomRef = useRef(
@@ -215,6 +227,17 @@ export function CanvasZoomProvider(props: {
   let idleTimer = useRef(0);
 
   let engine = useMemo<CanvasZoomEngine>(() => {
+    // The centered layer's margin at a zoom: offset between the spacer's
+    // content box and the content, on top of the pads.
+    let margin = (zoom: number, client: Size, contentHeight: number) =>
+      centered
+        ? centerOffset(
+            zoom,
+            { width: contentWidth, height: contentHeight },
+            client,
+          )
+        : { left: 0, top: 0 };
+
     let writePads = (spacer: HTMLElement, next: Pads) => {
       pads.current = next;
       spacer.style.padding = `${next.top}px ${next.right}px ${next.bottom}px ${next.left}px`;
@@ -235,15 +258,26 @@ export function CanvasZoomProvider(props: {
       spacer: HTMLElement,
     ) => {
       let scroll0 = { left: scroller.scrollLeft, top: scroller.scrollTop };
-      let pad0 = { left: pads.current.left, top: pads.current.top };
+      let client = {
+        width: scroller.clientWidth,
+        height: scroller.clientHeight,
+      };
+      let contentHeight = spacerContentHeight(spacer);
+      // The layer's margin stays at the settled zoom's until the settle, so
+      // it counts as padding for the whole gesture.
+      let m = margin(zoomRef.current, client, contentHeight);
+      let pad0 = {
+        left: pads.current.left + m.left,
+        top: pads.current.top + m.top,
+      };
       let g: Gesture = {
         scroll0,
         pad0,
         virtual: { left: scroll0.left - pad0.left, top: scroll0.top - pad0.top },
         pausedMedia: [],
-        clientWidth: scroller.clientWidth,
-        clientHeight: scroller.clientHeight,
-        contentHeight: spacerContentHeight(spacer),
+        clientWidth: client.width,
+        clientHeight: client.height,
+        contentHeight,
       };
       for (let media of layer.querySelectorAll("video")) {
         if (media.paused || media.ended) continue;
@@ -281,6 +315,17 @@ export function CanvasZoomProvider(props: {
           clientWidth: client.width,
           clientHeight: client.height,
         });
+        if (centered) {
+          // Offsets into the spacer, past the new margin; recomputed rather
+          // than taken from the rounded frame so a centered axis lands on 0.
+          let content = { width: contentWidth, height: g.contentHeight };
+          let v = centeredScroll(scroll, z, content, client);
+          let m = margin(z, client, g.contentHeight);
+          scroll = {
+            left: Math.round(v.left + m.left),
+            top: Math.round(v.top + m.top),
+          };
+        }
         let pad = padsForScroll(scroll, client, box);
         writePads(spacer, pad);
         spacer.style.setProperty("--canvas-zoom", String(z));
@@ -342,6 +387,13 @@ export function CanvasZoomProvider(props: {
       // Kept exact: each wheel event re-derives its anchor from this, and a
       // rounding error there is amplified by every later zoom-in step.
       g.virtual = { left: next.scrollLeft, top: next.scrollTop };
+      if (centered)
+        g.virtual = centeredScroll(
+          g.virtual,
+          zoom,
+          { width: contentWidth, height: g.contentHeight },
+          { width: g.clientWidth, height: g.clientHeight },
+        );
       // Chrome lands scroll offsets on whole CSS px, so the frame shows the
       // offset the settle will be able to write.
       let tx = g.scroll0.left - g.pad0.left - Math.round(g.virtual.left);
@@ -358,6 +410,7 @@ export function CanvasZoomProvider(props: {
       zoomRef,
       minRef,
       contentWidth,
+      centered,
       targetZoom: () => pending.current?.zoom ?? zoomRef.current,
       toViewport: (clientX, clientY) => {
         let scroller = scrollerRef.current;
@@ -377,15 +430,24 @@ export function CanvasZoomProvider(props: {
       },
       canvasPointAt: (anchorViewport) => {
         let scroller = scrollerRef.current;
+        let spacer = spacerRef.current;
         let g = gesture.current;
+        let m =
+          scroller && spacer
+            ? margin(
+                zoomRef.current,
+                { width: scroller.clientWidth, height: scroller.clientHeight },
+                spacerContentHeight(spacer),
+              )
+            : { left: 0, top: 0 };
         return anchorToCanvas({
           anchorViewport,
           scrollLeft: g
             ? g.virtual.left
-            : (scroller?.scrollLeft || 0) - pads.current.left,
+            : (scroller?.scrollLeft || 0) - pads.current.left - m.left,
           scrollTop: g
             ? g.virtual.top
-            : (scroller?.scrollTop || 0) - pads.current.top,
+            : (scroller?.scrollTop || 0) - pads.current.top - m.top,
           zoom: zoomRef.current,
         });
       },
@@ -435,7 +497,7 @@ export function CanvasZoomProvider(props: {
       },
     };
     return engine;
-  }, [pageKey, scrollerRef, contentWidth]);
+  }, [pageKey, scrollerRef, contentWidth, centered]);
 
   // Runs before paint so a restored zoom never flashes. React attaches refs
   // bottom-up, so the scroller (an ancestor) has no ref yet in this layout
