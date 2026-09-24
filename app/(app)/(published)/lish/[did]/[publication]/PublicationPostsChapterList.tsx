@@ -86,6 +86,22 @@ export function PublicationPostsChapterList({
   // covers render as plain cards that don't navigate away from the page.
   disableLinks?: boolean;
 }) {
+  return (
+    <ChapterGrid pageWidth={pageWidth}>
+      {cards.map((card) => (
+        <ChapterItem key={card.key} card={card} disableLinks={disableLinks} />
+      ))}
+    </ChapterGrid>
+  );
+}
+
+export function ChapterGrid({
+  pageWidth,
+  children,
+}: {
+  pageWidth?: number;
+  children: React.ReactNode;
+}) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
   useEffect(() => {
@@ -116,9 +132,7 @@ export function PublicationPostsChapterList({
         gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
       }}
     >
-      {cards.map((card) => (
-        <ChapterItem key={card.key} card={card} disableLinks={disableLinks} />
-      ))}
+      {children}
     </div>
   );
 }
@@ -169,9 +183,9 @@ function ChapterItem({
         <div className="chapterTitle text-primary font-bold leading-snug line-clamp-2">
           {card.label}
         </div>
-          <div className="chapterPageCount text-tertiary text-sm leading-snug pt-0.5">
-            {card.pageCount} page{card.pageCount > 1 && "s"}
-          </div>
+        <div className="chapterPageCount text-tertiary text-sm leading-snug pt-0.5">
+          {card.pageCount} page{card.pageCount > 1 && "s"}
+        </div>
       </div>
     </>
   );
