@@ -1474,6 +1474,22 @@ const BlockRenderer = ({
         />
       );
     },
+    "pub.leaflet.blocks.embeddedCanvas": (block) => {
+      const page = pages?.find((p) => p.id === block.id);
+      if (!PubLeafletPagesCanvas.isMain(page) || !page.width || !page.height)
+        return null;
+      return (
+        <EmbeddedCanvasEmailBlock
+          blocks={page.blocks}
+          size={{ width: page.width, height: page.height }}
+          href={blockUrl ?? postUrl}
+          did={did}
+          theme={theme}
+          colors={colors}
+          assetsBaseUrl={assetsBaseUrl}
+        />
+      );
+    },
     "pub.leaflet.blocks.poll": notSupported,
     "pub.leaflet.blocks.drawing": notSupported,
     "pub.leaflet.blocks.postsList": notSupported,
@@ -2082,24 +2098,31 @@ const DocThumbnail = ({
 // sorted top-to-bottom, left-to-right for that reason).
 const CanvasThumbnail = ({
   blocks,
+  size,
   did,
   theme,
   colors,
   assetsBaseUrl,
 }: {
   blocks: PubLeafletPagesCanvas.Block[];
+  // An embedded canvas: its whole fixed-size canvas fit to the card width.
+  size?: { width: number; height: number };
   did: string;
   theme: EmailTheme;
   colors: ResolvedColors;
   assetsBaseUrl: string;
 }) => {
   const cardWidth = theme.pageWidth - CARD_HORIZONTAL_PADDING;
-  const scale = (cardWidth - 36) / CANVAS_WIDTH;
+  const scale = size
+    ? (cardWidth - 2) / size.width
+    : (cardWidth - 36) / CANVAS_WIDTH;
   const sorted = [...blocks].sort(canvasBlockOrder);
   return (
     <div
       style={{
-        height: PAGE_LINK_CANVAS_HEIGHT,
+        height: size
+          ? Math.round(size.height * scale)
+          : PAGE_LINK_CANVAS_HEIGHT,
         overflow: "hidden",
         position: "relative",
         width: "100%",
@@ -2136,6 +2159,52 @@ const CanvasThumbnail = ({
     </div>
   );
 };
+
+// The editor and web show an embedded canvas whole, scaled to the body width; here
+// its blocks are re-rendered at that scale, like a canvas page link.
+const EmbeddedCanvasEmailBlock = ({
+  blocks,
+  size,
+  href,
+  did,
+  theme,
+  colors,
+  assetsBaseUrl,
+}: {
+  blocks: PubLeafletPagesCanvas.Block[];
+  size: { width: number; height: number };
+  href: string;
+  did: string;
+  theme: EmailTheme;
+  colors: ResolvedColors;
+  assetsBaseUrl: string;
+}) => (
+  <Section style={{ margin: BLOCK_MARGIN, minWidth: "100%" }}>
+    <div
+      style={{
+        backgroundColor: theme.pageBackground,
+        border: `1px solid ${colors.borderLight}`,
+        borderRadius: 8,
+        overflow: "hidden",
+        width: "100%",
+      }}
+    >
+      <Link
+        href={href}
+        style={{ color: "inherit", display: "block", textDecoration: "none" }}
+      >
+        <CanvasThumbnail
+          blocks={blocks}
+          size={size}
+          did={did}
+          theme={theme}
+          colors={colors}
+          assetsBaseUrl={assetsBaseUrl}
+        />
+      </Link>
+    </div>
+  </Section>
+);
 
 // A block at thumbnail scale: the email's own block metrics (font sizes,
 // margins) multiplied down, so the thumbnail is a miniature of the email
@@ -2274,6 +2343,7 @@ const MiniBlock = ({
     "pub.leaflet.blocks.iframe": () => null,
     "pub.leaflet.blocks.html": () => null,
     "pub.leaflet.blocks.page": () => null,
+    "pub.leaflet.blocks.embeddedCanvas": () => null,
     "pub.leaflet.blocks.poll": () => null,
     "pub.leaflet.blocks.drawing": () => null,
     "pub.leaflet.blocks.postsList": () => null,

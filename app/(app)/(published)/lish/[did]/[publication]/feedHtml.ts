@@ -141,6 +141,8 @@ function createFeedRenderContext(
     "pub.leaflet.blocks.standardSitePost": () => "",
     "pub.leaflet.blocks.standardSitePublication": () => "",
     "pub.leaflet.blocks.page": () => "",
+    // A laid-out canvas has no portable HTML form.
+    "pub.leaflet.blocks.embeddedCanvas": () => "",
     "pub.leaflet.blocks.membersOnlyDelimiter": () => "",
   };
 
@@ -185,6 +187,7 @@ const plainTextExtractors: BlockHandlers<string> = {
   "pub.leaflet.blocks.standardSitePost": () => "",
   "pub.leaflet.blocks.standardSitePublication": () => "",
   "pub.leaflet.blocks.page": () => "",
+  "pub.leaflet.blocks.embeddedCanvas": () => "",
   "pub.leaflet.blocks.membersOnlyDelimiter": () => "",
 };
 

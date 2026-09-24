@@ -274,6 +274,18 @@ const BlockTypeToHTML: {
       />
     );
   },
+  "embedded-canvas": async (b, tx) => {
+    let [card] = await scanIndex(tx).eav(b.entityID, "block/card");
+    if (!card) return "";
+    let facts = await getAllFacts(tx, card.data.value);
+    return (
+      <div
+        data-type="embedded-canvas"
+        data-facts={JSON.stringify(facts)}
+        data-entityid={card.data.value}
+      />
+    );
+  },
   text: async (b, tx, a) => {
     let [value] = await scanIndex(tx).eav(b.entityID, "block/text");
     let [textSize] = await scanIndex(tx).eav(b.entityID, "block/text-size");

@@ -162,6 +162,7 @@ async function Backspace({ e, props, rep, areYouSure, setAreYouSure }: Args) {
   // if the block is a card, mailbox, rsvp, or poll...
   if (
     props.type === "card" ||
+    props.type === "embedded-canvas" ||
     props.type === "mailbox" ||
     props.type === "rsvp" ||
     props.type === "poll"

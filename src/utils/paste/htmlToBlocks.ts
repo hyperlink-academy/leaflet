@@ -6,10 +6,7 @@ import { prosemirrorToYDoc } from "y-prosemirror";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { isPageLinkDisplay } from "src/utils/pageLinkDisplay";
-import {
-  multiBlockSchema,
-  schema,
-} from "components/Blocks/TextBlock/schema";
+import { multiBlockSchema, schema } from "components/Blocks/TextBlock/schema";
 import type { Fact } from "src/replicache";
 import type { FactInput } from "src/replicache/mutations";
 import type { FilterAttributes } from "src/replicache/attributes";
@@ -184,6 +181,8 @@ function buildBlockFromHTML(
   let finalType: BlockType = baseType;
   if (isMath) finalType = "math";
   else if (isBlueskyPost) finalType = "bluesky-post";
+  else if (isCardPaste && child.getAttribute("data-type") === "embedded-canvas")
+    finalType = "embedded-canvas";
 
   const entityID = v7();
   const facts: FactInput[] = [];

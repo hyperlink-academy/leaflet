@@ -27,6 +27,7 @@ import { TextBlock } from "./TextBlock/index";
 import { ImageBlock } from "./ImageBlock";
 import { ImageGalleryBlock } from "./ImageGalleryBlock";
 import { PageLinkBlock } from "./PageLinkBlock";
+import { EmbeddedCanvasBlock } from "./EmbeddedCanvasBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { EmbedBlock, HTMLBlock } from "./EmbedBlock";
 import { MailboxBlock } from "./MailboxBlock";
@@ -60,7 +61,10 @@ import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
 import { deleteBlock } from "src/utils/deleteBlock";
 import { CanvasLayerControls } from "components/CanvasLayerControls";
 import { Blocks } from "./index";
-import { blockSpacingClassName, type SpacingKind } from "src/utils/blockSpacing";
+import {
+  blockSpacingClassName,
+  type SpacingKind,
+} from "src/utils/blockSpacing";
 
 const SWIPE_THRESHOLD = 50;
 
@@ -429,6 +433,7 @@ const BlockTypeComponents: {
   code: CodeBlock,
   math: MathBlock,
   card: PageLinkBlock,
+  "embedded-canvas": EmbeddedCanvasBlock,
   text: TextBlock,
   blockquote: TextBlock,
   heading: TextBlock,

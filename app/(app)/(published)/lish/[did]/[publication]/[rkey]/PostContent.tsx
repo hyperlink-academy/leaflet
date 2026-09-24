@@ -1,5 +1,8 @@
 "use client";
-import { blockSpacingClassName, type SpacingKind } from "src/utils/blockSpacing";
+import {
+  blockSpacingClassName,
+  type SpacingKind,
+} from "src/utils/blockSpacing";
 import {
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
@@ -51,6 +54,7 @@ import {
 } from "components/ThemeManager/PublicationThemeProvider";
 import { useStandardSitePublication } from "components/StandardSitePublicationDataProvider";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
+import { PublishedEmbeddedCanvasBlock } from "./Blocks/PublishedEmbeddedCanvasBlock";
 import { PublishedImageGallery } from "./Blocks/PublishedImageGallery";
 import { PublishedImageBlock } from "./Blocks/PublishedImageBlock";
 import { useOpenImageLightbox } from "./GlobalImageLightbox";
@@ -248,7 +252,6 @@ export let Block = ({
   )
     alignment = "text-center justify-center";
 
-
   let previousKind = previousBlock && spacingKind(previousBlock.block);
   let className = `
     postBlockWrapper
@@ -295,6 +298,23 @@ export let Block = ({
           className={className}
           display={block.display}
         />
+      );
+    },
+    "pub.leaflet.blocks.embeddedCanvas": (block) => {
+      let page = pages.find((p) => p.id === block.id);
+      if (!PubLeafletPagesCanvas.isMain(page) || !page.width || !page.height)
+        return;
+      return (
+        <div className={className} {...blockProps}>
+          <PublishedEmbeddedCanvasBlock
+            page={{ ...page, width: page.width, height: page.height }}
+            did={did}
+            bskyPostData={bskyPostData}
+            standardSitePostData={standardSitePostData}
+            pollData={pollData}
+            pages={pages}
+          />
+        </div>
       );
     },
     "pub.leaflet.blocks.bskyPost": (block) => {

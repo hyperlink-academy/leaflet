@@ -35,6 +35,22 @@ export const PubLeafletBlocksPage: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksEmbeddedCanvas: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.embeddedCanvas",
+  defs: {
+    main: {
+      type: "object",
+      required: ["id"],
+      description:
+        "A fixed-size canvas shown in full inline. id refers to a pub.leaflet.pages.canvas in the document's pages whose width and height bound it.",
+      properties: {
+        id: { type: "string" },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksBskyPost: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.bskyPost",
@@ -660,6 +676,7 @@ export const BlockLexicons = [
   PubLeafletBlocksStandardSitePost,
   PubLeafletBlocksStandardSitePublication,
   PubLeafletBlocksPage,
+  PubLeafletBlocksEmbeddedCanvas,
   PubLeafletBlocksPoll,
   PubLeafletBlocksButton,
   PubLeafletBlocksPostsList,

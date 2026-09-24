@@ -26,6 +26,7 @@ import type * as PubLeafletBlocksBskyPost from '../blocks/bskyPost'
 import type * as PubLeafletBlocksStandardSitePost from '../blocks/standardSitePost'
 import type * as PubLeafletBlocksStandardSitePublication from '../blocks/standardSitePublication'
 import type * as PubLeafletBlocksPage from '../blocks/page'
+import type * as PubLeafletBlocksEmbeddedCanvas from '../blocks/embeddedCanvas'
 import type * as PubLeafletBlocksPoll from '../blocks/poll'
 import type * as PubLeafletBlocksButton from '../blocks/button'
 import type * as PubLeafletBlocksPostsList from '../blocks/postsList'
@@ -46,6 +47,10 @@ export interface Main {
   blocks: Block[]
   /** How a narrow viewport frames the canvas: the whole canvas scaled to fit the width (unconstrained, the default), or a phone-width area anchored to the canvas's left edge or centered on it, shown at up to 1:1. */
   mobileView?: 'unconstrained' | 'left' | 'center' | (string & {})
+  /** Fixed canvas width in canvas px. With height, bounds the canvas: blocks are clipped to the area. Absent, the canvas is 1272px wide and grows with its content. */
+  width?: number
+  /** Fixed canvas height in canvas px; see width. */
+  height?: number
   /** Viewers cannot zoom the canvas: no wheel, pinch, double-tap or zoom controls. */
   lockViewerZoom?: boolean
 }
@@ -80,6 +85,7 @@ export interface Block {
     | $Typed<PubLeafletBlocksStandardSitePost.Main>
     | $Typed<PubLeafletBlocksStandardSitePublication.Main>
     | $Typed<PubLeafletBlocksPage.Main>
+    | $Typed<PubLeafletBlocksEmbeddedCanvas.Main>
     | $Typed<PubLeafletBlocksPoll.Main>
     | $Typed<PubLeafletBlocksButton.Main>
     | $Typed<PubLeafletBlocksPostsList.Main>

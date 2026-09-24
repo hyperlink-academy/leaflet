@@ -73,6 +73,16 @@ const PageAttributes = {
     type: "boolean",
     cardinality: "one",
   },
+  // Set on an embedded canvas's page: the canvas is bounded to this area
+  // instead of being 1272px wide and growing with its content.
+  "canvas/fixed-width": {
+    type: "number",
+    cardinality: "one",
+  },
+  "canvas/fixed-height": {
+    type: "number",
+    cardinality: "one",
+  },
 } as const;
 
 const BlockAttributes = {
@@ -601,6 +611,8 @@ export type Data<A extends keyof typeof Attributes> = {
       | "signup"
       | "image-gallery"
       | "post-header"
+      // An inline, fixed-size canvas: block/card points at its canvas page.
+      | "embedded-canvas"
       // A canvas-only container whose card/block children form a linear
       // document, positioned on the canvas as a single block.
       | "group"

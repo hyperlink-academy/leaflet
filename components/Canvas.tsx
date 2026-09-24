@@ -56,6 +56,11 @@ import { EditTiny } from "./Icons/EditTiny";
 import { CanvasInkLayer } from "./Blocks/DrawingBlock/CanvasInkLayer";
 import { InkToolbar } from "./Blocks/DrawingBlock/InkToolbar";
 import { useInkSession } from "./Blocks/DrawingBlock/useInkSession";
+import { useCanvasFixedSize } from "src/hooks/queries/useCanvasFixedSize";
+import {
+  type CanvasSize,
+  clampToCanvasSize,
+} from "src/utils/embeddedCanvasSize";
 
 export function Canvas(props: {
   entityID: string;
@@ -69,24 +74,30 @@ export function Canvas(props: {
   let lockViewerZoom =
     !!useEntity(props.entityID, "canvas/lock-viewer-zoom")?.data.value &&
     !entity_set.permissions.write;
-  let contentHeight = canvasContentHeight(blocks.map((b) => b.data.position));
-  let mobileArea = mobileViewArea(
-    useEntity(props.entityID, "canvas/mobile-view")?.data.value,
-  );
+  let fixedSize = useCanvasFixedSize(props.entityID);
+  let contentHeight = fixedSize
+    ? fixedSize.height
+    : canvasContentHeight(blocks.map((b) => b.data.position));
+  let mobileViewValue = useEntity(props.entityID, "canvas/mobile-view")?.data
+    .value;
+  let mobileArea = fixedSize ? null : mobileViewArea(mobileViewValue);
 
   return (
     <div
       ref={ref}
       id={elementId.page(props.entityID).canvasScrollArea}
+      style={fixedSize ? { width: fixedSize.width } : undefined}
       className={`
         canvasWrapper
-        h-full w-[1272px] max-w-full
+        h-full max-w-full
+        ${fixedSize ? "bg-border-light" : "w-[1272px]"}
         overflow-y-scroll touch-pan-x touch-pan-y
       `}
     >
       <CanvasZoomProvider
         pageKey={props.entityID}
         scrollerRef={ref}
+        contentWidth={fixedSize?.width}
         initialArea={mobileArea}
         lockViewerZoom={lockViewerZoom}
         // Writers double tap empty canvas to add a block.
@@ -95,13 +106,19 @@ export function Canvas(props: {
         <AddCanvasBlockButton
           entityID={props.entityID}
           entity_set={entity_set}
+          fixedSize={fixedSize}
         />
 
         <div className="absolute top-6 right-3 sm:top-4 sm:right-4 z-20 flex flex-row gap-2 items-start">
-          {!props.preview && entity_set.permissions.write && (
+          {!props.preview && !fixedSize && entity_set.permissions.write && (
             <MobileViewToggle entityID={props.entityID} />
           )}
-          <CanvasMetadata entityID={props.entityID} isSubpage={!props.first} />
+          {!fixedSize && (
+            <CanvasMetadata
+              entityID={props.entityID}
+              isSubpage={!props.first}
+            />
+          )}
         </div>
         {!props.preview && entity_set.permissions.write && (
           <CanvasFocusZoom pageEntityID={props.entityID} />
@@ -125,6 +142,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   let blocks = useEntity(props.entityID, "canvas/block");
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
+  let fixedSize = useCanvasFixedSize(props.entityID);
   let contentHeight = canvasContentHeight(blocks.map((b) => b.data.position));
   let handleDrop = useHandleCanvasDrop(props.entityID);
   let stackOrders = useCanvasStackOrders(props.entityID);
@@ -147,12 +165,15 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
         if ((e.detail === 2 || e.ctrlKey || e.metaKey) && rep) {
           let parentRect = e.currentTarget.getBoundingClientRect();
           let zoom = getCanvasZoom(props.entityID);
+          let position = {
+            x: Math.max((e.clientX - parentRect.left) / zoom, 0),
+            y: Math.max((e.clientY - parentRect.top) / zoom - 12, 0),
+          };
           let newEntityID = await addCanvasTextBlock(rep, undoManager, {
             parent: props.entityID,
-            position: {
-              x: Math.max((e.clientX - parentRect.left) / zoom, 0),
-              y: Math.max((e.clientY - parentRect.top) / zoom - 12, 0),
-            },
+            position: fixedSize
+              ? clampToCanvasSize(position, NEW_BLOCK_SIZE, fixedSize)
+              : position,
             permission_set: entity_set.set,
           });
           focusBlock(
@@ -173,13 +194,20 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
         !props.preview && entity_set.permissions.write ? handleDrop : undefined
       }
       style={{
-        minHeight: contentHeight,
+        ...(fixedSize
+          ? { width: fixedSize.width, height: fixedSize.height }
+          : { minHeight: contentHeight }),
         contain: "size layout paint",
       }}
-      className="relative h-full w-[1272px]"
+      className={`relative ${fixedSize ? `bg-bg-page ${props.preview ? "" : "shadow-sm"}` : "h-full w-[1272px]"}`}
     >
-      <CanvasBackground entityID={props.entityID} />
-      {!props.preview && entity_set.permissions.write && (
+      <CanvasBackground
+        entityID={props.entityID}
+        // An embedded canvas reads as a picture inline; the grid only helps placing
+        // blocks while editing it.
+        defaultPattern={fixedSize && props.preview ? "plain" : "grid"}
+      />
+      {!props.preview && !fixedSize && entity_set.permissions.write && (
         <MobileViewGuides entityID={props.entityID} />
       )}
       {!props.preview && entity_set.permissions.write && inking && (
@@ -196,6 +224,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
               position={b.data.position}
               factID={b.id}
               stackOrder={stackOrders.get(b.data.value)}
+              fixedSize={fixedSize}
               key={b.data.value}
             />
           );
@@ -363,6 +392,7 @@ const CanvasMetadata = (props: {
 const AddCanvasBlockButton = (props: {
   entityID: string;
   entity_set: { set: string };
+  fixedSize: CanvasSize | null;
 }) => {
   let { rep, undoManager } = useReplicache();
   let { permissions } = useEntitySetContext();
@@ -387,12 +417,15 @@ const AddCanvasBlockButton = (props: {
           );
           if (!page || !rep) return;
           let zoom = getCanvasZoom(props.entityID);
+          let position = {
+            x: (page.clientWidth + page.scrollLeft) / zoom - 468,
+            y: 32 + page.scrollTop / zoom,
+          };
           addCanvasTextBlock(rep, undoManager, {
             parent: props.entityID,
-            position: {
-              x: (page.clientWidth + page.scrollLeft) / zoom - 468,
-              y: 32 + page.scrollTop / zoom,
-            },
+            position: props.fixedSize
+              ? clampToCanvasSize(position, NEW_BLOCK_SIZE, props.fixedSize)
+              : position,
             permission_set: props.entity_set.set,
           }).then((newEntityID) =>
             setTimeout(() => {
@@ -425,6 +458,7 @@ function CanvasBlock(props: {
   position: { x: number; y: number };
   factID: string;
   stackOrder: number | undefined;
+  fixedSize: CanvasSize | null;
 }) {
   let width =
     useEntity(props.entityID, "canvas/block/width")?.data.value || 360;
@@ -447,6 +481,10 @@ function CanvasBlock(props: {
     (dragPosition: { x: number; y: number }) => {
       if (!permissions.write) return;
       let zoom = getCanvasZoom(props.parent);
+      let position = {
+        x: props.position.x + dragPosition.x / zoom,
+        y: props.position.y + dragPosition.y / zoom,
+      };
       rep?.mutate.assertFact({
         id: props.factID,
         entity: props.parent,
@@ -454,14 +492,17 @@ function CanvasBlock(props: {
         data: {
           type: "spatial-reference",
           value: props.entityID,
-          position: {
-            x: props.position.x + dragPosition.x / zoom,
-            y: props.position.y + dragPosition.y / zoom,
-          },
+          position: props.fixedSize
+            ? clampToCanvasSize(
+                position,
+                { width, height: rect.height / zoom },
+                props.fixedSize,
+              )
+            : position,
         },
       });
     },
-    [props, rep, permissions],
+    [props, rep, permissions, width, rect.height],
   );
   let { dragDelta, handlers: dragHandlers } = useDrag({
     onDragEnd,
@@ -634,7 +675,10 @@ function CanvasBlock(props: {
   );
 }
 
-const CanvasBackground = (props: { entityID: string }) => {
+const CanvasBackground = (props: {
+  entityID: string;
+  defaultPattern: "grid" | "plain";
+}) => {
   let cardBackgroundImage = useEntity(
     props.entityID,
     "theme/card-background-image",
@@ -649,7 +693,7 @@ const CanvasBackground = (props: { entityID: string }) => {
 
   let canvasPattern =
     useEntity(props.entityID, "canvas/background-pattern")?.data.value ||
-    "grid";
+    props.defaultPattern;
   return (
     <div
       className="w-full h-full pointer-events-none"
@@ -800,6 +844,9 @@ async function addCanvasTextBlock(
   );
   return newEntityID;
 }
+
+// A new text block's footprint, for keeping it inside a fixed canvas.
+const NEW_BLOCK_SIZE = { width: 360, height: 48 };
 
 // Degrees the rotate handle has swept around the block's center, from its
 // resting spot at the block's bottom-right corner.

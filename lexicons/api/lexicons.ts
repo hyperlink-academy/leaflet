@@ -1422,6 +1422,23 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksEmbeddedCanvas: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.embeddedCanvas',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['id'],
+        description:
+          "A fixed-size canvas shown in full inline. id refers to a pub.leaflet.pages.canvas in the document's pages whose width and height bound it.",
+        properties: {
+          id: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksHeader: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.header',
@@ -2327,6 +2344,15 @@ export const schemaDict = {
             description:
               "How a narrow viewport frames the canvas: the whole canvas scaled to fit the width (unconstrained, the default), or a phone-width area anchored to the canvas's left edge or centered on it, shown at up to 1:1.",
           },
+          width: {
+            type: 'integer',
+            description:
+              'Fixed canvas width in canvas px. With height, bounds the canvas: blocks are clipped to the area. Absent, the canvas is 1272px wide and grows with its content.',
+          },
+          height: {
+            type: 'integer',
+            description: 'Fixed canvas height in canvas px; see width.',
+          },
           lockViewerZoom: {
             type: 'boolean',
             description:
@@ -2358,6 +2384,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.standardSitePost',
               'lex:pub.leaflet.blocks.standardSitePublication',
               'lex:pub.leaflet.blocks.page',
+              'lex:pub.leaflet.blocks.embeddedCanvas',
               'lex:pub.leaflet.blocks.poll',
               'lex:pub.leaflet.blocks.button',
               'lex:pub.leaflet.blocks.postsList',
@@ -2478,6 +2505,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.standardSitePost',
               'lex:pub.leaflet.blocks.standardSitePublication',
               'lex:pub.leaflet.blocks.page',
+              'lex:pub.leaflet.blocks.embeddedCanvas',
               'lex:pub.leaflet.blocks.poll',
               'lex:pub.leaflet.blocks.button',
               'lex:pub.leaflet.blocks.postsList',
@@ -3447,6 +3475,7 @@ export const ids = {
   PubLeafletBlocksButton: 'pub.leaflet.blocks.button',
   PubLeafletBlocksCode: 'pub.leaflet.blocks.code',
   PubLeafletBlocksDrawing: 'pub.leaflet.blocks.drawing',
+  PubLeafletBlocksEmbeddedCanvas: 'pub.leaflet.blocks.embeddedCanvas',
   PubLeafletBlocksHeader: 'pub.leaflet.blocks.header',
   PubLeafletBlocksHorizontalRule: 'pub.leaflet.blocks.horizontalRule',
   PubLeafletBlocksHtml: 'pub.leaflet.blocks.html',

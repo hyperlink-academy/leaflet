@@ -30,11 +30,16 @@ type BlockDataProps = {
 
 // A published canvas laid out at full size: the grid and the blocks, placed
 // and stacked, in reading order (which block indexes are counted against).
-// The canvas page scrolls and zooms this; a page link scales it down.
+// The canvas page scrolls and zooms this; a page link scales it down. A
+// sized canvas (an embedded canvas) is clipped to its size and shown without the grid.
 export function CanvasBlocks({
   blocks,
+  size,
   ...props
-}: BlockDataProps & { blocks: PubLeafletPagesCanvas.Block[] }) {
+}: BlockDataProps & {
+  blocks: PubLeafletPagesCanvas.Block[];
+  size?: { width: number; height: number };
+}) {
   let sortedBlocks = useMemo(
     () => [...blocks].sort(canvasBlockOrder),
     [blocks],
@@ -46,14 +51,18 @@ export function CanvasBlocks({
   return (
     <div
       style={{
-        minHeight: canvasContentHeight(blocks),
+        ...(size
+          ? { width: size.width, height: size.height }
+          : { minHeight: canvasContentHeight(blocks) }),
         contain: "size layout paint",
       }}
-      className="relative h-full w-[1272px]"
+      className={`relative ${size ? "" : "h-full w-[1272px]"}`}
     >
-      <div className="w-full h-full pointer-events-none">
-        <CanvasBackgroundPattern pattern="grid" />
-      </div>
+      {!size && (
+        <div className="w-full h-full pointer-events-none">
+          <CanvasBackgroundPattern pattern="grid" />
+        </div>
+      )}
       {sortedBlocks.map((canvasBlock, index) => {
         let { x, y, width, rotation } = canvasBlock;
         return (

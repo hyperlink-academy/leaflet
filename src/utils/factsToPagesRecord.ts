@@ -12,6 +12,7 @@ import {
   PubLeafletBlocksButton,
   PubLeafletBlocksCode,
   PubLeafletBlocksDrawing,
+  PubLeafletBlocksEmbeddedCanvas,
   PubLeafletBlocksHeader,
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksHtml,
@@ -221,6 +222,16 @@ export async function processBlocksToPages(opts: {
       };
       if (display && display.data.value !== DEFAULT_PAGE_LINK_DISPLAY)
         block.display = display.data.value;
+      return block;
+    },
+    "embedded-canvas": async (b, membersOnly) => {
+      const [page] = scan.eav(b.entityID, "block/card");
+      if (!page) return;
+      pages.push(await pageToRecord(page.data.value, membersOnly));
+      const block: $Typed<PubLeafletBlocksEmbeddedCanvas.Main> = {
+        $type: ids.PubLeafletBlocksEmbeddedCanvas,
+        id: page.data.value,
+      };
       return block;
     },
     "bluesky-post": async (b) => {
@@ -599,10 +610,15 @@ export async function processBlocksToPages(opts: {
         ),
       };
     const mobileView = scan.eav(pageID, "canvas/mobile-view")[0]?.data.value;
+    const fixedWidth = scan.eav(pageID, "canvas/fixed-width")[0]?.data.value;
+    const fixedHeight = scan.eav(pageID, "canvas/fixed-height")[0]?.data.value;
     return {
       $type: "pub.leaflet.pages.canvas",
       id: pageID,
       blocks: await canvasBlocksToRecord(pageID, membersOnly),
+      ...(fixedWidth && fixedHeight
+        ? { width: Math.floor(fixedWidth), height: Math.floor(fixedHeight) }
+        : {}),
       ...(mobileView && mobileView !== "unconstrained" ? { mobileView } : {}),
       ...(scan.eav(pageID, "canvas/lock-viewer-zoom")[0]?.data.value
         ? { lockViewerZoom: true }

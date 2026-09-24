@@ -20,6 +20,54 @@ const child = (parent: string, value: string, position: string) =>
   });
 
 describe("processBlocksToPages", () => {
+  it("publishes an embedded canvas as a block referencing its sized canvas page", async () => {
+    let facts = [
+      fact({
+        entity: "root",
+        attribute: "root/page",
+        data: { type: "ordered-reference", value: "page", position: "a0" },
+      }),
+      child("page", "embedded-canvas", "a0"),
+      block("embedded-canvas", "embedded-canvas"),
+      fact({
+        entity: "embedded-canvas",
+        attribute: "block/card",
+        data: { type: "reference", value: "canvasPage" },
+      }),
+      fact({
+        entity: "canvasPage",
+        attribute: "page/type",
+        data: { type: "page-type-union", value: "canvas" },
+      }),
+      fact({
+        entity: "canvasPage",
+        attribute: "canvas/fixed-width",
+        data: { type: "number", value: 624 },
+      }),
+      fact({
+        entity: "canvasPage",
+        attribute: "canvas/fixed-height",
+        data: { type: "number", value: 240.5 },
+      }),
+    ];
+    let { pages } = await processBlocksToPages({
+      facts,
+      root_entity: "root",
+      hooks: { uploadImage: async () => undefined, uploadPoll: null },
+    });
+    expect(pages.map((p) => p.id)).toEqual(["page", "canvasPage"]);
+    expect(pages[0].blocks[0].block).toEqual({
+      $type: "pub.leaflet.blocks.embeddedCanvas",
+      id: "canvasPage",
+    });
+    expect(pages[1]).toMatchObject({
+      $type: "pub.leaflet.pages.canvas",
+      width: 624,
+      height: 240,
+      blocks: [],
+    });
+  });
+
   it("publishes a canvas group as a linear document canvas block", async () => {
     let facts = [
       fact({

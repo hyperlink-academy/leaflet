@@ -26,6 +26,7 @@ import type * as PubLeafletBlocksBskyPost from '../blocks/bskyPost'
 import type * as PubLeafletBlocksStandardSitePost from '../blocks/standardSitePost'
 import type * as PubLeafletBlocksStandardSitePublication from '../blocks/standardSitePublication'
 import type * as PubLeafletBlocksPage from '../blocks/page'
+import type * as PubLeafletBlocksEmbeddedCanvas from '../blocks/embeddedCanvas'
 import type * as PubLeafletBlocksPoll from '../blocks/poll'
 import type * as PubLeafletBlocksButton from '../blocks/button'
 import type * as PubLeafletBlocksPostsList from '../blocks/postsList'
@@ -75,6 +76,7 @@ export interface Block {
     | $Typed<PubLeafletBlocksStandardSitePost.Main>
     | $Typed<PubLeafletBlocksStandardSitePublication.Main>
     | $Typed<PubLeafletBlocksPage.Main>
+    | $Typed<PubLeafletBlocksEmbeddedCanvas.Main>
     | $Typed<PubLeafletBlocksPoll.Main>
     | $Typed<PubLeafletBlocksButton.Main>
     | $Typed<PubLeafletBlocksPostsList.Main>

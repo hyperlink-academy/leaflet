@@ -19,7 +19,7 @@ export async function deleteBlock(
     let [type] = await rep.query((tx) =>
       scanIndex(tx).eav(entity, "block/type"),
     );
-    if (type?.data.value === "card") {
+    if (type?.data.value === "card" || type?.data.value === "embedded-canvas") {
       let [childPages] = await rep?.query(
         (tx) => scanIndex(tx).eav(entity, "block/card") || [],
       );
