@@ -80,7 +80,6 @@ import {
   approachZoom,
   centerOffset,
   centeredBox,
-  centeredScroll,
   clampZoom,
   contentBox,
   minZoom,
@@ -313,15 +312,11 @@ export function CanvasZoomProvider(props: {
         let z = zoomRef.current;
         let client = { width: g.clientWidth, height: g.clientHeight };
         let box = spacerBox(z, client, g.contentHeight);
-        if (centered) {
-          let content = { width: contentWidth, height: g.contentHeight };
-          let v = centeredScroll(scroll, z, content, client);
-          let m = margin(client);
-          scroll = {
-            left: Math.round(v.left + m.left),
-            top: Math.round(v.top + m.top),
-          };
-        }
+        let m = margin(client);
+        scroll = {
+          left: Math.round(scroll.left + m.left),
+          top: Math.round(scroll.top + m.top),
+        };
         let pad = padsForScroll(scroll, client, box);
         writePads(spacer, pad);
         spacer.style.setProperty("--canvas-zoom", String(z));
@@ -383,13 +378,6 @@ export function CanvasZoomProvider(props: {
       // Kept exact: each wheel event re-derives its anchor from this, and a
       // rounding error there is amplified by every later zoom-in step.
       g.virtual = { left: next.scrollLeft, top: next.scrollTop };
-      if (centered)
-        g.virtual = centeredScroll(
-          g.virtual,
-          zoom,
-          { width: contentWidth, height: g.contentHeight },
-          { width: g.clientWidth, height: g.clientHeight },
-        );
       // Chrome lands scroll offsets on whole CSS px, so the frame shows the
       // offset the settle will be able to write.
       let tx = g.scroll0.left - g.pad0.left - Math.round(g.virtual.left);

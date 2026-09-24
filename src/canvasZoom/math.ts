@@ -212,19 +212,3 @@ export function centeredBox(zoom: number, content: Size, client: Size): Size {
     height: content.height * zoom + client.height,
   };
 }
-
-// Keeps a content-origin offset within the margins, so the viewport's
-// center never leaves the content.
-export function centeredScroll(
-  scroll: Scroll,
-  zoom: number,
-  content: Size,
-  client: Size,
-): Scroll {
-  let axis = (s: number, size: number, clientSize: number) =>
-    Math.min(Math.max(s, -clientSize / 2), size * zoom - clientSize / 2);
-  return {
-    left: axis(scroll.left, content.width, client.width),
-    top: axis(scroll.top, content.height, client.height),
-  };
-}

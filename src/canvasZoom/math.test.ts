@@ -15,7 +15,6 @@ import {
   wheelToZoomFactor,
   centerOffset,
   centeredBox,
-  centeredScroll,
 } from "./math";
 
 const DOM_DELTA_PIXEL = 0;
@@ -326,22 +325,5 @@ describe("centered canvases", () => {
       width: 2000,
       height: 1400,
     });
-  });
-
-  it("let any point of the content reach the viewport's center", () => {
-    // Content's top-left corner at the center.
-    expect(
-      centeredScroll({ left: -400, top: -300 }, 1, content, client),
-    ).toEqual({ left: -400, top: -300 });
-    // Bottom-right corner at the center, at 2x.
-    expect(centeredScroll({ left: 800, top: 500 }, 2, content, client)).toEqual(
-      { left: 800, top: 500 },
-    );
-  });
-
-  it("stop once the viewport's center would leave the content", () => {
-    expect(
-      centeredScroll({ left: -900, top: 900 }, 1, content, client),
-    ).toEqual({ left: -400, top: 100 });
   });
 });
