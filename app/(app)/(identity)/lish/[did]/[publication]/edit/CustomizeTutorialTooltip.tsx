@@ -3,12 +3,16 @@
 import { useEffect } from "react";
 import { create } from "zustand";
 import { Tooltip } from "components/Tooltip";
+import { CloseTiny } from "components/Icons/CloseTiny";
+import { useUIState } from "src/useUIState";
+import { useIsMobile } from "src/hooks/isMobile";
 import styles from "app/(app)/(identity)/(home-pages)/(writer)/home/Tutorial/TutorialNavTooltip.module.css";
 
 export type CustomizeTutorialTarget =
   | "theme"
   | "new-page"
   | "content"
+  | "text"
   | "posts-list";
 
 // The targets are spread across the header, the nav, and blocks rendered deep
@@ -16,100 +20,224 @@ export type CustomizeTutorialTarget =
 // through every block.
 export const useCustomizeTutorial = create<{
   active: boolean;
+  contentFocused: boolean;
+  dismissed: CustomizeTutorialTarget[];
   setActive: (active: boolean) => void;
+  setContentFocused: (focused: boolean) => void;
+  dismiss: (target: CustomizeTutorialTarget) => void;
 }>((set) => ({
   active: false,
+  contentFocused: false,
+  dismissed: [],
   setActive: (active) => set({ active }),
+  setContentFocused: (focused) =>
+    set((s) => ({
+      contentFocused: focused,
+      // Once the user has found the content area, the hint pointing them to it
+      // is done.
+      dismissed:
+        focused && !s.dismissed.includes("content")
+          ? [...s.dismissed, "content"]
+          : s.dismissed,
+    })),
+  dismiss: (target) =>
+    set((s) =>
+      s.dismissed.includes(target)
+        ? s
+        : { dismissed: [...s.dismissed, target] },
+    ),
 }));
-
-// Tooltips cover part of the editor, so they clear on the first click and let
-// the user get on with customizing.
-export function useActivateCustomizeTutorial(enabled: boolean) {
-  let setActive = useCustomizeTutorial((s) => s.setActive);
-  useEffect(() => {
-    if (!enabled) return;
-    setActive(true);
-    let dismiss = () => setActive(false);
-    window.addEventListener("pointerdown", dismiss, { once: true });
-    return () => {
-      window.removeEventListener("pointerdown", dismiss);
-      setActive(false);
-    };
-  }, [enabled, setActive]);
-}
 
 // TEMP: forces the tooltips on for testing. Remove before shipping.
 const FORCE_TUTORIAL = true;
 
+export function useActivateCustomizeTutorial(enabled: boolean) {
+  let setActive = useCustomizeTutorial((s) => s.setActive);
+  let setContentFocused = useCustomizeTutorial((s) => s.setContentFocused);
+  let on = enabled || FORCE_TUTORIAL;
+  useEffect(() => {
+    if (!on) return;
+    setActive(true);
+    let onFocus = (
+      s: ReturnType<typeof useUIState.getState>,
+      prev?: ReturnType<typeof useUIState.getState>,
+    ) => {
+      if (prev && s.focusedEntity === prev.focusedEntity) return;
+      setContentFocused(s.focusedEntity?.entityType === "block");
+    };
+    onFocus(useUIState.getState());
+    let unsubscribe = useUIState.subscribe(onFocus);
+    // Clicking the header or nav leaves the last block focused in UI state, so
+    // clicks decide it too. Clicks outside the editor chrome (portaled menus,
+    // the toolbar) are part of editing and leave it alone.
+    let onPointerDown = (e: PointerEvent) => {
+      let target = e.target as Element;
+      if (target.closest(".pubWrapper .blocks")) setContentFocused(true);
+      else if (target.closest(".pubWrapper, .publicationEditHeader"))
+        setContentFocused(false);
+    };
+    window.addEventListener("pointerdown", onPointerDown, true);
+    return () => {
+      unsubscribe();
+      window.removeEventListener("pointerdown", onPointerDown, true);
+      setActive(false);
+    };
+  }, [on, setActive, setContentFocused]);
+}
+
+type TooltipPlacement = {
+  side: "top" | "right" | "bottom" | "left";
+  align: "start" | "center" | "end";
+  xOffset?: number;
+  yOffset?: number;
+};
+
+// `mobile` overrides any of the placement fields below the sm breakpoint;
+// anything left out falls back to the desktop value.
 const TOUR_COPY: {
-  [key in CustomizeTutorialTarget]: {
+  [key in CustomizeTutorialTarget]: TooltipPlacement & {
     title: string;
-    description: string;
-    side: "top" | "right" | "bottom" | "left";
-    align: "start" | "center" | "end";
+    description?: string;
+    mobile?: Partial<TooltipPlacement>;
   };
 } = {
   theme: {
-    title: "Set your theme",
-    description: "Pick colors, fonts, and a background for your publication.",
+    title: "Set a theme",
+    description: "Colors, font, and background!",
     side: "bottom",
-    align: "end",
+    align: "center",
   },
   "new-page": {
     title: "Add pages",
-    description: "Make an about page, or link out to anywhere else.",
+    description: "Like an about page, annoucements, or subsets of posts.",
+    side: "right",
+    align: "center",
+    mobile: { side: "bottom", align: "center", xOffset: 0 },
+  },
+  content: {
+    title: "Edit your content",
+    description: `Write anything you want! Type "/" in an empty line to add content blocks.`,
+    side: "right",
+    align: "center",
+    yOffset: 48,
+    mobile: { side: "bottom", align: "center", yOffset: 240 },
+  },
+  text: {
+    title: "Add content blocks",
+    description: `Click the +, or type "/" to add images, post lists, reccs, and more.`,
     side: "right",
     align: "center",
   },
-  content: {
-    title: "Edit your home page",
-    description: "Write anything here, just like in a doc!",
-    side: "bottom",
-    align: "start",
-  },
   "posts-list": {
     title: "Your posts",
-    description: "Posts you publish will show up here. Move it anywhere!",
-    side: "top",
-    align: "end",
+    description:
+      "Your published posts show up here. Change how it looks with the gear icon",
+    side: "right",
+    align: "start",
+    xOffset: 48,
+    mobile: { side: "top", align: "end", yOffset: 0 },
   },
 };
 
-const ENTER_ORDER: CustomizeTutorialTarget[] = [
-  "theme",
-  "new-page",
-  "content",
-  "posts-list",
-];
-const DELAY_CLASSES = [
-  styles.delay0,
-  styles.delay1,
-  styles.delay2,
-  styles.delay3,
-];
+const ENTER_ORDER: CustomizeTutorialTarget[] = ["theme", "new-page", "content"];
+const DELAY_CLASSES = [styles.delay0, styles.delay1, styles.delay2];
 
-export function CustomizeTutorialTooltip(props: {
+// Block tooltips show only while their own block is focused; the rest step
+// aside while the user is writing and return when they leave the content.
+const BLOCK_TARGETS: CustomizeTutorialTarget[] = ["text", "posts-list"];
+
+export function useTutorialOpen(
+  target: CustomizeTutorialTarget,
+  blockFocused = false,
+) {
+  return useCustomizeTutorial(
+    (s) =>
+      s.active &&
+      !s.dismissed.includes(target) &&
+      (BLOCK_TARGETS.includes(target)
+        ? blockFocused && s.contentFocused
+        : !s.contentFocused),
+  );
+}
+
+function TutorialTooltip(props: {
   target: CustomizeTutorialTarget;
-  className?: string;
-  children: React.ReactNode;
+  open: boolean;
+  trigger: React.ReactNode;
 }) {
-  let active = useCustomizeTutorial((s) => s.active);
-  let { title, description, side, align } = TOUR_COPY[props.target];
-
-  let anchor = <div className={props.className}>{props.children}</div>;
-  if (!active && !FORCE_TUTORIAL) return anchor;
+  let isMobile = useIsMobile();
+  let { title, description, mobile, ...desktop } = TOUR_COPY[props.target];
+  let { side, align, xOffset, yOffset } = isMobile
+    ? { ...desktop, ...mobile }
+    : desktop;
+  let delay = DELAY_CLASSES[ENTER_ORDER.indexOf(props.target)] ?? styles.delay0;
+  let dismiss = useCustomizeTutorial((s) => s.dismiss);
+  // The content is portaled, but React still bubbles its events up to the
+  // blocks the tooltip lives in, which would focus or select them.
+  let stop = (e: React.SyntheticEvent) => e.stopPropagation();
 
   return (
     <Tooltip
       asChild
-      open
+      open={props.open}
       side={side}
       align={align}
-      className={`${styles.tooltip} ${DELAY_CLASSES[ENTER_ORDER.indexOf(props.target)]} w-56 text-center`}
-      trigger={anchor}
+      className={`${styles.tooltip} ${delay} w-fit max-w-56! text-left`}
+      style={{ translate: `${xOffset ?? 0}px ${yOffset ?? 0}px` }}
+      trigger={props.trigger}
     >
-      <div className="font-bold">{title}</div>
+      <div className="flex items-start justify-between gap-2">
+        <div className="font-bold">{title}</div>
+        <button
+          type="button"
+          aria-label="Close"
+          className="shrink-0 mt-1 text-tertiary hover:text-primary"
+          onPointerDown={stop}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            // Keeps focus in the editor the user was typing in.
+            e.preventDefault();
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            dismiss(props.target);
+          }}
+        >
+          <CloseTiny className="w-3 h-3" />
+        </button>
+      </div>
       <div className="text-secondary text-sm leading-snug">{description}</div>
     </Tooltip>
   );
+}
+
+export function CustomizeTutorialTooltip(props: {
+  target: CustomizeTutorialTarget;
+  className?: string;
+  blockFocused?: boolean;
+  children: React.ReactNode;
+}) {
+  let active = useCustomizeTutorial((s) => s.active);
+  let open = useTutorialOpen(props.target, props.blockFocused);
+  let dismiss = useCustomizeTutorial((s) => s.dismiss);
+
+  let anchor = (
+    <div
+      className={props.className}
+      // Chrome tooltips hide while the content is focused, so clicking their
+      // anchor still counts. Block tooltips only count once they've appeared.
+      onPointerDown={
+        open || !BLOCK_TARGETS.includes(props.target)
+          ? () => dismiss(props.target)
+          : undefined
+      }
+    >
+      {props.children}
+    </div>
+  );
+  if (!active) return anchor;
+
+  // Stays wrapped after dismissal: unwrapping on pointerdown would remount the
+  // anchor mid-click, and the click it was meant to trigger would never land.
+  return <TutorialTooltip target={props.target} open={open} trigger={anchor} />;
 }

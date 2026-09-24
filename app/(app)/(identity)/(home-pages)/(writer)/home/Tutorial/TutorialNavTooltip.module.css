@@ -6,6 +6,22 @@
   animation: enter 250ms ease-out both;
 }
 
+/* That same containing block puts the arrow's wrapper against the padding box,
+   inside the 1px border, rather than the border box it's drawn for — so push
+   it back out by the border width on whichever edge it sits. */
+.tooltip[data-side="top"] > span:has(> svg) {
+  margin-bottom: -1px;
+}
+.tooltip[data-side="bottom"] > span:has(> svg) {
+  margin-top: -1px;
+}
+.tooltip[data-side="left"] > span:has(> svg) {
+  margin-right: -1px;
+}
+.tooltip[data-side="right"] > span:has(> svg) {
+  margin-left: -1px;
+}
+
 /* `both` above holds the from-state through the delay — without it a staggered
    tooltip paints fully opaque and only then animates. */
 .delay0 {

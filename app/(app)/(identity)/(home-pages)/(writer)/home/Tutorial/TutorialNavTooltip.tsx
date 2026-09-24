@@ -43,7 +43,6 @@ export function useBlurTutorialNav(blurred: boolean) {
   }, [blurred, setBlurred]);
 }
 
-
 const TOUR_COPY: {
   [key in TutorialNavTarget]: {
     title: string;

@@ -14,6 +14,7 @@ export const Tooltip = (props: {
   background?: string;
   border?: string;
   className?: string;
+  style?: React.CSSProperties;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   asChild?: boolean;
@@ -42,6 +43,7 @@ export const Tooltip = (props: {
           overflow-y-scroll no-scrollbar
           ${props.className}
         `}
+              style={props.style}
               side={props.side}
               align={props.align ? props.align : "center"}
               sideOffset={4}

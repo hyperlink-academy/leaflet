@@ -98,7 +98,7 @@ export function PublicationEditHeader(props: {
     ) : status === "success" ? (
       "Published!"
     ) : props.createFlow ? (
-      "Complete Pub"
+      "Save and Continue"
     ) : (
       <div className="flex gap-[6px]">
         Update<span className="sm:block hidden "> Publication</span>
@@ -112,8 +112,7 @@ export function PublicationEditHeader(props: {
           href={createdHref}
           className="flex items-center gap-1 font-bold text-sm text-accent-2 hover:no-underline! leading-none"
         >
-          Skip Customization
-          <GoToArrowLined />
+          Do this later
         </SpeedyLink>
       ) : (
         <SpeedyLink

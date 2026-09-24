@@ -24,10 +24,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { generateKeyBetween } from "fractional-indexing";
 import { v7 } from "uuid";
-import {
-  ButtonPrimary,
-  ButtonTertiary,
-} from "components/Buttons";
+import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { InputWithLabel } from "components/Input";
 import { Popover } from "components/Popover";
 import { CustomizeTutorialTooltip } from "./CustomizeTutorialTooltip";
@@ -257,10 +254,7 @@ function AddPageButton(props: {
     e.preventDefault();
     if (!rep) return;
 
-    let value = resolveTabRoute(
-      isExternal ? externalLink : path,
-      isExternal,
-    );
+    let value = resolveTabRoute(isExternal ? externalLink : path, isExternal);
     if (value === null) return;
 
     let newEntity = v7();
@@ -348,7 +342,7 @@ function AddPageButton(props: {
               onChange={(e) => handlePathChange(e.currentTarget.value)}
             />
             <div className="text-sm text-tertiary -mt-1">
-              {props.publicationUrl?.replace(/^https?:\/\//, "")}
+              Page URL: {props.publicationUrl?.replace(/^https?:\/\//, "")}
               {cleanPath(path)}
             </div>
           </>
@@ -367,8 +361,7 @@ function AddPageButton(props: {
         <ButtonPrimary
           type="submit"
           disabled={
-            !name.trim() ||
-            (isExternal ? !externalLink.trim() : !path.trim())
+            !name.trim() || (isExternal ? !externalLink.trim() : !path.trim())
           }
           fullWidth
           compact
@@ -465,10 +458,7 @@ function SortableTab(props: {
 
   let label = (
     <>
-      {props.entry.title ||
-        props.entry.externalUrl ||
-        props.entry.route ||
-        "/"}{" "}
+      {props.entry.title || props.entry.externalUrl || props.entry.route || "/"}{" "}
       {external && <ExternalLinkTiny />}
     </>
   );

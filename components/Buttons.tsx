@@ -33,7 +33,7 @@ export const ButtonPrimary = forwardRef<
       {...buttonProps}
       ref={ref}
       className={`
-        m-0 h-max
+        min-w-0 h-max
         ${fullWidth ? "w-full" : fullWidthOnMobile ? "w-full sm:w-max" : "w-max"}
         ${compact ? "py-0 px-1" : "px-2 py-0.5 "}
         bg-accent-1 disabled:bg-border-light
@@ -72,7 +72,7 @@ export const ButtonSecondary = forwardRef<
       {...buttonProps}
       ref={ref}
       className={`
-        m-0 h-max
+        min-w-0 h-max
         ${fullWidth ? "w-full" : fullWidthOnMobile ? "w-full sm:w-max" : "w-max"}
         ${compact ? "py-0 px-1" : "px-2 py-0.5 "}
         bg-bg-page disabled:bg-border-light
@@ -111,7 +111,7 @@ export const ButtonTertiary = forwardRef<
       {...buttonProps}
       ref={ref}
       className={`
-        m-0 h-max
+        min-w-0 h-max
         ${fullWidth ? "w-full" : fullWidthOnMobile ? "w-full sm:w-max" : "w-max"}
         ${compact ? "py-0 px-1" : "px-2 py-0.5 "}
          bg-transparent hover:bg-[var(--accent-light)]
@@ -137,6 +137,9 @@ export const TooltipButton = (props: {
   side?: "top" | "right" | "bottom" | "left" | undefined;
   open?: boolean;
   delayDuration?: number;
+  // Leaves the trigger mounted so a click that flips this mid-press still
+  // lands on the button.
+  hideTooltip?: boolean;
 }) => {
   let { undoManager } = useReplicache();
   return (
@@ -159,35 +162,37 @@ export const TooltipButton = (props: {
           {props.children}
         </RadixTooltip.Trigger>
 
-        <RadixTooltip.Portal>
-          <NestedCardThemeProvider>
-            <RadixTooltip.Content
-              side={props.side ? props.side : undefined}
-              sideOffset={6}
-              alignOffset={12}
-              className="portalStyles z-10  rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
-              style={{
-                backgroundColor:
-                  "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 85%)",
-              }}
-            >
-              {props.tooltipContent}
-              <RadixTooltip.Arrow
-                asChild
-                width={16}
-                height={8}
-                viewBox="0 0 16 8"
+        {!props.hideTooltip && (
+          <RadixTooltip.Portal>
+            <NestedCardThemeProvider>
+              <RadixTooltip.Content
+                side={props.side ? props.side : undefined}
+                sideOffset={6}
+                alignOffset={12}
+                className="portalStyles z-10  rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
+                style={{
+                  backgroundColor:
+                    "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 85%)",
+                }}
               >
-                <PopoverArrow
-                  arrowFill={
-                    "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 85%)"
-                  }
-                  arrowStroke="transparent"
-                />
-              </RadixTooltip.Arrow>
-            </RadixTooltip.Content>
-          </NestedCardThemeProvider>
-        </RadixTooltip.Portal>
+                {props.tooltipContent}
+                <RadixTooltip.Arrow
+                  asChild
+                  width={16}
+                  height={8}
+                  viewBox="0 0 16 8"
+                >
+                  <PopoverArrow
+                    arrowFill={
+                      "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 85%)"
+                    }
+                    arrowStroke="transparent"
+                  />
+                </RadixTooltip.Arrow>
+              </RadixTooltip.Content>
+            </NestedCardThemeProvider>
+          </RadixTooltip.Portal>
+        )}
       </RadixTooltip.Root>
     </RadixTooltip.TooltipProvider>
   );

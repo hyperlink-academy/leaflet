@@ -1,5 +1,9 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { elementId } from "src/utils/elementId";
+import {
+  CustomizeTutorialTooltip,
+  useTutorialOpen,
+} from "app/(app)/(identity)/lish/[did]/[publication]/edit/CustomizeTutorialTooltip";
 import { useReplicache, useEntity } from "src/replicache";
 import { isVisible } from "src/utils/isVisible";
 import { TextSelection } from "prosemirror-state";
@@ -468,6 +472,7 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
   let rep = useReplicache();
   let entity_set = useEntitySetContext();
   let { data: pub } = useLeafletPublicationData();
+  let addTutorialOpen = useTutorialOpen("text", true);
 
   return (
     <div
@@ -513,35 +518,39 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
         </TooltipButton>
       )}
 
-      <TooltipButton
-        className={props.className}
-        onMouseDown={(e) => {
-          e.preventDefault();
-          let editor = useEditorStates.getState().editorStates[props.entityID];
+      <CustomizeTutorialTooltip target="text" className="flex" blockFocused>
+        <TooltipButton
+          className={props.className}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            let editor =
+              useEditorStates.getState().editorStates[props.entityID];
 
-          let editorState = editor?.editor;
-          if (editorState && editor?.view) {
-            editor.view.focus();
-            let tr = editorState.tr.insertText("/", 1);
-            tr.setSelection(TextSelection.create(tr.doc, 2));
-            editor.view.dispatch(tr);
-          }
-          focusBlock(
-            {
-              type: props.type,
-              entityID: props.entityID,
-              parent: props.parent,
-            },
-            { type: "end" },
-          );
-        }}
-        side="bottom"
-        tooltipContent={<div className="flex gap-1 font-bold">Add More!</div>}
-      >
-        <div className="w-6 h-6 flex place-items-center justify-center">
-          <AddTiny className="text-accent-contrast" />
-        </div>
-      </TooltipButton>
+            let editorState = editor?.editor;
+            if (editorState && editor?.view) {
+              editor.view.focus();
+              let tr = editorState.tr.insertText("/", 1);
+              tr.setSelection(TextSelection.create(tr.doc, 2));
+              editor.view.dispatch(tr);
+            }
+            focusBlock(
+              {
+                type: props.type,
+                entityID: props.entityID,
+                parent: props.parent,
+              },
+              { type: "end" },
+            );
+          }}
+          side="bottom"
+          hideTooltip={addTutorialOpen}
+          tooltipContent={<div className="flex gap-1 font-bold">Add More!</div>}
+        >
+          <div className="w-6 h-6 flex place-items-center justify-center">
+            <AddTiny className="text-accent-contrast" />
+          </div>
+        </TooltipButton>
+      </CustomizeTutorialTooltip>
     </div>
   );
 };

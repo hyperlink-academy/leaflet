@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useIsBlockSelected } from "src/useUIState";
+import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps, BlockLayout } from "./Block";
 import {
@@ -30,6 +30,9 @@ import { CustomizeTutorialTooltip } from "app/(app)/(identity)/lish/[did]/[publi
 
 export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
   let isSelected = useIsBlockSelected(props.entityID);
+  let isFocused = useUIState(
+    (s) => s.focusedEntity?.entityID === props.entityID,
+  );
 
   if (props.preview) {
     return (
@@ -49,11 +52,17 @@ export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
       // covers hover an outline that sits outside their border box — clipping
       // here would shave it off the grid's outer cards.
       className="border-none! p-0! rounded-none! overflow-visible!"
-      extraOptions={<PostsListSettingsButton entityID={props.entityID} />}
+      extraOptions={
+        <CustomizeTutorialTooltip
+          target="posts-list"
+          className="flex"
+          blockFocused={isFocused}
+        >
+          <PostsListSettingsButton entityID={props.entityID} />
+        </CustomizeTutorialTooltip>
+      }
     >
-      <CustomizeTutorialTooltip target="posts-list">
-        <PostsListBlockContent entityID={props.entityID} />
-      </CustomizeTutorialTooltip>
+      <PostsListBlockContent entityID={props.entityID} />
     </BlockLayout>
   );
 };
