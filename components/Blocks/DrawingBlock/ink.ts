@@ -158,6 +158,14 @@ export function drawingToCanvas(l: DrawingLayout, d: Point): Point {
   return { x: l.position.x + w / 2 + r.x, y: l.position.y + h / 2 + r.y };
 }
 
+// The frame's top-right corner on the canvas, following its rotation.
+export function frameTopRight(l: DrawingLayout): Point {
+  let w = l.width,
+    h = frameHeight(l);
+  let r = rotate({ x: w / 2, y: -h / 2 }, l.rotation);
+  return { x: l.position.x + w / 2 + r.x, y: l.position.y + h / 2 + r.y };
+}
+
 export function canvasToDrawing(l: DrawingLayout, c: Point): Point {
   let s = drawingScale(l);
   let w = l.width,

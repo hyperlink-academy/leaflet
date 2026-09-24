@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { useReplicache } from "src/replicache";
+import { useEntity, useReplicache } from "src/replicache";
+import { CheckTiny } from "components/Icons/CheckTiny";
+import { CloseTiny } from "components/Icons/CloseTiny";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import {
   getCanvasZoom,
   isCanvasPinching,
+  useCanvasZoom,
 } from "src/canvasZoom/CanvasZoomProvider";
 import { CANVAS_DRAG_STACK_ORDER } from "src/utils/canvasBlockOrder";
 import {
@@ -11,6 +14,7 @@ import {
   InkStroke,
   canvasToDrawing,
   drawingScale,
+  frameTopRight,
   strokeHit,
 } from "./ink";
 import { InkPath } from "./InkSvg";
@@ -20,6 +24,7 @@ import {
   commitStroke,
   eraseStrokes,
   readDrawing,
+  cancelInk,
   stopInk,
 } from "./inkMutations";
 
@@ -210,6 +215,58 @@ export function CanvasInkLayer(props: { pageID: string }) {
         ))}
         {live && <InkPath stroke={live} live />}
       </svg>
+      <InkSessionControls pageID={props.pageID} />
+    </div>
+  );
+}
+
+// Done and cancel, pinned above the drawing's top-right corner and kept the
+// same size on screen at any zoom.
+function InkSessionControls(props: { pageID: string }) {
+  let { rep, undoManager } = useReplicache();
+  let { zoom } = useCanvasZoom();
+  let target = useInkSession((s) => s.target);
+  let placed = useEntity(props.pageID, "canvas/block").find(
+    (f) => f.data.value === target,
+  );
+  let viewBox = useEntity(target, "drawing/view-box")?.data.value;
+  let width = useEntity(target, "canvas/block/width")?.data.value || 360;
+  let rotation = useEntity(target, "canvas/block/rotation")?.data.value || 0;
+  if (!target || !placed || !viewBox) return null;
+
+  let corner = frameTopRight({
+    position: placed.data.position,
+    width,
+    rotation: Math.round(rotation),
+    viewBox,
+  });
+  return (
+    <div
+      className="inkSessionControls absolute flex gap-1 cursor-default"
+      style={{
+        left: corner.x,
+        top: corner.y - 4 / zoom,
+        transform: `translate(-100%, -100%) scale(${1 / zoom})`,
+        transformOrigin: "bottom right",
+      }}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      <button
+        aria-label="Discard changes"
+        title="Discard changes"
+        onClick={() => cancelInk(rep, undoManager)}
+        className="p-1 rounded-full bg-bg-page border border-border text-secondary hover:text-accent-contrast shadow-sm"
+      >
+        <CloseTiny />
+      </button>
+      <button
+        aria-label="Done drawing"
+        title="Done"
+        onClick={() => stopInk(rep, undoManager)}
+        className="p-1 rounded-full bg-accent-1 border border-accent-1 text-accent-2 shadow-sm"
+      >
+        <CheckTiny />
+      </button>
     </div>
   );
 }

@@ -1,11 +1,12 @@
 import { useMemo } from "react";
-import { useEntity } from "src/replicache";
+import { useEntity, useReplicache } from "src/replicache";
 import { useIsBlockSelected } from "src/useUIState";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { DrawSmall } from "components/Icons/DrawSmall";
 import type { BlockProps } from "../Block";
 import { InkSvg } from "./InkSvg";
 import { useInkSession } from "./useInkSession";
+import { startInk } from "./inkMutations";
 
 export function DrawingBlock(props: BlockProps & { preview?: boolean }) {
   let strokeFacts = useEntity(props.entityID, "drawing/stroke");
@@ -16,6 +17,7 @@ export function DrawingBlock(props: BlockProps & { preview?: boolean }) {
   let editing = useInkSession((s) => s.target === props.entityID);
   let isSelected = useIsBlockSelected(props.entityID);
   let { permissions } = useEntitySetContext();
+  let { rep } = useReplicache();
   let canEdit = permissions.write && !props.preview;
 
   // Fact ids are v7 uuids, so sorting them paints strokes in drawing order.
@@ -29,7 +31,7 @@ export function DrawingBlock(props: BlockProps & { preview?: boolean }) {
   );
   if (!viewBox) return null;
 
-  let edit = () => useInkSession.getState().start(props.parent, props.entityID);
+  let edit = () => startInk(rep, props.parent, props.entityID);
 
   return (
     <div

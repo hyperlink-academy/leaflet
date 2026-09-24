@@ -213,11 +213,70 @@ export async function eraseStrokes(
   });
 }
 
+export async function startInk(rep: Rep | null, page: string, target: string) {
+  useInkSession.getState().start(page, target);
+  let snapshot = rep ? await readDrawing(rep, page, target) : null;
+  let session = useInkSession.getState();
+  if (snapshot && session.page === page && session.target === target)
+    session.setSnapshot(snapshot);
+}
+
+// Leaves draw mode undoing the session: strokes drawn are retracted, strokes
+// erased come back and the frame returns to where it was. A drawing the
+// session created is removed.
+export async function cancelInk(rep: Rep | null, undoManager: UndoManager) {
+  let { page, target, snapshot } = useInkSession.getState();
+  useInkSession.setState({
+    page: null,
+    target: null,
+    erasing: [],
+    snapshot: null,
+  });
+  if (!rep || !page || !target) return;
+  let current = await readDrawing(rep, page, target);
+  if (!current) return;
+  await undoManager.withUndoGroup(async () => {
+    if (!snapshot) {
+      await rep.mutate.removeBlock({ blockEntity: target, parent: page });
+      return;
+    }
+    let before = new Set(snapshot.strokes.map((s) => s.id));
+    let now = new Set(current.strokes.map((s) => s.id));
+    for (let s of current.strokes)
+      if (!before.has(s.id)) await rep.mutate.retractFact({ factID: s.id });
+    let restore = snapshot.strokes.filter((s) => !now.has(s.id));
+    if (restore.length > 0)
+      await rep.mutate.assertFact(
+        restore.map((s) => ({
+          id: s.id,
+          entity: target,
+          attribute: "drawing/stroke" as const,
+          data: {
+            type: "ink-stroke" as const,
+            value: { ...s.stroke, points: [...s.stroke.points] },
+          },
+        })),
+      );
+    await writeLayout(
+      rep,
+      page,
+      target,
+      current.positionFactID,
+      snapshot.layout,
+    );
+  });
+}
+
 // Leaves draw mode with the drawing selected, or removes it if every stroke
 // was erased.
 export async function stopInk(rep: Rep | null, undoManager: UndoManager) {
   let { page, target } = useInkSession.getState();
-  useInkSession.setState({ page: null, target: null, erasing: [] });
+  useInkSession.setState({
+    page: null,
+    target: null,
+    erasing: [],
+    snapshot: null,
+  });
   if (!rep || !page || !target) return;
   let drawing = await readDrawing(rep, page, target);
   if (!drawing) return;

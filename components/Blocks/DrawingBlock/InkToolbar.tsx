@@ -1,10 +1,11 @@
 import { useReplicache } from "src/replicache";
 import { Popover } from "components/Popover";
-import { ButtonPrimary } from "components/Buttons";
 import { EraserSmall } from "components/Icons/EraserSmall";
+import { PaintSmall } from "components/Icons/PaintSmall";
+import { CloseTiny } from "components/Icons/CloseTiny";
 import { INK_COLORS, INK_SIZES, inkColor } from "./ink";
 import { useInkSession } from "./useInkSession";
-import { stopInk } from "./inkMutations";
+import { cancelInk } from "./inkMutations";
 
 export function InkToolbar(props: { pageID: string }) {
   let { rep, undoManager } = useReplicache();
@@ -12,34 +13,39 @@ export function InkToolbar(props: { pageID: string }) {
   let tool = useInkSession((s) => s.tool);
   let color = useInkSession((s) => s.color);
   let size = useInkSession((s) => s.size);
+  let hasTarget = useInkSession((s) => !!s.target);
   let { setColor, setSize, setTool } = useInkSession.getState();
   if (!active) return null;
 
   return (
-    <div className="inkToolbar absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 bg-bg-page border border-border rounded-full shadow-sm pl-2 pr-1 py-1">
+    <div className="inkToolbar absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 bg-bg-page border border-border rounded-full shadow-sm px-1 py-1">
       <Popover
         asChild
         side="bottom"
-        className="grid! grid-cols-6 gap-1.5 p-2!"
+        className="w-[184px]"
         trigger={
           <button
             aria-label="Ink color"
             title="Ink color"
-            className="shrink-0 w-6 h-6 rounded-full border-2 border-border-light outline-1 outline-border"
-            style={{ backgroundColor: inkColor(color) }}
-          />
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full hover:bg-border-light"
+            style={{ color: inkColor(color) }}
+          >
+            <PaintSmall />
+          </button>
         }
       >
-        {INK_COLORS.map((c) => (
-          <button
-            key={c.value}
-            aria-label={c.label}
-            title={c.label}
-            onClick={() => setColor(c.value)}
-            className={`w-6 h-6 rounded-full border border-border outline-2 outline-offset-1 ${color === c.value ? "outline-accent-contrast" : "outline-transparent hover:outline-border"}`}
-            style={{ backgroundColor: inkColor(c.value) }}
-          />
-        ))}
+        <div className="flex flex-wrap gap-1.5">
+          {INK_COLORS.map((c) => (
+            <button
+              key={c.value}
+              aria-label={c.label}
+              title={c.label}
+              onClick={() => setColor(c.value)}
+              className={`w-6 h-6 shrink-0 rounded-full border border-border outline-2 outline-offset-1 ${color === c.value ? "outline-accent-contrast" : "outline-transparent hover:outline-border"}`}
+              style={{ backgroundColor: inkColor(c.value) }}
+            />
+          ))}
+        </div>
       </Popover>
 
       {INK_SIZES.map((s) => {
@@ -73,13 +79,17 @@ export function InkToolbar(props: { pageID: string }) {
         <EraserSmall width={18} height={18} />
       </button>
 
-      <ButtonPrimary
-        compact
-        className="ml-1 rounded-full! px-2!"
-        onClick={() => stopInk(rep, undoManager)}
-      >
-        Done
-      </ButtonPrimary>
+      {/* Once there is a drawing, done and cancel sit on its frame. */}
+      {!hasTarget && (
+        <button
+          aria-label="Stop drawing"
+          title="Stop drawing"
+          onClick={() => cancelInk(rep, undoManager)}
+          className="w-7 h-7 flex items-center justify-center rounded-full text-tertiary hover:bg-border-light"
+        >
+          <CloseTiny />
+        </button>
+      )}
     </div>
   );
 }

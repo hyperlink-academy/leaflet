@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { combine } from "zustand/middleware";
 import { useUIState } from "src/useUIState";
 import { INK_COLORS, INK_SIZES } from "./ink";
+import type { DrawingState } from "./inkMutations";
 
 export type InkTool = "pen" | "eraser";
 
@@ -18,14 +19,18 @@ export const useInkSession = create(
       // Strokes an eraser gesture has swept, hidden until it lifts and they
       // are retracted together.
       erasing: [] as string[],
+      // The target as it was when the session opened, for cancelling back
+      // to; null when the session created it.
+      snapshot: null as DrawingState | null,
     },
     (set) => ({
       start: (page: string, target: string | null = null) => {
         useUIState.setState({ selectedBlocks: [], focusedEntity: null });
         (document.activeElement as HTMLElement | null)?.blur?.();
-        set({ page, target, tool: "pen", erasing: [] });
+        set({ page, target, tool: "pen", erasing: [], snapshot: null });
       },
       setTarget: (target: string) => set({ target }),
+      setSnapshot: (snapshot: DrawingState) => set({ snapshot }),
       setTool: (tool: InkTool) => set({ tool }),
       setColor: (color: string) => set({ color, tool: "pen" }),
       setSize: (size: number) => set({ size, tool: "pen" }),
