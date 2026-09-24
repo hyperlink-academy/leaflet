@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useIsBlockSelected } from "src/useUIState";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { DrawSmall } from "components/Icons/DrawSmall";
+import { EditTiny } from "components/Icons/EditTiny";
 import type { BlockProps } from "../Block";
 import { InkSvg } from "./InkSvg";
 import { useInkSession } from "./useInkSession";
@@ -47,7 +47,7 @@ export function DrawingBlock(props: BlockProps & { preview?: boolean }) {
           onClick={edit}
           className="absolute -top-3 -right-3 p-1 rounded-full bg-bg-page border border-border text-secondary hover:text-accent-contrast"
         >
-          <DrawSmall width={16} height={16} />
+          <EditTiny />
         </button>
       )}
     </div>

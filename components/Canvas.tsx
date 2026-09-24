@@ -52,7 +52,7 @@ import {
   RadioMenuItem,
 } from "./Menu";
 import { MobileViewSmall } from "./Icons/MobileViewSmall";
-import { DrawSmall } from "./Icons/DrawSmall";
+import { EditTiny } from "./Icons/EditTiny";
 import { CanvasInkLayer } from "./Blocks/DrawingBlock/CanvasInkLayer";
 import { InkToolbar } from "./Blocks/DrawingBlock/InkToolbar";
 import { useInkSession } from "./Blocks/DrawingBlock/useInkSession";
@@ -409,10 +409,10 @@ const AddCanvasBlockButton = (props: {
       <TooltipButton
         side="left"
         tooltipContent={<div className="px-1">Draw</div>}
-        className="w-fit p-2 rounded-full bg-bg-page border-2 border-accent-1 outline-solid outline-transparent hover:outline-1 hover:outline-accent-1 text-accent-1"
+        className="w-fit p-3 rounded-full bg-bg-page border-2 border-accent-1 outline-solid outline-transparent hover:outline-1 hover:outline-accent-1 text-accent-1"
         onMouseDown={() => useInkSession.getState().start(props.entityID)}
       >
-        <DrawSmall />
+        <EditTiny />
       </TooltipButton>
     </div>
   );
