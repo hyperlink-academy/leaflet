@@ -5,7 +5,8 @@ import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { focusPage } from "src/utils/focusPage";
 import { CanvasContent } from "components/Canvas";
 import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
-import { useCanvasFixedSize } from "src/hooks/queries/useCanvasFixedSize";
+import { useCanvasSize } from "src/hooks/queries/useCanvasSize";
+import { ScaledCanvas } from "./ScaledCanvas";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { EditTiny } from "components/Icons/EditTiny";
 import { BlockSettings } from "./SettingsTriggerButton";
@@ -25,10 +26,10 @@ export function EmbeddedCanvasBlock(
   },
 ) {
   let page = useEntity(props.entityID, "block/card")?.data.value;
-  let size = useCanvasFixedSize(page || null);
+  let size = useCanvasSize(page || null);
   let isSelected = useIsBlockSelected(props.entityID);
   let isOpen = useUIState((s) => !!page && s.openPages.includes(page));
-  if (!page || !size) return null;
+  if (!page || !size.fixed) return null;
 
   return (
     <CardThemeProvider entityID={page}>
@@ -39,40 +40,14 @@ export function EmbeddedCanvasBlock(
         extraOptions={<EmbeddedCanvasSizeSettings page={page} size={size} />}
         className={`embeddedCanvasBlockWrapper relative p-0! ${isOpen ? "border-accent-contrast! outline-accent-contrast!" : ""}`}
       >
-        <EmbeddedCanvasPreview page={page} size={size} />
+        <ScaledCanvas size={size} inert>
+          <CanvasContent entityID={page} preview />
+        </ScaledCanvas>
         {!props.preview && (
           <EditEmbeddedCanvasButton parent={props.parent} page={page} />
         )}
       </BlockLayout>
     </CardThemeProvider>
-  );
-}
-
-// The whole canvas, scaled to the block's width.
-export function EmbeddedCanvasPreview(props: {
-  page: string;
-  size: CanvasSize;
-}) {
-  return (
-    <div
-      inert
-      className="relative w-full overflow-clip"
-      style={{
-        aspectRatio: `${props.size.width} / ${props.size.height}`,
-        containerType: "inline-size",
-      }}
-    >
-      <div
-        className="absolute top-0 left-0 origin-top-left pointer-events-none"
-        style={{
-          width: props.size.width,
-          height: props.size.height,
-          transform: `scale(tan(atan2(100cqw, ${props.size.width}px)))`,
-        }}
-      >
-        <CanvasContent entityID={props.page} preview />
-      </div>
-    </div>
   );
 }
 

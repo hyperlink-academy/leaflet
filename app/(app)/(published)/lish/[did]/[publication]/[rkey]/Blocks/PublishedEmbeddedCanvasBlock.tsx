@@ -7,9 +7,8 @@ import { AppBskyFeedDefs } from "@atproto/api";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { CanvasBlocks } from "../CanvasBlockContent";
 import { PollData } from "../fetchPollData";
+import { ScaledCanvas } from "components/Blocks/ScaledCanvas";
 
-// Mirrors the editor's EmbeddedCanvasPreview: the whole canvas scaled to the
-// block's width.
 export function PublishedEmbeddedCanvasBlock(props: {
   page: PubLeafletPagesCanvas.Main & { width: number; height: number };
   did: string;
@@ -22,24 +21,9 @@ export function PublishedEmbeddedCanvasBlock(props: {
   let size = { width: page.width, height: page.height };
   return (
     <div className="drawingBlock w-full block-border overflow-clip bg-bg-page">
-      <div
-        className="relative w-full overflow-clip"
-        style={{
-          aspectRatio: `${size.width} / ${size.height}`,
-          containerType: "inline-size",
-        }}
-      >
-        <div
-          className="absolute top-0 left-0 origin-top-left"
-          style={{
-            width: size.width,
-            height: size.height,
-            transform: `scale(tan(atan2(100cqw, ${size.width}px)))`,
-          }}
-        >
-          <CanvasBlocks {...data} blocks={page.blocks} size={size} preview />
-        </div>
-      </div>
+      <ScaledCanvas size={size}>
+        <CanvasBlocks {...data} blocks={page.blocks} size={size} preview />
+      </ScaledCanvas>
     </div>
   );
 }
