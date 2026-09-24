@@ -33,6 +33,7 @@ import type * as PubLeafletBlocksSignup from '../blocks/signup'
 import type * as PubLeafletBlocksRecommendedPubs from '../blocks/recommendedPubs'
 import type * as PubLeafletBlocksMembersOnlyDelimiter from '../blocks/membersOnlyDelimiter'
 import type * as PubLeafletBlocksPostHeader from '../blocks/postHeader'
+import type * as PubLeafletBlocksDrawing from '../blocks/drawing'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -81,6 +82,7 @@ export interface Block {
     | $Typed<PubLeafletBlocksRecommendedPubs.Main>
     | $Typed<PubLeafletBlocksMembersOnlyDelimiter.Main>
     | $Typed<PubLeafletBlocksPostHeader.Main>
+    | $Typed<PubLeafletBlocksDrawing.Main>
     | { $type: string }
   alignment?:
     | 'lex:pub.leaflet.pages.linearDocument#textAlignLeft'

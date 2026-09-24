@@ -132,6 +132,7 @@ function createFeedRenderContext(
     // get them on the web.
     "pub.leaflet.blocks.html": () => "",
     "pub.leaflet.blocks.poll": () => "",
+    "pub.leaflet.blocks.drawing": () => "",
     "pub.leaflet.blocks.signup": () => "",
     // The feed item already carries the post's title and metadata.
     "pub.leaflet.blocks.postHeader": () => "",
@@ -176,6 +177,7 @@ const plainTextExtractors: BlockHandlers<string> = {
   "pub.leaflet.blocks.iframe": () => "",
   "pub.leaflet.blocks.html": () => "",
   "pub.leaflet.blocks.poll": () => "",
+  "pub.leaflet.blocks.drawing": () => "",
   "pub.leaflet.blocks.signup": () => "",
   "pub.leaflet.blocks.postHeader": () => "",
   "pub.leaflet.blocks.postsList": () => "",

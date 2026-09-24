@@ -52,7 +52,8 @@
             "pub.leaflet.blocks.signup",
             "pub.leaflet.blocks.recommendedPubs",
             "pub.leaflet.blocks.membersOnlyDelimiter",
-            "pub.leaflet.blocks.postHeader"
+            "pub.leaflet.blocks.postHeader",
+            "pub.leaflet.blocks.drawing"
           ]
         },
         "alignment": {

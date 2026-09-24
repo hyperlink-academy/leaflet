@@ -69,6 +69,7 @@
             "pub.leaflet.blocks.recommendedPubs",
             "pub.leaflet.blocks.membersOnlyDelimiter",
             "pub.leaflet.blocks.postHeader",
+            "pub.leaflet.blocks.drawing",
             "pub.leaflet.pages.linearDocument"
           ],
           "description": "A single block, or a linear document: blocks grouped in reading order that are positioned, sized and rotated on the canvas as one."

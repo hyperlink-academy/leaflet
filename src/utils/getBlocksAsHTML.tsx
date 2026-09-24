@@ -110,6 +110,7 @@ const BlockTypeToHTML: {
   html: async () => null,
   signup: async () => null,
   "post-header": async () => null,
+  drawing: async () => null,
   group: async (b, tx) => {
     let facts = await getAllFacts(tx, b.entityID);
     let html = await renderBlocks(

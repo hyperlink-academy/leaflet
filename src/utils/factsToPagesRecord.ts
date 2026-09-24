@@ -11,6 +11,7 @@ import {
   PubLeafletBlocksStandardSitePublication,
   PubLeafletBlocksButton,
   PubLeafletBlocksCode,
+  PubLeafletBlocksDrawing,
   PubLeafletBlocksHeader,
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksHtml,
@@ -433,6 +434,30 @@ export async function processBlocksToPages(opts: {
         language: language?.data.value,
         plaintext: code?.data.value || "",
         syntaxHighlightingTheme: theme?.data.value,
+      };
+      return block;
+    },
+    drawing: async (b) => {
+      const [viewBox] = scan.eav(b.entityID, "drawing/view-box");
+      const strokes = scan
+        .eav(b.entityID, "drawing/stroke")
+        .toSorted((x, y) => (x.id < y.id ? -1 : 1));
+      if (!viewBox || strokes.length === 0) return;
+      const box = viewBox.data.value;
+      const block: $Typed<PubLeafletBlocksDrawing.Main> = {
+        $type: "pub.leaflet.blocks.drawing",
+        viewBox: {
+          x: Math.round(box.x),
+          y: Math.round(box.y),
+          width: Math.max(1, Math.round(box.width)),
+          height: Math.max(1, Math.round(box.height)),
+        },
+        strokes: strokes.map(({ data: { value: stroke } }) => ({
+          points: stroke.points.map(Math.round),
+          color: stroke.color,
+          size: Math.max(1, Math.round(stroke.size)),
+          ...(stroke.simulatePressure && { simulatePressure: true }),
+        })),
       };
       return block;
     },

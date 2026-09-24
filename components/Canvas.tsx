@@ -52,6 +52,10 @@ import {
   RadioMenuItem,
 } from "./Menu";
 import { MobileViewSmall } from "./Icons/MobileViewSmall";
+import { DrawSmall } from "./Icons/DrawSmall";
+import { CanvasInkLayer } from "./Blocks/DrawingBlock/CanvasInkLayer";
+import { InkToolbar } from "./Blocks/DrawingBlock/InkToolbar";
+import { useInkSession } from "./Blocks/DrawingBlock/useInkSession";
 
 export function Canvas(props: {
   entityID: string;
@@ -97,13 +101,14 @@ export function Canvas(props: {
           {!props.preview && entity_set.permissions.write && (
             <MobileViewToggle entityID={props.entityID} />
           )}
-          <CanvasMetadata
-            entityID={props.entityID}
-            isSubpage={!props.first}
-          />
+          <CanvasMetadata entityID={props.entityID} isSubpage={!props.first} />
         </div>
         {!props.preview && entity_set.permissions.write && (
           <CanvasFocusZoom pageEntityID={props.entityID} />
+        )}
+
+        {!props.preview && entity_set.permissions.write && (
+          <InkToolbar pageID={props.entityID} />
         )}
 
         <CanvasZoomControls className="absolute left-2 bottom-2 sm:left-4 sm:bottom-4 z-10 bg-bg-page rounded-md px-1 py-0.5" />
@@ -123,6 +128,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   let contentHeight = canvasContentHeight(blocks.map((b) => b.data.position));
   let handleDrop = useHandleCanvasDrop(props.entityID);
   let stackOrders = useCanvasStackOrders(props.entityID);
+  let inking = useInkSession((s) => s.page === props.entityID);
 
   return (
     <div
@@ -175,6 +181,9 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
       <CanvasBackground entityID={props.entityID} />
       {!props.preview && entity_set.permissions.write && (
         <MobileViewGuides entityID={props.entityID} />
+      )}
+      {!props.preview && entity_set.permissions.write && inking && (
+        <CanvasInkLayer pageID={props.entityID} />
       )}
       {[...blocks]
         .sort((a, b) => canvasBlockOrder(a.data.position, b.data.position))
@@ -396,6 +405,14 @@ const AddCanvasBlockButton = (props: {
         }}
       >
         <AddSmall />
+      </TooltipButton>
+      <TooltipButton
+        side="left"
+        tooltipContent={<div className="px-1">Draw</div>}
+        className="w-fit p-2 rounded-full bg-bg-page border-2 border-accent-1 outline-solid outline-transparent hover:outline-1 hover:outline-accent-1 text-accent-1"
+        onMouseDown={() => useInkSession.getState().start(props.entityID)}
+      >
+        <DrawSmall />
       </TooltipButton>
     </div>
   );

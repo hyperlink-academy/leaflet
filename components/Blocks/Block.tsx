@@ -45,6 +45,7 @@ import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { MathBlock } from "./MathBlock";
 import { CodeBlock } from "./CodeBlock";
 import { HorizontalRule } from "./HorizontalRule";
+import { DrawingBlock } from "./DrawingBlock";
 import { MembersOnlyDelimiterBlock } from "./MembersOnlyDelimiterBlock";
 import { PostsListBlock } from "./PostsListBlock";
 import { RecommendedPubsBlock } from "./RecommendedPubsBlock";
@@ -451,6 +452,7 @@ const BlockTypeComponents: {
   signup: SubscribeBlock,
   "post-header": PostHeaderBlock,
   group: GroupBlock,
+  drawing: DrawingBlock,
 };
 
 // Only rendered on canvases. The Blocks list pads each block for a page; pull

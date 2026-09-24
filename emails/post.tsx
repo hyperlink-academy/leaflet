@@ -1475,6 +1475,7 @@ const BlockRenderer = ({
       );
     },
     "pub.leaflet.blocks.poll": notSupported,
+    "pub.leaflet.blocks.drawing": notSupported,
     "pub.leaflet.blocks.postsList": notSupported,
     "pub.leaflet.blocks.recommendedPubs": notSupported,
     "pub.leaflet.blocks.signup": notSupported,
@@ -2274,6 +2275,7 @@ const MiniBlock = ({
     "pub.leaflet.blocks.html": () => null,
     "pub.leaflet.blocks.page": () => null,
     "pub.leaflet.blocks.poll": () => null,
+    "pub.leaflet.blocks.drawing": () => null,
     "pub.leaflet.blocks.postsList": () => null,
     "pub.leaflet.blocks.recommendedPubs": () => null,
     "pub.leaflet.blocks.signup": () => null,

@@ -34,6 +34,7 @@ import { snapToImageWidth } from "supabase/imageSizes";
 import { srcDocSandbox } from "src/utils/srcDocSandbox";
 import { TextBlock } from "./Blocks/TextBlock";
 import { StaticMathBlock } from "./Blocks/StaticMathBlock";
+import { StaticDrawingBlock } from "./Blocks/StaticDrawingBlock";
 import { PubCodeBlock } from "./Blocks/PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { PubBlueskyPostBlock } from "./Blocks/PublishBskyPostBlock";
@@ -539,6 +540,9 @@ export let Block = ({
           ))}
         </ol>
       );
+    },
+    "pub.leaflet.blocks.drawing": (block) => {
+      return <StaticDrawingBlock block={block} />;
     },
     "pub.leaflet.blocks.math": (block) => {
       return <StaticMathBlock block={block} />;

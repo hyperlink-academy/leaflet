@@ -586,6 +586,62 @@ export const PubLeafletBlocksPostHeader: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksDrawing: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.drawing",
+  defs: {
+    main: {
+      type: "object",
+      description:
+        "Freehand ink strokes. The view box is the area of drawing space the block shows, scaled to the block's width; strokes may reach past it.",
+      required: ["viewBox", "strokes"],
+      properties: {
+        viewBox: { type: "ref", ref: "#viewBox" },
+        strokes: { type: "array", items: { type: "ref", ref: "#stroke" } },
+      },
+    },
+    viewBox: {
+      type: "object",
+      required: ["x", "y", "width", "height"],
+      properties: {
+        x: { type: "integer" },
+        y: { type: "integer" },
+        width: { type: "integer", minimum: 1 },
+        height: { type: "integer", minimum: 1 },
+      },
+    },
+    stroke: {
+      type: "object",
+      description:
+        "One pen stroke, drawn in order, rendered as a variable-width outline of its input points (as perfect-freehand does).",
+      required: ["points", "color", "size"],
+      properties: {
+        points: {
+          type: "array",
+          items: { type: "integer" },
+          description:
+            "Flattened input points as x, y, pressure triples: x and y in drawing space, pressure from 0 to 1000.",
+        },
+        color: {
+          type: "string",
+          description:
+            "A CSS hex color, or primary or accent for the document theme's text or accent color.",
+        },
+        size: {
+          type: "integer",
+          minimum: 1,
+          description: "The stroke's base diameter in drawing space.",
+        },
+        simulatePressure: {
+          type: "boolean",
+          description:
+            "The input had no real pressure (a mouse or finger); derive it from the stroke's speed instead.",
+        },
+      },
+    },
+  },
+};
+
 export const BlockLexicons = [
   PubLeafletBlocksIFrame,
   PubLeafletBlocksHtml,
@@ -611,6 +667,7 @@ export const BlockLexicons = [
   PubLeafletBlocksRecommendedPubs,
   PubLeafletBlocksMembersOnlyDelimiter,
   PubLeafletBlocksPostHeader,
+  PubLeafletBlocksDrawing,
 ];
 export const BlockUnion: LexRefUnion = {
   type: "union",
