@@ -145,7 +145,7 @@ export function PublicationPagesEditNav(props: {
   return (
     <nav
       ref={navRef}
-      className={`publicationPagesNav editorScrollStickyHeader  z-10 shrink-0 sticky  mx-1 sm:mx-2 ${cardBorderHidden ? "pt-3 -top-3 sm:-top-6 bg-bg-page" : "top-2 rounded-md"}`}
+      className={`publicationPagesNav editorScrollStickyHeader  z-10 shrink-0 sticky  mx-1 sm:mx-2 ${cardBorderHidden ? "pt-3 -top-3 bg-bg-page" : "top-2 rounded-md"}`}
     >
       {!cardBorderHidden && (
         <div

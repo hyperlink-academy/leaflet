@@ -98,8 +98,8 @@ const TOUR_COPY: {
   [key in CustomizeTutorialTarget]: TooltipPlacement & {
     title: string;
     description?: string;
-    mobile?: Partial<TooltipPlacement>;
-    mobileFixed?: boolean;
+    mobile?: Partial<TooltipPlacement> & { description?: string };
+    fixed?: boolean;
   };
 } = {
   theme: {
@@ -117,11 +117,14 @@ const TOUR_COPY: {
   },
   content: {
     title: "Edit your content",
-    description: `Write anything you want! Type "/" in an empty line to add content blocks.`,
+    description: `Click to write something! Type "/" in an empty line to add images, embeds, post lists and more`,
     side: "right",
     align: "center",
     yOffset: 48,
-    mobileFixed: true,
+    fixed: true,
+    mobile: {
+      description: `Tap the content area to write something! Type "/" in an empty line to add images, embeds, post lists and more.`,
+    },
   },
   text: {
     title: "Add content blocks",
@@ -160,7 +163,8 @@ export function useTutorialOpen(
 }
 
 function TutorialTooltipContent(props: { target: CustomizeTutorialTarget }) {
-  let { title, description } = TOUR_COPY[props.target];
+  let isMobile = useIsMobile();
+  let { title, description, mobile } = TOUR_COPY[props.target];
   let dismiss = useCustomizeTutorial((s) => s.dismiss);
   // The content is portaled, but React still bubbles its events up to the
   // blocks the tooltip lives in, which would focus or select them.
@@ -188,7 +192,9 @@ function TutorialTooltipContent(props: { target: CustomizeTutorialTarget }) {
           <CloseTiny className="w-3 h-3" />
         </button>
       </div>
-      <div className="text-secondary text-sm leading-snug">{description}</div>
+      <div className="text-secondary text-sm leading-snug">
+        {(isMobile && mobile?.description) || description}
+      </div>
     </>
   );
 }
@@ -204,7 +210,7 @@ function FixedBottomTooltip(props: {
     <NestedCardThemeProvider>
       <div
         role="tooltip"
-        className={`${styles.tooltip} ${delay} portalStyles light-container fixed z-20 bottom-4 inset-x-4 mx-auto max-w-sm px-3 py-2 bg-bg-page border border-border rounded-md shadow-md text-left`}
+        className={`${styles.tooltip} ${delay} portalStyles light-container fixed z-20 bottom-4 sm:bottom-8 inset-x-4 mx-auto max-w-sm px-3 py-2 bg-bg-page border border-border rounded-md shadow-md text-left`}
         onPointerDown={stop}
         onMouseDown={stop}
         onClick={stop}
@@ -222,9 +228,9 @@ function TutorialTooltip(props: {
   trigger: React.ReactNode;
 }) {
   let isMobile = useIsMobile();
-  let { mobile, mobileFixed, title, description, ...desktop } =
+  let { mobile, fixed, title, description, ...desktop } =
     TOUR_COPY[props.target];
-  if (isMobile && mobileFixed)
+  if (fixed)
     return (
       <>
         {props.trigger}
