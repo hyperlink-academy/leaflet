@@ -33,6 +33,7 @@ import { EditorCommentMobileSheet } from "components/EditorComments/EditorCommen
 import { EditorCommentPopover } from "components/EditorComments/EditorCommentPopover";
 import { EditorCommentAnchorHover } from "components/EditorComments/EditorCommentAnchorHover";
 import { LinkPopover } from "components/LinkPopover";
+import { CanvasPageArea } from "src/canvasZoom/CanvasPageScroll";
 
 export function Page(props: {
   entityID: string;
@@ -58,6 +59,10 @@ export function Page(props: {
     return pages[pages.length - 1] === props.entityID;
   });
   let sideColumnVisible = pageType === "doc" && !drawerOpen && isRightmostPage;
+  // A canvas below a publication header scrolls with the page, as a doc
+  // page does (src/canvasZoom/CanvasPageScroll.tsx).
+  let canvasBelowHeader = !!props.header && pageType === "canvas";
+  let cardBorderHidden = useCardBorderHidden();
 
   return (
     <CardThemeProvider entityID={props.entityID}>
@@ -77,6 +82,7 @@ export function Page(props: {
             fullPageScroll={props.fullPageScroll}
             flow={props.flow}
             pageType={pageType}
+            overflow={canvasBelowHeader ? "scroll" : undefined}
             pageOptions={
               <PageOptions
                 entityID={props.entityID}
@@ -100,12 +106,30 @@ export function Page(props: {
               !publicationPage &&
               !zoomedBlock && <PublicationMetadata />}
             {props.first && pageType === "doc" && <InlineVersionBanner />}
-            <PageContent
-              entityID={props.entityID}
-              first={props.first}
-              zoomedBlock={zoomedBlock}
-            />
-
+            {canvasBelowHeader ? (
+              // A borderless card overhangs the bottom of the window (see
+              // PageWrapper's negative margins); the padding keeps the
+              // canvas's end reachable and the overlays on screen.
+              <CanvasPageArea
+                className={
+                  cardBorderHidden
+                    ? "pb-3 sm:pb-6 [--canvas-sticky-bottom:12px] sm:[--canvas-sticky-bottom:24px]"
+                    : ""
+                }
+              >
+                <Canvas
+                  entityID={props.entityID}
+                  first={props.first}
+                  pageScroll
+                />
+              </CanvasPageArea>
+            ) : (
+              <PageContent
+                entityID={props.entityID}
+                first={props.first}
+                zoomedBlock={zoomedBlock}
+              />
+            )}
           </PageWrapper>
           <DesktopPageFooter pageID={props.entityID} flow={props.flow} />
           <FootnotePopover pageID={props.entityID} />
@@ -136,6 +160,8 @@ export const PageWrapper = (props: {
 }) => {
   const cardBorderHidden = useCardBorderHidden();
   let { ref } = usePreserveScroll<HTMLDivElement>(props.id);
+  let canvasPageScroll =
+    props.pageType === "canvas" && props.overflow === "scroll";
   return (
     // this div wraps the contents AND the page options.
     // it needs to be its own div because this container does NOT scroll, and therefore doesn't clip the absolutely positioned pageOptions
@@ -162,7 +188,7 @@ export const PageWrapper = (props: {
       publicationScrollContainer
       grow relative
       shrink-0 snap-center
-      ${props.flow ? "" : props.overflow === "hidden" || props.pageType === "canvas" ? "overflow-hidden" : "overflow-y-scroll"}
+      ${props.flow ? "" : props.overflow === "hidden" || (props.pageType === "canvas" && !canvasPageScroll) ? "overflow-hidden" : "overflow-y-scroll"}
       ${
         !cardBorderHidden &&
         `border
@@ -184,7 +210,7 @@ export const PageWrapper = (props: {
       >
         <div
           className={`postPageContent static
-          ${props.fullPageScroll ? "h-full sm:max-w-[var(--page-width-units)] mx-auto" : ` contents w-full ${props.flow ? "" : "h-full"}`}
+          ${props.fullPageScroll && !canvasPageScroll ? "h-full sm:max-w-[var(--page-width-units)] mx-auto" : ` contents w-full ${props.flow ? "" : "h-full"}`}
         `}
         >
           {props.children}

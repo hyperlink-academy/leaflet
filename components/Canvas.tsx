@@ -8,7 +8,6 @@ import {
   useCallback,
   useLayoutEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import { useDrag } from "src/hooks/useDrag";
@@ -25,7 +24,10 @@ import { Popover } from "./Popover";
 import { Separator } from "./Layout";
 import { CommentTiny } from "./Icons/CommentTiny";
 import { AddTags, PublicationMetadata } from "./Pages/PublicationMetadata";
-import { useLeafletPublicationData } from "./PageSWRDataProvider";
+import {
+  useLeafletPublicationData,
+  useLeafletPublicationPage,
+} from "./PageSWRDataProvider";
 import { useHandleCanvasDrop } from "./Blocks/useHandleCanvasDrop";
 import { useBlockMouseHandlers } from "./Blocks/useBlockMouseHandlers";
 import { RecommendEmptyTiny } from "./Icons/RecommendTiny";
@@ -42,9 +44,11 @@ import { useCanvasBlocksWithType } from "src/hooks/queries/useBlocks";
 import {
   CanvasZoomProvider,
   getCanvasZoom,
+  useCanvasZoomEngine,
 } from "src/canvasZoom/CanvasZoomProvider";
 import { CanvasZoomLayer } from "src/canvasZoom/CanvasZoomLayer";
 import { CanvasFocusZoom } from "src/canvasZoom/CanvasFocusZoom";
+import { CanvasOverlay } from "src/canvasZoom/CanvasPageScroll";
 import { CanvasZoomControls } from "./CanvasZoomControls";
 import {
   type CanvasMobileView,
@@ -69,9 +73,10 @@ export function Canvas(props: {
   entityID: string;
   preview?: boolean;
   first?: boolean;
+  /** Below a publication header: the page scrolls it (CanvasPageScroll). */
+  pageScroll?: boolean;
 }) {
   let entity_set = useEntitySetContext();
-  let ref = useRef<HTMLDivElement>(null);
   // Readers on a view-only link get the same lock as published viewers.
   let lockViewerZoom =
     !!useEntity(props.entityID, "canvas/lock-viewer-zoom")?.data.value &&
@@ -82,35 +87,17 @@ export function Canvas(props: {
   );
 
   return (
-    <div
-      ref={ref}
-      id={elementId.page(props.entityID).canvasScrollArea}
-      // A class rather than an inline width: the zoom engine owns the
-      // scroller's inline width, which it rewrites to fit a scrollbar gutter.
-      style={{ "--canvas-width": `${size.width}px` } as CSSProperties}
-      className={`
-        canvasWrapper
-        h-full w-(--canvas-width) max-w-full
-        ${size.fixed ? "bg-border-light" : ""}
-        overflow-y-scroll touch-pan-x touch-pan-y
-      `}
+    <CanvasZoomProvider
+      pageKey={props.entityID}
+      pageScroll={props.pageScroll}
+      contentWidth={size.width}
+      centered={size.fixed}
+      initialArea={mobileArea}
+      lockViewerZoom={lockViewerZoom}
+      // Writers double tap empty canvas to add a block.
+      doubleTapZoom={!!props.preview || !entity_set.permissions.write}
     >
-      <CanvasZoomProvider
-        pageKey={props.entityID}
-        scrollerRef={ref}
-        contentWidth={size.width}
-        centered={size.fixed}
-        initialArea={mobileArea}
-        lockViewerZoom={lockViewerZoom}
-        // Writers double tap empty canvas to add a block.
-        doubleTapZoom={!!props.preview || !entity_set.permissions.write}
-      >
-        <AddCanvasBlockButton
-          entityID={props.entityID}
-          entity_set={entity_set}
-          canvas={size}
-        />
-
+      <CanvasOverlay edge="top">
         {/* A drawing is a picture in its parent page, with no phone framing
             or post metadata of its own. */}
         {!size.fixed && (
@@ -125,20 +112,36 @@ export function Canvas(props: {
           </div>
         )}
         {!props.preview && entity_set.permissions.write && (
-          <CanvasFocusZoom pageEntityID={props.entityID} />
-        )}
-
-        {!props.preview && entity_set.permissions.write && (
           <InkToolbar pageID={props.entityID} />
         )}
+      </CanvasOverlay>
+      {!props.preview && entity_set.permissions.write && (
+        <CanvasFocusZoom pageEntityID={props.entityID} />
+      )}
 
-        <CanvasZoomControls className="absolute left-2 bottom-16 sm:left-4 sm:bottom-[88px] z-10 bg-bg-page rounded-md px-1 py-0.5" />
-
+      <div
+        id={elementId.page(props.entityID).canvasScrollArea}
+        // A class rather than an inline width: the zoom engine owns the
+        // box's inline width, which it rewrites to fit a scrollbar gutter.
+        style={{ "--canvas-width": `${size.width}px` } as CSSProperties}
+        className={`
+          canvasWrapper
+          w-(--canvas-width) max-w-full
+          ${props.pageScroll ? "canvasPageScroll" : "h-full overflow-y-scroll"}
+          ${size.fixed ? "bg-border-light" : ""}
+          touch-pan-x touch-pan-y
+        `}
+      >
         <CanvasZoomLayer contentHeight={size.height} mobileArea={mobileArea}>
           <CanvasContent {...props} />
         </CanvasZoomLayer>
-      </CanvasZoomProvider>
-    </div>
+      </div>
+
+      <CanvasOverlay edge="bottom">
+        <AddCanvasBlockButton entityID={props.entityID} canvas={size} />
+        <CanvasZoomControls className="absolute left-2 bottom-16 sm:left-4 sm:bottom-[88px] z-10 bg-bg-page rounded-md px-1 py-0.5" />
+      </CanvasOverlay>
+    </CanvasZoomProvider>
   );
 }
 
@@ -330,6 +333,8 @@ const CanvasMetadata = (props: {
   isSubpage: boolean | undefined;
 }) => {
   let { data: pub, normalizedPublication } = useLeafletPublicationData();
+  // A publication's own page has no post metadata.
+  let isPublicationPage = !!useLeafletPublicationPage();
   let { rep } = useReplicache();
   // A post header block on the canvas carries the tags and metadata itself.
   let hasHeaderBlock = useCanvasBlocksWithType(props.entityID).some(
@@ -345,7 +350,7 @@ const CanvasMetadata = (props: {
   if (!pub || !pub.publications) return null;
 
   if (!normalizedPublication) return null;
-  if (hasHeaderBlock) return null;
+  if (hasHeaderBlock || isPublicationPage) return null;
   let merged = mergePreferences(
     postPreferences || undefined,
     normalizedPublication.preferences,
@@ -393,11 +398,12 @@ const CanvasMetadata = (props: {
 
 const AddCanvasBlockButton = (props: {
   entityID: string;
-  entity_set: { set: string };
   canvas: CanvasBounds;
 }) => {
   let { rep, undoManager } = useReplicache();
-  let { permissions } = useEntitySetContext();
+  let entity_set = useEntitySetContext();
+  let { permissions } = entity_set;
+  let engine = useCanvasZoomEngine();
   let blocks = useEntity(props.entityID, "canvas/block");
 
   if (!permissions.write) return null;
@@ -414,19 +420,26 @@ const AddCanvasBlockButton = (props: {
         }
         className="w-fit p-2 rounded-full bg-accent-1 border-2 outline-solid outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-2"
         onMouseDown={() => {
-          let page = document.getElementById(
-            elementId.page(props.entityID).canvasScrollArea,
-          );
-          if (!page || !rep) return;
-          let zoom = getCanvasZoom(props.entityID);
+          let box = engine.boxRef.current;
+          if (!box || !rep) return;
+          // Just inside the top right corner of what is on screen, below
+          // a nav stuck over a page-scrolled canvas.
+          let navBottom =
+            parseFloat(
+              getComputedStyle(box).getPropertyValue("--canvas-nav-bottom"),
+            ) || 0;
+          let corner = engine.canvasPointAt({
+            x: engine.viewportRect().width,
+            y: navBottom,
+          });
           addCanvasTextBlock(rep, undoManager, {
             parent: props.entityID,
             canvas: props.canvas,
             position: {
-              x: (page.clientWidth + page.scrollLeft) / zoom - 468,
-              y: 32 + page.scrollTop / zoom,
+              x: corner.x - 468,
+              y: Math.max(0, corner.y + 32),
             },
-            permission_set: props.entity_set.set,
+            permission_set: entity_set.set,
           }).then((newEntityID) =>
             setTimeout(() => {
               focusBlock(

@@ -4,7 +4,6 @@ import {
   MAX_ZOOM,
   ZOOM_STEPS,
   anchoredScroll,
-  contentBox,
   NO_PADS,
   padsForScroll,
   trimPads,
@@ -227,51 +226,66 @@ describe("fitToWidth / minZoom", () => {
 });
 
 describe("padsForScroll / trimPads", () => {
-  let client = { width: 1000, height: 800 };
-  let box = contentBox({
-    zoom: 0.5,
-    contentWidth: 1272,
-    contentHeight: 3000,
-    clientWidth: 1000,
-    clientHeight: 800,
-  });
-
-  it("content box is the zoomed canvas but never smaller than the viewport", () => {
-    expect(box).toEqual({ width: 1000, height: 1500 });
-    expect(
-      contentBox({
-        zoom: 2,
-        contentWidth: 1272,
-        contentHeight: 3000,
-        clientWidth: 1000,
-        clientHeight: 800,
-      }),
-    ).toEqual({ width: 2544, height: 6000 });
-  });
+  // A 1272x3000 canvas at half zoom in a 1000x800 scroller: the spacer is
+  // as wide as the viewport and 1500 tall.
+  let range = {
+    width: 1000,
+    height: 800,
+    scrollWidth: 1000,
+    scrollHeight: 1500,
+  };
+  let origin = { left: 0, top: 0 };
 
   it("an in-range offset needs no padding", () => {
-    expect(padsForScroll({ left: 0, top: 300 }, client, box)).toEqual(NO_PADS);
+    expect(padsForScroll({ left: 0, top: 300 }, range)).toEqual(NO_PADS);
   });
 
   it("a negative offset becomes left/top padding", () => {
-    expect(padsForScroll({ left: -77, top: -51 }, client, box)).toEqual({
+    expect(padsForScroll({ left: -77, top: -51 }, range)).toEqual({
       ...NO_PADS,
       left: 77,
       top: 51,
     });
   });
 
-  it("an offset past the content becomes right/bottom padding", () => {
-    expect(padsForScroll({ left: 200, top: 1000 }, client, box)).toEqual({
+  it("an offset past the scroller's end becomes right/bottom padding", () => {
+    expect(padsForScroll({ left: 200, top: 1000 }, range)).toEqual({
       ...NO_PADS,
       right: 200,
       bottom: 300,
     });
   });
 
+  it("never pads for space the scroller already has around the spacer", () => {
+    // A 240px header above the spacer and 24px of page padding below it.
+    let page = { ...range, scrollHeight: 240 + 1500 + 24 };
+    expect(padsForScroll({ left: 0, top: 40 }, page)).toEqual(NO_PADS);
+    expect(padsForScroll({ left: 0, top: -60 }, page)).toEqual({
+      ...NO_PADS,
+      top: 60,
+    });
+    expect(padsForScroll({ left: 0, top: 964 }, page)).toEqual(NO_PADS);
+    expect(padsForScroll({ left: 0, top: 1000 }, page)).toEqual({
+      ...NO_PADS,
+      bottom: 36,
+    });
+  });
+
   it("drops a left/top pad scrolled off screen and shifts the offset by it", () => {
     let pads = { ...NO_PADS, left: 77, top: 51 };
-    expect(trimPads(pads, { left: 80, top: 60 }, client, box)).toEqual({
+    let padded = { ...range, scrollWidth: 1077, scrollHeight: 1551 };
+    expect(trimPads(pads, { left: 80, top: 60 }, origin, padded)).toEqual({
+      pads: NO_PADS,
+      shift: { left: 77, top: 51 },
+    });
+    // The pad counts from where the spacer starts in the scroller.
+    let below = { left: 0, top: 240 };
+    let page = { ...padded, scrollHeight: 240 + 1551 };
+    expect(trimPads(pads, { left: 80, top: 260 }, below, page)).toEqual({
+      pads: { ...NO_PADS, top: 51 },
+      shift: { left: 77, top: 0 },
+    });
+    expect(trimPads(pads, { left: 80, top: 300 }, below, page)).toEqual({
       pads: NO_PADS,
       shift: { left: 77, top: 51 },
     });
@@ -279,7 +293,8 @@ describe("padsForScroll / trimPads", () => {
 
   it("drops a right/bottom pad once the content end is back in view", () => {
     let pads = { ...NO_PADS, right: 200, bottom: 300 };
-    expect(trimPads(pads, { left: 0, top: 0 }, client, box)).toEqual({
+    let padded = { ...range, scrollWidth: 1200, scrollHeight: 1800 };
+    expect(trimPads(pads, { left: 0, top: 0 }, origin, padded)).toEqual({
       pads: NO_PADS,
       shift: { left: 0, top: 0 },
     });
@@ -287,9 +302,13 @@ describe("padsForScroll / trimPads", () => {
 
   it("keeps a pad that is still partly on screen", () => {
     let pads = { ...NO_PADS, left: 77, top: 51 };
-    expect(trimPads(pads, { left: 40, top: 20 }, client, box)).toBeNull();
+    let padded = { ...range, scrollWidth: 1077, scrollHeight: 1551 };
+    expect(trimPads(pads, { left: 40, top: 20 }, origin, padded)).toBeNull();
     let trailing = { ...NO_PADS, right: 200, bottom: 300 };
-    expect(trimPads(trailing, { left: 150, top: 900 }, client, box)).toBeNull();
+    let trailingRange = { ...range, scrollWidth: 1200, scrollHeight: 1800 };
+    expect(
+      trimPads(trailing, { left: 150, top: 900 }, origin, trailingRange),
+    ).toBeNull();
   });
 });
 
@@ -318,18 +337,7 @@ describe("centered canvases", () => {
   let client = { width: 800, height: 600 };
 
   it("surround the content with half a viewport", () => {
-    let margin = contentMargin(true, client);
-    expect(margin).toEqual({ left: 400, top: 300 });
-    expect(
-      contentBox({
-        zoom: 2,
-        contentWidth: 600,
-        contentHeight: 400,
-        clientWidth: client.width,
-        clientHeight: client.height,
-        margin,
-      }),
-    ).toEqual({ width: 2000, height: 1400 });
+    expect(contentMargin(true, client)).toEqual({ left: 400, top: 300 });
   });
 
   it("keep no margin on other canvases", () => {

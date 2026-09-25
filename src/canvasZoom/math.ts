@@ -118,65 +118,52 @@ export type Pads = { top: number; right: number; bottom: number; left: number };
 
 export const NO_PADS: Pads = { top: 0, right: 0, bottom: 0, left: 0 };
 
-// The spacer's content box: the zoomed canvas and its margins, never
-// smaller than the viewport (the stylesheet's min-width/min-height: 100%).
-export function contentBox(args: {
-  zoom: number;
-  contentWidth: number;
-  contentHeight: number;
-  clientWidth: number;
-  clientHeight: number;
-  margin?: Scroll;
-}): Size {
-  let margin = args.margin ?? { left: 0, top: 0 };
-  return {
-    width: Math.max(
-      args.contentWidth * args.zoom + 2 * margin.left,
-      args.clientWidth,
-    ),
-    height: Math.max(
-      args.contentHeight * args.zoom + 2 * margin.top,
-      args.clientHeight,
-    ),
-  };
-}
+// A scroller's extent (scrollWidth/scrollHeight) and viewport size.
+export type ScrollRange = Size & { scrollWidth: number; scrollHeight: number };
 
-// Spacer padding that makes a pad-free offset (content at the scroller's
-// origin; negative or past the content when the anchor sits near an edge)
-// a valid scroll position: exactly the empty space it leaves on each side,
-// none once the content covers the viewport again.
-export function padsForScroll(scroll: Scroll, client: Size, box: Size): Pads {
+// Spacer padding that makes an offset the anchor asks for (negative, or
+// past the scroller's end, when the anchor sits near an edge) a valid
+// scroll position: exactly the space it needs beyond the scroller's extent
+// with the spacer unpadded, none once the content covers the viewport
+// again. Any scrollable space the scroller already has around the spacer
+// (a header above it) is part of that extent, so it is never padded for.
+export function padsForScroll(scroll: Scroll, range: ScrollRange): Pads {
   return {
     left: Math.max(0, -scroll.left),
     top: Math.max(0, -scroll.top),
-    right: Math.max(0, scroll.left + client.width - box.width),
-    bottom: Math.max(0, scroll.top + client.height - box.height),
+    right: Math.max(0, scroll.left + range.width - range.scrollWidth),
+    bottom: Math.max(0, scroll.top + range.height - range.scrollHeight),
   };
 }
 
 // Pads a native scroll has moved fully off screen, dropped: the left/top pad
 // once the offset is past it (which shifts the offset by the pad so nothing
 // moves on screen), the right/bottom pad once the content's end is back in
-// view. Null when every pad is still in use.
+// view. `origin` is where the spacer starts in the scroller's extent and
+// `range` the extent with the pads still in place. Null when every pad is
+// still in use.
 export function trimPads(
   pads: Pads,
   scroll: Scroll,
-  client: Size,
-  box: Size,
+  origin: Scroll,
+  range: ScrollRange,
 ): { pads: Pads; shift: Scroll } | null {
   let next = { ...pads };
   let shift = { left: 0, top: 0 };
-  if (pads.left && scroll.left >= pads.left) {
+  if (pads.left && scroll.left >= origin.left + pads.left) {
     next.left = 0;
     shift.left = pads.left;
   }
-  if (pads.top && scroll.top >= pads.top) {
+  if (pads.top && scroll.top >= origin.top + pads.top) {
     next.top = 0;
     shift.top = pads.top;
   }
-  if (pads.right && scroll.left + client.width <= pads.left + box.width)
+  if (pads.right && scroll.left + range.width <= range.scrollWidth - pads.right)
     next.right = 0;
-  if (pads.bottom && scroll.top + client.height <= pads.top + box.height)
+  if (
+    pads.bottom &&
+    scroll.top + range.height <= range.scrollHeight - pads.bottom
+  )
     next.bottom = 0;
   if (
     next.left === pads.left &&

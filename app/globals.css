@@ -1302,6 +1302,24 @@ body > iframe[src*="js.stripe.com"] {
 .canvasWrapper {
   container-type: size;
 }
+/* The page scrolls the canvas vertically (src/canvasZoom/CanvasPageScroll):
+   the box is as tall as the spacer, at least the page viewport below the
+   stuck nav, and scrolls sideways only. Size containment would zero its
+   height. */
+.canvasWrapper.canvasPageScroll {
+  container-type: inline-size;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.canvasPageScroll .canvasZoomSpacer {
+  min-height: var(--canvas-viewport-height, 0px);
+}
+.canvasOverlayTop {
+  top: var(--canvas-nav-bottom, 0px);
+}
+.canvasOverlayBottom {
+  bottom: var(--canvas-sticky-bottom, 0px);
+}
 /* Not inherited: a zoom write restyles only the spacer and the layer, not
    every element of the canvas. */
 @property --canvas-zoom {
@@ -1315,8 +1333,11 @@ body > iframe[src*="js.stripe.com"] {
 }
 .canvasZoomSpacer {
   /* Padding (engine-written) is empty space around the content, on top of
-     the content-sized box below. */
+     the content-sized box below. The engine writes the offset it wants
+     right after resizing the spacer, so scroll anchoring must not move the
+     page first. */
   box-sizing: content-box;
+  overflow-anchor: none;
   min-width: 100%;
   min-height: 100%;
   overflow: clip;

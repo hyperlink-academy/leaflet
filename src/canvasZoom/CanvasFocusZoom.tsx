@@ -26,17 +26,23 @@ export function CanvasFocusZoom(props: { pageEntityID: string }) {
     if (!focused) return;
     if (!window.matchMedia("(pointer: coarse)").matches) return;
     if (engine.zoomRef.current >= 1 - 1e-6) return;
-    let scroller = engine.scrollerRef.current;
+    let box = engine.boxRef.current;
     let el = document.getElementById(elementId.block(focused).container);
-    if (!scroller || !el || !scroller.contains(el)) return;
+    if (!box || !el || !box.contains(el)) return;
     let rect = el.getBoundingClientRect();
-    let sr = scroller.getBoundingClientRect();
+    let vr = engine.viewportRect();
     let anchorCanvas = engine.canvasPointAt(
       engine.toViewport(rect.left, rect.top),
     );
     let anchorViewport = engine.toViewport(
-      Math.min(Math.max(rect.left, sr.left + EDGE_MARGIN), sr.right - EDGE_MARGIN),
-      Math.min(Math.max(rect.top, sr.top + EDGE_MARGIN), sr.bottom - EDGE_MARGIN),
+      Math.min(
+        Math.max(rect.left, vr.left + EDGE_MARGIN),
+        vr.left + vr.width - EDGE_MARGIN,
+      ),
+      Math.min(
+        Math.max(rect.top, vr.top + EDGE_MARGIN),
+        vr.top + vr.height - EDGE_MARGIN,
+      ),
     );
     engine.schedule({ zoom: engine.clamp(1), anchorViewport, anchorCanvas });
   }, [focused, engine]);

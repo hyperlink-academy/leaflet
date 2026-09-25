@@ -48,7 +48,7 @@ export function useCanvasZoomGestures(
   enabled = true,
 ) {
   useEffect(() => {
-    let scroller = engine.scrollerRef.current;
+    let scroller = engine.boxRef.current;
     if (!scroller || !enabled) return;
     let abort = new AbortController();
     let signal = abort.signal;

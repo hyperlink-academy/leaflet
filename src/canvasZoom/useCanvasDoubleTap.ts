@@ -21,7 +21,7 @@ const INTERACTIVE =
  */
 export function useCanvasDoubleTap(engine: CanvasZoomEngine, enabled: boolean) {
   useEffect(() => {
-    let scroller = engine.scrollerRef.current;
+    let scroller = engine.boxRef.current;
     if (!scroller || !enabled) return;
     let abort = new AbortController();
     let signal = abort.signal;
@@ -46,7 +46,8 @@ export function useCanvasDoubleTap(engine: CanvasZoomEngine, enabled: boolean) {
         let d = down;
         down = null;
         if (!d || d.id !== e.pointerId || isCanvasPinching()) return;
-        if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > TAP_MOVE_SLOP) return;
+        if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > TAP_MOVE_SLOP)
+          return;
         let tap = { x: e.clientX, y: e.clientY, t: e.timeStamp };
         let prev = lastTap;
         lastTap = tap;
