@@ -104,7 +104,10 @@ export function LinearDocumentPage({
               footnoteIndexMap={footnoteIndexMap}
             />
           </DrawerThreadPageProvider>
-          <PublishedFootnoteSection footnotes={footnotes} />
+          <PublishedFootnoteSection
+            footnotes={footnotes}
+            footnoteIndexMap={footnoteIndexMap}
+          />
         </article>
         <PostPrevNextButtons
           showPrevNext={preferences.showPrevNext !== false && !isSubpage}

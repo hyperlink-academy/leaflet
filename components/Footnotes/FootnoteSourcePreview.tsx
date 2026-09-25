@@ -9,23 +9,25 @@ import { useFootnoteContext } from "./FootnoteContext";
 const HOVER_OPEN_DELAY = 200;
 const HOVER_CLOSE_DELAY = 150;
 
-// The number in the end-of-document footnote list. Hovering it with a mouse
-// (or tapping it on touch) previews the block the footnote was written in,
-// scrolled so the footnote's ref is in view. On touch the first tap only
-// previews, since there's no hover — a second tap follows the normal action.
-export function FootnoteIndexWithPreview(props: {
+export type FootnoteSourcePreview = {
   footnoteID: string;
   // Matches the footnote's ref in the document text, for jumping to it.
   sourceSelector: string;
-  preview: ReactNode;
-  className: string;
-  href?: string;
-  onClick?: () => void;
-  title?: string;
-  children: ReactNode;
-}) {
+  content: ReactNode;
+};
+
+// Hovering the number in the end-of-document footnote list with a mouse (or
+// tapping it on touch) previews the block the footnote was written in,
+// scrolled so the footnote's ref is in view. On touch the first tap only
+// previews, since there's no hover — a second tap follows the normal action.
+// Returns the props for the number element and the popover to render next to
+// it; without a preview the number just gets `onClick`.
+export function useFootnoteSourcePreview(
+  preview: FootnoteSourcePreview | undefined,
+  onClick?: () => void,
+) {
   let anchorRef = useRef<HTMLElement | null>(null);
-  let [rect, setRect] = useState<DOMRect | null>(null);
+  let [open, setOpen] = useState(false);
   let timer = useRef<number | null>(null);
   let lastPointerType = useRef<string | null>(null);
 
@@ -36,11 +38,11 @@ export function FootnoteIndexWithPreview(props: {
   };
   let show = () => {
     clearTimer();
-    if (anchorRef.current) setRect(anchorRef.current.getBoundingClientRect());
+    setOpen(true);
   };
   let hide = () => {
     clearTimer();
-    setRect(null);
+    setOpen(false);
   };
   let scheduleHide = () => {
     clearTimer();
@@ -50,7 +52,6 @@ export function FootnoteIndexWithPreview(props: {
 
   // AnchoredPopover only watches the page's own scroll container; published
   // posts can also scroll the window, which would strand the popover.
-  let open = !!rect;
   useEffect(() => {
     if (!open) return;
     let onScroll = (e: Event) => {
@@ -65,10 +66,12 @@ export function FootnoteIndexWithPreview(props: {
     return () => window.removeEventListener("scroll", onScroll, true);
   }, [open]);
 
+  if (!preview) return { triggerProps: { onClick }, popover: null };
+
   let jumpToSource = () => {
     hide();
     let target = Array.from(
-      document.querySelectorAll<HTMLElement>(props.sourceSelector),
+      document.querySelectorAll<HTMLElement>(preview.sourceSelector),
     ).find(
       (el) => !el.closest(".pageLinkBlockWrapper, .footnote-source-preview"),
     );
@@ -79,8 +82,6 @@ export function FootnoteIndexWithPreview(props: {
     ref: (el: HTMLElement | null) => {
       anchorRef.current = el;
     },
-    className: props.className,
-    title: props.title,
     onPointerDown: (e: React.PointerEvent) => {
       lastPointerType.current = e.pointerType;
     },
@@ -98,43 +99,35 @@ export function FootnoteIndexWithPreview(props: {
         lastPointerType.current === "touch" ||
         lastPointerType.current === "pen";
       lastPointerType.current = null;
-      if (wasTouch && !rect) {
+      if (wasTouch && !open) {
         e.preventDefault();
         show();
         return;
       }
       hide();
-      props.onClick?.();
+      onClick?.();
     },
   };
 
-  return (
-    <>
-      {props.href ? (
-        <a href={props.href} {...triggerProps}>
-          {props.children}
-        </a>
-      ) : (
-        <button {...triggerProps}>{props.children}</button>
-      )}
-      <AnchoredPopover
-        open={open}
-        anchorElement={rect ? anchorRef.current : null}
-        rect={rect ?? undefined}
-        onClose={hide}
-        onMouseEnter={clearTimer}
-        onMouseLeave={scheduleHide}
-        className="footnote-popover footnote-source-preview"
+  let popover = (
+    <AnchoredPopover
+      open={open}
+      anchorElement={open ? anchorRef.current : null}
+      onClose={hide}
+      onMouseEnter={clearTimer}
+      onMouseLeave={scheduleHide}
+      className="footnote-popover footnote-source-preview"
+    >
+      <FootnoteSourcePreviewBody
+        footnoteID={preview.footnoteID}
+        onClick={jumpToSource}
       >
-        <FootnoteSourcePreviewBody
-          footnoteID={props.footnoteID}
-          onClick={jumpToSource}
-        >
-          {props.preview}
-        </FootnoteSourcePreviewBody>
-      </AnchoredPopover>
-    </>
+        {preview.content}
+      </FootnoteSourcePreviewBody>
+    </AnchoredPopover>
   );
+
+  return { triggerProps, popover };
 }
 
 function FootnoteSourcePreviewBody(props: {

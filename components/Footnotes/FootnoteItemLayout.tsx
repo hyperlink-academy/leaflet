@@ -1,21 +1,24 @@
 import { ReactNode } from "react";
-import { FootnoteIndexWithPreview } from "./FootnoteSourcePreview";
+import {
+  FootnoteSourcePreview,
+  useFootnoteSourcePreview,
+} from "./FootnoteSourcePreview";
 
 export function FootnoteItemLayout(props: {
   index: number;
   indexAction?: () => void;
   indexHref?: string;
+  // When set, the index previews the footnote's source block on hover/tap.
+  sourcePreview?: FootnoteSourcePreview;
   children: ReactNode;
   trailing?: ReactNode;
   id?: string;
   className?: string;
-  // When set, the index previews the footnote's source block on hover/tap.
-  sourcePreview?: {
-    footnoteID: string;
-    sourceSelector: string;
-    content: ReactNode;
-  };
 }) {
+  let { triggerProps, popover } = useFootnoteSourcePreview(
+    props.sourcePreview,
+    props.indexAction,
+  );
   let indexClassName =
     "text-tertiary font-medium shrink-0 text-sm leading-normal no-underline hover:underline cursor-pointer w-7 text-right";
 
@@ -26,30 +29,20 @@ export function FootnoteItemLayout(props: {
       id={props.id}
       className={`footnote-item flex items-start gap-2 text-sm group/footnote${props.className ?? ""}`}
     >
-      {props.sourcePreview ? (
-        <FootnoteIndexWithPreview
-          footnoteID={props.sourcePreview.footnoteID}
-          sourceSelector={props.sourcePreview.sourceSelector}
-          preview={props.sourcePreview.content}
-          className={indexClassName}
-          href={props.indexHref}
-          onClick={props.indexAction}
-        >
-          {indexContent}
-        </FootnoteIndexWithPreview>
-      ) : props.indexHref ? (
-        <a href={props.indexHref} className={indexClassName}>
+      {props.indexHref ? (
+        <a href={props.indexHref} className={indexClassName} {...triggerProps}>
           {indexContent}
         </a>
       ) : (
         <button
           className={indexClassName}
-          onClick={props.indexAction}
           title="Jump to footnote in text"
+          {...triggerProps}
         >
           {indexContent}
         </button>
       )}
+      {popover}
       <div
         className="grow min-w-0 text-secondary whitespace-pre-wrap [&_.ProseMirror]:outline-hidden"
         style={{ wordBreak: "break-word" }}

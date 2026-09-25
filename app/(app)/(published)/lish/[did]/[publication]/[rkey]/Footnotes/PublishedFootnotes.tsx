@@ -9,12 +9,16 @@ import {
   PubLeafletBlocksUnorderedList,
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
-import { useMemo } from "react";
 import { TextBlockCore } from "../Blocks/TextBlockCore";
 import {
   FootnoteItemLayout,
   FootnoteSectionLayout,
 } from "components/Footnotes/FootnoteItemLayout";
+
+type SourceBlock =
+  | PubLeafletBlocksText.Main
+  | PubLeafletBlocksHeader.Main
+  | PubLeafletBlocksBlockquote.Main;
 
 export type PublishedFootnote = {
   footnoteId: string;
@@ -22,11 +26,7 @@ export type PublishedFootnote = {
   contentPlaintext: string;
   contentFacets?: PubLeafletRichtextFacet.Main[];
   // The block the footnote's ref sits in, previewed from the footnote list.
-  source?: {
-    plaintext: string;
-    facets?: PubLeafletRichtextFacet.Main[];
-    isHeading: boolean;
-  };
+  source: SourceBlock;
 };
 
 export function collectFootnotesFromBlocks(
@@ -36,12 +36,7 @@ export function collectFootnotesFromBlocks(
   let seen = new Set<string>();
   let idx = 1;
 
-  function scanFacets(
-    content:
-      | PubLeafletBlocksText.Main
-      | PubLeafletBlocksHeader.Main
-      | PubLeafletBlocksBlockquote.Main,
-  ) {
+  function scanFacets(content: SourceBlock) {
     let facets = content.facets;
     if (!facets || !Array.isArray(facets)) return;
     for (let facet of facets) {
@@ -54,11 +49,7 @@ export function collectFootnotesFromBlocks(
               index: idx++,
               contentPlaintext: feature.contentPlaintext,
               contentFacets: feature.contentFacets,
-              source: {
-                plaintext: content.plaintext,
-                facets,
-                isHeading: PubLeafletBlocksHeader.isMain(content),
-              },
+              source: content,
             });
           }
         }
@@ -66,13 +57,7 @@ export function collectFootnotesFromBlocks(
     }
   }
 
-  function scanBlockContent(
-    content:
-      | PubLeafletBlocksText.Main
-      | PubLeafletBlocksHeader.Main
-      | PubLeafletBlocksBlockquote.Main
-      | { $type?: string },
-  ) {
+  function scanBlockContent(content: SourceBlock | { $type?: string }) {
     if (
       PubLeafletBlocksText.isMain(content) ||
       PubLeafletBlocksHeader.isMain(content) ||
@@ -147,11 +132,8 @@ function PreviewFootnoteRef(props: { footnoteId: string; index: number }) {
 
 export function PublishedFootnoteSection(props: {
   footnotes: PublishedFootnote[];
+  footnoteIndexMap: Map<string, number>;
 }) {
-  let indexMap = useMemo(
-    () => buildFootnoteIndexMap(props.footnotes),
-    [props.footnotes],
-  );
   if (props.footnotes.length === 0) return null;
 
   return (
@@ -160,7 +142,7 @@ export function PublishedFootnoteSection(props: {
         <PublishedFootnoteItem
           key={fn.footnoteId}
           footnote={fn}
-          indexMap={indexMap}
+          footnoteIndexMap={props.footnoteIndexMap}
         />
       ))}
     </FootnoteSectionLayout>
@@ -169,7 +151,7 @@ export function PublishedFootnoteSection(props: {
 
 function PublishedFootnoteItem(props: {
   footnote: PublishedFootnote;
-  indexMap: Map<string, number>;
+  footnoteIndexMap: Map<string, number>;
 }) {
   let fn = props.footnote;
   return (
@@ -177,23 +159,25 @@ function PublishedFootnoteItem(props: {
       index={fn.index}
       indexHref={`#fnref-${fn.footnoteId}`}
       id={`fn-${fn.footnoteId}`}
-      sourcePreview={
-        fn.source && {
-          footnoteID: fn.footnoteId,
-          sourceSelector: `[id="fnref-${fn.footnoteId}"]`,
-          content: (
-            <div className={fn.source.isHeading ? "font-bold" : ""}>
-              <TextBlockCore
-                plaintext={fn.source.plaintext}
-                facets={fn.source.facets}
-                index={[]}
-                footnoteIndexMap={props.indexMap}
-                renderers={{ FootnoteRef: PreviewFootnoteRef }}
-              />
-            </div>
-          ),
-        }
-      }
+      sourcePreview={{
+        footnoteID: fn.footnoteId,
+        sourceSelector: `[id="fnref-${fn.footnoteId}"]`,
+        content: (
+          <div
+            className={
+              PubLeafletBlocksHeader.isMain(fn.source) ? "font-bold" : ""
+            }
+          >
+            <TextBlockCore
+              plaintext={fn.source.plaintext}
+              facets={fn.source.facets}
+              index={[]}
+              footnoteIndexMap={props.footnoteIndexMap}
+              renderers={{ FootnoteRef: PreviewFootnoteRef }}
+            />
+          </div>
+        ),
+      }}
     >
       {fn.contentPlaintext ? (
         <TextBlockCore
