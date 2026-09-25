@@ -7,8 +7,47 @@ import { useIdentityData } from "components/IdentityProvider";
 import { addDomain } from "actions/domains";
 import { DotLoader } from "components/utils/DotLoader";
 import { GoToArrow } from "components/Icons/GoToArrow";
+import { Modal } from "components/Modal";
+import { DomainVerification } from "./DomainVerification";
+import { useDomainStatus } from "./useDomainStatus";
 
-export function AddDomainForm(props: {}) {
+export function AddDomainModal(props: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  let [addedDomain, setAddedDomain] = useState<string | null>(null);
+  return (
+    <Modal
+      open={props.open}
+      onOpenChange={(open) => {
+        props.onOpenChange(open);
+        if (!open) setAddedDomain(null);
+      }}
+      title={addedDomain ? "Verify this Domain" : undefined}
+      className={addedDomain ? "max-w-md" : undefined}
+    >
+      {addedDomain ? (
+        <AddedDomainVerification domain={addedDomain} />
+      ) : (
+        <AddDomainForm onAdded={setAddedDomain} />
+      )}
+    </Modal>
+  );
+}
+
+function AddedDomainVerification(props: { domain: string }) {
+  let { data, pending } = useDomainStatus(props.domain);
+  if (!data) return <DotLoader />;
+  if (!pending)
+    return (
+      <div className="text-secondary">
+        <strong>{props.domain}</strong> is verified and ready to assign!
+      </div>
+    );
+  return <DomainVerification domain={props.domain} />;
+}
+
+function AddDomainForm(props: { onAdded: (domain: string) => void }) {
   let [value, setValue] = useState("");
   let [loading, setLoading] = useState(false);
   let { mutate } = useIdentityData();
@@ -41,7 +80,8 @@ export function AddDomainForm(props: {}) {
           });
           return;
         }
-        mutate();
+        await mutate();
+        props.onAdded(value);
       }}
     >
       <div className="flex justify-between">
