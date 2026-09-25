@@ -4,6 +4,7 @@ import { useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { deleteFootnoteFromBlock } from "./deleteFootnoteFromBlock";
 import { FootnoteSectionLayout } from "./FootnoteItemLayout";
+import { EditorFootnoteSourcePreview } from "./FootnoteSourcePreview";
 
 export function FootnoteSection(props: { hiddenOnDesktop?: boolean }) {
   let { footnotes } = useFootnoteContext();
@@ -19,6 +20,11 @@ export function FootnoteSection(props: { hiddenOnDesktop?: boolean }) {
           key={fn.footnoteEntityID}
           footnoteEntityID={fn.footnoteEntityID}
           index={fn.index}
+          sourcePreview={{
+            footnoteID: fn.footnoteEntityID,
+            sourceSelector: `.footnote-ref[data-footnote-id="${CSS.escape(fn.footnoteEntityID)}"]`,
+            content: <EditorFootnoteSourcePreview blockID={fn.blockID} />,
+          }}
           editable={permissions.write}
           onDelete={
             permissions.write

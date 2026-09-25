@@ -26,6 +26,7 @@ import { FootnoteItemLayout } from "./FootnoteItemLayout";
 import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
 import { useFootnoteContext } from "./FootnoteContext";
+import type { FootnoteSourcePreview } from "./FootnoteSourcePreview";
 
 export function FootnoteEditor(props: {
   footnoteEntityID: string;
@@ -33,6 +34,7 @@ export function FootnoteEditor(props: {
   editable: boolean;
   onDelete?: () => void;
   autoFocus?: boolean;
+  sourcePreview?: FootnoteSourcePreview;
 }) {
   // Read-only viewers don't need a live ProseMirror instance (with its yjs
   // doc, realtime registration, and remote-cursor overlay) per footnote —
@@ -45,16 +47,24 @@ export function FootnoteEditor(props: {
       <RenderedFootnote
         footnoteEntityID={props.footnoteEntityID}
         index={props.index}
+        sourcePreview={props.sourcePreview}
       />
     );
   return <EditableFootnote {...props} />;
 }
 
-function RenderedFootnote(props: { footnoteEntityID: string; index: number }) {
+function RenderedFootnote(props: {
+  footnoteEntityID: string;
+  index: number;
+  sourcePreview?: FootnoteSourcePreview;
+}) {
   let content = useEntity(props.footnoteEntityID, "block/text");
   return (
     <div data-footnote-editor={props.footnoteEntityID}>
-      <FootnoteItemLayout index={props.index}>
+      <FootnoteItemLayout
+        index={props.index}
+        sourcePreview={props.sourcePreview}
+      >
         {content ? (
           <RenderYJSFragment value={content.data.value} wrapper="p" />
         ) : (
@@ -71,6 +81,7 @@ function EditableFootnote(props: {
   editable: boolean;
   onDelete?: () => void;
   autoFocus?: boolean;
+  sourcePreview?: FootnoteSourcePreview;
 }) {
   let mountRef = useRef<HTMLDivElement | null>(null);
   let rep = useReplicache();
@@ -279,6 +290,7 @@ function EditableFootnote(props: {
     <div data-footnote-editor={props.footnoteEntityID}>
       <FootnoteItemLayout
         index={props.index}
+        sourcePreview={props.sourcePreview}
         indexAction={() => {
           let pm = mountRef.current?.querySelector(
             ".ProseMirror",

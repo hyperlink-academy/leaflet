@@ -715,6 +715,14 @@ img.ProseMirror-separator {
   display: none !important;
 }
 
+/* The ref a footnote-list preview was opened for, among the block's refs */
+.footnote-source-preview .footnote-preview-target {
+  color: rgb(var(--accent-contrast));
+  opacity: 1;
+  background-color: rgba(var(--accent-contrast), 0.15);
+  border-radius: 4px;
+}
+
 .footnote-side-enter {
   animation: footnote-fade-in 200ms ease-out;
 }
