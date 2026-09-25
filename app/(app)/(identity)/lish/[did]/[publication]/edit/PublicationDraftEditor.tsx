@@ -153,19 +153,28 @@ function PublicationDraftEditorContent(props: {
   // toggles in the theme editor.
   let cardBorderHidden = useCardBorderHiddenContext();
   let showPageBackground = !cardBorderHidden;
+  let isCanvas = useEntity(currentPage, "page/type")?.data.value === "canvas";
 
   if (!currentPage) return null;
 
   return (
     <div
       className={`pubPageContent  h-full ${
-        showPageBackground ? "mx-auto py-6" : "pt-2"
+        isCanvas
+          ? showPageBackground
+            ? "w-full py-6 px-3 sm:px-6"
+            : "w-full"
+          : showPageBackground
+            ? "mx-auto py-6"
+            : "pt-2"
       }`}
     >
       <Page
         key={currentPage}
         entityID={currentPage}
-        fullPageScroll={!showPageBackground}
+        // Canvas pages always span the editor so the canvas gets the full
+        // width below the nav.
+        fullPageScroll={isCanvas || !showPageBackground}
         header={
           <>
             <NewPublicationHeader

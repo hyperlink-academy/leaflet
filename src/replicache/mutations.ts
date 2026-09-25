@@ -512,8 +512,8 @@ const retractFact: Mutation<{ factID: string }> = async (args, ctx) => {
   await ctx.retractFact(args.factID);
 };
 
-// Add a content page to a publication draft leaflet's nav, seeded with a
-// single empty text block.
+// Add a content page to a publication draft leaflet's nav. Doc pages are
+// seeded with a single empty text block; canvas pages start empty.
 const addPublicationNavPage: Mutation<{
   rootEntity: string;
   pageEntity: string;
@@ -521,6 +521,7 @@ const addPublicationNavPage: Mutation<{
   navFactID: string;
   route: string;
   title: string;
+  pageType?: "doc" | "canvas";
   firstBlockEntity: string;
   firstBlockFactID: string;
 }> = async (args, ctx) => {
@@ -545,7 +546,7 @@ const addPublicationNavPage: Mutation<{
   await ctx.assertFact({
     entity: args.pageEntity,
     attribute: "page/type",
-    data: { type: "page-type-union", value: "doc" },
+    data: { type: "page-type-union", value: args.pageType ?? "doc" },
   });
   await ctx.assertFact({
     entity: args.pageEntity,
@@ -557,6 +558,7 @@ const addPublicationNavPage: Mutation<{
     attribute: "page/title",
     data: { type: "string", value: args.title },
   });
+  if (args.pageType === "canvas") return;
   await addBlock(
     {
       factID: args.firstBlockFactID,

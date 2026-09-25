@@ -228,6 +228,7 @@ function AddPageButton(props: {
   // path input is disabled and we collect a URL instead.
   let [isExternal, setIsExternal] = useState(false);
   let [externalLink, setExternalLink] = useState("");
+  let [isCanvas, setIsCanvas] = useState(false);
 
   function handleNameChange(newName: string) {
     setName(newName);
@@ -247,6 +248,7 @@ function AddPageButton(props: {
       setPathLinked(true);
       setIsExternal(false);
       setExternalLink("");
+      setIsCanvas(false);
     }
   }
 
@@ -278,6 +280,7 @@ function AddPageButton(props: {
         navFactID: v7(),
         route: value,
         title: name.trim(),
+        pageType: isCanvas ? "canvas" : "doc",
         firstBlockEntity: v7(),
         firstBlockFactID: v7(),
       });
@@ -358,6 +361,15 @@ function AddPageButton(props: {
         >
           Link to an external URL
         </Checkbox>
+        {!isExternal && (
+          <Checkbox
+            checked={isCanvas}
+            onChange={(e) => setIsCanvas(e.currentTarget.checked)}
+            small
+          >
+            Make it a canvas
+          </Checkbox>
+        )}
 
         <hr className="border-border-light" />
 

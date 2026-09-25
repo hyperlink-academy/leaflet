@@ -58,6 +58,7 @@ export function Page(props: {
     return pages[pages.length - 1] === props.entityID;
   });
   let sideColumnVisible = pageType === "doc" && !drawerOpen && isRightmostPage;
+  let canvasFill = props.fullPageScroll && pageType === "canvas";
 
   return (
     <CardThemeProvider entityID={props.entityID}>
@@ -94,7 +95,13 @@ export function Page(props: {
           >
             {/*this is used in the publication page, for publication information and
           nav*/}
-            {props.header}
+            {canvasFill && props.header ? (
+              <div className="shrink-0 w-full sm:max-w-[var(--page-width-units)] mx-auto">
+                {props.header}
+              </div>
+            ) : (
+              props.header
+            )}
             {props.first &&
               pageType === "doc" &&
               !publicationPage &&
@@ -104,6 +111,7 @@ export function Page(props: {
               entityID={props.entityID}
               first={props.first}
               zoomedBlock={zoomedBlock}
+              canvasFill={canvasFill}
             />
 
           </PageWrapper>
@@ -136,6 +144,9 @@ export const PageWrapper = (props: {
 }) => {
   const cardBorderHidden = useCardBorderHidden();
   let { ref } = usePreserveScroll<HTMLDivElement>(props.id);
+  // A full-page canvas scrolls itself, so the wrapper just gives it the
+  // viewport below whatever header sits above it.
+  let canvasFill = props.fullPageScroll && props.pageType === "canvas";
   return (
     // this div wraps the contents AND the page options.
     // it needs to be its own div because this container does NOT scroll, and therefore doesn't clip the absolutely positioned pageOptions
@@ -162,7 +173,7 @@ export const PageWrapper = (props: {
       publicationScrollContainer
       grow relative
       shrink-0 snap-center
-      ${props.flow ? "" : props.overflow === "hidden" ? "overflow-hidden" : "overflow-y-scroll"}
+      ${props.flow ? "" : props.overflow === "hidden" || canvasFill ? "overflow-hidden" : "overflow-y-scroll"}
       ${
         !cardBorderHidden &&
         `border
@@ -184,7 +195,7 @@ export const PageWrapper = (props: {
       >
         <div
           className={`postPageContent static
-          ${props.fullPageScroll ? "h-full sm:max-w-[var(--page-width-units)] mx-auto" : ` contents w-full ${props.flow ? "" : "h-full"}`}
+          ${canvasFill ? "h-full w-full flex flex-col" : props.fullPageScroll ? "h-full sm:max-w-[var(--page-width-units)] mx-auto" : ` contents w-full ${props.flow ? "" : "h-full"}`}
         `}
         >
           {props.children}
@@ -203,11 +214,18 @@ const PageContent = (props: {
   entityID: string;
   first?: boolean;
   zoomedBlock?: string;
+  canvasFill?: boolean;
 }) => {
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
   if (pageType === "doc")
     return (
       <DocContent entityID={props.entityID} zoomedBlock={props.zoomedBlock} />
+    );
+  if (props.canvasFill)
+    return (
+      <div className="grow min-h-0 w-full">
+        <Canvas entityID={props.entityID} first={props.first} fill />
+      </div>
     );
   return <Canvas entityID={props.entityID} first={props.first} />;
 };

@@ -19,7 +19,10 @@ import { Popover } from "./Popover";
 import { Separator } from "./Layout";
 import { CommentTiny } from "./Icons/CommentTiny";
 import { AddTags, PublicationMetadata } from "./Pages/PublicationMetadata";
-import { useLeafletPublicationData } from "./PageSWRDataProvider";
+import {
+  useLeafletPublicationData,
+  useLeafletPublicationPage,
+} from "./PageSWRDataProvider";
 import { useHandleCanvasDrop } from "./Blocks/useHandleCanvasDrop";
 import { useBlockMouseHandlers } from "./Blocks/useBlockMouseHandlers";
 import { RecommendEmptyTiny } from "./Icons/RecommendTiny";
@@ -33,6 +36,9 @@ export function Canvas(props: {
   entityID: string;
   preview?: boolean;
   first?: boolean;
+  // Fill the parent and scroll both axes, rather than sizing to the canvas
+  // and leaving horizontal scroll to the page.
+  fill?: boolean;
 }) {
   let entity_set = useEntitySetContext();
   let ref = useRef<HTMLDivElement>(null);
@@ -68,7 +74,7 @@ export function Canvas(props: {
       id={elementId.page(props.entityID).canvasScrollArea}
       className={`
         canvasWrapper
-        h-full w-fit
+        h-full ${props.fill ? "w-full" : "w-fit"}
         overflow-y-scroll
       `}
     >
@@ -76,7 +82,7 @@ export function Canvas(props: {
 
       <CanvasMetadata entityID={props.entityID} isSubpage={!props.first} />
 
-      <CanvasContent {...props} />
+      <CanvasContent entityID={props.entityID} preview={props.preview} />
     </div>
   );
 }
@@ -174,6 +180,8 @@ const CanvasMetadata = (props: {
   isSubpage: boolean | undefined;
 }) => {
   let { data: pub, normalizedPublication } = useLeafletPublicationData();
+  // Publication nav pages aren't posts: no tags or interactions.
+  let publicationPage = useLeafletPublicationPage();
   let { rep } = useReplicache();
   // A post header block on the canvas carries the tags and metadata itself.
   let hasHeaderBlock = useCanvasBlocksWithType(props.entityID).some(
@@ -186,7 +194,7 @@ const CanvasMetadata = (props: {
       showRecommends?: boolean;
     } | null>("post_preferences"),
   );
-  if (!pub || !pub.publications) return null;
+  if (!pub || !pub.publications || publicationPage) return null;
 
   if (!normalizedPublication) return null;
   if (hasHeaderBlock) return null;
