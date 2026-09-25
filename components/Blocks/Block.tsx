@@ -247,8 +247,9 @@ export const Block = memo(function Block(
       })}
       ${
         // A published list closes with its <ul>'s bottom padding, which,
-        // unlike a margin, adds to the next block's top margin.
-        props.listData && !props.nextBlock?.listData ? "box-content pb-2" : ""
+        // unlike a margin, adds to the next block's top margin. min-h-9 keeps
+        // the 28px row on top of that padding.
+        props.listData && !props.nextBlock?.listData ? "pb-2 min-h-9!" : ""
       }
       ${props.listData ? "isListItem" : ""}`}
     >

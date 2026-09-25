@@ -1320,26 +1320,21 @@ body > iframe[src*="js.stripe.com"] {
   min-width: 100%;
   min-height: 100%;
   overflow: clip;
-  width: calc(var(--canvas-content-width, 1272) * 1px * var(--canvas-zoom));
-  height: calc(var(--canvas-content-height, 0) * 1px * var(--canvas-zoom));
-}
-/* A fixed-size canvas has half a viewport of empty space on every side, so
-   any point of it can be scrolled to the viewport's center at any zoom;
-   centerOffset/centeredBox in src/canvasZoom/math.ts mirror this for the
-   engine. 100cq* is the scroller's client box. flow-root holds the layer's
-   top margin in, which overflow: clip alone lets collapse through. */
-.canvasZoomSpacer.canvasZoomCentered {
-  display: flow-root;
   width: calc(
-    var(--canvas-content-width, 1272) * 1px * var(--canvas-zoom) + 100cqw
+    var(--canvas-content-width, 1272) * 1px * var(--canvas-zoom) + 2 *
+      var(--canvas-margin-x, 0px)
   );
   height: calc(
-    var(--canvas-content-height, 0) * 1px * var(--canvas-zoom) + 100cqh
+    var(--canvas-content-height, 0) * 1px * var(--canvas-zoom) + 2 *
+      var(--canvas-margin-y, 0px)
   );
 }
-.canvasZoomCentered > .canvasZoomLayer {
-  margin-left: 50cqw;
-  margin-top: 50cqh;
+/* Empty space around the content on each side, besides the engine's
+   padding; contentMargin in src/canvasZoom/math.ts mirrors it. A centered
+   canvas keeps half the scroller's client box (100cq*). */
+.canvasZoomCentered {
+  --canvas-margin-x: 50cqw;
+  --canvas-margin-y: 50cqh;
 }
 .canvasAnimatedImage {
   will-change: transform;
@@ -1352,6 +1347,9 @@ body > iframe[src*="js.stripe.com"] {
      it is tall enough to fill the viewport at the smallest zoom (0.25 floor,
      MIN_ZOOM_FLOOR in math.ts) and the spacer clips the rest. */
   will-change: transform;
+  position: relative;
+  left: var(--canvas-margin-x, 0px);
+  top: var(--canvas-margin-y, 0px);
   width: calc(var(--canvas-content-width, 1272) * 1px);
   transform-origin: 0 0;
   transform: scale(var(--canvas-zoom));

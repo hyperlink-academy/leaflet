@@ -13,9 +13,7 @@ import {
   minZoom,
   nextStep,
   wheelToZoomFactor,
-  centerOffset,
-  centeredBox,
-  centeredScroll,
+  contentMargin,
 } from "./math";
 
 const DOM_DELTA_PIXEL = 0;
@@ -317,31 +315,24 @@ describe("approachZoom", () => {
 });
 
 describe("centered canvases", () => {
-  let content = { width: 600, height: 400 };
   let client = { width: 800, height: 600 };
 
   it("surround the content with half a viewport", () => {
-    expect(centerOffset(client)).toEqual({ left: 400, top: 300 });
-    expect(centeredBox(2, content, client)).toEqual({
-      width: 2000,
-      height: 1400,
-    });
+    let margin = contentMargin(true, client);
+    expect(margin).toEqual({ left: 400, top: 300 });
+    expect(
+      contentBox({
+        zoom: 2,
+        contentWidth: 600,
+        contentHeight: 400,
+        clientWidth: client.width,
+        clientHeight: client.height,
+        margin,
+      }),
+    ).toEqual({ width: 2000, height: 1400 });
   });
 
-  it("let any point of the content reach the viewport's center", () => {
-    // Content's top-left corner at the center.
-    expect(
-      centeredScroll({ left: -400, top: -300 }, 1, content, client),
-    ).toEqual({ left: -400, top: -300 });
-    // Bottom-right corner at the center, at 2x.
-    expect(centeredScroll({ left: 800, top: 500 }, 2, content, client)).toEqual(
-      { left: 800, top: 500 },
-    );
-  });
-
-  it("stop once the viewport's center would leave the content", () => {
-    expect(
-      centeredScroll({ left: -900, top: 900 }, 1, content, client),
-    ).toEqual({ left: -400, top: 100 });
+  it("keep no margin on other canvases", () => {
+    expect(contentMargin(false, client)).toEqual({ left: 0, top: 0 });
   });
 });
