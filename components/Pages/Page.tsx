@@ -77,6 +77,11 @@ export function Page(props: {
             fullPageScroll={props.fullPageScroll}
             flow={props.flow}
             pageType={pageType}
+            // A header pushes the canvas down; on short viewports the card
+            // scrolls so the canvas keeps a usable height below it.
+            overflow={
+              props.header && pageType === "canvas" ? "scroll" : undefined
+            }
             pageOptions={
               <PageOptions
                 entityID={props.entityID}
@@ -94,18 +99,25 @@ export function Page(props: {
           >
             {/*this is used in the publication page, for publication information and
           nav*/}
-            {props.header}
-            {props.first &&
-              pageType === "doc" &&
-              !publicationPage &&
-              !zoomedBlock && <PublicationMetadata />}
-            {props.first && pageType === "doc" && <InlineVersionBanner />}
-            <PageContent
-              entityID={props.entityID}
-              first={props.first}
-              zoomedBlock={zoomedBlock}
-            />
-
+            {props.header && pageType === "canvas" ? (
+              <CanvasBelowHeader header={props.header}>
+                <PageContent entityID={props.entityID} first={props.first} />
+              </CanvasBelowHeader>
+            ) : (
+              <>
+                {props.header}
+                {props.first &&
+                  pageType === "doc" &&
+                  !publicationPage &&
+                  !zoomedBlock && <PublicationMetadata />}
+                {props.first && pageType === "doc" && <InlineVersionBanner />}
+                <PageContent
+                  entityID={props.entityID}
+                  first={props.first}
+                  zoomedBlock={zoomedBlock}
+                />
+              </>
+            )}
           </PageWrapper>
           <DesktopPageFooter pageID={props.entityID} flow={props.flow} />
           <FootnotePopover pageID={props.entityID} />
@@ -162,7 +174,7 @@ export const PageWrapper = (props: {
       publicationScrollContainer
       grow relative
       shrink-0 snap-center
-      ${props.flow ? "" : props.overflow === "hidden" || props.pageType === "canvas" ? "overflow-hidden" : "overflow-y-scroll"}
+      ${props.flow ? "" : props.overflow === "hidden" || (props.pageType === "canvas" && props.overflow !== "scroll") ? "overflow-hidden" : "overflow-y-scroll"}
       ${
         !cardBorderHidden &&
         `border
@@ -184,7 +196,7 @@ export const PageWrapper = (props: {
       >
         <div
           className={`postPageContent static
-          ${props.fullPageScroll ? "h-full sm:max-w-[var(--page-width-units)] mx-auto" : ` contents w-full ${props.flow ? "" : "h-full"}`}
+          ${props.fullPageScroll ? `h-full mx-auto ${props.pageType === "canvas" ? "" : "sm:max-w-[var(--page-width-units)]"}` : ` contents w-full ${props.flow ? "" : "h-full"}`}
         `}
         >
           {props.children}
@@ -195,6 +207,27 @@ export const PageWrapper = (props: {
       </div>
       {props.pageOptions}
       {props.footnoteSideColumn}
+    </div>
+  );
+};
+
+// Stacks a header above a canvas that fills the rest of the page's height.
+const CanvasBelowHeader = (props: {
+  header: React.ReactNode;
+  children: React.ReactNode;
+}) => {
+  let cardBorderHidden = useCardBorderHidden();
+  return (
+    // Borderless pages overhang the bottom of the viewport (see PageWrapper's
+    // negative margins); pad it back so the canvas's bottom controls stay on
+    // screen.
+    <div
+      className={`pageHeaderCanvasLayout flex flex-col h-full ${cardBorderHidden ? "pb-2 sm:pb-6" : ""}`}
+    >
+      {props.header}
+      <div className="relative grow min-h-[360px] flex justify-center">
+        {props.children}
+      </div>
     </div>
   );
 };
