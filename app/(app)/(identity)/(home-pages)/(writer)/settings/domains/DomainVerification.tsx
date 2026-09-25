@@ -45,7 +45,15 @@ export function DomainVerification(props: { domain: string }) {
     pending,
     mutate: mutateDomainStatus,
   } = useDomainStatus(props.domain);
-  let isSubdomain = props.domain.split(".").length > 2;
+
+  let apex = data?.apexName ?? props.domain.split(".").slice(-2).join(".");
+  let isSubdomain = props.domain !== apex;
+  let relativeName = (name: string) =>
+    name === apex
+      ? "@"
+      : name.endsWith(`.${apex}`)
+        ? name.slice(0, -apex.length - 1)
+        : name;
 
   if (!pending) return null;
 
@@ -53,7 +61,7 @@ export function DomainVerification(props: { domain: string }) {
   if (data?.verification)
     records.push({
       type: data.verification[0].type,
-      name: data.verification[0].domain,
+      name: relativeName(data.verification[0].domain),
       value: data.verification[0].value,
     });
   if (data?.config)
@@ -61,7 +69,7 @@ export function DomainVerification(props: { domain: string }) {
       isSubdomain
         ? {
             type: "CNAME",
-            name: props.domain.split(".").slice(0, -2).join("."),
+            name: relativeName(props.domain),
             value: data.config.recommendedCNAME.sort(
               (a, b) => a.rank - b.rank,
             )[0].value,
@@ -78,8 +86,9 @@ export function DomainVerification(props: { domain: string }) {
   return (
     <>
       <div className="pb-2">
-        To verify this domain, add the following record to your DNS provider for{" "}
-        <strong>{props.domain}</strong>.
+        To verify this domain, add the following records to your DNS provider
+        for <strong>{apex}</strong>. If a record with the same name already
+        exists, replace it.
       </div>
       <div>Verification may take up to a few hours to process.</div>
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)] border border-border-light rounded-md text-left my-2 text-sm">

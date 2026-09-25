@@ -69,7 +69,7 @@ function AddDomainForm(props: { onAdded: (domain: string) => void }) {
             error: true,
             text:
               error === "invalid_domain"
-                ? "Invalid domain! Use just the base domain"
+                ? "Invalid domain! Use just the domain, like www.example.com"
                 : error === "domain_already_in_use"
                   ? "That domain is already in use!"
                   : "An unknown error occurred",
@@ -88,7 +88,6 @@ function AddDomainForm(props: { onAdded: (domain: string) => void }) {
         <h3>Add a Domain</h3>
       </div>
       <div className="text-sm text-secondary">
-        <div className="font-bold">Just include the base domain</div>
         Don't include the protocol{" "}
         <span className="text-tertiary">(like https://) </span>
         or path <span className="text-tertiary">(you can add that later)</span>
