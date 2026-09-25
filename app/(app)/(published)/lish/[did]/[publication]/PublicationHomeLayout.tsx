@@ -11,6 +11,7 @@ import { PublicationNav, type PublicationNavPage } from "./PublicationNav";
 import { SubscribeSuccessPrefetch } from "components/Subscribe/useSubscribeSuccessData";
 import { SpeedyLink } from "components/SpeedyLink";
 import type { WordmarkData } from "src/utils/wordmark";
+import { useCollapsingCanvasHeader } from "src/hooks/useCollapsingCanvasHeader";
 
 export function PublicationHomeLayout(props: {
   showPageBackground: boolean;
@@ -83,11 +84,9 @@ export function PublicationHomeLayout(props: {
       />
       {header}
       {props.fillWithCanvas ? (
-        <main
-          className={`pubContent relative grow min-h-[360px] w-full flex justify-center ${props.showPageBackground ? "" : "pt-3"}`}
-        >
+        <CanvasMain showPageBackground={props.showPageBackground}>
           {props.children}
-        </main>
+        </CanvasMain>
       ) : (
         <main className="pubContent sm:max-w-(--page-width-units) w-full mx-auto pb-5 px-1">
           {props.children}
@@ -128,5 +127,22 @@ export function PublicationHomeLayout(props: {
     >
       {inner}
     </div>
+  );
+}
+
+// Sized to the space below the stuck nav, so scrolling collapses the header
+// into just the nav, as on doc pages.
+function CanvasMain(props: {
+  showPageBackground: boolean;
+  children: React.ReactNode;
+}) {
+  let ref = useCollapsingCanvasHeader<HTMLElement>();
+  return (
+    <main
+      ref={ref}
+      className={`pubContent relative shrink-0 h-full w-full flex justify-center ${props.showPageBackground ? "" : "pt-3"}`}
+    >
+      {props.children}
+    </main>
   );
 }

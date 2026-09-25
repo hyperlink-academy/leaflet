@@ -33,6 +33,7 @@ import { EditorCommentMobileSheet } from "components/EditorComments/EditorCommen
 import { EditorCommentPopover } from "components/EditorComments/EditorCommentPopover";
 import { EditorCommentAnchorHover } from "components/EditorComments/EditorCommentAnchorHover";
 import { LinkPopover } from "components/LinkPopover";
+import { useCollapsingCanvasHeader } from "src/hooks/useCollapsingCanvasHeader";
 
 export function Page(props: {
   entityID: string;
@@ -211,21 +212,26 @@ export const PageWrapper = (props: {
   );
 };
 
-// Stacks a header above a canvas that fills the rest of the page's height.
+// Stacks a header above a canvas sized to the space below the stuck nav, so
+// scrolling collapses the header into just the nav, as on doc pages.
 const CanvasBelowHeader = (props: {
   header: React.ReactNode;
   children: React.ReactNode;
 }) => {
   let cardBorderHidden = useCardBorderHidden();
+  let canvasAreaRef = useCollapsingCanvasHeader<HTMLDivElement>();
   return (
     // Borderless pages overhang the bottom of the viewport (see PageWrapper's
     // negative margins); pad it back so the canvas's bottom controls stay on
     // screen.
     <div
-      className={`pageHeaderCanvasLayout flex flex-col h-full ${cardBorderHidden ? "pb-2 sm:pb-6" : ""}`}
+      className={`pageHeaderCanvasLayout flex flex-col ${cardBorderHidden ? "pb-2 sm:pb-6" : ""}`}
     >
       {props.header}
-      <div className="relative grow min-h-[360px] flex justify-center">
+      <div
+        ref={canvasAreaRef}
+        className="relative shrink-0 h-full flex justify-center"
+      >
         {props.children}
       </div>
     </div>
