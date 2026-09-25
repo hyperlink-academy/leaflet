@@ -22,6 +22,7 @@ import {
 } from "components/ThemeManager/ThemeProvider";
 import { usePublicationNavEntries } from "./usePublicationNavEntries";
 import { PublicationEditMobileFooter } from "./PublicationEditMobileFooter";
+import { FindReplace } from "components/FindReplace";
 import { FoldStateProvider } from "components/FoldStateProvider";
 
 export function PublicationDraftEditor(props: {
@@ -54,6 +55,7 @@ export function PublicationDraftEditor(props: {
         <SelectionManager />
         <FoldStateProvider>
           <LeafletThemeProvider entityID={props.leaflet_id}>
+            <FindReplace />
             <div className="flex flex-col h-full w-full bg-accent-1">
               <PublicationEditHeader
                 did={props.did}
@@ -158,9 +160,8 @@ function PublicationDraftEditorContent(props: {
 
   return (
     <div
-      className={`pubPageContent  h-full ${
-        showPageBackground ? "mx-auto py-6" : "pt-2"
-      }`}
+      className={`pubPageContent  h-full ${showPageBackground ? "mx-auto py-6" : "pt-2"
+        }`}
     >
       <Page
         key={currentPage}

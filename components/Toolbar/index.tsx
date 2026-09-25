@@ -191,6 +191,7 @@ export const ToolbarButton = (props: {
   active?: boolean;
   disabled?: boolean;
   hiddenOnCanvas?: boolean;
+  tooltipClassName?: string;
 }) => {
   let pageType = useContext(ToolbarPageTypeContext);
   if (pageType === "canvas" && props.hiddenOnCanvas) return null;
@@ -202,6 +203,7 @@ export const ToolbarButton = (props: {
       }}
       disabled={props.disabled}
       tooltipContent={props.tooltipContent}
+      tooltipClassName={props.tooltipClassName}
       className={`
         flex items-center rounded-md border border-transparent
         ${props.className}
