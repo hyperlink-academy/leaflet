@@ -331,6 +331,7 @@ async function bulkPaste({
     const position = positionByEntity.get(b.entityID);
     if (position !== undefined) {
       allFacts.push({
+        id: v7(),
         entity: b.parent,
         attribute: "card/block",
         data: {

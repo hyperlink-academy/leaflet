@@ -20,6 +20,7 @@ import { isZoomedBlockRoot, useUIState } from "src/useUIState";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { focusPage } from "src/utils/focusPage";
 import { v7 } from "uuid";
+import { byPosition } from "src/replicache/mutations";
 import { scanIndex } from "src/replicache/utils";
 import { indent, outdent } from "src/utils/list-operations";
 import { unfoldBlocks } from "src/utils/foldBlocks";
@@ -68,7 +69,10 @@ export const TextBlockKeymap = (
           let next = propsRef.current.nextBlock;
           useUIState.setState({
             selectedBlocks: [
-              { entityID: propsRef.current.entityID, parent: propsRef.current.parent },
+              {
+                entityID: propsRef.current.entityID,
+                parent: propsRef.current.parent,
+              },
               { entityID: next.entityID, parent: next.parent },
             ],
             focusedEntity: {
@@ -91,7 +95,10 @@ export const TextBlockKeymap = (
           let previous = propsRef.current.previousBlock;
           useUIState.setState({
             selectedBlocks: [
-              { entityID: propsRef.current.entityID, parent: propsRef.current.parent },
+              {
+                entityID: propsRef.current.entityID,
+                parent: propsRef.current.parent,
+              },
               { entityID: previous.entityID, parent: previous.parent },
             ],
             focusedEntity: {
@@ -147,7 +154,8 @@ export const TextBlockKeymap = (
     Backspace: (state, dispatch, view) =>
       backspace(propsRef, repRef, um)(state, dispatch, view),
     "Shift-Backspace": backspace(propsRef, repRef, um),
-    Enter: (state, dispatch, view) => enter(propsRef, repRef, um)(state, dispatch, view),
+    Enter: (state, dispatch, view) =>
+      enter(propsRef, repRef, um)(state, dispatch, view),
     "Shift-Enter": (state, dispatch, view) => {
       // Insert a hard break
       let hardBreak = schema.nodes.hard_break.create();
@@ -268,7 +276,10 @@ const moveCursorHorizontally =
       dispatch?.(state.tr.setSelection(TextSelection.create(state.doc, pos)));
       return true;
     }
-    if (!byWord && skipFootnote(state, dispatch, dir === -1 ? "before" : "after"))
+    if (
+      !byWord &&
+      skipFootnote(state, dispatch, dir === -1 ? "before" : "after")
+    )
       return true;
     let $head = state.selection.$head;
     let target: number | null = null;
@@ -276,8 +287,11 @@ const moveCursorHorizontally =
       let parent = $head.parent;
       // All inline leaves (footnote, mention, hard_break) have nodeSize 1, so a
       // single-char leafText keeps string offsets aligned with parentOffset.
-      let text = parent.textBetween(0, parent.content.size, undefined, (node) =>
-        node.type === schema.nodes.hard_break ? "\n" : "￼",
+      let text = parent.textBetween(
+        0,
+        parent.content.size,
+        undefined,
+        (node) => (node.type === schema.nodes.hard_break ? "\n" : "￼"),
       );
       let i = $head.parentOffset;
       if (dir === -1) {
@@ -550,7 +564,11 @@ const shifttab =
   async () => {
     if (useUIState.getState().selectedBlocks.length > 1) return false;
     if (!repRef.current) return false;
-    await outdent(propsRef.current, propsRef.current.previousBlock, repRef.current);
+    await outdent(
+      propsRef.current,
+      propsRef.current.previousBlock,
+      repRef.current,
+    );
     return true;
   };
 
@@ -570,7 +588,7 @@ const insertEmptyBlockAbove = async (
   let parent = listData ? listData.parent : propsRef.current.parent;
   let siblings = (
     await rep.query((tx) => scanIndex(tx).eav(parent, "card/block"))
-  ).sort((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  ).sort(byPosition);
   let index = siblings.findIndex(
     (sib) => sib.data.value === propsRef.current.entityID,
   );
@@ -757,7 +775,7 @@ const enter =
             (await repRef.current?.query((tx) =>
               scanIndex(tx).eav(parent, "card/block"),
             )) || []
-          ).sort((a, b) => (a.data.position > b.data.position ? 1 : -1));
+          ).sort(byPosition);
           let index = siblings.findIndex(
             (sib) => sib.data.value === propsRef.current.entityID,
           );
@@ -773,7 +791,7 @@ const enter =
             (await repRef.current?.query((tx) =>
               scanIndex(tx).eav(propsRef.current.entityID, "card/block"),
             )) || []
-          ).sort((a, b) => (a.data.position > b.data.position ? 1 : -1));
+          ).sort(byPosition);
           position = generateKeyBetween(
             createChild ? null : propsRef.current.position,
             children[0]?.data.position || null,

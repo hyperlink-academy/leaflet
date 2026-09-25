@@ -37,6 +37,28 @@ export type Fact<A extends Attribute> = {
   author_did?: string | null;
 };
 
+// A handler that throws comes back from the router as `{ error, errorText }`
+// with a 500; reporting it as a failed request makes Replicache keep the
+// mutations pending and retry with backoff, instead of treating the body as
+// a (garbage) response.
+const isRPCError = (
+  res: unknown,
+): res is { error: string; errorText?: string } =>
+  typeof res === "object" &&
+  res !== null &&
+  "error" in res &&
+  typeof (res as { error: unknown }).error === "string" &&
+  !("result" in res) &&
+  !("cookie" in res) &&
+  !("versionType" in res);
+const rpcFailure = (res: { error: string; errorText?: string }) => ({
+  response: undefined,
+  httpRequestInfo: {
+    errorMessage: res.errorText ?? res.error,
+    httpStatusCode: 500,
+  },
+});
+
 let ReplicacheContext = createContext({
   undoManager: createUndoManager(),
   rootEntity: "" as string,
@@ -184,19 +206,18 @@ export function ReplicacheProvider(props: {
           ...pushRequest,
           mutations: pushRequest.mutations.slice(0, batchSize),
         } as PushRequest;
-        let response = (
-          await callRPC("push", {
-            pushRequest: smolpushRequest,
-            token: tokenRef.current,
-            rootEntity: props.name,
-          })
-        ).result;
+        let res = await callRPC("push", {
+          pushRequest: smolpushRequest,
+          token: tokenRef.current,
+          rootEntity: props.name,
+        });
+        if (isRPCError(res)) return rpcFailure(res);
         if (pushRequest.mutations.length > batchSize)
           setTimeout(() => {
             newRep.push();
           }, 50);
         return {
-          response,
+          response: res.result,
           httpRequestInfo: { errorMessage: "", httpStatusCode: 200 },
         };
       },
@@ -205,6 +226,7 @@ export function ReplicacheProvider(props: {
           pullRequest,
           token_id: tokenRef.current.id,
         });
+        if (isRPCError(res)) return rpcFailure(res);
         return {
           response: res,
           httpRequestInfo: { errorMessage: "", httpStatusCode: 200 },

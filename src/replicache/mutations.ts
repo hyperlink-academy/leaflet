@@ -5,7 +5,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
 import { generateKeyBetween, generateNKeysBetween } from "fractional-indexing";
 import { canvasStackingOrder } from "src/utils/canvasBlockOrder";
-import { v5, v7 } from "uuid";
+import { v5 } from "uuid";
 import { localImages } from "src/utils/addImage";
 import { clearImageUploadStatus } from "src/utils/imageUploadStatus";
 import { enqueueBlobCleanup } from "src/utils/blobCleanup";
@@ -14,6 +14,22 @@ import {
   isPageLinkDisplay,
   type PageLinkDisplay,
 } from "src/utils/pageLinkDisplay";
+
+// Siblings can share a position (concurrent inserts into one gap generate the
+// same key), and a comparator that never returns 0 then orders them by input
+// order — the client's index order and the server's row order differ, so a
+// move could pick different neighbours on each side. Break ties by id.
+export const byPosition = (
+  a: { id: string; data: { position: string } },
+  b: { id: string; data: { position: string } },
+) =>
+  a.data.position === b.data.position
+    ? a.id > b.id
+      ? 1
+      : -1
+    : a.data.position > b.data.position
+      ? 1
+      : -1;
 
 export type MutationContext = {
   permission_token_id: string;
@@ -30,9 +46,7 @@ export type MutationContext = {
     ) => Promise<DeepReadonly<Fact<A>[]>>;
   };
   deleteEntity: (entity: string) => Promise<void>;
-  assertFact: <A extends Attribute>(
-    f: Omit<Fact<A>, "id"> & { id?: string },
-  ) => Promise<void>;
+  assertFact: <A extends Attribute>(f: AssertFactInput<A>) => Promise<void>;
   retractFact: (id: string) => Promise<void>;
   runOnServer(
     cb: (ctx: { supabase: SupabaseClient<Database> }) => Promise<void>,
@@ -235,9 +249,7 @@ const addLastBlock: Mutation<{
   entity: string;
 }> = async (args, ctx) => {
   let children = await ctx.scanIndex.eav(args.parent, "card/block");
-  let lastChild = children.toSorted((a, b) =>
-    a.data.position > b.data.position ? 1 : -1,
-  )[children.length - 1];
+  let lastChild = children.toSorted(byPosition)[children.length - 1];
   await ctx.assertFact({
     entity: args.parent,
     id: args.factID,
@@ -262,10 +274,10 @@ const moveBlock: Mutation<{
 }> = async (args, ctx) => {
   let children = (
     await ctx.scanIndex.eav(args.oldParent, "card/block")
-  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  ).toSorted(byPosition);
   let newSiblings = (
     await ctx.scanIndex.eav(args.newParent, "card/block")
-  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  ).toSorted(byPosition);
   let block = children.find((f) => f.data.value === args.block);
   if (!block) return;
   // Move by overwriting the block's existing card/block fact in place (reusing
@@ -324,10 +336,10 @@ const moveChildren: Mutation<{
 }> = async (args, ctx) => {
   let children = (
     await ctx.scanIndex.eav(args.oldParent, "card/block")
-  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  ).toSorted(byPosition);
   let newSiblings = (
     await ctx.scanIndex.eav(args.newParent, "card/block")
-  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  ).toSorted(byPosition);
   let index = newSiblings.findIndex((f) => f.data.value === args.after);
   let newPosition = generateKeyBetween(
     newSiblings[index]?.data.position || null,
@@ -365,7 +377,7 @@ const moveBlocks: Mutation<{
   after: string | null;
 }> = async (args, ctx) => {
   let children = (await ctx.scanIndex.eav(args.parent, "card/block")).toSorted(
-    (a, b) => (a.data.position > b.data.position ? 1 : -1),
+    byPosition,
   );
   let movingIds = new Set(args.blocks);
   let moving = args.blocks
@@ -405,10 +417,10 @@ const outdentBlock: Mutation<{
   //we should be able to get normal siblings here as we care only about one level
   let newSiblings = (
     await ctx.scanIndex.eav(args.newParent, "card/block")
-  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  ).toSorted(byPosition);
   let currentSiblings = (
     await ctx.scanIndex.eav(args.oldParent, "card/block")
-  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  ).toSorted(byPosition);
 
   let currentFactIndex = currentSiblings.findIndex(
     (f) => f.data.value === args.block,
@@ -426,7 +438,7 @@ const outdentBlock: Mutation<{
     .filter((sib) => !excludeSet.has(sib.data.value));
   let currentChildren = (
     await ctx.scanIndex.eav(args.block, "card/block")
-  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  ).toSorted(byPosition);
   let lastPosition =
     currentChildren[currentChildren.length - 1]?.data.position || null;
   for (let sib of currentSiblingsAfter) {
@@ -525,9 +537,7 @@ const addPublicationNavPage: Mutation<{
   firstBlockFactID: string;
 }> = async (args, ctx) => {
   let entries = await ctx.scanIndex.eav(args.rootEntity, "root/page");
-  let last = entries.toSorted((a, b) =>
-    a.data.position > b.data.position ? 1 : -1,
-  )[entries.length - 1];
+  let last = entries.toSorted(byPosition)[entries.length - 1];
   await ctx.createEntity({
     entityID: args.pageEntity,
     permission_set: args.permission_set,
@@ -581,9 +591,7 @@ const addPublicationNavLink: Mutation<{
   title: string;
 }> = async (args, ctx) => {
   let entries = await ctx.scanIndex.eav(args.rootEntity, "root/page");
-  let last = entries.toSorted((a, b) =>
-    a.data.position > b.data.position ? 1 : -1,
-  )[entries.length - 1];
+  let last = entries.toSorted(byPosition)[entries.length - 1];
   await ctx.createEntity({
     entityID: args.linkEntity,
     permission_set: args.permission_set,
@@ -647,9 +655,15 @@ const deleteEntity: Mutation<{ entity: string }> = async (args, ctx) => {
   await ctx.deleteEntity(args.entity);
 };
 
-export type FactInput = {
-  [k in Attribute]: Omit<Fact<k>, "id"> & { id?: string };
-}[Attribute];
+// A cardinality-many fact's id must come from the caller: the client and the
+// server run every mutation independently, so an id generated inside the
+// mutation diverges between them and any later write that reuses the client's
+// id lands as a second fact on the server.
+export type AssertFactInput<A extends Attribute> =
+  Attributes[A]["cardinality"] extends "many"
+    ? Fact<A>
+    : Omit<Fact<A>, "id"> & { id?: string };
+export type FactInput = { [k in Attribute]: AssertFactInput<k> }[Attribute];
 const assertFact: Mutation<FactInput | Array<FactInput>> = async (
   args,
   ctx,
@@ -694,7 +708,7 @@ const moveBlockUp: Mutation<{ entityID: string; parent: string }> = async (
   ctx,
 ) => {
   let children = (await ctx.scanIndex.eav(args.parent, "card/block")).toSorted(
-    (a, b) => (a.data.position > b.data.position ? 1 : -1),
+    byPosition,
   );
   let index = children.findIndex((f) => f.data.value === args.entityID);
   if (index === -1) return;
@@ -720,34 +734,32 @@ const moveBlockUp: Mutation<{ entityID: string; parent: string }> = async (
 const moveBlockDown: Mutation<{
   entityID: string;
   parent: string;
-  permission_set?: string;
+  // Used only when the block is already last: a new empty block is inserted
+  // above it. Generated by the caller so both sides create the same entity.
+  newBlock?: { permission_set: string; entityID: string; factID: string };
 }> = async (args, ctx) => {
   let children = (await ctx.scanIndex.eav(args.parent, "card/block")).toSorted(
-    (a, b) => (a.data.position > b.data.position ? 1 : -1),
+    byPosition,
   );
   let index = children.findIndex((f) => f.data.value === args.entityID);
   if (index === -1) return;
   let next = children[index + 1];
   if (!next) {
-    // If this is the last block, create a new empty block above it using the addBlock helper
-    if (!args.permission_set) return; // Can't create block without permission_set
-
-    let newEntityID = v7();
+    if (!args.newBlock) return;
     let previousBlock = children[index - 1];
     let position = generateKeyBetween(
       previousBlock?.data.position || null,
       children[index].data.position,
     );
 
-    // Call the addBlock mutation helper directly
     await addBlock(
       {
         parent: args.parent,
-        permission_set: args.permission_set,
-        factID: v7(),
+        permission_set: args.newBlock.permission_set,
+        factID: args.newBlock.factID,
         type: "text",
-        newEntityID: newEntityID,
-        position: position,
+        newEntityID: args.newBlock.entityID,
+        position,
       },
       ctx,
     );
@@ -817,6 +829,7 @@ const archiveDraft: Mutation<{
   mailboxEntity: string;
   archiveEntity: string;
   newBlockEntity: string;
+  newBlockFactID: string;
   entity_set: string;
 }> = async (args, ctx) => {
   let [existingDraft] = await ctx.scanIndex.eav(
@@ -844,9 +857,7 @@ const archiveDraft: Mutation<{
   }
 
   let archiveChildren = await ctx.scanIndex.eav(archiveEntity, "card/block");
-  let firstChild = archiveChildren.toSorted((a, b) =>
-    a.data.position > b.data.position ? 1 : -1,
-  )[0];
+  let firstChild = archiveChildren.toSorted(byPosition)[0];
 
   await ctx.createEntity({
     entityID: args.newBlockEntity,
@@ -865,6 +876,7 @@ const archiveDraft: Mutation<{
   });
 
   await ctx.assertFact({
+    id: args.newBlockFactID,
     entity: archiveEntity,
     attribute: "card/block",
     data: {
@@ -927,9 +939,7 @@ const addPollOption: Mutation<{
   });
 
   let children = await ctx.scanIndex.eav(args.pollEntity, "poll/options");
-  let lastChild = children.toSorted((a, b) =>
-    a.data.position > b.data.position ? 1 : -1,
-  )[children.length - 1];
+  let lastChild = children.toSorted(byPosition)[children.length - 1];
 
   await ctx.assertFact({
     entity: args.pollEntity,
@@ -961,9 +971,7 @@ const addGalleryImage: Mutation<{
   });
 
   let children = await ctx.scanIndex.eav(args.galleryEntity, "gallery/image");
-  let lastChild = children.toSorted((a, b) =>
-    a.data.position > b.data.position ? 1 : -1,
-  )[children.length - 1];
+  let lastChild = children.toSorted(byPosition)[children.length - 1];
 
   await ctx.assertFact({
     entity: args.galleryEntity,

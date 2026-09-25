@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { v7 } from "uuid";
 import { useIsBlockSelected } from "src/useUIState";
 import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps, BlockLayout } from "./Block";
@@ -454,6 +455,7 @@ function PostsListSettingsButton(props: { entityID: string }) {
                             });
                           } else {
                             rep.mutate.assertFact({
+                              id: v7(),
                               entity: props.entityID,
                               attribute: "posts-list/filter-tag",
                               data: { type: "string", value: tag },
