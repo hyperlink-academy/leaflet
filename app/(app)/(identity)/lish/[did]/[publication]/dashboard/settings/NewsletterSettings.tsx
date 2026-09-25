@@ -21,6 +21,7 @@ import {
   confirmReplyToVerification,
   disableNewsletter,
   enableNewsletter,
+  setEmbedRedirectUrl,
   setReplyToEmail,
 } from "actions/publications/newsletterSettings";
 import {
@@ -59,16 +60,18 @@ export const NewsletterSettings = () => {
       )}
       {newsletterEnabled && (
         <>
-      <SettingsSection title="Embeddable Subscribe Form">
-        <EmbedFormSnippet
-          publicationUri={publicationUri}
-          publicationUrl={record?.url}
-        />
-      </SettingsSection>
-        <DisableNewsletterSection
-          publicationUri={publicationUri}
-          mutate={mutate}
-        />
+          <SettingsSection title="Embeddable Subscribe Form">
+            <EmbedFormSnippet
+              publicationUri={publicationUri}
+              publicationUrl={record?.url}
+              savedRedirectUrl={settings?.embed_redirect_url ?? null}
+              mutate={mutate}
+            />
+          </SettingsSection>
+          <DisableNewsletterSection
+            publicationUri={publicationUri}
+            mutate={mutate}
+          />
         </>
       )}
     </>
@@ -85,13 +88,16 @@ function EnableNewsletterSection(props: {
   return (
     <SettingsSection title="Enable Newsletter">
       <div className="font-bold">
-       Newsletter mode allows you to send email updates to your subscribers!
+        Newsletter mode allows you to send email updates to your subscribers!
       </div>
-      <div >
-        Your first 1k email subscribers are included with Leaflet Pro.<br/> After
-        that, it&apos;s $5 for each additional 1k subs.
+      <div>
+        Your first 1k email subscribers are included with Leaflet Pro.
+        <br /> After that, it&apos;s $5 for each additional 1k subs.
       </div>
-      <div>If you have questions, or you want to import an existing email list, <a href="mailto:contact@leaflet.pub">contact us</a>!</div>
+      <div>
+        If you have questions, or you want to import an existing email list,{" "}
+        <a href="mailto:contact@leaflet.pub">contact us</a>!
+      </div>
       <ButtonPrimary
         className="self-start"
         disabled={pending}
@@ -203,7 +209,10 @@ function NewsletterOptions(props: {
   return (
     <SettingsSection title="Newsletter Options">
       <div>Newsletters allow your subscribers to opt into email updates.</div>
-       <div>If you have questions, or you want to import an existing email list, <a href="mailto:contact@leaflet.pub">contact us</a>!</div>
+      <div>
+        If you have questions, or you want to import an existing email list,{" "}
+        <a href="mailto:contact@leaflet.pub">contact us</a>!
+      </div>
       <div className="flex flex-col gap-4">
         <InputSetting label="Sender Name">
           <div className="light-container w-full max-w-prose text-secondary h-fit bg-border-light px-2 py-1 rounded-md">
@@ -372,6 +381,8 @@ function ReplyToButton(props: {
 const EmbedFormSnippet = (props: {
   publicationUri: string;
   publicationUrl?: string;
+  savedRedirectUrl: string | null;
+  mutate: ReturnType<typeof usePublicationData>["mutate"];
 }) => {
   let toaster = useToaster();
   let appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
@@ -380,7 +391,13 @@ const EmbedFormSnippet = (props: {
     action: "subscribe",
     publication: props.publicationUri,
   });
-  let redirect = props.publicationUrl || appUrl;
+  let defaultRedirect = props.publicationUrl || appUrl;
+  let [draft, setDraft] = useState<string | null>(null);
+  let [saving, setSaving] = useState(false);
+  let savedRedirect = props.savedRedirectUrl ?? defaultRedirect;
+  let redirectValue = draft ?? savedRedirect;
+  let redirectDirty = redirectValue.trim() !== savedRedirect;
+  let redirect = escapeHtmlAttribute(savedRedirect);
   let snippet = `<form action="${actionUrl}" method="get">
   <input type="hidden" name="action" value="${action}" />
   <input type="hidden" name="redirect" value="${redirect}" />
@@ -424,6 +441,57 @@ const EmbedFormSnippet = (props: {
           </ButtonSecondary>
         </div>
       </InputSetting>
+      <InputSetting
+        htmlFor="embedRedirect"
+        label="Redirect To"
+        helpText="Specify where a subscriber is redirected to once they subscribe."
+      >
+        <div className="relative">
+          <Input
+            id="embedRedirect"
+            className="input-with-border w-full text-primary"
+            type="url"
+            value={redirectValue}
+            placeholder={defaultRedirect}
+            onChange={(e) => setDraft(e.currentTarget.value)}
+          />
+          {redirectDirty && (
+            <div className="absolute top-[4px] right-1">
+              <ButtonPrimary
+                className="text-sm"
+                compact
+                disabled={saving}
+                onClick={async () => {
+                  if (saving) return;
+                  let next = redirectValue.trim();
+                  setSaving(true);
+                  let res = await setEmbedRedirectUrl(
+                    props.publicationUri,
+                    next === defaultRedirect ? "" : next,
+                  );
+                  setSaving(false);
+                  if (!res.ok) {
+                    toaster({
+                      type: "error",
+                      content:
+                        res.error === "invalid_url"
+                          ? "Please enter a full URL, like https://example.com."
+                          : "Failed to save redirect.",
+                    });
+                    return;
+                  }
+                  await props.mutate();
+                  setDraft(null);
+                  toaster({ type: "success", content: "Redirect saved." });
+                }}
+              >
+                {saving ? <DotLoader /> : "Save"}
+              </ButtonPrimary>
+            </div>
+          )}
+        </div>
+      </InputSetting>
+      <hr />
       <InputSetting label="Preview">
         <form
           className="light-container flex gap-2 items-center p-3 max-w-prose"
@@ -440,3 +508,11 @@ const EmbedFormSnippet = (props: {
     </>
   );
 };
+
+function escapeHtmlAttribute(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}

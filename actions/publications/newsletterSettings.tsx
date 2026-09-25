@@ -19,6 +19,7 @@ type SetReplyToError =
   | "invalid_email"
   | "database_error"
   | ConfirmationError;
+type SetEmbedRedirectError = "unauthorized" | "invalid_url" | "database_error";
 type ConfirmError =
   | "unauthorized"
   | "no_pending_verification"
@@ -211,6 +212,40 @@ export async function clearReplyToEmail(
     .eq("publication", publicationUri);
   if (error) {
     console.error("[newsletterSettings] clear reply-to failed:", error);
+    return Err("database_error");
+  }
+  return Ok(null);
+}
+
+export async function setEmbedRedirectUrl(
+  publicationUri: string,
+  urlRaw: string,
+): Promise<Result<null, SetEmbedRedirectError>> {
+  if (!(await assertPublicationOwner(publicationUri)))
+    return Err("unauthorized");
+
+  const trimmed = urlRaw.trim();
+  let url: string | null = null;
+  if (trimmed) {
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:")
+        return Err("invalid_url");
+      url = parsed.toString();
+    } catch {
+      return Err("invalid_url");
+    }
+  }
+
+  const { error } = await supabaseServerClient
+    .from("publication_newsletter_settings")
+    .update({
+      embed_redirect_url: url,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("publication", publicationUri);
+  if (error) {
+    console.error("[newsletterSettings] embed redirect update failed:", error);
     return Err("database_error");
   }
   return Ok(null);

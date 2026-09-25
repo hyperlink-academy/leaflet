@@ -462,6 +462,7 @@ export const publication_newsletter_settings = pgTable("publication_newsletter_s
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updated_at: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	confirmation_code: text("confirmation_code"),
+	embed_redirect_url: text("embed_redirect_url"),
 },
 (table) => {
 	return {
