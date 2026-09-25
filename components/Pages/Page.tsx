@@ -33,7 +33,10 @@ import { EditorCommentMobileSheet } from "components/EditorComments/EditorCommen
 import { EditorCommentPopover } from "components/EditorComments/EditorCommentPopover";
 import { EditorCommentAnchorHover } from "components/EditorComments/EditorCommentAnchorHover";
 import { LinkPopover } from "components/LinkPopover";
-import { useCollapsingCanvasHeader } from "src/hooks/useCollapsingCanvasHeader";
+import {
+  CanvasPageScrollProvider,
+  useCanvasPageScrollArea,
+} from "src/canvasZoom/pageScroll";
 
 export function Page(props: {
   entityID: string;
@@ -78,8 +81,8 @@ export function Page(props: {
             fullPageScroll={props.fullPageScroll}
             flow={props.flow}
             pageType={pageType}
-            // A header pushes the canvas down; on short viewports the card
-            // scrolls so the canvas keeps a usable height below it.
+            // The card scrolls the header, the stuck nav and the canvas
+            // together (see src/canvasZoom/pageScroll.tsx).
             overflow={
               props.header && pageType === "canvas" ? "scroll" : undefined
             }
@@ -212,27 +215,25 @@ export const PageWrapper = (props: {
   );
 };
 
-// Stacks a header above a canvas sized to the space below the stuck nav, so
-// scrolling collapses the header into just the nav, as on doc pages.
+// Stacks a header above a canvas that scrolls with the page, so scrolling
+// collapses the header into just the nav, as on doc pages.
 const CanvasBelowHeader = (props: {
   header: React.ReactNode;
   children: React.ReactNode;
 }) => {
   let cardBorderHidden = useCardBorderHidden();
-  let canvasAreaRef = useCollapsingCanvasHeader<HTMLDivElement>();
+  let { ref, pageScroll } = useCanvasPageScrollArea<HTMLDivElement>();
   return (
     // Borderless pages overhang the bottom of the viewport (see PageWrapper's
-    // negative margins); pad it back so the canvas's bottom controls stay on
-    // screen.
+    // negative margins); pad it back so the canvas's end lands on screen.
     <div
       className={`pageHeaderCanvasLayout flex flex-col ${cardBorderHidden ? "pb-2 sm:pb-6" : ""}`}
     >
       {props.header}
-      <div
-        ref={canvasAreaRef}
-        className="relative shrink-0 h-full flex justify-center"
-      >
-        {props.children}
+      <div ref={ref} className="relative shrink-0 flex justify-center">
+        <CanvasPageScrollProvider value={pageScroll}>
+          {props.children}
+        </CanvasPageScrollProvider>
       </div>
     </div>
   );

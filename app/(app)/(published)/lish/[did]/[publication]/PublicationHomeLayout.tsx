@@ -11,7 +11,10 @@ import { PublicationNav, type PublicationNavPage } from "./PublicationNav";
 import { SubscribeSuccessPrefetch } from "components/Subscribe/useSubscribeSuccessData";
 import { SpeedyLink } from "components/SpeedyLink";
 import type { WordmarkData } from "src/utils/wordmark";
-import { useCollapsingCanvasHeader } from "src/hooks/useCollapsingCanvasHeader";
+import {
+  CanvasPageScrollProvider,
+  useCanvasPageScrollArea,
+} from "src/canvasZoom/pageScroll";
 
 export function PublicationHomeLayout(props: {
   showPageBackground: boolean;
@@ -24,8 +27,8 @@ export function PublicationHomeLayout(props: {
   subscribe: SubscribeData;
   children: React.ReactNode;
   pageWidth?: number;
-  // The page is a canvas: it fills the height below the nav and widens past
-  // the page width, like the canvas in the publication editor.
+  // The page is a canvas: it scrolls with the page below the nav and widens
+  // past the page width, like the canvas in the publication editor.
   fillWithCanvas?: boolean;
 }) {
   let { ref } = usePreserveScroll<HTMLDivElement>(
@@ -130,19 +133,21 @@ export function PublicationHomeLayout(props: {
   );
 }
 
-// Sized to the space below the stuck nav, so scrolling collapses the header
-// into just the nav, as on doc pages.
+// The canvas scrolls with the page, so scrolling collapses the header into
+// just the nav, as on doc pages.
 function CanvasMain(props: {
   showPageBackground: boolean;
   children: React.ReactNode;
 }) {
-  let ref = useCollapsingCanvasHeader<HTMLElement>();
+  let { ref, pageScroll } = useCanvasPageScrollArea<HTMLElement>();
   return (
     <main
       ref={ref}
-      className={`pubContent relative shrink-0 h-full w-full flex justify-center ${props.showPageBackground ? "" : "pt-3"}`}
+      className={`pubContent relative shrink-0 w-full flex justify-center ${props.showPageBackground ? "" : "pt-3"}`}
     >
-      {props.children}
+      <CanvasPageScrollProvider value={pageScroll}>
+        {props.children}
+      </CanvasPageScrollProvider>
     </main>
   );
 }

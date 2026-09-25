@@ -141,17 +141,50 @@ export function contentBox(args: {
   };
 }
 
+// Scrollable space a host scroller already has beyond the spacer on each
+// vertical side (a page header above the canvas, page padding below it).
+export type Slack = { top: number; bottom: number };
+
+export const NO_SLACK: Slack = { top: 0, bottom: 0 };
+
 // Spacer padding that makes a pad-free offset (content at the scroller's
 // origin; negative or past the content when the anchor sits near an edge)
-// a valid scroll position: exactly the empty space it leaves on each side,
-// none once the content covers the viewport again.
-export function padsForScroll(scroll: Scroll, client: Size, box: Size): Pads {
+// a valid scroll position: exactly the empty space it leaves on each side
+// that the scroller does not already have, none once the content covers
+// the viewport again.
+export function padsForScroll(
+  scroll: Scroll,
+  client: Size,
+  box: Size,
+  slack: Slack = NO_SLACK,
+): Pads {
   return {
     left: Math.max(0, -scroll.left),
-    top: Math.max(0, -scroll.top),
+    top: Math.max(0, -scroll.top - slack.top),
     right: Math.max(0, scroll.left + client.width - box.width),
-    bottom: Math.max(0, scroll.top + client.height - box.height),
+    bottom: Math.max(0, scroll.top + client.height - box.height - slack.bottom),
   };
+}
+
+// A canvas whose vertical scrolling belongs to the page scroller around it:
+// its spacer starts `origin` px into that scroller's content, and its
+// viewport `viewportTop` px into that scroller's client box (below whatever
+// is stuck there). The canvas's own offset is negative while the page is
+// scrolled above the spacer.
+export function pageToCanvasScrollTop(
+  pageScrollTop: number,
+  origin: number,
+  viewportTop: number,
+) {
+  return pageScrollTop + viewportTop - origin;
+}
+
+export function canvasToPageScrollTop(
+  scrollTop: number,
+  origin: number,
+  viewportTop: number,
+) {
+  return scrollTop + origin - viewportTop;
 }
 
 // Pads a native scroll has moved fully off screen, dropped: the left/top pad

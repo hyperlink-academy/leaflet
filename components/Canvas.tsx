@@ -42,9 +42,12 @@ import { useCanvasBlocksWithType } from "src/hooks/queries/useBlocks";
 import {
   CanvasZoomProvider,
   getCanvasZoom,
+  useCanvasZoomEngine,
 } from "src/canvasZoom/CanvasZoomProvider";
 import { CanvasZoomLayer } from "src/canvasZoom/CanvasZoomLayer";
 import { CanvasFocusZoom } from "src/canvasZoom/CanvasFocusZoom";
+import { CanvasOverlay } from "src/canvasZoom/CanvasOverlays";
+import { useCanvasPageScroll } from "src/canvasZoom/pageScroll";
 import { CanvasZoomControls } from "./CanvasZoomControls";
 import {
   type CanvasMobileView,
@@ -80,24 +83,19 @@ export function Canvas(props: {
   let mobileArea = mobileViewArea(
     useEntity(props.entityID, "canvas/mobile-view")?.data.value,
   );
+  let pageScroll = useCanvasPageScroll();
 
   return (
     <div
-      ref={ref}
-      id={elementId.page(props.entityID).canvasScrollArea}
       // A class rather than an inline width: the zoom engine owns the
       // scroller's inline width, which it rewrites to fit a scrollbar gutter.
       style={{ "--canvas-width": `${size.width}px` } as CSSProperties}
-      className={`
-        canvasWrapper
-        h-full w-(--canvas-width) max-w-full
-        ${size.fixed ? "bg-border-light" : ""}
-        overflow-y-scroll touch-pan-x touch-pan-y
-      `}
+      className={`relative w-(--canvas-width) max-w-full ${pageScroll ? "" : "h-full"}`}
     >
       <CanvasZoomProvider
         pageKey={props.entityID}
         scrollerRef={ref}
+        pageScroll={pageScroll}
         contentWidth={size.width}
         centered={size.fixed}
         initialArea={mobileArea}
@@ -105,38 +103,47 @@ export function Canvas(props: {
         // Writers double tap empty canvas to add a block.
         doubleTapZoom={!!props.preview || !entity_set.permissions.write}
       >
-        <AddCanvasBlockButton
-          entityID={props.entityID}
-          entity_set={entity_set}
-          canvas={size}
-        />
+        <CanvasOverlay edge="top">
+          {/* A drawing is a picture in its parent page, with no phone framing
+              or post metadata of its own. */}
+          {!size.fixed && (
+            <div className="absolute top-6 right-3 sm:top-4 sm:right-4 z-20 flex flex-row gap-2 items-start">
+              {!props.preview && entity_set.permissions.write && (
+                <MobileViewToggle entityID={props.entityID} />
+              )}
+              <CanvasMetadata
+                entityID={props.entityID}
+                isSubpage={!props.first}
+              />
+            </div>
+          )}
 
-        {/* A drawing is a picture in its parent page, with no phone framing
-            or post metadata of its own. */}
-        {!size.fixed && (
-          <div className="absolute top-6 right-3 sm:top-4 sm:right-4 z-20 flex flex-row gap-2 items-start">
-            {!props.preview && entity_set.permissions.write && (
-              <MobileViewToggle entityID={props.entityID} />
-            )}
-            <CanvasMetadata
-              entityID={props.entityID}
-              isSubpage={!props.first}
-            />
-          </div>
-        )}
+          {!props.preview && entity_set.permissions.write && (
+            <InkToolbar pageID={props.entityID} />
+          )}
+        </CanvasOverlay>
         {!props.preview && entity_set.permissions.write && (
           <CanvasFocusZoom pageEntityID={props.entityID} />
         )}
 
-        {!props.preview && entity_set.permissions.write && (
-          <InkToolbar pageID={props.entityID} />
-        )}
-
-        <CanvasZoomControls className="absolute left-2 bottom-16 sm:left-4 sm:bottom-[88px] z-10 bg-bg-page rounded-md px-1 py-0.5" />
-
-        <CanvasZoomLayer contentHeight={size.height} mobileArea={mobileArea}>
-          <CanvasContent {...props} />
-        </CanvasZoomLayer>
+        <div
+          ref={ref}
+          id={elementId.page(props.entityID).canvasScrollArea}
+          className={`
+            canvasWrapper w-full
+            ${size.fixed ? "bg-border-light" : ""}
+            ${pageScroll ? "canvasPageScroll overflow-x-auto overflow-y-hidden" : "h-full overflow-y-scroll"}
+            touch-pan-x touch-pan-y
+          `}
+        >
+          <CanvasZoomLayer contentHeight={size.height} mobileArea={mobileArea}>
+            <CanvasContent {...props} />
+          </CanvasZoomLayer>
+        </div>
+        <CanvasOverlay edge="bottom">
+          <AddCanvasBlockButton entityID={props.entityID} canvas={size} />
+          <CanvasZoomControls className="absolute left-2 bottom-16 sm:left-4 sm:bottom-[88px] z-10 bg-bg-page rounded-md px-1 py-0.5" />
+        </CanvasOverlay>
       </CanvasZoomProvider>
     </div>
   );
@@ -393,11 +400,12 @@ const CanvasMetadata = (props: {
 
 const AddCanvasBlockButton = (props: {
   entityID: string;
-  entity_set: { set: string };
   canvas: CanvasBounds;
 }) => {
   let { rep, undoManager } = useReplicache();
-  let { permissions } = useEntitySetContext();
+  let entity_set = useEntitySetContext();
+  let { permissions } = entity_set;
+  let engine = useCanvasZoomEngine();
   let blocks = useEntity(props.entityID, "canvas/block");
 
   if (!permissions.write) return null;
@@ -414,19 +422,20 @@ const AddCanvasBlockButton = (props: {
         }
         className="w-fit p-2 rounded-full bg-accent-1 border-2 outline-solid outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-2"
         onMouseDown={() => {
-          let page = document.getElementById(
-            elementId.page(props.entityID).canvasScrollArea,
-          );
-          if (!page || !rep) return;
-          let zoom = getCanvasZoom(props.entityID);
+          if (!rep) return;
+          // Just inside the top right corner of what is on screen.
+          let corner = engine.canvasPointAt({
+            x: engine.viewportRect().width,
+            y: 0,
+          });
           addCanvasTextBlock(rep, undoManager, {
             parent: props.entityID,
             canvas: props.canvas,
             position: {
-              x: (page.clientWidth + page.scrollLeft) / zoom - 468,
-              y: 32 + page.scrollTop / zoom,
+              x: corner.x - 468,
+              y: Math.max(0, corner.y + 32),
             },
-            permission_set: props.entity_set.set,
+            permission_set: entity_set.set,
           }).then((newEntityID) =>
             setTimeout(() => {
               focusBlock(
