@@ -58,6 +58,8 @@ import { Separator } from "components/Layout";
 import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
 import { deleteBlock } from "src/utils/deleteBlock";
 import { CanvasLayerControls } from "components/CanvasLayerControls";
+import { addBlockBelow, focusNewTextBlock } from "src/utils/addBlockBelow";
+import { scanIndex } from "src/replicache/utils";
 
 const SWIPE_THRESHOLD = 50;
 
@@ -259,6 +261,18 @@ export const Block = memo(function Block(
       }`}
     >
       {!props.preview && <BlockMultiselectIndicator {...props} />}
+      {!props.preview &&
+        entity_set.permissions.write &&
+        props.pageType === "doc" &&
+        !props.listData &&
+        !isTextBlock[props.type] &&
+        !(props.previousBlock && isTextBlock[props.previousBlock.type]) && (
+          <InsertTextAboveGap
+            parent={props.parent}
+            entityID={props.entityID}
+            position={props.position}
+          />
+        )}
       {dropIndicator && <ListDropIndicator indicator={dropIndicator} />}
       {props.preview || !entity_set.permissions.write ? (
         baseBlock
@@ -339,6 +353,43 @@ const ListDropIndicator = (props: { indicator: string }) => {
         marginLeft: `calc(${parseInt(depth, 10) - 1} * var(--list-marker-width))`,
       }}
     />
+  );
+};
+
+// The gap above a non-text block that has no text block above it (e.g. an
+// image first on the page, or two embeds in a row) otherwise belongs to the
+// block itself, leaving nowhere to click to write there. Spans the whole gap:
+// the previous block's pb-2 plus this block's pt-1, or the first block's mt-2.
+const InsertTextAboveGap = (props: {
+  parent: string;
+  entityID: string;
+  position: string;
+}) => {
+  let { rep } = useReplicache();
+  let entity_set = useEntitySetContext();
+  return (
+    <div
+      className="insertTextAboveGap group/gap absolute left-0 right-0 -top-2 h-3 cursor-text flex items-center px-3 sm:px-4"
+      onPointerDown={(e) => e.stopPropagation()}
+      onMouseDown={async (e) => {
+        e.stopPropagation();
+        if (!rep) return;
+        let siblings = (
+          await rep.query((tx) => scanIndex(tx).eav(props.parent, "card/block"))
+        ).sort((a, b) => (a.data.position > b.data.position ? 1 : -1));
+        let index = siblings.findIndex((s) => s.data.value === props.entityID);
+        let newEntityID = await addBlockBelow(rep, {
+          parent: props.parent,
+          position: siblings[index - 1]?.data.position || null,
+          nextPosition: props.position,
+          permission_set: entity_set.set,
+          type: "text",
+        });
+        focusNewTextBlock(newEntityID);
+      }}
+    >
+      <div className="h-0.5 w-full rounded-full bg-border opacity-0 group-hover/gap:opacity-100" />
+    </div>
   );
 };
 
