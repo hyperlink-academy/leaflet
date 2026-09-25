@@ -4,7 +4,7 @@ import { FooterLayout } from "components/ActionBar/Footer";
 import { Media } from "components/Media";
 import { Toolbar } from "components/Toolbar";
 import { FootnoteToolbar } from "components/Toolbar/FootnoteToolbarWrapper";
-import { hasBlockToolbar } from "app/(app)/(editor)/[leaflet_id]/Footer";
+import { useHasBlockToolbar } from "app/(app)/(editor)/[leaflet_id]/Footer";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useEntity } from "src/replicache";
 
@@ -17,11 +17,12 @@ export function PublicationEditMobileFooter() {
   let entity_set = useEntitySetContext();
   let blockType = useEntity(focusedEntity?.entityID || null, "block/type")?.data
     .value;
+  let showBlockToolbar = useHasBlockToolbar(focusedEntity);
 
   if (!entity_set.permissions.write || !focusedEntity) return null;
 
   let toolbar =
-    focusedEntity.entityType === "block" && hasBlockToolbar(blockType) ? (
+    focusedEntity.entityType === "block" && showBlockToolbar ? (
       <Toolbar
         pageID={focusedEntity.parent}
         blockID={focusedEntity.entityID}

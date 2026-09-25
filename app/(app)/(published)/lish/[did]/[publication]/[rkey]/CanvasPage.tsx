@@ -111,7 +111,7 @@ export function CanvasPage({
   );
 }
 
-function CanvasContent({
+export function CanvasContent({
   zoomKey,
   mobileArea,
   lockViewerZoom,

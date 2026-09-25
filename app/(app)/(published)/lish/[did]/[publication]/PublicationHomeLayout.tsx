@@ -23,6 +23,9 @@ export function PublicationHomeLayout(props: {
   subscribe: SubscribeData;
   children: React.ReactNode;
   pageWidth?: number;
+  // The page is a canvas: it fills the height below the nav and widens past
+  // the page width, like the canvas in the publication editor.
+  fillWithCanvas?: boolean;
 }) {
   let { ref } = usePreserveScroll<HTMLDivElement>(
     props.subscribe.publicationUri,
@@ -79,9 +82,17 @@ export function PublicationHomeLayout(props: {
         publicationUri={props.subscribe.publicationUri}
       />
       {header}
-      <main className="pubContent sm:max-w-(--page-width-units) w-full mx-auto pb-5 px-1">
-        {props.children}
-      </main>
+      {props.fillWithCanvas ? (
+        <main
+          className={`pubContent relative grow min-h-[360px] w-full flex justify-center ${props.showPageBackground ? "" : "pt-3"}`}
+        >
+          {props.children}
+        </main>
+      ) : (
+        <main className="pubContent sm:max-w-(--page-width-units) w-full mx-auto pb-5 px-1">
+          {props.children}
+        </main>
+      )}
       {/* Always-rendered plain link so crawlers can reach every post through
           the archive, which infinite scroll otherwise hides past the first
           batch. Built off publicationUrl like the nav tabs, so it resolves on
@@ -98,7 +109,9 @@ export function PublicationHomeLayout(props: {
   );
   if (props.showPageBackground) {
     return (
-      <div className="pubWrapper flex flex-col sm:py-6 h-full max-w-(--page-width-units) mx-auto px-0 py-2">
+      <div
+        className={`pubWrapper flex flex-col sm:py-6 h-full mx-auto px-0 py-2 ${props.fillWithCanvas ? "max-w-(--page-width-units) sm:max-w-[min(1274px,calc(100vw-128px))]" : "max-w-(--page-width-units)"}`}
+      >
         <div
           ref={ref}
           className="pubContentScroll publicationScrollContainer overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] border border-border rounded-lg flex flex-col max-w-full w-[10000px]"

@@ -6,7 +6,7 @@ import { Toolbar } from "./Toolbar";
 import { FootnoteToolbar } from "./Toolbar/FootnoteToolbarWrapper";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { focusBlock } from "src/utils/focusBlock";
-import { hasBlockToolbar } from "app/(app)/(editor)/[leaflet_id]/Footer";
+import { useHasBlockToolbar } from "app/(app)/(editor)/[leaflet_id]/Footer";
 import { useEntity } from "src/replicache";
 
 export function DesktopPageFooter(props: { pageID: string; flow?: boolean }) {
@@ -19,6 +19,7 @@ export function DesktopPageFooter(props: { pageID: string; flow?: boolean }) {
 
   let blockType = useEntity(focusedEntity?.entityID || null, "block/type")?.data
     .value;
+  let showBlockToolbar = useHasBlockToolbar(focusedEntity);
 
   let isFootnoteFocused =
     focusedEntity?.entityType === "footnote" &&
@@ -40,7 +41,7 @@ export function DesktopPageFooter(props: { pageID: string; flow?: boolean }) {
     >
       {focusedEntity &&
         focusedEntity.entityType === "block" &&
-        hasBlockToolbar(blockType) &&
+        showBlockToolbar &&
         entity_set.permissions.write &&
         pageOfParent(focusedBlockParentID) === props.pageID && (
           <div
