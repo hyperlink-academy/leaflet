@@ -11,10 +11,6 @@ import { PublicationNav, type PublicationNavPage } from "./PublicationNav";
 import { SubscribeSuccessPrefetch } from "components/Subscribe/useSubscribeSuccessData";
 import { SpeedyLink } from "components/SpeedyLink";
 import type { WordmarkData } from "src/utils/wordmark";
-import {
-  CanvasPageScrollProvider,
-  useCanvasPageScrollArea,
-} from "src/canvasZoom/pageScroll";
 
 export function PublicationHomeLayout(props: {
   showPageBackground: boolean;
@@ -27,9 +23,6 @@ export function PublicationHomeLayout(props: {
   subscribe: SubscribeData;
   children: React.ReactNode;
   pageWidth?: number;
-  // The page is a canvas: it scrolls with the page below the nav and widens
-  // past the page width, like the canvas in the publication editor.
-  fillWithCanvas?: boolean;
 }) {
   let { ref } = usePreserveScroll<HTMLDivElement>(
     props.subscribe.publicationUri,
@@ -86,15 +79,9 @@ export function PublicationHomeLayout(props: {
         publicationUri={props.subscribe.publicationUri}
       />
       {header}
-      {props.fillWithCanvas ? (
-        <CanvasMain showPageBackground={props.showPageBackground}>
-          {props.children}
-        </CanvasMain>
-      ) : (
-        <main className="pubContent sm:max-w-(--page-width-units) w-full mx-auto pb-5 px-1">
-          {props.children}
-        </main>
-      )}
+      <main className="pubContent sm:max-w-(--page-width-units) w-full mx-auto pb-5 px-1">
+        {props.children}
+      </main>
       {/* Always-rendered plain link so crawlers can reach every post through
           the archive, which infinite scroll otherwise hides past the first
           batch. Built off publicationUrl like the nav tabs, so it resolves on
@@ -111,9 +98,7 @@ export function PublicationHomeLayout(props: {
   );
   if (props.showPageBackground) {
     return (
-      <div
-        className={`pubWrapper flex flex-col sm:py-6 h-full mx-auto px-0 py-2 ${props.fillWithCanvas ? "max-w-(--page-width-units) sm:max-w-[min(1274px,calc(100vw-128px))]" : "max-w-(--page-width-units)"}`}
-      >
+      <div className="pubWrapper flex flex-col sm:py-6 h-full max-w-(--page-width-units) mx-auto px-0 py-2">
         <div
           ref={ref}
           className="pubContentScroll publicationScrollContainer overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] border border-border rounded-lg flex flex-col max-w-full w-[10000px]"
@@ -130,24 +115,5 @@ export function PublicationHomeLayout(props: {
     >
       {inner}
     </div>
-  );
-}
-
-// The canvas scrolls with the page, so scrolling collapses the header into
-// just the nav, as on doc pages.
-function CanvasMain(props: {
-  showPageBackground: boolean;
-  children: React.ReactNode;
-}) {
-  let { ref, pageScroll } = useCanvasPageScrollArea<HTMLElement>();
-  return (
-    <main
-      ref={ref}
-      className={`pubContent relative shrink-0 w-full flex justify-center ${props.showPageBackground ? "" : "pt-3"}`}
-    >
-      <CanvasPageScrollProvider value={pageScroll}>
-        {props.children}
-      </CanvasPageScrollProvider>
-    </main>
   );
 }

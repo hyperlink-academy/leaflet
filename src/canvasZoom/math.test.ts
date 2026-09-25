@@ -14,8 +14,6 @@ import {
   nextStep,
   wheelToZoomFactor,
   contentMargin,
-  pageToCanvasScrollTop,
-  canvasToPageScrollTop,
 } from "./math";
 
 const DOM_DELTA_PIXEL = 0;
@@ -292,48 +290,6 @@ describe("padsForScroll / trimPads", () => {
     expect(trimPads(pads, { left: 40, top: 20 }, client, box)).toBeNull();
     let trailing = { ...NO_PADS, right: 200, bottom: 300 };
     expect(trimPads(trailing, { left: 150, top: 900 }, client, box)).toBeNull();
-  });
-});
-
-describe("page-owned vertical scrolling", () => {
-  // The canvas box starts 300px into the page content; the stuck nav takes
-  // the top 60px of the page's client box.
-  const origin = 300;
-  const viewportTop = 60;
-
-  it("maps the page offset to the canvas's own and back", () => {
-    expect(pageToCanvasScrollTop(0, origin, viewportTop)).toBe(-240);
-    expect(pageToCanvasScrollTop(240, origin, viewportTop)).toBe(0);
-    expect(pageToCanvasScrollTop(1000, origin, viewportTop)).toBe(760);
-    for (let top of [-240, 0, 760])
-      expect(
-        pageToCanvasScrollTop(
-          canvasToPageScrollTop(top, origin, viewportTop),
-          origin,
-          viewportTop,
-        ),
-      ).toBe(top);
-  });
-
-  it("pads only past the space the page already has", () => {
-    let client = { width: 800, height: 600 };
-    let box = { width: 1000, height: 2000 };
-    let slack = { top: 240, bottom: 24 };
-    // Within the header's space above the canvas: nothing to add.
-    expect(padsForScroll({ left: 0, top: -200 }, client, box, slack)).toEqual(
-      NO_PADS,
-    );
-    expect(padsForScroll({ left: 0, top: -300 }, client, box, slack)).toEqual({
-      ...NO_PADS,
-      top: 60,
-    });
-    expect(padsForScroll({ left: 0, top: 1420 }, client, box, slack)).toEqual(
-      NO_PADS,
-    );
-    expect(padsForScroll({ left: 0, top: 1500 }, client, box, slack)).toEqual({
-      ...NO_PADS,
-      bottom: 76,
-    });
   });
 });
 

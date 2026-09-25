@@ -38,9 +38,6 @@ import { type SubscribeData } from "app/(app)/(published)/lish/[did]/[publicatio
 import { useNavBackgroundFade } from "src/hooks/useNavBackgroundFade";
 import { useToaster } from "components/Toast";
 import { Checkbox } from "components/Checkbox";
-import { ToggleGroup } from "components/ToggleGroup";
-import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
-import { BlockCanvasPageSmall } from "components/Icons/BlockCanvasPageSmall";
 import { normalizeExternalLink } from "src/utils/externalPublicationLink";
 import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 import { useCardBorderHiddenContext } from "components/ThemeManager/ThemeProvider";
@@ -231,7 +228,6 @@ function AddPageButton(props: {
   // path input is disabled and we collect a URL instead.
   let [isExternal, setIsExternal] = useState(false);
   let [externalLink, setExternalLink] = useState("");
-  let [pageType, setPageType] = useState<"doc" | "canvas">("doc");
 
   function handleNameChange(newName: string) {
     setName(newName);
@@ -251,7 +247,6 @@ function AddPageButton(props: {
       setPathLinked(true);
       setIsExternal(false);
       setExternalLink("");
-      setPageType("doc");
     }
   }
 
@@ -283,7 +278,6 @@ function AddPageButton(props: {
         navFactID: v7(),
         route: value,
         title: name.trim(),
-        pageType,
         firstBlockEntity: v7(),
         firstBlockFactID: v7(),
       });
@@ -354,31 +348,6 @@ function AddPageButton(props: {
               {props.publicationUrl?.replace(/^https?:\/\//, "")}
               {cleanPath(path)}
             </div>
-            <ToggleGroup
-              fullWidth
-              background="light"
-              value={pageType}
-              onChange={setPageType}
-              optionClassName="py-0.5"
-              options={[
-                {
-                  value: "doc",
-                  label: (
-                    <div className="flex items-center justify-center gap-1">
-                      <BlockDocPageSmall /> Doc
-                    </div>
-                  ),
-                },
-                {
-                  value: "canvas",
-                  label: (
-                    <div className="flex items-center justify-center gap-1">
-                      <BlockCanvasPageSmall /> Canvas
-                    </div>
-                  ),
-                },
-              ]}
-            />
           </>
         )}
         <hr className="border-border-light" />

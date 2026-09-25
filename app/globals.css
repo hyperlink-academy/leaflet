@@ -1302,30 +1302,6 @@ body > iframe[src*="js.stripe.com"] {
 .canvasWrapper {
   container-type: size;
 }
-/* The page scroller owns vertical scrolling (src/canvasZoom/pageScroll.tsx):
-   the box is as tall as the spacer, at least the viewport below the stuck
-   nav, and scrolls sideways only. Size containment would zero its height,
-   and a resize of it must not move the page (the engine writes the offset
-   it wants right after). */
-.canvasWrapper.canvasPageScroll {
-  container-type: inline-size;
-  overflow-anchor: none;
-}
-.canvasPageScroll .canvasZoomSpacer {
-  min-height: var(--canvas-viewport-height, 0px);
-}
-.canvasOverlay {
-  pointer-events: none;
-}
-.canvasOverlay > * {
-  pointer-events: auto;
-}
-.canvasOverlayTop {
-  top: var(--canvas-sticky-top, 0px);
-}
-.canvasOverlayBottom {
-  bottom: var(--canvas-sticky-bottom, 0px);
-}
 /* Not inherited: a zoom write restyles only the spacer and the layer, not
    every element of the canvas. */
 @property --canvas-zoom {

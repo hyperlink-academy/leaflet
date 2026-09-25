@@ -10,8 +10,6 @@ import { useMemo, useRef, type ComponentProps } from "react";
 import { PageWrapper } from "components/Pages/Page";
 import { CanvasZoomProvider } from "src/canvasZoom/CanvasZoomProvider";
 import { CanvasZoomLayer } from "src/canvasZoom/CanvasZoomLayer";
-import { CanvasOverlay } from "src/canvasZoom/CanvasOverlays";
-import { useCanvasPageScroll } from "src/canvasZoom/pageScroll";
 import { mobileViewArea, type CanvasArea } from "src/canvasZoom/mobileView";
 import { CanvasZoomControls } from "components/CanvasZoomControls";
 import { CanvasBlocks } from "./CanvasBlockContent";
@@ -113,7 +111,7 @@ export function CanvasPage({
   );
 }
 
-export function CanvasContent({
+function CanvasContent({
   zoomKey,
   mobileArea,
   lockViewerZoom,
@@ -124,38 +122,30 @@ export function CanvasContent({
   lockViewerZoom: boolean;
 }) {
   let scrollerRef = useRef<HTMLDivElement>(null);
-  let pageScroll = useCanvasPageScroll();
 
   return (
-    // w-[1272px] max-w-full: the page keeps its full-canvas width while the
-    // zoomed-out spacer shrinks, and the scroller (not the page card around
-    // it) carries the horizontal overflow when zoomed in.
-    <div
-      className={`relative w-[1272px] max-w-full ${pageScroll ? "" : "h-full"}`}
+    <CanvasZoomProvider
+      pageKey={zoomKey}
+      scrollerRef={scrollerRef}
+      initialArea={mobileArea}
+      lockViewerZoom={lockViewerZoom}
     >
-      <CanvasZoomProvider
-        pageKey={zoomKey}
-        scrollerRef={scrollerRef}
-        pageScroll={pageScroll}
-        initialArea={mobileArea}
-        lockViewerZoom={lockViewerZoom}
+      {/* w-[1272px] max-w-full: the page keeps its full-canvas width while
+          the zoomed-out spacer shrinks, and the scroller (not the page card
+          around it) carries the horizontal overflow when zoomed in. */}
+      <div
+        ref={scrollerRef}
+        className="canvasWrapper h-full w-[1272px] max-w-full overflow-y-scroll touch-pan-x touch-pan-y postContent"
       >
-        <div
-          ref={scrollerRef}
-          className={`canvasWrapper w-full ${pageScroll ? "canvasPageScroll overflow-x-auto overflow-y-hidden" : "h-full overflow-y-scroll"} touch-pan-x touch-pan-y postContent`}
+        <CanvasZoomLayer
+          contentHeight={canvasContentHeight(props.blocks)}
+          mobileArea={mobileArea}
         >
-          <CanvasZoomLayer
-            contentHeight={canvasContentHeight(props.blocks)}
-            mobileArea={mobileArea}
-          >
-            <CanvasBlocks {...props} preview={false} />
-          </CanvasZoomLayer>
-        </div>
-        <CanvasOverlay edge="bottom">
-          <CanvasZoomControls className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-20 bg-bg-page border border-border-light rounded-md px-1 py-0.5" />
-        </CanvasOverlay>
-      </CanvasZoomProvider>
-    </div>
+          <CanvasBlocks {...props} preview={false} />
+        </CanvasZoomLayer>
+      </div>
+      <CanvasZoomControls className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-20 bg-bg-page border border-border-light rounded-md px-1 py-0.5" />
+    </CanvasZoomProvider>
   );
 }
 

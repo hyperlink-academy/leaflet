@@ -22,9 +22,8 @@ import { VersionHistory } from "./actions/VersionHistory";
 import useSWR from "swr";
 import { getHomeDocs } from "src/utils/homeDocsStorage";
 import { useAddToHomeParam } from "./AddToHomeEffect";
-import { pageOfParent } from "src/utils/blockGroups";
 
-function hasBlockToolbar(blockType: string | null | undefined) {
+export function hasBlockToolbar(blockType: string | null | undefined) {
   return (
     blockType === "text" ||
     blockType === "heading" ||
@@ -33,28 +32,6 @@ function hasBlockToolbar(blockType: string | null | undefined) {
     blockType === "datetime" ||
     blockType === "image"
   );
-}
-
-// Block types whose toolbar holds only controls that are hidden on canvas
-// pages (ToolbarButton's hiddenOnCanvas), so it would render empty there.
-const EMPTY_ON_CANVAS = new Set(["image"]);
-
-// Whether the focused block gets a formatting toolbar. A multi-selection
-// always does (the multiselect toolbar has its own actions).
-export function useHasBlockToolbar(
-  focusedEntity:
-    | { entityType: string; entityID: string; parent?: string }
-    | null
-    | undefined,
-) {
-  let block = focusedEntity?.entityType === "block" ? focusedEntity : null;
-  let blockType = useEntity(block?.entityID || null, "block/type")?.data.value;
-  let pageType = useEntity(pageOfParent(block?.parent) || null, "page/type")
-    ?.data.value;
-  let isMultiselect = useUIState((s) => s.selectedBlocks.length > 1);
-  if (!block || !hasBlockToolbar(blockType)) return false;
-  if (isMultiselect) return true;
-  return !(pageType === "canvas" && EMPTY_ON_CANVAS.has(blockType!));
 }
 export function LeafletFooter(props: { entityID: string }) {
   let focusedBlock = useUIState((s) => s.focusedEntity);
@@ -67,7 +44,6 @@ export function LeafletFooter(props: { entityID: string }) {
   });
   let blockType = useEntity(focusedBlock?.entityID || null, "block/type")?.data
     .value;
-  let showBlockToolbar = useHasBlockToolbar(focusedBlock);
   let addingToHome = useAddToHomeParam();
   let isOnHome =
     addingToHome ||
@@ -95,7 +71,7 @@ export function LeafletFooter(props: { entityID: string }) {
     >
       {focusedBlock &&
       focusedBlock.entityType == "block" &&
-      showBlockToolbar &&
+      hasBlockToolbar(blockType) &&
       entity_set.permissions.write ? (
         <FooterLayout
           onMouseDown={(e) => {
