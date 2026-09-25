@@ -43,6 +43,7 @@ export interface Preferences {
   showFirstLast: boolean
   prevNextDirection: 'ltr' | 'rtl' | (string & {})
   showRecommends: boolean
+  showOtherPublicationsInTags: boolean
 }
 
 const hashPreferences = 'preferences'

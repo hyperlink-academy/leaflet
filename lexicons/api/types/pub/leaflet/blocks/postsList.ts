@@ -18,9 +18,15 @@ export interface Main {
   $type?: 'pub.leaflet.blocks.postsList'
   view?: 'small' | 'medium' | 'chapter' | (string & {})
   highlightFirstPost?: boolean
+  showPageCount: boolean
   filterByTags?: string[]
   /** Show at most this many posts. */
   limit?: number
+  /** Show reader-facing controls above the list. The readerSearch / readerTagFilter / readerSort flags pick which ones; each defaults to true when this is set. */
+  readerControls?: boolean
+  readerSearch?: boolean
+  readerTagFilter?: boolean
+  readerSort?: boolean
 }
 
 const hashMain = 'main'

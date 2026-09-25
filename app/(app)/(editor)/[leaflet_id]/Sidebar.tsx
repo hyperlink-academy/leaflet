@@ -15,6 +15,7 @@ import { ShareOptions } from "app/(app)/(editor)/[leaflet_id]/actions/ShareOptio
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { PublishButton } from "./actions/PublishButton";
 import { PostSettings } from "components/PostSettings";
+import { VersionHistory } from "./actions/VersionHistory";
 import { Watermark } from "components/Watermark";
 import { BackToPubButton } from "./actions/BackToPubButton";
 import { useIdentityData } from "components/IdentityProvider";
@@ -55,7 +56,7 @@ export function LeafletSidebar() {
   if (publicationPage) return null;
 
   return (
-    <Media mobile={false} className="w-0 h-full relative">
+    <Media mobile={false} className="leafletSidebar w-0 h-full relative">
       <div
         className="absolute top-0 left-0  h-full flex justify-end "
         style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
@@ -71,6 +72,7 @@ export function LeafletSidebar() {
 
               <ShareOptions />
               <PostSettings />
+              <VersionHistory />
               <ThemePopover entityID={rootEntity} />
               <HelpButton />
               <hr className="text-border" />

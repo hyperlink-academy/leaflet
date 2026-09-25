@@ -16,13 +16,14 @@ import { Replicache } from "replicache";
 import type { Fact, ReplicacheMutators } from "src/replicache";
 import { elementId } from "src/utils/elementId";
 import { schema } from "./schema";
-import { useUIState } from "src/useUIState";
+import { isZoomedBlockRoot, useUIState } from "src/useUIState";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { focusPage } from "src/utils/focusPage";
 import { v7 } from "uuid";
 import { scanIndex } from "src/replicache/utils";
 import { indent, outdent } from "src/utils/list-operations";
-import { getPageBlocks } from "src/replicache/getBlocks";
+import { unfoldBlocks } from "src/utils/foldBlocks";
+import { getViewBlocks } from "components/SelectionManager/selectionState";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { UndoManager } from "src/undoManager";
 type PropsRef = RefObject<
@@ -111,6 +112,14 @@ export const TextBlockKeymap = (
     ArrowUp: moveCursorUp(propsRef, repRef),
     "Ctrl-j": moveCursorDown(propsRef, repRef, true),
     ArrowDown: moveCursorDown(propsRef, repRef),
+    "Ctrl-h": moveCursorHorizontally(propsRef, -1, false),
+    "Meta-h": moveCursorHorizontally(propsRef, -1, false),
+    "Ctrl-l": moveCursorHorizontally(propsRef, 1, false),
+    "Meta-l": moveCursorHorizontally(propsRef, 1, false),
+    "Ctrl-Shift-h": wordJumpBackOrZoomUp(propsRef),
+    "Meta-Shift-h": wordJumpBackOrZoomUp(propsRef),
+    "Ctrl-Shift-l": moveCursorHorizontally(propsRef, 1, true),
+    "Meta-Shift-l": moveCursorHorizontally(propsRef, 1, true),
     ArrowLeft: (state, dispatch, view) => {
       if (!state.selection.empty) return false;
       if (skipFootnote(state, dispatch, "before")) return true;
@@ -239,6 +248,68 @@ const moveCursorUp =
     return false;
   };
 
+// While zoomed, cmd/ctrl+shift+H at the start of a block yields to the
+// window-level zoom-up shortcut (ZoomedBlockHeader).
+const wordJumpBackOrZoomUp =
+  (propsRef: PropsRef): Command =>
+  (state, dispatch, view) =>
+    useUIState.getState().zoomedBlocks[propsRef.current.parent] &&
+    state.selection.empty &&
+    state.selection.from <= 1
+      ? false
+      : moveCursorHorizontally(propsRef, -1, true)(state, dispatch, view);
+
+const moveCursorHorizontally =
+  (propsRef: PropsRef, dir: -1 | 1, byWord: boolean): Command =>
+  (state, dispatch, view) => {
+    if (useUIState.getState().selectedBlocks.length > 1) return true;
+    if (!state.selection.empty) {
+      let pos = dir === -1 ? state.selection.from : state.selection.to;
+      dispatch?.(state.tr.setSelection(TextSelection.create(state.doc, pos)));
+      return true;
+    }
+    if (!byWord && skipFootnote(state, dispatch, dir === -1 ? "before" : "after"))
+      return true;
+    let $head = state.selection.$head;
+    let target: number | null = null;
+    if (byWord) {
+      let parent = $head.parent;
+      // All inline leaves (footnote, mention, hard_break) have nodeSize 1, so a
+      // single-char leafText keeps string offsets aligned with parentOffset.
+      let text = parent.textBetween(0, parent.content.size, undefined, (node) =>
+        node.type === schema.nodes.hard_break ? "\n" : "￼",
+      );
+      let i = $head.parentOffset;
+      if (dir === -1) {
+        while (i > 0 && /\s/.test(text[i - 1])) i--;
+        while (i > 0 && !/\s/.test(text[i - 1])) i--;
+      } else {
+        while (i < text.length && /\s/.test(text[i])) i++;
+        while (i < text.length && !/\s/.test(text[i])) i++;
+      }
+      if (i !== $head.parentOffset) target = $head.start() + i;
+    } else {
+      if (dir === -1 && $head.parentOffset > 0) target = $head.pos - 1;
+      if (dir === 1 && $head.parentOffset < $head.parent.content.size)
+        target = $head.pos + 1;
+    }
+    if (target !== null) {
+      dispatch?.(
+        state.tr
+          .setSelection(TextSelection.create(state.doc, target))
+          .scrollIntoView(),
+      );
+      return true;
+    }
+    let block =
+      dir === -1 ? propsRef.current.previousBlock : propsRef.current.nextBlock;
+    if (block) {
+      view?.dom.blur();
+      focusBlock(block, { type: dir === -1 ? "end" : "start" });
+    }
+    return true;
+  };
+
 const backspace =
   (
     propsRef: PropsRef,
@@ -277,6 +348,7 @@ const backspace =
     if (state.selection.anchor > 1 || state.selection.content().size > 0) {
       return finish(false);
     }
+    if (isZoomedBlockRoot(propsRef.current.entityID)) return finish(true);
     // if you are in a list...
     if (propsRef.current.listData) {
       // ...and the item is a checklist item, remove the checklist attribute
@@ -478,12 +550,7 @@ const shifttab =
   async () => {
     if (useUIState.getState().selectedBlocks.length > 1) return false;
     if (!repRef.current) return false;
-    if (!repRef.current) return false;
-    let { foldedBlocks, toggleFold } = useUIState.getState();
-    await outdent(propsRef.current, propsRef.current.previousBlock, repRef.current, {
-      foldedBlocks,
-      toggleFold,
-    });
+    await outdent(propsRef.current, propsRef.current.previousBlock, repRef.current);
     return true;
   };
 
@@ -594,6 +661,7 @@ const enter =
       state.selection.anchor <= 1 &&
       propsRef.current.pageType !== "canvas"
     ) {
+      if (isZoomedBlockRoot(propsRef.current.entityID)) return true;
       insertAboveChain = insertAboveChain.then(async () => {
         um.startGroup();
         try {
@@ -673,13 +741,14 @@ const enter =
       }
       if (propsRef.current.listData) {
         let createChild =
-          propsRef.current.nextBlock?.listData &&
-          propsRef.current.nextBlock.listData.depth >
-            propsRef.current.listData.depth &&
-          state.selection.anchor === state.doc.content.size - 1 &&
-          !useUIState
-            .getState()
-            .foldedBlocks.includes(propsRef.current.entityID);
+          isZoomedBlockRoot(propsRef.current.entityID) ||
+          (propsRef.current.nextBlock?.listData &&
+            propsRef.current.nextBlock.listData.depth >
+              propsRef.current.listData.depth &&
+            state.selection.anchor === state.doc.content.size - 1 &&
+            !useUIState
+              .getState()
+              .foldedBlocks.includes(propsRef.current.entityID));
 
         if (!createChild) {
           //get this items next sibling
@@ -766,10 +835,7 @@ const enter =
         });
         // Splitting a folded heading would drop the new block into its hidden
         // section; unfold so the freshly created block stays visible.
-        if (
-          useUIState.getState().foldedBlocks.includes(propsRef.current.entityID)
-        )
-          useUIState.getState().toggleFold(propsRef.current.entityID);
+        unfoldBlocks(repRef.current, [propsRef.current.entityID]);
       }
       // if you are are the beginning of a heading, move the heading level to the new block
       if (blockType === "heading") {
@@ -912,7 +978,7 @@ const metaA =
       );
       view?.dom.blur();
       if (repRef.current) {
-        let allBlocks = getPageBlocks(repRef.current, propsRef.current.parent);
+        let allBlocks = getViewBlocks(repRef.current, propsRef.current.parent);
         useUIState.setState({
           selectedBlocks: allBlocks.map((b) => ({
             entityID: b.entityID,

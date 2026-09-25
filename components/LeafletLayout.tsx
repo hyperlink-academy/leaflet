@@ -37,11 +37,14 @@ export const BookendSpacer = (props: {
   onClick?: (e: React.MouseEvent) => void;
   children?: React.ReactNode;
 }) => {
-  // these spacers go at the end of the first and last pages so that those pages can be scrolled to the center of the screen
+  // these spacers go at the end of the first and last pages so that those pages can be scrolled to the center of the screen.
+  // --leaflet-layout-width lets a host that isn't the full viewport (the reader's post viewer) center against its own box.
   return (
     <div
       className="spacer shrink-0 flex justify-end items-start"
-      style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
+      style={{
+        width: `calc((var(--leaflet-layout-width, 100vw) - var(--page-width-units)) / 2)`,
+      }}
       onClick={props.onClick ? props.onClick : () => {}}
     >
       {props.children}

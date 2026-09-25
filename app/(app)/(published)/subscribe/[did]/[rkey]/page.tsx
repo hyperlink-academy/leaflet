@@ -33,10 +33,13 @@ const resolveDid = cache(async function resolveDid(
 export async function generateMetadata(props: {
   params: Promise<{ did: string; rkey: string }>;
 }): Promise<Metadata> {
+  // Subscribe landing pages shouldn't be indexed, matching the publication
+  // subscribe pages.
+  const robots = { index: false };
   const params = await props.params;
   const did = await resolveDid(decodeURIComponent(params.did));
   const rkey = decodeURIComponent(params.rkey);
-  if (!did) return { title: "Publication 404" };
+  if (!did) return { title: "Publication 404", robots };
 
   const { data: publications } = await supabaseServerClient
     .from("publications")
@@ -47,7 +50,7 @@ export async function generateMetadata(props: {
     .limit(1);
 
   const record = normalizePublicationRecord(publications?.[0]?.record);
-  if (!record) return { title: "Publication 404" };
+  if (!record) return { title: "Publication 404", robots };
 
   const title = `Subscribe to ${record.name || "Untitled Publication"}`;
   const description = record.description || "";
@@ -55,6 +58,7 @@ export async function generateMetadata(props: {
     title,
     description,
     openGraph: { title, description },
+    robots,
   };
 }
 

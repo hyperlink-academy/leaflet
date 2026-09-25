@@ -28,6 +28,7 @@ export const get_document_interactions = makeRoute({
         data,
         uri,
         comments_on_documents(*),
+        comment_tombstones(uri, record),
         document_mentions_in_bsky(*),
         documents_in_publications(publications(*))
         `,
@@ -101,21 +102,30 @@ export const get_document_interactions = makeRoute({
       new Set(document.comments_on_documents.map((c) => new AtUri(c.uri).host)),
     );
     const profiles = await getProfiles(commentDids);
-    const comments = document.comments_on_documents.map((c) => {
-      const did = new AtUri(c.uri).host;
-      const p = profiles.get(did);
-      return {
-        ...c,
-        profile: p
-          ? {
-              did: p.did,
-              handle: p.handle,
-              displayName: p.displayName,
-              avatar: p.avatar,
-            }
-          : null,
-      };
-    });
+    const comments = [
+      ...document.comments_on_documents.map((c) => {
+        const did = new AtUri(c.uri).host;
+        const p = profiles.get(did);
+        return {
+          ...c,
+          edited: Array.isArray(c.past_versions) && c.past_versions.length > 0,
+          profile: p
+            ? {
+                did: p.did,
+                handle: p.handle,
+                displayName: p.displayName,
+                avatar: p.avatar,
+              }
+            : null,
+        };
+      }),
+      ...document.comment_tombstones.map((c) => ({
+        uri: c.uri,
+        record: c.record,
+        profile: null,
+        deleted: true,
+      })),
+    ];
 
     return {
       comments,

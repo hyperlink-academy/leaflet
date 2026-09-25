@@ -11,7 +11,7 @@ import {
 } from "drizzle/schema";
 import { pool } from "supabase/pool";
 import { Err, Ok, type Result } from "src/result";
-import { backfillAtprotoSubscriptionsForIdentity } from "actions/publications/subscribeToPublication";
+import { backfillAtprotoSubscriptionsForIdentity } from "src/subscriptions/atproto";
 
 export type MergeError =
   | "merge_not_pending"

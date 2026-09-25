@@ -10,7 +10,10 @@ import { AppBskyFeedDefs } from "@atproto/api";
 import { useMemo } from "react";
 import { PageWrapper } from "components/Pages/Page";
 import { Block } from "./PostContent";
-import { canvasBlockOrder } from "./collectPostImages";
+import {
+  canvasBlockOrder,
+  canvasStackOrders,
+} from "src/utils/canvasBlockOrder";
 import { CanvasBackgroundPattern } from "components/Canvas";
 import { getQuoteCount, Interactions } from "./Interactions/Interactions";
 import { Separator } from "components/Layout";
@@ -25,8 +28,11 @@ import { useInlineDrawer } from "./Interactions/useDrawerOpen";
 import { DrawerThreadPageProvider } from "./Interactions/drawerThreadContext";
 import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
+import { usePostFrame } from "./postFrame";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { useIsMobile } from "src/hooks/isMobile";
+import { PubLeafletBlocksPostHeader } from "lexicons/api";
+import { PostHeaderBlockProvider } from "./PostHeader/postHeaderBlockContext";
 
 export function CanvasPage({
   blocks,
@@ -54,10 +60,19 @@ export function CanvasPage({
     fullPageScroll,
     hasPageBackground,
   } = props;
+  let headerData = useMemo(
+    () => ({ data: document, profile, contributors, preferences }),
+    [document, profile, contributors, preferences],
+  );
   if (!document) return null;
 
   let isSubpage = !!pageId;
   let drawer = useInlineDrawer(document_uri);
+  // A header block on the canvas carries the metadata and interactions the
+  // corner overlay would otherwise show.
+  let hasHeaderBlock = blocks.some((b) =>
+    PubLeafletBlocksPostHeader.isMain(b.block),
+  );
 
   return (
     <PageWrapper
@@ -69,28 +84,32 @@ export function CanvasPage({
       }
       pageOptions={pageOptions}
     >
-      <CanvasMetadata
-        pageId={pageId}
-        isSubpage={isSubpage}
-        data={document}
-        profile={profile}
-        contributors={contributors}
-        preferences={preferences}
-        commentsCount={document.commentsCountByPage[pageId ?? ""] ?? 0}
-        quotesCount={getQuoteCount(document.quotesAndMentions, pageId)}
-        recommendsCount={document.recommendsCount}
-      />
-      <DrawerThreadPageProvider document_uri={document_uri} pageId={pageId}>
-        <CanvasContent
-          blocks={blocks}
-          did={did}
-          prerenderedCodeBlocks={prerenderedCodeBlocks}
-          bskyPostData={bskyPostData}
-          standardSitePostData={standardSitePostData}
-          pollData={pollData}
+      {!hasHeaderBlock && (
+        <CanvasMetadata
           pageId={pageId}
-          pages={pages}
+          isSubpage={isSubpage}
+          data={document}
+          profile={profile}
+          contributors={contributors}
+          preferences={preferences}
+          commentsCount={document.commentsCountByPage[pageId ?? ""] ?? 0}
+          quotesCount={getQuoteCount(document.quotesAndMentions, pageId)}
+          recommendsCount={document.recommendsCount}
         />
+      )}
+      <DrawerThreadPageProvider pageId={pageId}>
+        <PostHeaderBlockProvider value={headerData}>
+          <CanvasContent
+            blocks={blocks}
+            did={did}
+            prerenderedCodeBlocks={prerenderedCodeBlocks}
+            bskyPostData={bskyPostData}
+            standardSitePostData={standardSitePostData}
+            pollData={pollData}
+            pageId={pageId}
+            pages={pages}
+          />
+        </PostHeaderBlockProvider>
       </DrawerThreadPageProvider>
     </PageWrapper>
   );
@@ -119,6 +138,10 @@ function CanvasContent({
     () => [...blocks].sort(canvasBlockOrder),
     [blocks],
   );
+  let stackOrders = useMemo(
+    () => canvasStackOrders(sortedBlocks),
+    [sortedBlocks],
+  );
   let height =
     sortedBlocks.length > 0 ? Math.max(...sortedBlocks.map((b) => b.y), 0) : 0;
 
@@ -146,6 +169,7 @@ function CanvasContent({
               pageId={pageId}
               pages={pages}
               index={index}
+              stackOrder={stackOrders[index]}
             />
           );
         })}
@@ -164,6 +188,7 @@ function CanvasBlock({
   pageId,
   pages,
   index,
+  stackOrder,
 }: {
   canvasBlock: PubLeafletPagesCanvas.Block;
   did: string;
@@ -174,6 +199,7 @@ function CanvasBlock({
   pageId?: string;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   index: number;
+  stackOrder: number;
 }) {
   let { x, y, width, rotation } = canvasBlock;
   let transform = `translate(${x}px, ${y}px)${rotation ? ` rotate(${rotation}deg)` : ""}`;
@@ -191,6 +217,7 @@ function CanvasBlock({
         top: 0,
         left: 0,
         width,
+        zIndex: stackOrder,
         transform,
       }}
     >
@@ -231,20 +258,24 @@ const CanvasMetadata = (props: {
   recommendsCount: number;
 }) => {
   let isMobile = useIsMobile();
+  // Subpage counts are page-scoped, which no host chrome carries.
+  let hideInteractions = !usePostFrame().headerInteractions && !props.isSubpage;
   return (
     <div className="flex flex-row gap-1 items-center absolute top-3 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
-      <Interactions
-        quotesCount={props.quotesCount || 0}
-        commentsCount={props.commentsCount || 0}
-        recommendsCount={props.recommendsCount}
-        showComments={props.preferences.showComments !== false}
-        showMentions={props.preferences.showMentions !== false}
-        showRecommends={props.preferences.showRecommends !== false}
-        pageId={props.pageId}
-      />
+      {!hideInteractions && (
+        <Interactions
+          quotesCount={props.quotesCount || 0}
+          commentsCount={props.commentsCount || 0}
+          recommendsCount={props.recommendsCount}
+          showComments={props.preferences.showComments !== false}
+          showMentions={props.preferences.showMentions !== false}
+          showRecommends={props.preferences.showRecommends !== false}
+          pageId={props.pageId}
+        />
+      )}
       {!props.isSubpage && (
         <>
-          <Separator classname="h-5" />
+          {!hideInteractions && <Separator classname="h-5" />}
           <Popover
             side="bottom"
             align="end"

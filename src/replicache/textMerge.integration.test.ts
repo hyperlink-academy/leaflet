@@ -116,6 +116,7 @@ async function runPush(
       token,
       token_rights,
       null,
+      "",
     );
     let realLog = console.log;
     console.log = () => {};
@@ -209,6 +210,7 @@ describe.skipIf(!dbAvailable)("server-side text merging", () => {
         token,
         token_rights,
         null,
+        "",
       );
       let realLog = console.log;
       console.log = () => {};

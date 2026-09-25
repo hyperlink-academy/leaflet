@@ -12,6 +12,7 @@ import {
   defineDatasource,
   defineEndpoint,
   Tinybird,
+  defineToken,
   node,
   t,
   p,
@@ -22,7 +23,10 @@ import {
   TokenDefinition,
 } from "@tinybirdco/sdk";
 
-const PROD_READ_TOKEN = { name: "prod_read_token_v1", scopes: ["READ"] };
+// The token the app runs with (TINYBIRD_TOKEN in prod and the appview): reads
+// every endpoint and appends user events.
+const PROD_TOKEN = defineToken("prod_read_token_v1");
+const PROD_TOKEN_READ = { token: PROD_TOKEN, scope: "READ" } as const;
 
 // ============================================================================
 // Datasources
@@ -81,12 +85,10 @@ export const analyticsEvents = defineDatasource("analytics_events", {
 export type AnalyticsEventsRow = InferRow<typeof analyticsEvents>;
 
 /**
- * Subscription events, ingested server-side (see src/subscriptionAnalytics.ts).
- *
- * `origin` distinguishes subscriptions our own code created ("app") from ones
- * observed on the firehose that were created elsewhere ("firehose"). The
- * appview only ingests firehose events whose subscription row didn't already
- * exist, so app-created records aren't double counted when they echo back.
+ * Retired 2026-09-10: subscribe/unsubscribe are user_events now, and the
+ * app-origin rows here were backfilled into it
+ * (scripts/backfill-user-events-subscriptions.mts). Nothing writes or reads
+ * this datasource; the definition stays so a deploy keeps the raw history.
  */
 export const subscriptionEvents = defineDatasource("subscription_events", {
   description: "Publication subscribe/unsubscribe events",
@@ -115,6 +117,30 @@ export const subscriptionEvents = defineDatasource("subscription_events", {
 
 export type SubscriptionEventsRow = InferRow<typeof subscriptionEvents>;
 
+/**
+ * Signed-in user events, ingested server-side (see src/activeUserAnalytics.ts).
+ * `event` names what happened; `properties` carries per-event context so new
+ * attributes don't need schema changes. Unthrottled, so the endpoints below
+ * dedupe per identity at query time.
+ */
+export const userEvents = defineDatasource("user_events", {
+  description: "Product events for signed-in identities",
+  schema: {
+    timestamp: t.uint64(),
+    identity_id: t.string(),
+    did: t.string().default(""),
+    event: t.string().lowCardinality(), // see UserEvent in src/activeUserAnalytics.ts
+    properties: t.map(t.string(), t.string()),
+  },
+  engine: engine.mergeTree({
+    sortingKey: ["timestamp", "identity_id"],
+    partitionKey: "toYYYYMM(fromUnixTimestamp64Milli(timestamp))",
+  }),
+  tokens: [{ token: PROD_TOKEN, scope: "APPEND" }],
+});
+
+export type UserEventsRow = InferRow<typeof userEvents>;
+
 // ============================================================================
 // Endpoints
 // ============================================================================
@@ -132,7 +158,7 @@ export const publicationTraffic = defineEndpoint("publication_traffic", {
     referrer_host: p.string().optional(),
     bsky_post: p.string().optional(),
   },
-  tokens: [PROD_READ_TOKEN],
+  tokens: [PROD_TOKEN_READ],
   nodes: [
     node({
       name: "endpoint",
@@ -183,7 +209,7 @@ export type PublicationTrafficOutput = InferOutputRow<
 export const publicationTopReferrers = defineEndpoint(
   "publication_top_referrers",
   {
-    tokens: [PROD_READ_TOKEN],
+    tokens: [PROD_TOKEN_READ],
     description: "Top referrers for a publication domain",
     params: {
       domains: p.string(),
@@ -247,7 +273,7 @@ export type PublicationTopReferrersOutput = InferOutputRow<
  */
 export const publicationTopPages = defineEndpoint("publication_top_pages", {
   description: "Top pages for a publication domain",
-  tokens: [PROD_READ_TOKEN],
+  tokens: [PROD_TOKEN_READ],
   params: {
     domains: p.string(),
     date_from: p.string().optional(),
@@ -307,7 +333,7 @@ export const publicationBskyTraffic = defineEndpoint(
   "publication_bsky_traffic",
   {
     description: "Pageviews per referring Bluesky post for a publication",
-    tokens: [PROD_READ_TOKEN],
+    tokens: [PROD_TOKEN_READ],
     params: {
       domains: p.string(),
       date_from: p.string().optional(),
@@ -358,131 +384,214 @@ export type PublicationBskyTrafficOutput = InferOutputRow<
   typeof publicationBskyTraffic
 >;
 
+// ============================================================================
+// Active users
+// ============================================================================
+
+const USER_EVENT_DAY_SQL = "toDate(fromUnixTimestamp64Milli(timestamp))";
+
+// One activity metric per dashboard row: the event that counts toward it and,
+// optionally, a property the event must carry. Drives both the per-period
+// counts and the raw event listing so the two can't disagree about what a
+// metric means.
+export const ACTIVITY_METRICS = {
+  signups: { event: "signup" },
+  documents_created: { event: "create_document" },
+  // Republishing an edit is a `publish` event too, but not a new post.
+  posts_published: { event: "publish", where: ["first_publish", "true"] },
+  publications_created: { event: "create_publication" },
+  subscribes: { event: "subscribe" },
+  unsubscribes: { event: "unsubscribe" },
+  memberships_joined: { event: "join_membership" },
+  pro_upgrades: { event: "pro_upgrade" },
+  pro_cancels: { event: "pro_cancel" },
+  connect_onboardings_started: { event: "connect_onboarding_started" },
+  connect_accounts_enabled: { event: "connect_account_enabled" },
+} as const satisfies Record<
+  string,
+  { event: string; where?: readonly [key: string, value: string] }
+>;
+export type ActivityMetric = keyof typeof ACTIVITY_METRICS;
+
+// Per-period event counts (not distinct identities) shared by both active-user
+// endpoints.
+const ACTIVITY_COUNT_SQL = Object.entries(ACTIVITY_METRICS)
+  .map(([key, m]) => {
+    let where =
+      "where" in m ? ` AND properties['${m.where[0]}'] = '${m.where[1]}'` : "";
+    return `          countIf(event = '${m.event}'${where}) AS ${key}`;
+  })
+  .join(",\n");
+const ACTIVITY_COUNT_OUTPUT = Object.fromEntries(
+  Object.keys(ACTIVITY_METRICS).map((key) => [key, t.uint64()]),
+) as Record<ActivityMetric, ReturnType<typeof t.uint64>>;
+
 /**
- * publication_subscribes_timeseries – daily subscribe/unsubscribe counts for a
- * publication, split by method.
+ * active_users_timeseries – distinct identities with any event per calendar
+ * period (weeks start on Monday), plus activity counts for the period.
+ * `pro_active` counts identities that were Pro on at least one event in the
+ * period (events are stamped with the status at the time), so an identity that
+ * flips mid-period counts as Pro.
  */
-export const publicationSubscribesTimeseries = defineEndpoint(
-  "publication_subscribes_timeseries",
-  {
-    description: "Daily subscription event counts for a publication",
-    tokens: [PROD_READ_TOKEN],
-    params: {
-      publication_uri: p.string(),
-      date_from: p.string().optional(),
-      date_to: p.string().optional(),
-    },
-    nodes: [
-      node({
-        name: "endpoint",
-        sql: `
-        SELECT
-          toDate(fromUnixTimestamp64Milli(timestamp)) AS day,
-          countIf(event = 'subscribe' AND method = 'email') AS email_subscribes,
-          countIf(event = 'subscribe' AND method = 'atproto') AS atproto_subscribes,
-          countIf(event = 'unsubscribe') AS unsubscribes
-        FROM subscription_events
-        WHERE publication_uri = {{String(publication_uri)}}
-          {% if defined(date_from) %}
-            AND fromUnixTimestamp64Milli(timestamp) >= parseDateTimeBestEffort({{String(date_from)}})
-          {% end %}
-          {% if defined(date_to) %}
-            AND fromUnixTimestamp64Milli(timestamp) <= parseDateTimeBestEffort({{String(date_to)}})
-          {% end %}
-        GROUP BY day
-        ORDER BY day ASC
-      `,
-      }),
-    ],
-    output: {
-      day: t.date(),
-      email_subscribes: t.uint64(),
-      atproto_subscribes: t.uint64(),
-      unsubscribes: t.uint64(),
-    },
+export const activeUsersTimeseries = defineEndpoint("active_users_timeseries", {
+  description: "Distinct active identities per day/week/month",
+  tokens: [PROD_TOKEN_READ],
+  params: {
+    granularity: p.string().optional("day"), // day | week | month
+    date_from: p.string().optional(),
+    date_to: p.string().optional(),
   },
-);
+  nodes: [
+    node({
+      name: "endpoint",
+      sql: `
+        SELECT
+          multiIf(
+            {{String(granularity, 'day')}} = 'month', toStartOfMonth(${USER_EVENT_DAY_SQL}),
+            {{String(granularity, 'day')}} = 'week', toMonday(${USER_EVENT_DAY_SQL}),
+            ${USER_EVENT_DAY_SQL}
+          ) AS period,
+          uniqExact(identity_id) AS active,
+          uniqExactIf(identity_id, properties['pro'] = 'true') AS pro_active,
+          ${ACTIVITY_COUNT_SQL}
+        FROM user_events
+        WHERE 1
+          {% if defined(date_from) %}
+            AND ${USER_EVENT_DAY_SQL} >= toDate({{String(date_from)}})
+          {% end %}
+          {% if defined(date_to) %}
+            AND ${USER_EVENT_DAY_SQL} <= toDate({{String(date_to)}})
+          {% end %}
+        GROUP BY period
+        ORDER BY period ASC
+      `,
+    }),
+  ],
+  output: {
+    period: t.date(),
+    active: t.uint64(),
+    pro_active: t.uint64(),
+    ...ACTIVITY_COUNT_OUTPUT,
+  },
+});
 
-export type PublicationSubscribesTimeseriesParams = InferParams<
-  typeof publicationSubscribesTimeseries
+export type ActiveUsersTimeseriesParams = InferParams<
+  typeof activeUsersTimeseries
 >;
-export type PublicationSubscribesTimeseriesOutput = InferOutputRow<
-  typeof publicationSubscribesTimeseries
+export type ActiveUsersTimeseriesOutput = InferOutputRow<
+  typeof activeUsersTimeseries
 >;
 
 /**
- * publication_subscribe_sources – where a publication's subscribes came from:
- * placement on the page, referring publication (recommendations), and whether
- * the subscription was created in-app or observed on the firehose.
+ * active_users_windows – distinct identities and activity counts over the last
+ * 1, 7 and 30 calendar days (UTC, including today), one row per window.
  */
-export const publicationSubscribeSources = defineEndpoint(
-  "publication_subscribe_sources",
-  {
-    description: "Subscribe counts by source placement for a publication",
-    tokens: [PROD_READ_TOKEN],
-    params: {
-      publication_uri: p.string(),
-      date_from: p.string().optional(),
-      date_to: p.string().optional(),
-      limit: p.int32().optional(50),
-    },
-    nodes: [
-      node({
-        name: "endpoint",
-        sql: `
+export const activeUsersWindows = defineEndpoint("active_users_windows", {
+  description: "Distinct active identities over the last 1/7/30 calendar days",
+  tokens: [PROD_TOKEN_READ],
+  params: {},
+  nodes: [
+    node({
+      name: "endpoint",
+      sql: `
         SELECT
-          origin,
-          source_placement,
-          source_publication,
-          method,
-          count() AS subscribes,
-          uniq(subscriber) AS subscribers
-        FROM subscription_events
-        WHERE event = 'subscribe'
-          AND publication_uri = {{String(publication_uri)}}
+          window_days,
+          uniqExact(identity_id) AS active,
+          uniqExactIf(identity_id, properties['pro'] = 'true') AS pro_active,
+          ${ACTIVITY_COUNT_SQL}
+        FROM user_events
+        ARRAY JOIN [1, 7, 30] AS window_days
+        WHERE ${USER_EVENT_DAY_SQL} > today() - window_days
+        GROUP BY window_days
+        ORDER BY window_days ASC
+      `,
+    }),
+  ],
+  output: {
+    window_days: t.uint8(),
+    active: t.uint64(),
+    pro_active: t.uint64(),
+    ...ACTIVITY_COUNT_OUTPUT,
+  },
+});
+
+export type ActiveUsersWindowsOutput = InferOutputRow<
+  typeof activeUsersWindows
+>;
+
+/**
+ * user_events_list – raw rows for one event name, newest first, for the
+ * admin dashboard's per-metric event table. `before` (Unix millis) pages
+ * backwards from the previous page's oldest row.
+ */
+export const userEventsList = defineEndpoint("user_events_list", {
+  description: "Raw user events for one event name, newest first",
+  tokens: [PROD_TOKEN_READ],
+  params: {
+    event: p.string(),
+    date_from: p.string().optional(),
+    date_to: p.string().optional(),
+    property_key: p.string().optional(),
+    property_value: p.string().optional(),
+    before: p.int64().optional(),
+    limit: p.int32().optional(50),
+  },
+  nodes: [
+    node({
+      name: "endpoint",
+      sql: `
+        SELECT
+          timestamp,
+          identity_id,
+          did,
+          event,
+          toJSONString(properties) AS properties_json
+        FROM user_events
+        WHERE event = {{String(event)}}
           {% if defined(date_from) %}
-            AND fromUnixTimestamp64Milli(timestamp) >= parseDateTimeBestEffort({{String(date_from)}})
+            AND ${USER_EVENT_DAY_SQL} >= toDate({{String(date_from)}})
           {% end %}
           {% if defined(date_to) %}
-            AND fromUnixTimestamp64Milli(timestamp) <= parseDateTimeBestEffort({{String(date_to)}})
+            AND ${USER_EVENT_DAY_SQL} <= toDate({{String(date_to)}})
           {% end %}
-        GROUP BY origin, source_placement, source_publication, method
-        ORDER BY subscribes DESC
+          {% if defined(property_key) %}
+            AND properties[{{String(property_key)}}] = {{String(property_value, '')}}
+          {% end %}
+          {% if defined(before) %}
+            AND timestamp < {{Int64(before)}}
+          {% end %}
+        ORDER BY timestamp DESC
         LIMIT {{Int32(limit, 50)}}
       `,
-      }),
-    ],
-    output: {
-      origin: t.string(),
-      source_placement: t.string(),
-      source_publication: t.string(),
-      method: t.string(),
-      subscribes: t.uint64(),
-      subscribers: t.uint64(),
-    },
+    }),
+  ],
+  output: {
+    timestamp: t.uint64(),
+    identity_id: t.string(),
+    did: t.string(),
+    event: t.string(),
+    // JSON-encoded Map(String, String). Not aliased to `properties`: a
+    // same-named alias would shadow the map column in the WHERE clause.
+    properties_json: t.string(),
   },
-);
+});
 
-export type PublicationSubscribeSourcesParams = InferParams<
-  typeof publicationSubscribeSources
->;
-export type PublicationSubscribeSourcesOutput = InferOutputRow<
-  typeof publicationSubscribeSources
->;
+export type UserEventsListOutput = InferOutputRow<typeof userEventsList>;
 
 // ============================================================================
 // Client
 // ============================================================================
 
 export const tinybird = new Tinybird({
-  datasources: { analyticsEvents, subscriptionEvents },
+  datasources: { analyticsEvents, subscriptionEvents, userEvents },
   pipes: {
     publicationTraffic,
     publicationTopReferrers,
     publicationTopPages,
     publicationBskyTraffic,
-    publicationSubscribesTimeseries,
-    publicationSubscribeSources,
+    activeUsersTimeseries,
+    activeUsersWindows,
+    userEventsList,
   },
   devMode: false,
 });

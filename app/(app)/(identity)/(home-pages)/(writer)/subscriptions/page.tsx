@@ -4,6 +4,7 @@ import { getMyMemberships } from "actions/memberships";
 import {
   getSubscriptions,
   getPublicationsByUris,
+  getEmailOnlySubscriptions,
 } from "actions/reader/getSubscriptions";
 import { SubscriptionsPageContent } from "./SubscriptionsPageContent";
 
@@ -11,8 +12,9 @@ export default async function SubscriptionsPage() {
   const identity = await getIdentityData();
   if (!identity) redirect("/home");
 
-  const [subs, membershipsData] = await Promise.all([
+  const [subs, emailOnlySubscriptions, membershipsData] = await Promise.all([
     getSubscriptions(identity.atp_did),
+    getEmailOnlySubscriptions(),
     getMyMemberships(),
   ]);
   const memberships = membershipsData?.memberships ?? [];
@@ -26,6 +28,7 @@ export default async function SubscriptionsPage() {
       memberships={memberships}
       paidPubs={paidPubs}
       subscriptions={subs.subscriptions}
+      emailOnlySubscriptions={emailOnlySubscriptions}
       nextCursor={subs.nextCursor}
     />
   );

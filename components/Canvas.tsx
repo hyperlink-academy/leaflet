@@ -25,6 +25,9 @@ import { useBlockMouseHandlers } from "./Blocks/useBlockMouseHandlers";
 import { RecommendEmptyTiny } from "./Icons/RecommendTiny";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { mergePreferences } from "src/utils/mergePreferences";
+import { CANVAS_DRAG_STACK_ORDER } from "src/utils/canvasBlockOrder";
+import { useCanvasStackOrders } from "src/hooks/queries/useCanvasStacking";
+import { useCanvasBlocksWithType } from "src/hooks/queries/useBlocks";
 
 export function Canvas(props: {
   entityID: string;
@@ -71,7 +74,7 @@ export function Canvas(props: {
     >
       <AddCanvasBlockButton entityID={props.entityID} entity_set={entity_set} />
 
-      <CanvasMetadata isSubpage={!props.first} />
+      <CanvasMetadata entityID={props.entityID} isSubpage={!props.first} />
 
       <CanvasContent {...props} />
     </div>
@@ -80,10 +83,11 @@ export function Canvas(props: {
 
 export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   let blocks = useEntity(props.entityID, "canvas/block");
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
   let height = Math.max(...blocks.map((f) => f.data.position.y), 0);
   let handleDrop = useHandleCanvasDrop(props.entityID);
+  let stackOrders = useCanvasStackOrders(props.entityID);
 
   return (
     <div
@@ -102,16 +106,20 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
         if (e.detail === 2 || e.ctrlKey || e.metaKey) {
           let parentRect = e.currentTarget.getBoundingClientRect();
           let newEntityID = v7();
-          await rep?.mutate.addCanvasBlock({
-            newEntityID,
-            parent: props.entityID,
-            position: {
-              x: Math.max(e.clientX - parentRect.left, 0),
-              y: Math.max(e.clientY - parentRect.top - 12, 0),
-            },
-            factID: v7(),
-            type: "text",
-            permission_set: entity_set.set,
+          // addCanvasBlock writes a fact per attribute; grouping keeps placing
+          // a block a single Cmd-Z rather than one per fact.
+          await undoManager.withUndoGroup(async () => {
+            await rep?.mutate.addCanvasBlock({
+              newEntityID,
+              parent: props.entityID,
+              position: {
+                x: Math.max(e.clientX - parentRect.left, 0),
+                y: Math.max(e.clientY - parentRect.top - 12, 0),
+              },
+              factID: v7(),
+              type: "text",
+              permission_set: entity_set.set,
+            });
           });
           focusBlock(
             { type: "text", parent: props.entityID, entityID: newEntityID },
@@ -137,7 +145,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
       className="relative h-full w-[1272px]"
     >
       <CanvasBackground entityID={props.entityID} />
-      {blocks
+      {[...blocks]
         .sort((a, b) => {
           if (a.data.position.y === b.data.position.y) {
             return a.data.position.x - b.data.position.x;
@@ -152,6 +160,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
               entityID={b.data.value}
               position={b.data.position}
               factID={b.id}
+              stackOrder={stackOrders.get(b.data.value)}
               key={b.id}
             />
           );
@@ -160,9 +169,16 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   );
 }
 
-const CanvasMetadata = (props: { isSubpage: boolean | undefined }) => {
+const CanvasMetadata = (props: {
+  entityID: string;
+  isSubpage: boolean | undefined;
+}) => {
   let { data: pub, normalizedPublication } = useLeafletPublicationData();
   let { rep } = useReplicache();
+  // A post header block on the canvas carries the tags and metadata itself.
+  let hasHeaderBlock = useCanvasBlocksWithType(props.entityID).some(
+    (b) => b.type === "post-header",
+  );
   let postPreferences = useSubscribe(rep, (tx) =>
     tx.get<{
       showComments?: boolean;
@@ -173,6 +189,7 @@ const CanvasMetadata = (props: { isSubpage: boolean | undefined }) => {
   if (!pub || !pub.publications) return null;
 
   if (!normalizedPublication) return null;
+  if (hasHeaderBlock) return null;
   let merged = mergePreferences(
     postPreferences || undefined,
     normalizedPublication.preferences,
@@ -222,7 +239,7 @@ const AddCanvasBlockButton = (props: {
   entityID: string;
   entity_set: { set: string };
 }) => {
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let { permissions } = useEntitySetContext();
   let blocks = useEntity(props.entityID, "canvas/block");
 
@@ -245,16 +262,20 @@ const AddCanvasBlockButton = (props: {
           );
           if (!page) return;
           let newEntityID = v7();
-          rep?.mutate.addCanvasBlock({
-            newEntityID,
-            parent: props.entityID,
-            position: {
-              x: page?.clientWidth + page?.scrollLeft - 468,
-              y: 32 + page.scrollTop,
-            },
-            factID: v7(),
-            type: "text",
-            permission_set: props.entity_set.set,
+          // The group stays open until the mutation settles, so every fact
+          // addCanvasBlock writes lands in one Cmd-Z step.
+          undoManager.withUndoGroup(async () => {
+            await rep?.mutate.addCanvasBlock({
+              newEntityID,
+              parent: props.entityID,
+              position: {
+                x: page?.clientWidth + page?.scrollLeft - 468,
+                y: 32 + page.scrollTop,
+              },
+              factID: v7(),
+              type: "text",
+              permission_set: props.entity_set.set,
+            });
           });
           setTimeout(() => {
             focusBlock(
@@ -276,6 +297,7 @@ function CanvasBlock(props: {
   parent: string;
   position: { x: number; y: number };
   factID: string;
+  stackOrder: number | undefined;
 }) {
   let width =
     useEntity(props.entityID, "canvas/block/width")?.data.value || 360;
@@ -422,11 +444,14 @@ function CanvasBlock(props: {
       ref={ref}
       {...(!props.preview ? { ...longPressHandlers, ...mouseHandlers } : {})}
       id={props.preview ? undefined : elementId.block(props.entityID).container}
-      className={`canvasBlockWrapper absolute group/canvas-block will-change-transform rounded-lg flex items-stretch origin-center p-3        `}
+      className={`canvasBlockWrapper absolute group/canvas-block will-change-transform rounded-lg flex items-stretch origin-center p-3`}
       style={{
         top: 0,
         left: 0,
-        zIndex: dragDelta || isFocused ? 10 : undefined,
+        // Only the block being dragged lifts out of its layer. Lifting on
+        // focus too would hide the effect of the layering buttons, which act
+        // on the block that is focused.
+        zIndex: dragDelta ? CANVAS_DRAG_STACK_ORDER : props.stackOrder,
         width: width + (widthHandle.dragDelta?.x || 0),
         transform,
       }}

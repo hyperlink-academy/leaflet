@@ -1,28 +1,45 @@
 import { CheckboxChecked } from "./Icons/CheckboxChecked";
 import { CheckboxEmpty } from "./Icons/CheckboxEmpty";
+import { CheckboxIndeterminate } from "./Icons/CheckboxIndeterminate";
 import { Props } from "./Icons/Props";
-import React, { forwardRef, type JSX } from "react";
+import React, { forwardRef, useEffect, useRef, type JSX } from "react";
 
 export function Checkbox(props: {
   checked: boolean;
+  // A parent whose children are only partly checked. Clicking it reports
+  // checked, so callers select the whole group.
+  indeterminate?: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   children: React.ReactNode;
   className?: string;
   small?: boolean;
 }) {
+  let ref = useRef<HTMLInputElement>(null);
+  let indeterminate = !props.checked && !!props.indeterminate;
+  // Only settable on the DOM node, and it's what exposes the mixed state to
+  // assistive tech.
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = indeterminate;
+  }, [indeterminate]);
+  let marked = props.checked || indeterminate;
   return (
     <label
-      className={`flex w-full gap-2 items-start cursor-pointer ${props.className} ${props.checked ? "text-primary font-bold " : " text-tertiary font-normal"} ${props.small && "text-sm"}`}
+      className={`flex w-full gap-2 items-start cursor-pointer ${props.className} ${marked ? "text-primary font-bold " : " text-tertiary font-normal"} ${props.small && "text-sm"}`}
     >
       <input
+        ref={ref}
         type="checkbox"
         checked={props.checked}
         className="hidden"
         onChange={(e) => props.onChange(e)}
       />
-      {!props.checked ? (
+      {!marked ? (
         <CheckboxEmpty
           className={`shrink-0 text-tertiary ${props.small ? "mt-1" : "mt-[6px]"}`}
+        />
+      ) : indeterminate ? (
+        <CheckboxIndeterminate
+          className={`shrink-0 text-accent-contrast ${props.small ? "mt-1" : "mt-[6px]"}`}
         />
       ) : (
         <CheckboxChecked

@@ -24,3 +24,4 @@ scripts/backup-restore/
 
 # Local scratch notes (accidentally committed once; keep untracked)
 /scratch/
+.tinyb

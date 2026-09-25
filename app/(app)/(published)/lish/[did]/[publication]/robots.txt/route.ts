@@ -11,7 +11,11 @@ export async function GET(req: Request) {
   // content. Post paths are user-chosen, so short rules that could swallow a
   // real slug (/editorial, /subscriber-...) are anchored with $ / ? instead of
   // left as prefixes; crawlers without wildcard support skip those rules, and
-  // the pages' robots noindex metadata still covers them.
+  // the pages' robots noindex metadata still covers them. /lish/ is blocked
+  // because on a publication domain it passes through the middleware and
+  // renders every other publication's content — an N×M duplicate space. The
+  // trailing slash matters for the same reason: bare /lish would swallow a
+  // post published at /lish-something.
   let body = `User-agent: *
 Allow: /
 Disallow: /dashboard
@@ -20,8 +24,11 @@ Disallow: /edit?
 Disallow: /subscribe$
 Disallow: /subscribe?
 Disallow: /subscribeSuccess
+Disallow: /join$
+Disallow: /join?
 Disallow: /theme-settings
 Disallow: /contributor_accept
+Disallow: /lish/
 
 Sitemap: https://${host}/sitemap.xml
 `;

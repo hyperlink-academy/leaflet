@@ -13,6 +13,7 @@ import {
   type PublicationPostsListFakePost,
 } from "./PublicationPostsList";
 import { type PublicationPostsListPost } from "src/utils/buildPublicationPosts";
+import { sortPostsForList } from "src/utils/postsListPagination";
 
 type FakePost = PublicationPostsListFakePost;
 
@@ -53,7 +54,7 @@ export const DefaultPublicationHomepage = ({
   const navPages = publishedNavPages(publication.publication_pages);
   const posts: PublicationPostsListPost[] = fakePosts
     ? []
-    : resolvedPosts ?? [];
+    : sortPostsForList(resolvedPosts ?? []);
   return (
     <>
       <FontLoader
@@ -107,7 +108,11 @@ export function PublicationPostItem(props: {
 }) {
   const content = (
     <>
-      {props.title && <h3 className="text-primary">{props.title}</h3>}
+      {/* h2 slots under the pub-name h1 in the outline; text-[1.125em] pins
+          the h3-scale size the base-layer heading rules would otherwise bump. */}
+      {props.title && (
+        <h2 className="text-primary text-[1.125em]">{props.title}</h2>
+      )}
       <p className="italic text-secondary line-clamp-3">{props.description}</p>
     </>
   );

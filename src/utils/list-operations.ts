@@ -2,6 +2,8 @@ import { Block } from "components/Blocks/Block";
 import { Replicache } from "replicache";
 import type { ReplicacheMutators } from "src/replicache";
 import type { UndoManager } from "src/undoManager";
+import { unfoldBlocks } from "src/utils/foldBlocks";
+import { isZoomedBlockRoot } from "src/useUIState";
 
 export function orderListItems(
   block: Block,
@@ -31,21 +33,17 @@ export async function indent(
   block: Block,
   previousBlock?: Block,
   rep?: Replicache<ReplicacheMutators> | null,
-  foldState?: {
-    foldedBlocks: string[];
-    toggleFold: (entityID: string) => void;
-  },
   undoManager?: UndoManager,
 ): Promise<{ success: boolean }> {
-  if (!block.listData) return { success: false };
+  if (!block.listData || isZoomedBlockRoot(block.entityID))
+    return { success: false };
 
   // All lists use parent/child structure - move to new parent
   if (!previousBlock?.listData) return { success: false };
   let depth = block.listData.depth;
   let newParent = previousBlock.listData.path.find((f) => f.depth === depth);
   if (!newParent) return { success: false };
-  if (foldState && foldState.foldedBlocks.includes(newParent.entity))
-    foldState.toggleFold(newParent.entity);
+  unfoldBlocks(rep, [newParent.entity]);
   let newParentEntity = newParent.entity;
   // Reparent the block's existing card/block fact in one mutation (reusing its
   // factID) rather than retract-old + add-new-id. assertFact moves the fact and
@@ -70,6 +68,8 @@ export async function outdentFull(
 ) {
   if (!block.listData) return;
   let listData = block.listData;
+  if (isZoomedBlockRoot(block.entityID) || isZoomedBlockRoot(listData.parent))
+    return;
 
   let run = async () => {
     // make this block not a list
@@ -104,15 +104,14 @@ export async function outdent(
   block: Block,
   previousBlock?: Block | null,
   rep?: Replicache<ReplicacheMutators> | null,
-  foldState?: {
-    foldedBlocks: string[];
-    toggleFold: (entityID: string) => void;
-  },
   excludeFromSiblings?: string[],
   undoManager?: UndoManager,
 ): Promise<{ success: boolean }> {
   if (!block.listData) return { success: false };
   let listData = block.listData;
+  // Neither the zoom root nor its direct children can leave the zoomed view.
+  if (isZoomedBlockRoot(block.entityID) || isZoomedBlockRoot(listData.parent))
+    return { success: false };
 
   // All lists use parent/child structure - move blocks between parents
   if (listData.depth === 1) {
@@ -147,8 +146,7 @@ export async function outdent(
       )?.entity;
     }
     if (!parent) return { success: false };
-    if (foldState && foldState.foldedBlocks.includes(parent))
-      foldState.toggleFold(parent);
+    unfoldBlocks(rep, [parent]);
     await rep?.mutate.outdentBlock({
       block: block.entityID,
       newParent: parent,
@@ -165,17 +163,8 @@ export async function multiSelectIndent(
   sortedSelection: Block[],
   siblings: Block[],
   rep: Replicache<ReplicacheMutators>,
-  foldState: { foldedBlocks: string[]; toggleFold: (entityID: string) => void },
   undoManager?: UndoManager,
 ): Promise<void> {
-  // Tracked locally so a parent unfolded to receive one block isn't re-folded
-  // when the next block indents under it too.
-  let foldedBlocks = [...foldState.foldedBlocks];
-  let toggleFold = (entityID: string) => {
-    foldedBlocks = foldedBlocks.filter((f) => f !== entityID);
-    foldState.toggleFold(entityID);
-  };
-
   let run = async () => {
     for (let i = 0; i < siblings.length; i++) {
       let block = siblings[i];
@@ -193,7 +182,7 @@ export async function multiSelectIndent(
         previousBlock = siblings[i - parentoffset];
       }
       if (!block.listData || !previousBlock?.listData) continue;
-      await indent(block, previousBlock, rep, { foldedBlocks, toggleFold });
+      await indent(block, previousBlock, rep);
     }
   };
   if (undoManager) await undoManager.withUndoGroup(run);
@@ -275,7 +264,6 @@ export async function multiSelectOutdent(
   sortedSelection: Block[],
   siblings: Block[],
   rep: Replicache<ReplicacheMutators>,
-  foldState: { foldedBlocks: string[]; toggleFold: (entityID: string) => void },
   undoManager?: UndoManager,
 ): Promise<void> {
   let pageParent = siblings[0]?.parent;
@@ -296,7 +284,7 @@ export async function multiSelectOutdent(
         let block = siblings[i];
         if (!selectedSet.has(block.entityID)) continue;
         if (!block.listData) continue;
-        await outdent(block, null, rep, foldState, selectedEntities);
+        await outdent(block, null, rep, selectedEntities);
       }
     } else {
       // Normal outdent: iterate backward through siblings
@@ -313,7 +301,7 @@ export async function multiSelectOutdent(
           if (parentBlock?.listData && parentBlock.listData.depth > 1) continue;
         }
 
-        await outdent(block, null, rep, foldState, selectedEntities);
+        await outdent(block, null, rep, selectedEntities);
       }
     }
   };

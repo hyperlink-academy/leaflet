@@ -39,7 +39,11 @@ export function PublishedImageGallery(props: {
   );
 
   let [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  let openLightbox = (index: number) => setLightboxIndex(index);
+  let [lightboxAltExpanded, setLightboxAltExpanded] = useState(false);
+  let openLightbox = (index: number, altExpanded?: boolean) => {
+    setLightboxAltExpanded(!!altExpanded);
+    setLightboxIndex(index);
+  };
 
   let format = block.format ?? DEFAULT_FORMAT;
   let gap = block.gap ?? DEFAULT_GAP;
@@ -51,7 +55,12 @@ export function PublishedImageGallery(props: {
     <GalleryImageItem
       image={images[i]}
       onClick={() => openLightbox(i)}
-      overlay={<ReadOnlyAltText alt={images[i].alt} />}
+      overlay={
+        <ReadOnlyAltText
+          alt={images[i].alt}
+          onSeeMore={() => openLightbox(i, true)}
+        />
+      }
       {...classes}
     />
   );
@@ -78,6 +87,7 @@ export function PublishedImageGallery(props: {
       <ImageGalleryLightbox
         count={images.length}
         index={lightboxIndex}
+        altExpanded={lightboxAltExpanded}
         onIndexChange={setLightboxIndex}
         renderSlide={(i) => <LightboxSlide image={images[i]} />}
       />

@@ -35,7 +35,7 @@ export function PublicationEditMobileFooter() {
   return (
     <Media
       mobile
-      className="pubEditMobileFooter pwa-padding-bottom w-full z-10 touch-none bg-bg-page"
+      className="pubEditMobileFooter w-full z-10 touch-none bg-bg-page"
     >
       <FooterLayout
         onMouseDown={(e) => {

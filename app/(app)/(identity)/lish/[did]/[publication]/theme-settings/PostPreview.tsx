@@ -132,6 +132,7 @@ export function PostPreview(props: {
             prerenderedCodeBlocks={new Map()}
             bskyPostData={[]}
             standardSitePostData={[]}
+            standardSitePublicationData={[]}
             pollData={[]}
             document_uri={FAKE_DOC_URI}
             fullPageScroll={!props.showPageBackground}

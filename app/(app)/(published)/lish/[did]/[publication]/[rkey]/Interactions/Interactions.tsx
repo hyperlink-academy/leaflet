@@ -13,16 +13,28 @@ import { EditTiny } from "components/Icons/EditTiny";
 import { RecommendButton } from "components/Interactions/RecommendButton";
 import { DiscussionButton } from "components/Interactions/DiscussionButton";
 import { useMemo } from "react";
-import { type DrawerThread, DrawerThreadContext } from "./drawerThreadContext";
+import {
+  type DrawerThread,
+  DrawerThreadContext,
+  sameDrawerThread,
+} from "./drawerThreadContext";
+import { drawerThreadFromLocation, serializeDrawerParam } from "./drawerParam";
 import { InteractionShareButton } from "components/Interactions/InteractionShareButton";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 import { ShareSmall } from "components/Icons/ShareSmall";
+import { usePostFrame } from "../postFrame";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
   pageId?: string;
   drawer: undefined | "comments" | "quotes";
   localComments: Comment[];
+  // URIs the viewer deleted this session; overlays server-rendered comment
+  // lists until the revalidated page arrives.
+  deletedComments: string[];
+  // Records the viewer edited this session, keyed by comment URI, overlaid
+  // the same way.
+  editedComments: { [uri: string]: Json };
   commentBox: { quote: QuotePosition | null };
   // Thread/quotes views opened within the drawer, innermost last. When
   // non-empty the drawer shows the top entry instead of the comments/mentions
@@ -34,6 +46,8 @@ const defaultInteractionState: InteractionState = {
   drawerOpen: undefined,
   drawer: undefined,
   localComments: [],
+  deletedComments: [],
+  editedComments: {},
   commentBox: { quote: null },
   threadStack: [],
 };
@@ -78,7 +92,8 @@ export function setInteractionState(
     if (
       typeof window !== "undefined" &&
       (updatedState.drawerOpen !== undefined ||
-        updatedState.drawer !== undefined)
+        updatedState.drawer !== undefined ||
+        updatedState.threadStack !== undefined)
     ) {
       const url = new URL(window.location.href);
       const newDocState = newState[document_uri];
@@ -92,8 +107,17 @@ export function setInteractionState(
         (newDocState.drawerOpen === undefined &&
           url.searchParams.has("interactionDrawer"));
 
-      if (drawerCurrentlyOpen && newDocState.drawer) {
-        url.searchParams.set("interactionDrawer", newDocState.drawer);
+      if (drawerCurrentlyOpen) {
+        url.searchParams.set(
+          "interactionDrawer",
+          serializeDrawerParam(
+            {
+              drawer: newDocState.drawer || "comments",
+              threadStack: newDocState.threadStack,
+            },
+            document_uri,
+          ),
+        );
       } else {
         url.searchParams.delete("interactionDrawer");
       }
@@ -120,6 +144,23 @@ export function openInteractionDrawer(
   scrollIntoView("interaction-drawer");
 }
 
+// The discussion buttons' behavior: clicking the one whose drawer is already
+// showing closes it.
+export function toggleInteractionDrawer(
+  drawer: "comments" | "quotes",
+  document_uri: string,
+  pageId?: string,
+) {
+  let current = useInteractionStateStore.getState()[document_uri];
+  if (
+    !current?.drawerOpen ||
+    (current.drawer !== "comments" && current.drawer !== "quotes") ||
+    current.pageId !== pageId
+  )
+    openInteractionDrawer(drawer, document_uri, pageId);
+  else setInteractionState(document_uri, { drawerOpen: false });
+}
+
 // Open the drawer straight onto a thread/quotes view. Used when a Bluesky post
 // in the document body is clicked, so its thread opens in the drawer instead of
 // a new page (mirroring how the post's own comments/mentions open the drawer).
@@ -144,9 +185,14 @@ export function openDrawerThread(
 // no-op rather than stacking a duplicate.
 export function pushDrawerThread(document_uri: string, thread: DrawerThread) {
   setInteractionState(document_uri, (s) => {
-    const top = s.threadStack[s.threadStack.length - 1];
-    if (top && top.type === thread.type && top.uri === thread.uri) return {};
-    return { threadStack: [...s.threadStack, thread] };
+    let stack = s.threadStack;
+    if (stack.length === 0) {
+      const fromUrl = drawerThreadFromLocation(document_uri);
+      if (fromUrl) stack = [fromUrl];
+    }
+    const top = stack[stack.length - 1];
+    if (top && sameDrawerThread(top, thread)) return {};
+    return { threadStack: [...stack, thread] };
   });
 }
 
@@ -181,7 +227,7 @@ export const Interactions = (props: {
     publication,
   } = useDocument();
 
-  let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
+  let frame = usePostFrame();
 
   // The canonical url for the post (the publication's own domain), not
   // window.location.href — the reader may be on the /lish route, and the
@@ -201,14 +247,13 @@ export const Interactions = (props: {
       ? "comments"
       : "quotes";
 
-  // Opening the recommenders onto this post's own interaction drawer, mirroring
-  // how the discussion button opens it. RecommendButton reads this off context.
+  // Opening the recommenders wherever the frame shows them, mirroring how the
+  // discussion button opens. RecommendButton reads this off context.
   const recommendsDrawerNav = useMemo(
     () => ({
-      push: (thread: DrawerThread) =>
-        openDrawerThread(document_uri, thread, props.pageId),
+      push: (thread: DrawerThread) => frame.openThread(thread, props.pageId),
     }),
-    [document_uri, props.pageId],
+    [frame, props.pageId],
   );
   const handleQuotePrefetch = () => {
     if (quotesAndMentions) {
@@ -237,19 +282,9 @@ export const Interactions = (props: {
         showMentions={props.showMentions}
         postUrl={postUrl}
         onPrefetch={handleQuotePrefetch}
-        onClick={() => {
-          if (
-            !drawerOpen ||
-            (drawer !== "comments" && drawer !== "quotes") ||
-            pageId !== props.pageId
-          )
-            openInteractionDrawer(
-              defaultDiscussionTab,
-              document_uri,
-              props.pageId,
-            );
-          else setInteractionState(document_uri, { drawerOpen: false });
-        }}
+        onClick={() =>
+          frame.toggleDiscussion(defaultDiscussionTab, props.pageId)
+        }
       />
       <div className="h-full  w-0 spacer" />
       <InteractionShareButton
@@ -281,7 +316,7 @@ export const ExpandedInteractions = (props: {
     publication,
   } = useDocument();
 
-  let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
+  let frame = usePostFrame();
 
   // See Interactions above: share the canonical post url, not location.href.
   let postUrl = getDocumentURL(
@@ -307,14 +342,13 @@ export const ExpandedInteractions = (props: {
       ? "comments"
       : "quotes";
 
-  // Open the recommenders / discussion onto this post's own interaction drawer.
-  // RecommendButton and DiscussionButton read this off context.
+  // Open the recommenders / tags wherever the frame shows them.
+  // RecommendButton reads this off context.
   const drawerNav = useMemo(
     () => ({
-      push: (thread: DrawerThread) =>
-        openDrawerThread(document_uri, thread, props.pageId),
+      push: (thread: DrawerThread) => frame.openThread(thread, props.pageId),
     }),
-    [document_uri, props.pageId],
+    [frame, props.pageId],
   );
 
   let noInteractions = !discussionsAvailable && !props.showRecommends;
@@ -323,13 +357,16 @@ export const ExpandedInteractions = (props: {
 
   return (
     <div
-      className={`text-tertiary px-3 sm:px-4 flex flex-col ${props.className}`}
+      className={`expandedInteractions text-tertiary px-3 sm:px-4 flex flex-col ${props.className}`}
     >
       {tagCount > 0 && (
         <>
           <hr className="border-border-light mb-3" />
 
-          <TagList tags={tags} className="mb-3" />
+          <TagList
+            tags={tags}
+            onTagClick={(tag) => drawerNav.push({ type: "tag", tag })}
+          />
         </>
       )}
 
@@ -356,19 +393,9 @@ export const ExpandedInteractions = (props: {
               showMentions={props.showMentions}
               postUrl={postUrl}
               onPrefetch={handleQuotePrefetch}
-              onClick={() => {
-                if (
-                  !drawerOpen ||
-                  (drawer !== "comments" && drawer !== "quotes") ||
-                  pageId !== props.pageId
-                )
-                  openInteractionDrawer(
-                    defaultDiscussionTab,
-                    document_uri,
-                    props.pageId,
-                  );
-                else setInteractionState(document_uri, { drawerOpen: false });
-              }}
+              onClick={() =>
+                frame.toggleDiscussion(defaultDiscussionTab, props.pageId)
+              }
             />
 
             <InteractionShareButton
@@ -394,12 +421,16 @@ export const ExpandedInteractions = (props: {
   );
 };
 
-const TagList = (props: { className?: string; tags: string[] | undefined }) => {
+const TagList = (props: {
+  className?: string;
+  tags: string[] | undefined;
+  onTagClick?: (tag: string) => void;
+}) => {
   if (!props.tags) return;
   return (
-    <div className="flex gap-1 flex-wrap" role="list" aria-label="Tags">
+    <div className="flex gap-1 flex-wrap mb-3" role="list" aria-label="Tags">
       {props.tags.map((tag, index) => (
-        <Tag name={tag} key={index} className={props.className} />
+        <Tag name={tag} key={index} onClick={props.onTagClick} />
       ))}
     </div>
   );

@@ -17,12 +17,17 @@ import { OAuthErrorMessage, isOAuthSessionError } from "../OAuthError";
 import { useIdentityData } from "../IdentityProvider";
 import { LoginModal } from "../LoginButton";
 import { Modal } from "../Modal";
-import { RecommendsList, getDocumentRecommendsKey } from "./RecommendsList";
+import {
+  RecommendsList,
+  getDocumentRecommendsKey,
+  prefetchDocumentRecommends,
+} from "./RecommendsList";
 import { DrawerThreadContext } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
 import {
   InteractionButton,
   LargeInteractionButton,
 } from "./InteractionButtons";
+import { StandardSitePostItem } from "../Blocks/StandardSitePostBlock/StandardSitePostItem";
 
 // Create a batcher for recommendation checks
 // Batches requests made within 10ms window
@@ -205,14 +210,14 @@ export function RecommendButton(props: {
   recommendsCount: number;
   recommendOnly?: boolean;
   large?: boolean;
+  // Takes over showing the recommenders from the drawer / modal.
+  onOpenRecommends?: () => void;
   className?: string;
 }) {
   const { displayRecommended, count, recommendPost, loginOpen, setLoginOpen } =
     useRecommendPost(props.documentUri, props.recommendsCount);
   const [recommendsModalOpen, setRecommendsModalOpen] = useState(false);
-  // Inside a post body (or the post footer) a DrawerThreadContext is in scope;
-  // there the recommenders open in the interaction drawer, mirroring how the
-  // discussion count does. Elsewhere (listings, feeds) they open in a modal.
+
   const drawerNav = useContext(DrawerThreadContext);
 
   const ButtonWrapper = props.large
@@ -228,20 +233,30 @@ export function RecommendButton(props: {
         ariaLabel={displayRecommended ? "Remove recommend" : "Recommend"}
         className={props.className}
       >
-        {displayRecommended ? <FilledIcon /> : <EmptyIcon />}
+        {/* Small: the icon and the count are separate hover targets, so the
+            icon follows the recommend overlay rather than the whole row.
+            Large: the pill highlights as one. */}
+        <div className={props.large ? "" : "peer-hover:text-accent-contrast"}>
+          {displayRecommended ? <FilledIcon /> : <EmptyIcon />}
+        </div>
         {count > 0 ? (
           !props.recommendOnly ? (
             <button
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (drawerNav)
+                if (props.onOpenRecommends) props.onOpenRecommends();
+                else if (drawerNav)
                   drawerNav.push({
                     type: "recommends",
                     uri: props.documentUri,
                   });
                 else setRecommendsModalOpen(true);
               }}
+              onMouseEnter={() => prefetchDocumentRecommends(props.documentUri)}
+              onPointerDown={() =>
+                prefetchDocumentRecommends(props.documentUri)
+              }
               className={`relative  z-10 ${props.large ? "" : "hover:text-accent-contrast"}`}
               aria-label="See who recommended this"
             >
@@ -276,10 +291,6 @@ export function RecommendButton(props: {
   );
 }
 
-// Lists the profiles that have recommended a document. The sm: variants below
-// align with the useIsMobile breakpoint that swaps the modal for a sheet: the
-// sheet keeps the button's default chrome, the modal strips it down to a bare
-// inline count.
 function RecommendsModal(props: {
   documentUri: string;
   open: boolean;
@@ -289,10 +300,21 @@ function RecommendsModal(props: {
   return (
     <Modal
       sheetOnMobile
-      title="Recommended by"
       open={props.open}
       onOpenChange={props.onOpenChange}
-      actionButton={
+      className="px-3! pt-0! pb-4 gap-0 sm:w-lg max-w-full relative bg-[var(--color-bg-light)]!"
+      sheetClassName="px-3! pt-0!"
+    >
+      <div className="standardSitePostBlock block-border overflow-hidden w-full bg-bg-page my-3">
+        <StandardSitePostItem
+          pageWidth={448}
+          uri={props.documentUri}
+          size="small"
+          hideInteractions
+        />
+      </div>
+      <div className="flex items-center justify-between gap-3 pb-2">
+        <div className="font-bold text-tertiary text-sm!">Recommended by</div>
         <RecommendButton
           documentUri={props.documentUri}
           recommendsCount={props.recommendCount}
@@ -300,10 +322,8 @@ function RecommendsModal(props: {
           large
           className="sm:p-0! sm:border-none! sm:flex-row-reverse! hover:sm:bg-transparent! sm:h-fit! hover:sm:text-accent-contrast!"
         />
-      }
-      className="px-3!  pb-4 gap-0 sm:w-lg max-w-full relative bg-[var(--color-bg-light)]!"
-    >
-      <hr className="border-border-light -mx-3 mb-3 hidden sm:block" />
+      </div>
+      <hr className="border-border-light -mx-3 mb-3" />
       <RecommendsList documentUri={props.documentUri} />
     </Modal>
   );

@@ -1,9 +1,43 @@
 "use client";
-import { Fragment, useState } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { useDomainStatus } from "./useDomainStatus";
 import { DotLoader } from "components/utils/DotLoader";
 import { ButtonPrimary } from "components/Buttons";
+import { Modal } from "components/Modal";
 import { useSmoker } from "components/Toast";
+
+// DomainVerification renders nothing once the domain verifies, so only give this a
+// trigger while useDomainStatus reports the domain pending.
+export function DomainVerificationModal(props: {
+  domain: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="opaque-container text-tertiary w-full flex items-center gap-2 px-[6px] py-1 border rounded-md border-border-light border-dashed">
+      <Modal
+        asChild
+        title="Verify this Domain"
+        className="max-w-md"
+        trigger={
+          <button
+            type="button"
+            className="flex w-full justify-between items-center"
+          >
+            <span className="truncate text-left animate-pulse">
+              {props.domain}
+            </span>
+            <span className="text-accent-contrast text-xs mr-1 font-bold shrink-0">
+              Verify
+            </span>
+          </button>
+        }
+      >
+        <DomainVerification domain={props.domain} />
+      </Modal>
+      {props.children}
+    </div>
+  );
+}
 
 export function DomainVerification(props: { domain: string }) {
   let {
@@ -47,7 +81,7 @@ export function DomainVerification(props: { domain: string }) {
         To verify this domain, add the following record to your DNS provider for{" "}
         <strong>{props.domain}</strong>.
       </div>
-      <div>Verfication may take up to a few hours to process.</div>
+      <div>Verification may take up to a few hours to process.</div>
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)] border border-border-light rounded-md text-left my-2 text-sm">
         <div className="px-2 py-1 text-tertiary font-bold">Type</div>
         <div className="px-2 py-1 text-tertiary font-bold">Name</div>

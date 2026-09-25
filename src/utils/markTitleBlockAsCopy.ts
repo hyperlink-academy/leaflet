@@ -95,6 +95,15 @@ export function markTitleBlockAsCopy(
   // Nothing on a canvas is "first", so the marker takes the topmost block's
   // spot and everything else slides down to make room for it.
   const topmost = canvasBlocks[0]?.data.position ?? { x: 8, y: 12 };
+  const topStackOrder =
+    canvasBlocks
+      .map(
+        (b) =>
+          scan.eav(b.data.value, "canvas/block/stack-order")[0]?.data.value,
+      )
+      .filter((o): o is string => !!o)
+      .sort()
+      .pop() ?? null;
   return [
     ...facts.map((f) =>
       f.entity === page && f.data.type === "spatial-reference"
@@ -116,6 +125,12 @@ export function markTitleBlockAsCopy(
       entity: page,
       attribute: "canvas/block",
       data: { type: "spatial-reference", value: newBlock, position: topmost },
+    },
+    {
+      id: v7(),
+      entity: newBlock,
+      attribute: "canvas/block/stack-order",
+      data: { type: "string", value: generateKeyBetween(topStackOrder, null) },
     },
   ];
 }

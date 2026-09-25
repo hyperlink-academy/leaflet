@@ -51,7 +51,9 @@ export async function generateMetadata(props: {
     ? `${displayName} (@${handle}) - Leaflet`
     : `@${handle} - Leaflet`;
 
-  return { title };
+  // The DID form is the one URL per profile (the page permanently redirects
+  // handle spellings onto it).
+  return { title, alternates: { canonical: `/p/${encodeURIComponent(did)}` } };
 }
 
 // Synchronous shell + suspended inner, same as the (identity) and

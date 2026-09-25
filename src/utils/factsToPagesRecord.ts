@@ -2,6 +2,7 @@ import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { $Typed, UnicodeString } from "@atproto/api";
 import { BlobRef } from "@atproto/lexicon";
+import { DEFAULT_PAGE_LINK_DISPLAY } from "src/utils/pageLinkDisplay";
 
 import {
   PubLeafletBlocksBlockquote,
@@ -22,7 +23,9 @@ import {
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
   PubLeafletBlocksPostsList,
+  PubLeafletBlocksRecommendedPubs,
   PubLeafletBlocksSignup,
+  PubLeafletBlocksPostHeader,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksWebsite,
@@ -231,10 +234,13 @@ export async function processBlocksToPages(opts: {
         });
       }
 
+      const [display] = scan.eav(b.entityID, "page-link/display");
       const block: $Typed<PubLeafletBlocksPage.Main> = {
         $type: "pub.leaflet.blocks.page",
         id: page.data.value,
       };
+      if (display && display.data.value !== DEFAULT_PAGE_LINK_DISPLAY)
+        block.display = display.data.value;
       return block;
     },
     "bluesky-post": async (b) => {
@@ -293,13 +299,30 @@ export async function processBlocksToPages(opts: {
     },
     "members-only-delimiter": async (b) => {
       // Sorted so an unchanged selection always serializes identically.
-      const tiers = scan
+      const tierIds = scan
         .eav(b.entityID, "block/members-only-tier")
         .map((f) => f.data.value)
         .sort();
+      const [audienceFact] = scan.eav(
+        b.entityID,
+        "block/members-only-audience",
+      );
+      // A block that predates the audience fact never had one asserted, so
+      // its audience falls back to whatever its tier facts already imply —
+      // matching the pre-audience lexicon's "empty tiers means every paid
+      // tier" default instead of discarding those facts on republish.
+      const audience =
+        audienceFact?.data.value === "subscribers" ||
+        audienceFact?.data.value === "paid" ||
+        audienceFact?.data.value === "tiers"
+          ? audienceFact.data.value
+          : tierIds.length > 0
+            ? "tiers"
+            : "paid";
       const block: $Typed<PubLeafletBlocksMembersOnlyDelimiter.Main> = {
         $type: ids.PubLeafletBlocksMembersOnlyDelimiter,
-        ...(tiers.length > 0 && { tiers }),
+        audience,
+        ...(audience === "tiers" && { tierIds }),
       };
       return block;
     },
@@ -491,16 +514,59 @@ export async function processBlocksToPages(opts: {
         b.entityID,
         "posts-list/highlight-first-post",
       );
+      const [showPageCountFact] = scan.eav(
+        b.entityID,
+        "posts-list/show-page-count",
+      );
       const filterTagFacts = scan.eav(b.entityID, "posts-list/filter-tag");
       const filterByTags = filterTagFacts.map((f) => f.data.value);
       const [limitFact] = scan.eav(b.entityID, "posts-list/limit");
       const limit = limitFact?.data.value;
+      const [readerControlsFact] = scan.eav(
+        b.entityID,
+        "posts-list/reader-controls",
+      );
+      const readerControls = readerControlsFact?.data.value;
+      const [readerSearchFact] = scan.eav(
+        b.entityID,
+        "posts-list/reader-search",
+      );
+      const [readerTagFilterFact] = scan.eav(
+        b.entityID,
+        "posts-list/reader-tag-filter",
+      );
+      const [readerSortFact] = scan.eav(b.entityID, "posts-list/reader-sort");
       const block: $Typed<PubLeafletBlocksPostsList.Main> = {
         $type: "pub.leaflet.blocks.postsList",
         ...(viewFact && { view: viewFact.data.value }),
         ...(highlightFact && { highlightFirstPost: highlightFact.data.value }),
+        ...(showPageCountFact && { showPageCount: showPageCountFact.data.value }),
         ...(filterByTags.length > 0 && { filterByTags }),
         ...(limit && limit > 0 && { limit }),
+        // The sub-flags only mean anything under readerControls, and each
+        // defaults to true, so write them all whenever it's on.
+        ...(readerControls && {
+          readerControls: true,
+          readerSearch: readerSearchFact?.data.value ?? true,
+          readerTagFilter: readerTagFilterFact?.data.value ?? true,
+          readerSort: readerSortFact?.data.value ?? true,
+        }),
+      };
+      return block;
+    },
+    "recommended-pubs": async (b) => {
+      const [compactFact] = scan.eav(b.entityID, "recommended-pubs/compact");
+      const block: $Typed<PubLeafletBlocksRecommendedPubs.Main> = {
+        $type: "pub.leaflet.blocks.recommendedPubs",
+        ...(compactFact && { compact: compactFact.data.value }),
+      };
+      return block;
+    },
+    "post-header": async (b) => {
+      const [compactFact] = scan.eav(b.entityID, "post-header/compact");
+      const block: $Typed<PubLeafletBlocksPostHeader.Main> = {
+        $type: ids.PubLeafletBlocksPostHeader,
+        ...(compactFact?.data.value && { compact: true }),
       };
       return block;
     },
@@ -754,6 +820,10 @@ export async function processBlocksToPages(opts: {
             scan.eav(blockEntity, "canvas/block/width")?.[0]?.data.value || 360;
           const rotation = scan.eav(blockEntity, "canvas/block/rotation")?.[0]
             ?.data.value;
+          const stackOrder = scan.eav(
+            blockEntity,
+            "canvas/block/stack-order",
+          )?.[0]?.data.value;
 
           const canvasBlockRecord: PubLeafletPagesCanvas.Block = {
             $type: "pub.leaflet.pages.canvas#block",
@@ -762,6 +832,7 @@ export async function processBlocksToPages(opts: {
             y: Math.floor(position.y),
             width: Math.floor(width),
             ...(rotation !== undefined && { rotation: Math.floor(rotation) }),
+            ...(stackOrder !== undefined && { stackOrder }),
           };
 
           return canvasBlockRecord;

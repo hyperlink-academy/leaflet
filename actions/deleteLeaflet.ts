@@ -3,11 +3,12 @@ import { refresh } from "next/cache";
 
 import { drizzle } from "drizzle-orm/node-postgres";
 import {
+  blob_cleanup_queue,
   entities,
   permission_tokens,
   permission_token_rights,
 } from "drizzle/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { PermissionToken } from "src/replicache";
 import { pool } from "supabase/pool";
 import { getAuthIdentity } from "src/auth";
@@ -93,6 +94,16 @@ export async function deleteLeaflet(permission_token: PermissionToken) {
       .where(eq(permission_tokens.id, permission_token.id));
 
     if (!token?.permission_token_rights?.write) return;
+    let { rows: imagePaths } = await tx.execute<{ path: string }>(sql`
+      SELECT DISTINCT split_part(split_part(data->>'src', '?', 1), '/', -1) AS path
+      FROM get_facts(${token.permission_tokens.root_entity})
+      WHERE data->>'type' = 'image' AND data ? 'src'
+    `);
+    if (imagePaths.length > 0)
+      await tx
+        .insert(blob_cleanup_queue)
+        .values(imagePaths)
+        .onConflictDoNothing();
     await tx
       .delete(entities)
       .where(eq(entities.set, token.permission_token_rights.entity_set));

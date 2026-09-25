@@ -16,7 +16,8 @@ import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/act
 import { AtUri } from "@atproto/syntax";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
-import { useReplicache } from "src/replicache";
+import { useEntity, useReplicache } from "src/replicache";
+import { addPostHeaderBlock } from "src/utils/addPostHeaderBlock";
 import { uploadCoverImage } from "src/utils/uploadCoverImage";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { editorStateToFacetedText } from "components/BlueskyPostComposer/ProsemirrorEditor";
@@ -38,7 +39,6 @@ import {
   PublicationThemeProvider,
   PublicationBackgroundProvider,
 } from "components/ThemeManager/PublicationThemeProvider";
-import { useEntity } from "src/replicache";
 import { LeafletContent } from "app/(app)/(identity)/(home-pages)/(writer)/home/LeafletList/LeafletContent";
 import { Contributor } from "lexicons/api/types/site/standard/document";
 import {
@@ -113,8 +113,10 @@ const PublishPostForm = (
   let [oauthError, setOauthError] = useState<
     import("src/atproto-oauth").OAuthSessionError | null
   >(null);
+  let [publishError, setPublishError] = useState<string | null>(null);
   let params = useParams();
-  let { rep } = useReplicache();
+  let { rep, permission_token } = useReplicache();
+  let firstPage = useEntity(props.root_entity, "root/page")[0]?.data.value;
 
   // Title and description come from Replicache, the same source the editor's
   // Update button uses. The server props were captured when this page rendered,
@@ -194,27 +196,53 @@ const PublishPostForm = (
     if (isLoading) return;
     setIsLoading(true);
     setOauthError(null);
-    await rep?.push();
-    let result = await publishToPublication({
-      root_entity: props.root_entity,
-      publication_uri: props.publication_uri,
-      leaflet_id: props.leaflet_id,
-      title,
-      description,
-      tags: currentTags,
-      entitiesToDelete: props.entitiesToDelete,
-      publishedAt: localPublishedAt?.toISOString() || new Date().toISOString(),
-      postPreferences,
-      // Posting quietly forces every share channel off, mirroring the UI where
-      // checking "Post Quietly" unchecks all the other options.
-      sendEmail: shareState.email && !shareState.quiet,
-      showInDiscover: shareState.postToReaders && !shareState.quiet,
-    });
+    setPublishError(null);
+    let result: Awaited<ReturnType<typeof publishToPublication>>;
+    try {
+      // Publishing a loose canvas into a publication moves it there, so it
+      // gets the header block a canvas draft is created with.
+      let permission_set =
+        permission_token.permission_token_rights[0]?.entity_set;
+      if (
+        rep &&
+        !props.hasDraft &&
+        props.publication_uri &&
+        firstPage &&
+        permission_set
+      )
+        await addPostHeaderBlock(rep, { page: firstPage, permission_set });
+      await rep?.push();
+      result = await publishToPublication({
+        root_entity: props.root_entity,
+        publication_uri: props.publication_uri,
+        leaflet_id: props.leaflet_id,
+        title,
+        description,
+        tags: currentTags,
+        entitiesToDelete: props.entitiesToDelete,
+        publishedAt:
+          localPublishedAt?.toISOString() || new Date().toISOString(),
+        postPreferences,
+        // Posting quietly forces every share channel off, mirroring the UI where
+        // checking "Post Quietly" unchecks all the other options.
+        sendEmail: shareState.email && !shareState.quiet,
+        showInDiscover: shareState.postToReaders && !shareState.quiet,
+      });
+    } catch (error) {
+      console.error(error);
+      setIsLoading(false);
+      setPublishError(
+        "Something went wrong while publishing. Please try again!",
+      );
+      return;
+    }
 
     if (!result.success) {
       setIsLoading(false);
       if (isOAuthSessionError(result.error)) {
         setOauthError(result.error);
+      } else {
+        setPublishError(result.error.message);
       }
       return;
     }
@@ -395,7 +423,7 @@ const PublishPostForm = (
                   <ButtonPrimary
                     type="submit"
                     className="place-self-end h-[30px]"
-                    disabled={charCount > 300 || nothingSelected}
+                    disabled={charCount > 300 || nothingSelected || isLoading}
                   >
                     {isLoading ? (
                       <DotLoader className="h-[23px]" />
@@ -409,6 +437,11 @@ const PublishPostForm = (
                     error={oauthError}
                     className="text-right text-sm text-accent-contrast"
                   />
+                )}
+                {publishError && (
+                  <div className="text-right text-sm text-accent-contrast leading-snug">
+                    {publishError}
+                  </div>
                 )}
               </div>
             </>

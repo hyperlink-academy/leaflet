@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { createLeaflet } from "src/utils/createLeaflet";
+import { trackDocumentCreated } from "src/activeUserAnalytics";
 
 export async function createNewLeaflet({
   pageType,
@@ -12,6 +13,8 @@ export async function createNewLeaflet({
   welcomeModal,
   addToHome,
   addToHomepage = true,
+  analytics,
+  canvasPostHeader,
 }: {
   pageType: "canvas" | "doc";
   redirectUser: boolean;
@@ -19,11 +22,15 @@ export async function createNewLeaflet({
   welcomeModal?: boolean;
   addToHome?: boolean;
   addToHomepage?: boolean;
+  analytics?: { kind: string; publication?: string };
+  canvasPostHeader?: boolean;
 }) {
   let auth_token = (await cookies()).get("auth_token")?.value;
+  trackDocumentCreated(analytics ?? { kind: pageType });
 
   const { permTokenId } = await createLeaflet({
     pageType,
+    canvasPostHeader,
     firstBlocks: [firstBlockType === "text" ? "text" : "h1"],
     rootFacts: [
       {

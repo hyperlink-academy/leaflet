@@ -1597,16 +1597,22 @@ export const schemaDict = {
       main: {
         type: 'object',
         description:
-          'Marks where members-only content begins; blocks after this delimiter are only served to readers with an active paid membership.',
-        required: [],
+          'Marks where members-only content begins and declares which publication members can read past it.',
+        required: ['audience'],
         properties: {
-          tiers: {
+          audience: {
+            type: 'string',
+            knownValues: ['subscribers', 'paid', 'tiers'],
+            description:
+              'Whether access is available to all subscribers, all paid members, or selected paid tiers.',
+          },
+          tierIds: {
             type: 'array',
             items: {
               type: 'string',
             },
             description:
-              'Ids of the membership tiers whose members can read past the delimiter. Absent means every paid tier.',
+              'Paid tier ids that grant access when audience is tiers. An empty selection grants no membership access.',
           },
         },
       },
@@ -1681,6 +1687,10 @@ export const schemaDict = {
           id: {
             type: 'string',
           },
+          display: {
+            type: 'string',
+            knownValues: ['full', 'compact'],
+          },
         },
       },
     },
@@ -1701,6 +1711,25 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksPostHeader: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.postHeader',
+    defs: {
+      main: {
+        type: 'object',
+        description:
+          "The post's header (publication, title, description, byline) placed as a block, so canvas posts can position it. Renders the document's own metadata; carries no content of its own.",
+        required: [],
+        properties: {
+          compact: {
+            type: 'boolean',
+            description:
+              'Show a condensed header: title and byline only, without the description.',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksPostsList: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.postsList',
@@ -1716,6 +1745,12 @@ export const schemaDict = {
           highlightFirstPost: {
             type: 'boolean',
           },
+          showPageCount: {
+            type: 'boolean',
+            default: true,
+            description:
+              'In the chapter view, show the number of pages under each chapter.',
+          },
           filterByTags: {
             type: 'array',
             items: {
@@ -1726,6 +1761,39 @@ export const schemaDict = {
             type: 'integer',
             minimum: 1,
             description: 'Show at most this many posts.',
+          },
+          readerControls: {
+            type: 'boolean',
+            description:
+              'Show reader-facing controls above the list. The readerSearch / readerTagFilter / readerSort flags pick which ones; each defaults to true when this is set.',
+          },
+          readerSearch: {
+            type: 'boolean',
+          },
+          readerTagFilter: {
+            type: 'boolean',
+          },
+          readerSort: {
+            type: 'boolean',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksRecommendedPubs: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.recommendedPubs',
+    defs: {
+      main: {
+        type: 'object',
+        description:
+          'The publications this publication recommends, resolved at render time from its recommendations rather than stored on the block.',
+        required: [],
+        properties: {
+          compact: {
+            type: 'boolean',
+            description:
+              'Lay the recommendations out as a single side-scrolling row instead of a grid.',
           },
         },
       },
@@ -2109,7 +2177,6 @@ export const schemaDict = {
             recommendations: {
               type: 'array',
               description: 'Publications this publication recommends',
-              maxLength: 3,
               items: {
                 type: 'string',
                 format: 'at-uri',
@@ -2214,7 +2281,9 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.button',
               'lex:pub.leaflet.blocks.postsList',
               'lex:pub.leaflet.blocks.signup',
+              'lex:pub.leaflet.blocks.recommendedPubs',
               'lex:pub.leaflet.blocks.membersOnlyDelimiter',
+              'lex:pub.leaflet.blocks.postHeader',
             ],
           },
           x: {
@@ -2232,6 +2301,11 @@ export const schemaDict = {
           rotation: {
             type: 'integer',
             description: 'The rotation of the block in degrees',
+          },
+          stackOrder: {
+            type: 'string',
+            description:
+              'Fractional index ordering this block against its siblings on the z axis. Blocks without one stack below every block with one, ordered by position.',
           },
         },
       },
@@ -2323,7 +2397,9 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.button',
               'lex:pub.leaflet.blocks.postsList',
               'lex:pub.leaflet.blocks.signup',
+              'lex:pub.leaflet.blocks.recommendedPubs',
               'lex:pub.leaflet.blocks.membersOnlyDelimiter',
+              'lex:pub.leaflet.blocks.postHeader',
             ],
           },
           alignment: {
@@ -2518,6 +2594,10 @@ export const schemaDict = {
             default: 'rtl',
           },
           showRecommends: {
+            type: 'boolean',
+            default: true,
+          },
+          showOtherPublicationsInTags: {
             type: 'boolean',
             default: true,
           },
@@ -2883,6 +2963,22 @@ export const schemaDict = {
           width: {
             type: 'integer',
           },
+          aspectRatio: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.theme.wordmark#aspectRatio',
+          },
+        },
+      },
+      aspectRatio: {
+        type: 'object',
+        required: ['width', 'height'],
+        properties: {
+          width: {
+            type: 'integer',
+          },
+          height: {
+            type: 'integer',
+          },
         },
       },
     },
@@ -3117,6 +3213,10 @@ export const schemaDict = {
             default: true,
             type: 'boolean',
           },
+          showOtherPublicationsInTags: {
+            default: true,
+            type: 'boolean',
+          },
         },
         type: 'object',
       },
@@ -3272,7 +3372,9 @@ export const ids = {
   PubLeafletBlocksOrderedList: 'pub.leaflet.blocks.orderedList',
   PubLeafletBlocksPage: 'pub.leaflet.blocks.page',
   PubLeafletBlocksPoll: 'pub.leaflet.blocks.poll',
+  PubLeafletBlocksPostHeader: 'pub.leaflet.blocks.postHeader',
   PubLeafletBlocksPostsList: 'pub.leaflet.blocks.postsList',
+  PubLeafletBlocksRecommendedPubs: 'pub.leaflet.blocks.recommendedPubs',
   PubLeafletBlocksSignup: 'pub.leaflet.blocks.signup',
   PubLeafletBlocksStandardSitePost: 'pub.leaflet.blocks.standardSitePost',
   PubLeafletBlocksStandardSitePublication:

@@ -111,7 +111,7 @@ export function WordmarkEditor() {
               Use Logo and Publication Name
             </div>
             {mode === "wordmark" && (
-              <div className="text-sm font-normal text-teritary">
+              <div className="text-sm font-normal text-tertiary">
                 Still appears in links and previews of this publication
               </div>
             )}

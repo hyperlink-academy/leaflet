@@ -50,7 +50,7 @@ export const PostPrevNextButtons = (props: {
   );
 
   return (
-    <div className="flex flex-col gap-0.5 w-full px-3 sm:px-4 pb-3 pt-2">
+    <div className="postPrevNext flex flex-col gap-0.5 w-full px-3 sm:px-4 pb-3 pt-2">
       <div className="flex justify-between w-full gap-8 ">
         <div className="flex gap-2 items-center grow basis-1/2 min-w-0">
           {edge.left && (

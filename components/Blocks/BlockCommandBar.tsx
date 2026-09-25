@@ -43,6 +43,7 @@ export const BlockCommandBar = ({
   let hasMembersDelimiter = useBlocks(props.parent).some(
     (b) => b.type === "members-only-delimiter",
   );
+  let isCanvas = useEntity(props.parent, "page/type")?.data.value === "canvas";
 
   // This clears '/' AND anything typed after it
   const clearCommandSearchText = () => {
@@ -54,9 +55,6 @@ export const BlockCommandBar = ({
 
     const tr = existingState.editor.tr;
     tr.deleteRange(1, tr.doc.content.size - 1);
-    // Dispatch through the view so trackUndoRedo records an inverse entry;
-    // a direct apply left the cleared scaffolding text with no inverse and it
-    // reappeared on redo.
     if (existingState.view) existingState.view.dispatch(tr);
     else setEditorState(entityID, { editor: existingState.editor.apply(tr) });
   };
@@ -72,25 +70,27 @@ export const BlockCommandBar = ({
       ) ?? false;
     const matchesSearch = matchesName || matchesAlternate;
     const isVisible = !pub || !command.hiddenInPublication;
-    // Publication-only blocks (post list, subscribe) are available on any
-    // leaflet within a publication — both posts and the publication's pages.
-    // pub is also set for standalone published docs (with no publication),
-    // so gate on the joined publication record rather than pub itself.
-    const allowedInContext = !command.publicationOnly || !!pub?.publications;
-    // Subpage/canvas blocks don't belong in a publication's own pages.
-    const allowedOnPage =
-      !command.hiddenOnPublicationPage || !inPublicationEdit;
-    const allowedDelimiter =
+    const hasMembership =
       !command.membersOnlyDelimiter ||
       (membershipsEnabled &&
         props.parent === firstPage &&
         !hasMembersDelimiter);
+
+    const allowedInPublication =
+      !command.publicationOnly || !!pub?.publications;
+    const hiddenOnPubPage =
+      !!command.hiddenOnPublicationPage && inPublicationEdit;
+    const hiddenInPubPost = !!command.hiddenInPost && !inPublicationEdit;
+    const allowedOnPage = !command.canvasOnly || isCanvas;
+
     return (
       matchesSearch &&
       isVisible &&
-      allowedInContext &&
-      allowedOnPage &&
-      allowedDelimiter
+      hasMembership &&
+      allowedInPublication &&
+      !hiddenOnPubPage &&
+      !hiddenInPubPost &&
+      allowedOnPage
     );
   });
 

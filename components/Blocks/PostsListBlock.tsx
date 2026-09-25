@@ -10,18 +10,18 @@ import { PaginatedPublicationPostsList } from "app/(app)/(published)/lish/[did]/
 import { ChapterShelf } from "app/(app)/(published)/lish/[did]/[publication]/PublicationPostsChapterList";
 import { buildChapterCards } from "src/utils/chapterGrouping";
 import {
-  POSTS_LIST_PAGE_SIZE,
-  postsListFilterKey,
+  buildPostsListIndex,
+  resolveReaderControls,
   sortPostsForList,
   filterPostsByTags,
-  type LoadPostsBatch,
   type PostsListView,
 } from "src/utils/postsListPagination";
+import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import type { PublicationPostsListPost } from "src/utils/buildPublicationPosts";
-import { Popover } from "components/Popover";
-import { Toggle } from "components/Toggle";
-import { SettingsTriggerButton } from "./SettingsTriggerButton";
+import { ToggleWithLabel } from "components/Toggle";
+import { BlockSettings } from "./SettingsTriggerButton";
 import { PlaceholderText } from "./PostSizeIcons";
+import { BlockSettingOptions } from "./BlockSettingOptions";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { EmptyState } from "components/EmptyState";
 import { ShortcutKey } from "components/Layout";
@@ -55,18 +55,50 @@ export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
   );
 };
 
+function usePostsListReaderFlags(entityID: string) {
+  let readerControls = useEntity(entityID, "posts-list/reader-controls");
+  let readerSearch = useEntity(entityID, "posts-list/reader-search");
+  let readerTagFilter = useEntity(entityID, "posts-list/reader-tag-filter");
+  let readerSort = useEntity(entityID, "posts-list/reader-sort");
+  return {
+    readerControls: readerControls?.data.value,
+    readerSearch: readerSearch?.data.value,
+    readerTagFilter: readerTagFilter?.data.value,
+    readerSort: readerSort?.data.value,
+  };
+}
+
 function PostsListBlockContent({ entityID }: { entityID: string }) {
   let { data } = usePublicationData();
   let publicationRecord = useNormalizedPublicationRecord();
+  let { rootEntity } = useReplicache();
+  // The draft's theme facts are the width the editor is rendering at; the
+  // publication record only catches up on publish.
+  let pageWidth = useEntity(rootEntity, "theme/page-width")?.data.value;
 
   let viewFact = useEntity(entityID, "posts-list/view");
   let view: PostsListView = viewFact?.data.value ?? "medium";
+
+  let readerFlags = usePostsListReaderFlags(entityID);
+  let readerControls = useMemo(
+    () => (view === "chapter" ? undefined : resolveReaderControls(readerFlags)),
+    [
+      view,
+      readerFlags.readerControls,
+      readerFlags.readerSearch,
+      readerFlags.readerTagFilter,
+      readerFlags.readerSort,
+    ],
+  );
 
   let highlightFirstFact = useEntity(
     entityID,
     "posts-list/highlight-first-post",
   );
   let highlightFirst = highlightFirstFact?.data.value ?? false;
+
+  let showPageCount =
+    useEntity(entityID, "posts-list/show-page-count")?.data.value ?? true;
 
   let filterTagFacts = useEntity(entityID, "posts-list/filter-tag");
   let filterTags = useMemo(
@@ -77,14 +109,9 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
   let limitFact = useEntity(entityID, "posts-list/limit");
   let limit = limitFact?.data.value;
 
-  // The dashboard already loads every document, so order/filter that in-memory
-  // set, hand the paginated list the full URI ordering, and resolve each batch
-  // locally — no extra round trips, just windowed rendering. Chapter view
-  // groups the same set into prebuilt cards instead, mirroring what the SSR
-  // page ships.
   let listData = useMemo(() => {
     if (!data?.documents) return null;
-    let ordered = sortPostsForList(
+    let ordered: PublicationPostsListPost[] = sortPostsForList(
       filterPostsByTags(data.documents, filterTags).map((d) => ({
         uri: d.uri,
         record: d.record,
@@ -94,27 +121,23 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
         membersOnly: d.membersOnly,
       })),
     );
-    let byUri = new Map(ordered.map((p) => [p.uri, p]));
-    let loadBatch: LoadPostsBatch = async (batch) =>
-      batch
-        .map((u) => byUri.get(u))
-        .filter((p): p is PublicationPostsListPost => p !== undefined);
     return {
-      uris: ordered.map((p) => p.uri),
-      initialPosts: ordered.slice(0, POSTS_LIST_PAGE_SIZE),
+      posts: ordered,
       latestPost: ordered[0],
       chapterCards:
         view === "chapter" && data.publication
           ? buildChapterCards(ordered, data.publication)
           : undefined,
-      loadBatch,
+      readerIndex: readerControls
+        ? buildPostsListIndex(ordered, (p) => getFirstParagraph(p.record))
+        : undefined,
     };
-  }, [data?.documents, data?.publication, filterTags, view]);
+  }, [data?.documents, data?.publication, filterTags, view, readerControls]);
 
   if (data === undefined) return <PostsListPlaceholder />;
   if (!data?.publication) return <PostsListPlaceholder />;
 
-  if (!listData || listData.uris.length === 0)
+  if (!listData || listData.posts.length === 0)
     return (
       <EmptyState container="none">
         You haven't published any posts yet! When you do, they'll show here.
@@ -132,6 +155,7 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
         cards={listData.chapterCards ?? []}
         latestPost={listData.latestPost}
         highlightLatest={highlightFirst}
+        showPageCount={showPageCount}
         disableLinks
       />
     );
@@ -141,14 +165,15 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
     <PaginatedPublicationPostsList
       publication={data.publication}
       publicationRecord={publicationRecord}
-      listId={`${data.publication.uri}:${postsListFilterKey(filterTags)}`}
-      uris={listData.uris}
-      initialPosts={listData.initialPosts}
-      loadBatch={listData.loadBatch}
+      uris={listData.readerIndex ? undefined : listData.posts.map((p) => p.uri)}
+      index={listData.readerIndex}
+      knownPosts={listData.posts}
       view={view}
       highlightFirstPost={highlightFirst}
       limit={limit}
+      readerControls={readerControls}
       disableLinks
+      pageWidth={pageWidth}
     />
   );
 }
@@ -185,6 +210,10 @@ function PostsListSettingsButton(props: { entityID: string }) {
   );
   let highlightFirst = highlightFirstFact?.data.value ?? false;
 
+  let showPageCount =
+    useEntity(props.entityID, "posts-list/show-page-count")?.data.value ??
+    true;
+
   let filterTagFacts = useEntity(props.entityID, "posts-list/filter-tag");
   let selectedTags = useMemo(
     () => filterTagFacts.map((f) => f.data.value),
@@ -194,11 +223,30 @@ function PostsListSettingsButton(props: { entityID: string }) {
   let limitFact = useEntity(props.entityID, "posts-list/limit");
   let limit = limitFact?.data.value;
 
+  let readerFlags = usePostsListReaderFlags(props.entityID);
+  let readerControlsEnabled = !!readerFlags.readerControls;
+
   let [filterByTagEnabled, setFilterByTagEnabled] = useState(
     () => selectedTags.length > 0,
   );
   let [limitEnabled, setLimitEnabled] = useState(() => !!limit && limit > 0);
   let [chapterHelpOpen, setChapterHelpOpen] = useState(false);
+
+  let setReaderFlag = (
+    attribute:
+      | "posts-list/reader-controls"
+      | "posts-list/reader-search"
+      | "posts-list/reader-tag-filter"
+      | "posts-list/reader-sort",
+    value: boolean,
+  ) => {
+    if (!rep) return;
+    return rep.mutate.assertFact({
+      entity: props.entityID,
+      attribute,
+      data: { type: "boolean", value },
+    });
+  };
 
   let setLimit = (value: number) => {
     if (!rep) return;
@@ -224,240 +272,269 @@ function PostsListSettingsButton(props: { entityID: string }) {
   }, [data?.documents]);
 
   return (
-    <Popover
-      asChild
-      side="top"
-      align="end"
-      sideOffset={6}
-      className="w-md overflow-scroll"
-      trigger={<SettingsTriggerButton aria-label="Posts List Settings" />}
-    >
-      <div className="flex flex-col gap-3 text-primary py-1 min-w-[220px]">
-        <div className="flex flex-col gap-2">
-          <div>
-            <h3>List Layout</h3>
-          </div>
-          <div className="relative flex flex-row sm:gap-1 gap-2 w-full items-stretch">
-            {(
-              [
-                { value: "small", Icon: SmallIcon },
-                { value: "medium", Icon: MedIcon },
-                { value: "chapter", Icon: ChapterIcon },
-              ] as {
-                value: PostsListView;
-                Icon: (props: { selected: boolean }) => React.ReactNode;
-              }[]
-            ).map((option) => {
-              let selected = view === option.value;
-              return (
-                <button
-                  className={`PostBlockSizeSettingOption text-left flex flex-col flex-1 pt-1 p-2 outline-2 outline-offset-1 border ${selected ? "accent-container outline-accent-contrast border-accent-contrast " : "opaque-container outline-transparent"}`}
-                  key={option.value}
-                  type="button"
-                  aria-pressed={selected}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    if (!rep) return;
-                    rep.mutate.assertFact({
-                      entity: props.entityID,
-                      attribute: "posts-list/view",
-                      data: {
-                        type: "posts-list-view-union",
-                        value: option.value,
-                      },
-                    });
-                  }}
-                >
-                  <div className="text-xs font-bold text-secondary uppercase pb-1">
-                    {option.value}
-                  </div>
-                  <div className="flex items-center grow w-full ">
-                    <option.Icon selected={selected} />
-                  </div>
-                </button>
-              );
-            })}
-            {/* A sibling of the layout options rather than a child: the chapter
+    <BlockSettings label="Post List" className="w-md">
+      <div className="flex flex-col gap-2">
+        <div>
+          <h3>List Layout</h3>
+        </div>
+        <BlockSettingOptions<PostsListView>
+          options={[
+            { value: "small", Icon: SmallIcon },
+            { value: "medium", Icon: MedIcon },
+            { value: "chapter", Icon: ChapterIcon },
+          ]}
+          value={view}
+          onSelect={(value) => {
+            if (!rep) return;
+            rep.mutate.assertFact({
+              entity: props.entityID,
+              attribute: "posts-list/view",
+              data: { type: "posts-list-view-union", value },
+            });
+          }}
+        >
+          {/* A sibling of the layout options rather than a child: the chapter
                 option is itself a button, and the row's last column is the
                 chapter icon, so its bottom right corner is this row's. */}
-            {view === "chapter" && (
-              <button
-                type="button"
-                className="absolute -bottom-3 right-1 bg-accent-1 text-accent-2 rounded-full  "
-                aria-expanded={chapterHelpOpen}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => setChapterHelpOpen(!chapterHelpOpen)}
-              >
-                <HelpSmall className="scale-75" />
-              </button>
-            )}
-          </div>
+          {view === "chapter" && (
+            <button
+              type="button"
+              className="absolute -bottom-3 right-1 bg-accent-1 text-accent-2 rounded-full  "
+              aria-expanded={chapterHelpOpen}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setChapterHelpOpen(!chapterHelpOpen)}
+            >
+              <HelpSmall className="scale-75" />
+            </button>
+          )}
+        </BlockSettingOptions>
+      </div>
+      {view === "chapter" && chapterHelpOpen && (
+        <div className="light-container p-2 text-tertiary text-sm leading-snug flex flex-col gap-1.5">
+          <p>Group posts into chapters based on titles</p>{" "}
+          <hr className="border-dashed" />
+          <p>
+            Posts titled <br />
+            "Ch1 - Pg1"
+            <br />
+            "Ch1 - Pg2"
+            <br />
+            "Ch1 - Pg3" <br />
+            will group into a chapter named "Ch1".
+          </p>
+          <p className="font-bold">
+            Separate chapter names and page titles with <br />
+            <ShortcutKey>/</ShortcutKey> <ShortcutKey>,</ShortcutKey>{" "}
+            <ShortcutKey>:</ShortcutKey> or <ShortcutKey>-</ShortcutKey>.
+            <br /> Do not use these characters in chapter names!
+          </p>
         </div>
-        {view === "chapter" && chapterHelpOpen && (
-          <div className="light-container p-2 text-tertiary text-sm leading-snug flex flex-col gap-1.5">
-            <p>Group posts into chapters based on titles</p>{" "}
-            <hr className="border-dashed" />
-            <p>
-              Posts titled <br />
-              "Ch1 - Pg1"
-              <br />
-              "Ch1 - Pg2"
-              <br />
-              "Ch1 - Pg3" <br />
-              will group into a chapter named "Ch1".
-            </p>
-            <p className="font-bold">
-              Separate chapter names and page titles with <br />
-              <ShortcutKey>/</ShortcutKey> <ShortcutKey>,</ShortcutKey>{" "}
-              <ShortcutKey>:</ShortcutKey> or <ShortcutKey>-</ShortcutKey>.
-              <br /> Do not use these characters in chapter names!
-            </p>
-          </div>
-        )}
-        <Toggle
-          toggle={highlightFirst}
+      )}
+      <ToggleWithLabel
+        label="Highlight Latest Post"
+        toggle={highlightFirst}
+        onToggle={() => {
+          if (!rep) return;
+          rep.mutate.assertFact({
+            entity: props.entityID,
+            attribute: "posts-list/highlight-first-post",
+            data: { type: "boolean", value: !highlightFirst },
+          });
+        }}
+      />
+      {view === "chapter" && (
+        <ToggleWithLabel
+          label="Show Page Count"
+          toggle={showPageCount}
           onToggle={() => {
             if (!rep) return;
             rep.mutate.assertFact({
               entity: props.entityID,
-              attribute: "posts-list/highlight-first-post",
-              data: { type: "boolean", value: !highlightFirst },
+              attribute: "posts-list/show-page-count",
+              data: { type: "boolean", value: !showPageCount },
             });
           }}
-        >
-          <strong>Highlight Latest Post</strong>
-        </Toggle>
+        />
+      )}
+
+      {view !== "chapter" && (
+        <div className="flex flex-col gap-1">
+          <ToggleWithLabel
+            label="Limit Posts"
+            toggle={limitEnabled}
+            onToggle={() => {
+              if (limitEnabled) {
+                clearLimit();
+                setLimitEnabled(false);
+              } else {
+                setLimitEnabled(true);
+                if (!limit || limit < 1) setLimit(5);
+              }
+            }}
+          />
+          {limitEnabled && (
+            <div className="flex items-center gap-2 text-secondary text-sm">
+              <span>Show only</span>
+              <input
+                type="number"
+                min={1}
+                value={limit ?? 5}
+                onMouseDown={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  let next = Math.max(1, Math.floor(Number(e.target.value)));
+                  if (Number.isFinite(next)) setLimit(next);
+                }}
+                className="input-tag w-16 border border-border rounded px-1 py-0.5 bg-bg-page"
+              />
+              <span>posts</span>
+            </div>
+          )}
+        </div>
+      )}
+      <hr className="border-border-light my-1" />
+
+      <div className="flex flex-col gap-2">
+        <h3>Settings</h3>
+        <div className="tagFilter flex flex-col gap-1 ">
+          <ToggleWithLabel
+            label="Filter by Tag"
+            toggle={filterByTagEnabled}
+            onToggle={() => {
+              if (filterByTagEnabled) {
+                // turning off the filter clears any selected tags
+                undoManager.withUndoGroup(async () => {
+                  if (!rep) return;
+                  for (let fact of filterTagFacts)
+                    await rep.mutate.retractFact({ factID: fact.id });
+                });
+                setFilterByTagEnabled(false);
+              } else {
+                setFilterByTagEnabled(true);
+              }
+            }}
+          />
+          {filterByTagEnabled && selectedTags.length > 0 && (
+            <button
+              type="button"
+              className="self-end text-tertiary hover:text-accent-contrast text-sm"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() =>
+                undoManager.withUndoGroup(async () => {
+                  if (!rep) return;
+                  for (let fact of filterTagFacts)
+                    await rep.mutate.retractFact({ factID: fact.id });
+                })
+              }
+            >
+              clear
+            </button>
+          )}
+          {filterByTagEnabled ? (
+            <div className="tagList light-container p-2">
+              {allTags.length === 0 ? (
+                <div className="text-tertiary italic text-sm">no tags yet</div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {allTags.map((tag) => {
+                    let selectedFact = filterTagFacts.find(
+                      (f) => f.data.value === tag,
+                    );
+                    let isSelected = !!selectedFact;
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        aria-pressed={isSelected}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          if (!rep) return;
+                          if (selectedFact) {
+                            rep.mutate.retractFact({
+                              factID: selectedFact.id,
+                            });
+                          } else {
+                            rep.mutate.assertFact({
+                              entity: props.entityID,
+                              attribute: "posts-list/filter-tag",
+                              data: { type: "string", value: tag },
+                            });
+                          }
+                        }}
+                        className={`tag flex items-center text-xs rounded-md border px-1 py-0.5 ${
+                          isSelected
+                            ? "bg-accent-1 border-accent-1 font-bold text-accent-2"
+                            : "bg-bg-page border-border text-tertiary"
+                        }`}
+                      >
+                        {tag}
+                        {isSelected ? (
+                          <CloseTiny className="scale-75 text-accent-2" />
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
 
         {view !== "chapter" && (
-          <div className="flex flex-col gap-1">
-            <Toggle
-              toggle={limitEnabled}
-              onToggle={() => {
-                if (limitEnabled) {
-                  clearLimit();
-                  setLimitEnabled(false);
-                } else {
-                  setLimitEnabled(true);
-                  if (!limit || limit < 1) setLimit(5);
-                }
-              }}
-            >
-              <strong>Limit Posts</strong>
-            </Toggle>
-            {limitEnabled && (
-              <div className="flex items-center gap-2 ml-8 text-secondary text-sm">
-                <span>Show only</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={limit ?? 5}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onChange={(e) => {
-                    let next = Math.max(1, Math.floor(Number(e.target.value)));
-                    if (Number.isFinite(next)) setLimit(next);
-                  }}
-                  className="input-tag w-16 border border-border rounded px-1 py-0.5 bg-bg-page"
-                />
-                <span>posts</span>
+          <div className="readerControls flex flex-col gap-1">
+            <ToggleWithLabel
+              label="Enable Reader Controls"
+              toggle={readerControlsEnabled}
+              onToggle={() =>
+                undoManager.withUndoGroup(async () => {
+                  if (readerControlsEnabled) {
+                    await setReaderFlag("posts-list/reader-controls", false);
+                  } else {
+                    // Turning the feature on should show all three rather
+                    // than an empty control row.
+                    await setReaderFlag("posts-list/reader-controls", true);
+                    await setReaderFlag("posts-list/reader-search", true);
+                    await setReaderFlag("posts-list/reader-tag-filter", true);
+                    await setReaderFlag("posts-list/reader-sort", true);
+                  }
+                })
+              }
+            />
+            {readerControlsEnabled && (
+              <div className="flex flex-col gap-1 py-1 px-2 opaque-container text-secondary">
+                {(
+                  [
+                    {
+                      label: "Search",
+                      attribute: "posts-list/reader-search",
+                      value: readerFlags.readerSearch ?? true,
+                    },
+                    {
+                      label: "Filter by Tag",
+                      attribute: "posts-list/reader-tag-filter",
+                      value: readerFlags.readerTagFilter ?? true,
+                    },
+                    {
+                      label: "Sort",
+                      attribute: "posts-list/reader-sort",
+                      value: readerFlags.readerSort ?? true,
+                    },
+                  ] as const
+                ).map((option) => (
+                  <ToggleWithLabel
+                    key={option.attribute}
+                    label={option.label}
+                    toggle={option.value}
+                    onToggle={() =>
+                      setReaderFlag(option.attribute, !option.value)
+                    }
+                  />
+                ))}
               </div>
             )}
           </div>
         )}
-        <hr className="border-border-light my-1" />
-
-        <div className="flex flex-col gap-2">
-          <h3>Settings</h3>
-          <div className="tagFilter flex flex-col gap-1 ">
-            <div className="flex flex-row items-baseline justify-between gap-4">
-              <Toggle
-                toggle={filterByTagEnabled}
-                onToggle={() => {
-                  if (filterByTagEnabled) {
-                    // turning off the filter clears any selected tags
-                    undoManager.withUndoGroup(async () => {
-                      if (!rep) return;
-                      for (let fact of filterTagFacts)
-                        await rep.mutate.retractFact({ factID: fact.id });
-                    });
-                    setFilterByTagEnabled(false);
-                  } else {
-                    setFilterByTagEnabled(true);
-                  }
-                }}
-              >
-                <strong>Filter by Tag</strong>
-              </Toggle>
-              {filterByTagEnabled && selectedTags.length > 0 && (
-                <button
-                  type="button"
-                  className="text-tertiary hover:text-accent-contrast text-sm"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() =>
-                    undoManager.withUndoGroup(async () => {
-                      if (!rep) return;
-                      for (let fact of filterTagFacts)
-                        await rep.mutate.retractFact({ factID: fact.id });
-                    })
-                  }
-                >
-                  clear
-                </button>
-              )}
-            </div>
-            {filterByTagEnabled ? (
-              <div className="tagList light-container p-2 ml-8">
-                {allTags.length === 0 ? (
-                  <div className="text-tertiary italic text-sm">
-                    no tags yet
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {allTags.map((tag) => {
-                      let selectedFact = filterTagFacts.find(
-                        (f) => f.data.value === tag,
-                      );
-                      let isSelected = !!selectedFact;
-                      return (
-                        <button
-                          key={tag}
-                          type="button"
-                          aria-pressed={isSelected}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => {
-                            if (!rep) return;
-                            if (selectedFact) {
-                              rep.mutate.retractFact({
-                                factID: selectedFact.id,
-                              });
-                            } else {
-                              rep.mutate.assertFact({
-                                entity: props.entityID,
-                                attribute: "posts-list/filter-tag",
-                                data: { type: "string", value: tag },
-                              });
-                            }
-                          }}
-                          className={`tag flex items-center text-xs rounded-md border px-1 py-0.5 ${
-                            isSelected
-                              ? "bg-accent-1 border-accent-1 font-bold text-accent-2"
-                              : "bg-bg-page border-border text-tertiary"
-                          }`}
-                        >
-                          {tag}
-                          {isSelected ? (
-                            <CloseTiny className="scale-75 text-accent-2" />
-                          ) : null}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ) : null}
-          </div>
-        </div>
       </div>
-    </Popover>
+    </BlockSettings>
   );
 }
 

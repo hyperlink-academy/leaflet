@@ -136,7 +136,7 @@ export async function getReaderMembership(
   const { data } = await supabaseServerClient
     .from("publication_memberships")
     .select(
-      "id, tier, status, current_period_end, stripe_customer_id, stripe_subscription_id, stripe_account_id, cadence",
+      "id, tier, status, current_period_end, cancel_at_period_end, stripe_customer_id, stripe_subscription_id, stripe_account_id, cadence",
     )
     .eq("publication", publicationUri)
     .eq("identity_id", identityId)

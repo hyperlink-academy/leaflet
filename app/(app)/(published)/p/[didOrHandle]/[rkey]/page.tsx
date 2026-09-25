@@ -6,6 +6,7 @@ import { DocumentPageRenderer } from "app/(app)/(published)/lish/[did]/[publicat
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { documentUriFilter } from "src/utils/uriHelpers";
 import { getDocumentURL } from "src/utils/getPublicationURL";
+import { documentDescription } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/postPageMetadata";
 
 // On-demand ISR: rendered on first request, then served from the CDN and
 // re-rendered in the background. The empty generateStaticParams is what opts a
@@ -27,7 +28,7 @@ export async function generateMetadata(props: {
 
   let { data: documents } = await supabaseServerClient
     .from("documents")
-    .select("*")
+    .select("*, documents_in_publications(publications(*))")
     .or(documentUriFilter(did, params.rkey))
     .order("uri", { ascending: false })
     .limit(1);
@@ -38,14 +39,21 @@ export async function generateMetadata(props: {
   const docRecord = normalizeDocumentRecord(document.data);
   if (!docRecord) return { title: "404" };
 
-  // Canonical URL points at the document's blog domain (doc.site + path) so
-  // the post on leaflet.pub (and its quote pages, which inherit this
-  // metadata) doesn't compete with the custom-domain version in search.
-  let docUrl = getDocumentURL(docRecord, document.uri);
-  let canonical = docUrl.startsWith("http") ? docUrl : undefined;
+  // Canonical URL points at the document's home — the publication's blog
+  // domain for publication posts (doc.site alone is an AT-URI for those),
+  // doc.site for standalone docs — so this leaflet.pub copy (and its quote
+  // pages, which inherit this metadata) doesn't compete with it in search.
+  // Self-referential when the document resolves nowhere else, so the page is
+  // never canonical-less.
+  let publication = document.documents_in_publications[0]?.publications;
+  let docUrl = getDocumentURL(docRecord, document.uri, publication);
+  if (docUrl.startsWith("/")) docUrl = `https://leaflet.pub${docUrl}`;
+  let canonical = docUrl.startsWith("http")
+    ? docUrl
+    : `https://leaflet.pub/p/${encodeURIComponent(did)}/${params.rkey}`;
 
   return {
-    alternates: canonical ? { canonical } : undefined,
+    alternates: { canonical },
     icons: {
       other: [
         {
@@ -56,7 +64,7 @@ export async function generateMetadata(props: {
       ],
     },
     title: docRecord.title,
-    description: docRecord?.description || "",
+    description: documentDescription(docRecord),
     other: {
       "at:canonical": document.uri,
     },
@@ -73,6 +81,12 @@ export default async function StandaloneDocumentPage(props: {
   // Canonicalize handle URLs onto the DID form so a document has one cache
   // entry here instead of one per handle spelling — publishing revalidates
   // the DID path, and a stale handle entry would outlive the update.
+  //
+  // Temporary, not permanent: handles are reassignable, and a 308 is cached by
+  // browsers indefinitely, so a handle that later moves to another account
+  // would keep sending that visitor to the old DID's post. Search engines
+  // consolidate off the canonical tag above instead, which re-resolves on
+  // every crawl. Same reasoning at the other handle→DID redirects.
   if (didOrHandle !== did)
     redirect(`/p/${encodeURIComponent(did)}/${params.rkey}`);
 

@@ -1,7 +1,11 @@
 import type { PubLeafletPublication } from "lexicons/api";
 import { blobRefToSrc } from "./blobRefToSrc";
 
-export type WordmarkData = { src: string; width?: number };
+export type WordmarkData = {
+  src: string;
+  width?: number;
+  aspectRatio?: { width: number; height: number };
+};
 
 // Resolves a published publication theme's wordmark into a renderable image
 // src + width. Returns null when no wordmark is set (callers fall back to the
@@ -16,5 +20,11 @@ export function wordmarkFromTheme(
   return {
     src: blobRefToSrc(wordmark.image.ref, did),
     width: wordmark.width ?? undefined,
+    aspectRatio: wordmark.aspectRatio
+      ? {
+          width: wordmark.aspectRatio.width,
+          height: wordmark.aspectRatio.height,
+        }
+      : undefined,
   };
 }

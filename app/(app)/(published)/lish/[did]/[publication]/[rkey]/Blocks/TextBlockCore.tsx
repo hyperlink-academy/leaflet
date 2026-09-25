@@ -37,6 +37,9 @@ export type TextBlockCoreProps = {
   preview?: boolean;
   renderers?: FacetRenderers;
   footnoteIndexMap?: Map<string, number>;
+  // Set on user-generated surfaces (comments) so link facets carry
+  // rel="nofollow ugc" and don't pass authority from the publication's pages.
+  ugcLinks?: boolean;
 };
 
 export function TextBlockCore(props: TextBlockCoreProps) {
@@ -142,6 +145,7 @@ export function TextBlockCore(props: TextBlockCoreProps) {
             key={counter}
             href={`https://leaflet.pub/p/${isDidMention.did}`}
             target="_blank"
+            rel="noopener noreferrer"
             className="no-underline"
           >
             <span className="mention" style={highlightStyle}>
@@ -168,6 +172,11 @@ export function TextBlockCore(props: TextBlockCoreProps) {
           href={link.uri.trim()}
           className={`text-accent-contrast hover:underline ${className}`}
           target="_blank"
+          rel={
+            props.ugcLinks
+              ? "noopener noreferrer nofollow ugc"
+              : "noopener noreferrer"
+          }
           style={highlightStyle}
         >
           {renderedText}

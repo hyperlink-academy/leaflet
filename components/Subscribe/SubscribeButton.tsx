@@ -1,19 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SubscribeWithHandle, AtSubscribeSuccess } from "./HandleSubscribe";
+import { SubscribeWithHandle } from "./HandleSubscribe";
 import { EmailInput, EmailButton, EmailConfirm } from "./EmailSubscribe";
-import { EmailSubscribeSuccess } from "./EmailSubscribeSuccess";
+import { AtSubscribeSuccess, EmailSubscribeSuccess } from "./SubscribeSuccess";
 import { LinkIdentityModal } from "./LinkIdentityModal";
 import { SUBSCRIBE_ERROR_MESSAGES as ERROR_MESSAGES } from "./subscribeErrors";
 import { Modal } from "components/Modal";
 import { ButtonPrimary } from "components/Buttons";
 import { ManageSubscription } from "./ManageSubscribe";
 import { useToaster } from "components/Toast";
-import {
-  refreshIdentityData,
-  useIdentityData,
-} from "components/IdentityProvider";
+import { useIdentityData } from "components/IdentityProvider";
 import { AtmosphereAccount } from "components/Icons/AtmosphereAccount";
 import { EmailTiny } from "components/Icons/EmailTiny";
 import { Menu, MenuItem, RadioMenuGroup, RadioMenuItem } from "components/Menu";
@@ -26,12 +23,15 @@ import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActi
 import { mainSiteAuthBase } from "src/utils/customDomain";
 import type { SubscriptionSource } from "src/subscriptionSource";
 
-import { useViewerSubscription } from "./viewerSubscription";
+import {
+  markLocallySubscribed,
+  useViewerSubscription,
+} from "./viewerSubscription";
 import { useSubscribeSuccessData } from "./useSubscribeSuccessData";
 import { Separator } from "components/Layout";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { PaidSubscribeButton } from "./PaidSubscribeButton";
-import { useJoinableTiers } from "components/Memberships/useJoinableTiers";
+import { useMembershipTiers } from "components/Memberships/useMembershipTiers";
 
 type SubscribeMode = "email" | "atproto";
 
@@ -94,7 +94,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
   let toaster = useToaster();
   let router = useRouter();
   const user = useViewerSubscription(props.publicationUri);
-  const { identity, mutate: mutateIdentity } = useIdentityData();
+  const { identity } = useIdentityData();
   let [email, setEmail] = useState(user.email ?? "");
   // On a published page identity resolves after first paint, so the initial
   // value above is always the logged-out one. Without this the email field
@@ -117,10 +117,9 @@ export const SubscribeInput = (props: SubscribeProps) => {
   // merge from any existing email-only identity) instead of creating a
   // disconnected email-only account.
   let [linkToCurrent, setLinkToCurrent] = useState(false);
-  let [locallySubscribed, setLocallySubscribed] = useState(false);
   let [linkModalOpen, setLinkModalOpen] = useState(false);
   let [subscribeMode, setSubscribeMode] = useState<SubscribeMode>("email");
-  const joinable = useJoinableTiers(props.publicationUri);
+  const membershipTiers = useMembershipTiers(props.publicationUri);
   // Warm the success-modal data (pub name + recommended listings) while the
   // form is idle, so subscribing opens the modal without a loading spinner.
   useSubscribeSuccessData(props.publicationUri);
@@ -148,22 +147,18 @@ export const SubscribeInput = (props: SubscribeProps) => {
     }
     if (res.value.confirmed) {
       setConfirmState("success");
-      refreshIdentityData();
+      markLocallySubscribed(props.publicationUri, "email");
       router.refresh();
     }
     setConfirmOpen(true);
   };
 
-  const showManage = props.newsletterMode
-    ? user.emailSubscribed
-    : user.atprotoSubscribed;
-  const isSubscribed = showManage || locallySubscribed;
   const modeMenu = (
     <SubscribeInputModeMenu mode={subscribeMode} onChange={setSubscribeMode} />
   );
   // Paid memberships replace the subscribe form with the paid join flow.
-  if (joinable.hasPaidTiers && joinable.tiers)
-    return <PaidSubscribeButton {...props} tiers={joinable.tiers} />;
+  if (membershipTiers.hasPaidTiers && membershipTiers.tiers)
+    return <PaidSubscribeButton {...props} tiers={membershipTiers.tiers} />;
   const emailForm = (
     <EmailInput
       publicationUrl={props.publicationUrl}
@@ -193,18 +188,20 @@ export const SubscribeInput = (props: SubscribeProps) => {
   );
   return (
     <>
-      {isSubscribed ? (
+      {user.subscribed ? (
         <>
-          <ManageSubscription
-            publicationUri={props.publicationUri}
-            publicationUrl={props.publicationUrl}
-            newsletterMode={props.newsletterMode}
-            user={user}
-          />
+          <div className="flex justify-center">
+            <ManageSubscription
+              publicationUri={props.publicationUri}
+              publicationUrl={props.publicationUrl}
+              newsletterMode={props.newsletterMode}
+              user={user}
+            />
+          </div>
 
           {props.newsletterMode &&
           user.atprotoSubscribed &&
-          !user.emailSubscribed ? (
+          !user.emailEnabled ? (
             <div
               className="text-secondary  w-full text-sm p-2 pt-1.5 mt-1 rounded-md flex flex-col gap-1"
               style={{
@@ -252,7 +249,6 @@ export const SubscribeInput = (props: SubscribeProps) => {
               source={props.source}
               email={user.email}
               handle={user.handle}
-              onSubscribed={() => setLocallySubscribed(true)}
               onSuccess={(mode) => {
                 if (mode === "email") {
                   setConfirmState("success");
@@ -279,7 +275,6 @@ export const SubscribeInput = (props: SubscribeProps) => {
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
           source={props.source}
-          onSubscribed={() => setLocallySubscribed(true)}
           onAtSuccess={() => setAtSuccessOpen(true)}
         />
       )}
@@ -303,11 +298,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
         open={atSuccessOpen}
         onOpenChange={(open) => {
           setAtSuccessOpen(open);
-          if (!open) {
-            setLocallySubscribed(true);
-            mutateIdentity();
-            router.refresh();
-          }
+          if (!open) router.refresh();
         }}
       >
         <AtSubscribeSuccess publicationUri={props.publicationUri} />
@@ -318,7 +309,6 @@ export const SubscribeInput = (props: SubscribeProps) => {
           onOpenChange={(open) => {
             setConfirmOpen(open);
             if (!open) {
-              if (confirmState === "success") setLocallySubscribed(true);
               setConfirmState("confirm");
               setLinkToCurrent(false);
             }
@@ -355,7 +345,7 @@ export const SubscribeInput = (props: SubscribeProps) => {
                   return;
                 }
                 setConfirmState("success");
-                refreshIdentityData();
+                markLocallySubscribed(props.publicationUri, "email");
                 router.refresh();
               }}
             />
@@ -368,18 +358,15 @@ export const SubscribeInput = (props: SubscribeProps) => {
 
 export const SubscribeButton = (props: SubscribeProps) => {
   const user = useViewerSubscription(props.publicationUri);
-  let [locallySubscribed, setLocallySubscribed] = useState(false);
   let [atSuccessOpen, setAtSuccessOpen] = useState(false);
   let [emailSuccessOpen, setEmailSuccessOpen] = useState(false);
-  const joinable = useJoinableTiers(props.publicationUri);
+  const membershipTiers = useMembershipTiers(props.publicationUri);
 
   // Paid memberships replace the one-click subscribe with the paid join flow.
-  if (joinable.hasPaidTiers && joinable.tiers)
-    return <PaidSubscribeButton {...props} tiers={joinable.tiers} compact />;
-
-  const showManage = props.newsletterMode
-    ? user.emailSubscribed
-    : user.atprotoSubscribed;
+  if (membershipTiers.hasPaidTiers && membershipTiers.tiers)
+    return (
+      <PaidSubscribeButton {...props} tiers={membershipTiers.tiers} compact />
+    );
 
   const subscribeTrigger = (
     <ButtonPrimary compact className="pubPageSubscribe text-sm!">
@@ -389,7 +376,7 @@ export const SubscribeButton = (props: SubscribeProps) => {
 
   return (
     <>
-      {showManage || locallySubscribed ? (
+      {user.subscribed ? (
         <ManageSubscription
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
@@ -403,7 +390,6 @@ export const SubscribeButton = (props: SubscribeProps) => {
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
           source={props.source}
-          onSubscribed={() => setLocallySubscribed(true)}
           onAtSuccess={() => setAtSuccessOpen(true)}
         />
       ) : props.newsletterMode && user.loggedIn && user.email ? (
@@ -414,17 +400,12 @@ export const SubscribeButton = (props: SubscribeProps) => {
           source={props.source}
           email={user.email}
           handle={user.handle}
-          onSubscribed={() => setLocallySubscribed(true)}
           onSuccess={(mode) => {
             if (mode === "email") setEmailSuccessOpen(true);
             else setAtSuccessOpen(true);
           }}
         />
       ) : (
-        // Nothing to one-click with — either logged out, or logged in but
-        // missing the identity this pub needs (a handle for atproto pubs, an
-        // email for newsletters). Both open the full SubscribePanel (pub
-        // name/description + form) in a modal.
         <Modal asChild trigger={subscribeTrigger}>
           <div className="w-md max-w-full">
             <SubscribePanel {...props} />

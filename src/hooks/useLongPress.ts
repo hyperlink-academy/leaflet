@@ -1,5 +1,9 @@
 import { useRef, useEffect, useCallback, useMemo } from "react";
 
+export const LONG_PRESS_DELAY = 500;
+// Pointer travel during the hold beyond which it's a drag or a scroll, not a press.
+export const LONG_PRESS_TOLERANCE = 16;
+
 export const useLongPress = (cb: () => void, cancel?: boolean) => {
   let longPressTimer = useRef<number>(undefined);
   let isLongPress = useRef(false);
@@ -43,7 +47,7 @@ export const useLongPress = (cb: () => void, cancel?: boolean) => {
         isLongPress.current = true;
         cb();
         end();
-      }, 500);
+      }, LONG_PRESS_DELAY);
 
       // Add mousemove and touchmove listeners
       mouseMoveListener.current = (e: MouseEvent) => {
@@ -53,8 +57,7 @@ export const useLongPress = (cb: () => void, cancel?: boolean) => {
           Math.pow(e.clientX - startPosition.current.x, 2) +
             Math.pow(e.clientY - startPosition.current.y, 2),
         );
-        // Only end if the distance is greater than 16 pixels
-        if (distance > 16) {
+        if (distance > LONG_PRESS_TOLERANCE) {
           end();
         }
       };
@@ -65,7 +68,7 @@ export const useLongPress = (cb: () => void, cancel?: boolean) => {
           Math.pow(e.touches[0].clientX - startPosition.current.x, 2) +
             Math.pow(e.touches[0].clientY - startPosition.current.y, 2),
         );
-        if (distance > 16) {
+        if (distance > LONG_PRESS_TOLERANCE) {
           end();
         }
       };

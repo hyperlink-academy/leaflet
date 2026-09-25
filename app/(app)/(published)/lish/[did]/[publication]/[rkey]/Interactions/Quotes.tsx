@@ -1,4 +1,5 @@
 "use client";
+import { Fragment } from "react";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { useIsMobile } from "src/hooks/isMobile";
 import { setInteractionState } from "./Interactions";
@@ -23,8 +24,8 @@ import { useActiveHighlightState } from "../useHighlight";
 import { PostContent } from "../PostContent";
 import { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { flushSync } from "react-dom";
-import { openPage } from "../postPageState";
-import useSWR, { mutate } from "swr";
+import { usePostFrame } from "../postFrame";
+import useSWR, { preload } from "swr";
 import { DotLoader } from "components/utils/DotLoader";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
@@ -71,10 +72,7 @@ export function prefetchQuotesData(
 ) {
   const uris = quotesAndMentions.map((q) => q.uri);
   const key = getQuotesSWRKey(uris);
-  if (key) {
-    // Start fetching without blocking
-    mutate(key, fetchBskyPosts(uris), { revalidate: false });
-  }
+  if (key) preload(key, () => fetchBskyPosts(uris));
 }
 
 export const DiscussionDrawerContent = (props: {
@@ -156,9 +154,8 @@ export const DiscussionDrawerContent = (props: {
               );
 
               return (
-                <>
+                <Fragment key={q.uri}>
                   <BskyPostContent
-                    key={`mention-${index}`}
                     post={post}
                     parent={parent}
                     showBlueskyLink={true}
@@ -179,7 +176,7 @@ export const DiscussionDrawerContent = (props: {
                     }
                   />
                   <hr className="border-border-light last:hidden" />
-                </>
+                </Fragment>
               );
             })}
           </div>
@@ -195,6 +192,7 @@ export const QuoteContent = (props: {
   did: string;
 }) => {
   let isMobile = useIsMobile();
+  let frame = usePostFrame();
   const { uri: document_uri } = useDocument();
   const { pages } = useLeafletContent();
 
@@ -222,10 +220,7 @@ export const QuoteContent = (props: {
       <div
         className="quoteSectionQuote text-secondary text-sm text-left hover:cursor-pointer"
         onClick={(e) => {
-          if (props.position.pageId)
-            flushSync(() =>
-              openPage(undefined, { type: "doc", id: props.position.pageId! }),
-            );
+          flushSync(() => frame.showPage(props.position.pageId));
           let scrollMargin = isMobile
             ? 16
             : e.currentTarget.getBoundingClientRect().top;

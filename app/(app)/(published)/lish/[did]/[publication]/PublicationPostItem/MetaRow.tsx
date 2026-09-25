@@ -18,10 +18,12 @@ export function MetaRow({
 
   return (
     <div
-      className={`metaRow text-sm flex sm:flex-row flex-col sm:gap-2 gap-1 sm:items-center w-full text-tertiary z-10 ${textClassName} ${compact && "sm:gap-1! sm:flex-col! sm:items-start"}`}
+      // Just above the card's full-bleed PostLink overlay (z-[1]) — nothing
+      // higher, or the row paints over sticky headers in lists that scroll.
+      className={`metaRow text-sm flex sm:flex-row flex-col sm:gap-2 gap-1 sm:items-center w-full text-tertiary relative z-[2] ${textClassName} ${compact && "sm:gap-1! sm:flex-col! sm:items-start"}`}
     >
       <div
-        className={`authorDate text-tertiary flex gap-2 items-center shrink-0 min-w-0`}
+        className={`authorDate text-tertiary flex gap-2 items-center  min-w-0`}
       >
         {hasAuthor && <div className="truncate min-w-0">{author}</div>}
         {hasDate && (

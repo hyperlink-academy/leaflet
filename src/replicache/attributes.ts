@@ -13,6 +13,10 @@ const RootAttributes = {
     type: "reference",
     cardinality: "one",
   },
+  "root/collapsed-blocks": {
+    type: "string-array",
+    cardinality: "many",
+  },
 } as const;
 const PageAttributes = {
   "card/block": {
@@ -49,6 +53,10 @@ const PageAttributes = {
     type: "number",
     cardinality: "one",
   },
+  "canvas/block/stack-order": {
+    type: "string",
+    cardinality: "one",
+  },
   "canvas/narrow-width": {
     type: "boolean",
     cardinality: "one",
@@ -68,8 +76,12 @@ const BlockAttributes = {
     type: "boolean",
     cardinality: "one",
   },
-  // On a members-only delimiter: one fact per membership tier whose members
-  // can read past it. No facts = every paid tier.
+  "block/members-only-audience": {
+    type: "string",
+    cardinality: "one",
+  },
+  // Present only for a selected-tier audience: one fact per paid tier that can
+  // read past the delimiter.
   "block/members-only-tier": {
     type: "string",
     cardinality: "many",
@@ -108,6 +120,10 @@ const BlockAttributes = {
   },
   "block/card": {
     type: "reference",
+    cardinality: "one",
+  },
+  "page-link/display": {
+    type: "page-link-display-union",
     cardinality: "one",
   },
   "block/bluesky-post": {
@@ -332,12 +348,46 @@ const PostsListBlockAttributes = {
     type: "boolean",
     cardinality: "one",
   },
+  "posts-list/show-page-count": {
+    type: "boolean",
+    cardinality: "one",
+  },
   "posts-list/filter-tag": {
     type: "string",
     cardinality: "many",
   },
   "posts-list/limit": {
     type: "number",
+    cardinality: "one",
+  },
+  "posts-list/reader-controls": {
+    type: "boolean",
+    cardinality: "one",
+  },
+  "posts-list/reader-search": {
+    type: "boolean",
+    cardinality: "one",
+  },
+  "posts-list/reader-tag-filter": {
+    type: "boolean",
+    cardinality: "one",
+  },
+  "posts-list/reader-sort": {
+    type: "boolean",
+    cardinality: "one",
+  },
+} as const;
+
+const RecommendedPubsBlockAttributes = {
+  "recommended-pubs/compact": {
+    type: "boolean",
+    cardinality: "one",
+  },
+} as const;
+
+const PostHeaderBlockAttributes = {
+  "post-header/compact": {
+    type: "boolean",
     cardinality: "one",
   },
 } as const;
@@ -444,12 +494,15 @@ export const Attributes = {
   ...GalleryBlockAttributes,
   ...PollBlockAttributes,
   ...PostsListBlockAttributes,
+  ...RecommendedPubsBlockAttributes,
+  ...PostHeaderBlockAttributes,
 };
 export type Attributes = typeof Attributes;
 export type Attribute = keyof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
   text: { type: "text"; value: string };
   string: { type: "string"; value: string };
+  "string-array": { type: "string-array"; value: string[] };
   "spatial-reference": {
     type: "spatial-reference";
     position: { x: number; y: number };
@@ -526,8 +579,10 @@ export type Data<A extends keyof typeof Attributes> = {
       | "horizontal-rule"
       | "members-only-delimiter"
       | "posts-list"
+      | "recommended-pubs"
       | "signup"
-      | "image-gallery";
+      | "image-gallery"
+      | "post-header";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";
@@ -548,6 +603,10 @@ export type Data<A extends keyof typeof Attributes> = {
   "standard-site-post-size-union": {
     type: "standard-site-post-size-union";
     value: "large" | "medium" | "small";
+  };
+  "page-link-display-union": {
+    type: "page-link-display-union";
+    value: "full" | "compact";
   };
   color: { type: "color"; value: string };
 }[(typeof Attributes)[A]["type"]];

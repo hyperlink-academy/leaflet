@@ -6,6 +6,7 @@ import { useDrag } from "@use-gesture/react";
 import { isIOS } from "src/utils/isDevice";
 import { CloseTiny } from "./Icons/CloseTiny";
 import { useVisualViewport } from "./ViewportSizeLayout";
+import { GoToArrowLined } from "./Icons/GoToArrowLined";
 
 // A mobile drawer sheet that slides up from the bottom of the screen. Built on
 // Radix Dialog so it traps focus and handles the escape key; react-spring
@@ -16,6 +17,7 @@ export const MobileSheet = ({
   open,
   onOpenChange,
   asChild,
+  onBack,
   trigger,
   title,
   id,
@@ -26,26 +28,20 @@ export const MobileSheet = ({
   className?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onBack?: () => void;
   asChild?: boolean;
   trigger?: React.ReactNode;
   title?: React.ReactNode;
-  // Forwarded to the scrolling content container so callers can scroll it into
-  // view or reset its scroll position.
+
   id?: string;
   contentRef?: React.Ref<HTMLDivElement>;
   children: React.ReactNode;
   actionButton?: React.ReactNode;
 }) => {
   let { height, offsetTop, difference } = useVisualViewport();
-  // iOS keyboard open: the layout viewport (and dvh) don't shrink for the
-  // keyboard, so a bottom-anchored sheet would sit behind it. Lift the sheet to
-  // the top of the keyboard and shrink it to the visual viewport. Android
-  // resizes the layout viewport via interactiveWidget: "resizes-content", so
-  // bottom-0 + dvh already follow the keyboard there.
+
   let keyboardOpen = isIOS() && difference !== 0 && height > 0;
 
-  // Support uncontrolled (trigger-driven) usage alongside the controlled open
-  // prop.
   let [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   let isOpen = open ?? uncontrolledOpen;
   let setOpen = (o: boolean) => {
@@ -54,8 +50,7 @@ export const MobileSheet = ({
   };
 
   let sheetRef = useRef<HTMLDivElement>(null);
-  // Internal handle on the scrolling content container (for the drag-at-top
-  // check below), merged with the forwarded contentRef.
+
   let scrollerRef = useRef<HTMLDivElement>(null);
   let setScrollerRef = (el: HTMLDivElement | null) => {
     scrollerRef.current = el;
@@ -65,8 +60,6 @@ export const MobileSheet = ({
         el;
   };
 
-  // Mount/unmount slide + overlay fade. y is a percentage of the sheet's own
-  // height; clamp so the spring never overshoots above the bottom edge.
   let transitions = useTransition(isOpen, {
     from: { y: 100, opacity: 0 },
     enter: { y: 0, opacity: 1 },
@@ -74,17 +67,12 @@ export const MobileSheet = ({
     config: { tension: 300, friction: 30, clamp: true },
   });
 
-  // Drag offset (px) layered on top of the transition's y.
   let [{ dragY }, dragApi] = useSpring(() => ({ dragY: 0 }));
 
-  // A close that started from a drag leaves dragY where it was so the exit
-  // animation continues downward from there; reset it for the next open.
   useEffect(() => {
     if (isOpen) dragApi.set({ dragY: 0 });
   }, [isOpen, dragApi]);
 
-  // On release: past a quarter of the sheet, or a downward flick, close.
-  // Otherwise spring back into place.
   let settleDrag = (offsetY: number, vy: number, dy: number) => {
     let sheetHeight = sheetRef.current?.offsetHeight ?? 0;
     if (offsetY > sheetHeight * 0.25 || (vy > 0.5 && dy > 0)) setOpen(false);
@@ -99,13 +87,6 @@ export const MobileSheet = ({
     { axis: "y", from: () => [0, dragY.get()] },
   );
 
-  // Pulling down on the content when it's scrolled to the top also drags the
-  // sheet. Touch-only — a mouse drag in the content should select text, not
-  // move the sheet. The gesture engages once the scroller is at the top and the
-  // finger moves downward; from then on we preventDefault the (non-passive)
-  // touchmove events to take over from native scrolling. Movement before
-  // engagement (e.g. scrolling up to the top first) is subtracted off via the
-  // memo so the sheet doesn't jump.
   let bindContent = useDrag(
     ({
       last,
@@ -180,6 +161,20 @@ export const MobileSheet = ({
                 }}
                 className="mobileSheet portalStyles z-50 fixed bottom-0 left-0 right-0 w-full h-[85dvh] flex flex-col text-primary"
               >
+                <div className="flex justify-end gap-3 pr-3">
+                  {onBack && (
+                    <button
+                      type="button"
+                      onClick={onBack}
+                      className="bg-bg-page rounded-full mb-2 mr-0  z-10 w-fit p-0.5 place-self-end border border-border-light text-tertiary"
+                    >
+                      <GoToArrowLined className="rotate-180" />
+                    </button>
+                  )}
+                  <Dialog.Close className="bg-bg-page rounded-full mb-2 mr-0  z-10 w-fit p-0.5 place-self-end border border-border-light text-tertiary">
+                    <CloseTiny />
+                  </Dialog.Close>
+                </div>
                 <div className="opaque-container pwa-padding-bottom flex flex-col rounded-b-none! rounded-t-lg! h-full overflow-hidden">
                   <div
                     {...bindHandle()}
@@ -205,10 +200,6 @@ export const MobileSheet = ({
                             </Dialog.Title>
                           </div>
                           {actionButton && actionButton}
-
-                          <Dialog.Close className="text-tertiary shrink-0">
-                            <CloseTiny />
-                          </Dialog.Close>
                         </div>
                       ) : (
                         // Radix requires a Dialog.Title for accessibility.

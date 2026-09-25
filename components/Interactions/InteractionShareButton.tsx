@@ -1,37 +1,26 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
+import { useState } from "react";
 import { AtUri } from "@atproto/syntax";
-import type { EditorState } from "prosemirror-state";
-import { useSmoker, useToaster } from "../Toast";
+import { useSmoker } from "../Toast";
 import { Menu, MenuItem } from "../Menu";
-import { ButtonPrimary } from "../Buttons";
 import { Modal } from "../Modal";
 import { ShareTiny } from "../Icons/ShareTiny";
-import { DotLoader } from "../utils/DotLoader";
 import { useIdentityData } from "../IdentityProvider";
 import { publishPostToBsky } from "actions/publishBskyPost";
 import { viewerPostLangs } from "src/utils/bskyPostLangs";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { bskyPostEmbed } from "src/utils/bskyPostEmbed";
-import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { LoginContent } from "components/LoginButton";
-import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
+import { usePrefetchedScreenshot } from "components/BlueskyPostComposer/usePrefetchedScreenshot";
+import {
+  BskyPostSubmitButton,
+  LazyBlueskyPostComposer,
+  useBskyPostSubmit,
+} from "components/BlueskyPostComposer/BskyPostSubmit";
 import {
   NormalizedDocument,
   NormalizedPublication,
 } from "lexicons/src/normalize";
-
-// Loaded on share-modal open rather than bundled: the composer drags in
-// prosemirror, which every anonymous reader of a public post would otherwise
-// download for a button most never click.
-const BlueskyPostComposer = dynamic(
-  () =>
-    import("../BlueskyPostComposer/BlueskyPostComposer").then(
-      (m) => m.BlueskyPostComposer,
-    ),
-  { ssr: false, loading: () => <DotLoader /> },
-);
 
 export const InteractionShareButton = (props: {
   postRecord: NormalizedDocument;
@@ -40,9 +29,8 @@ export const InteractionShareButton = (props: {
   publication?: NormalizedPublication;
   pubUri: string | undefined;
   trigger?: React.ReactNode;
+  className?: string;
 }) => {
-  let { identity } = useIdentityData();
-
   let smoker = useSmoker();
   let [shareModalOpen, setShareModalOpen] = useState(false);
 
@@ -59,7 +47,7 @@ export const InteractionShareButton = (props: {
       <Menu
         trigger={
           <div
-            className={`text-sm flex shrink-0 gap-1 items-center relative font-bold`}
+            className={`text-sm flex shrink-0 gap-1 items-center relative font-bold ${props.className}`}
           >
             {props.trigger ? (
               props.trigger
@@ -125,10 +113,8 @@ export const BskyShareModal = (props: {
   setShareModalOpen: (s: boolean) => void;
 }) => {
   let { identity } = useIdentityData();
-  let toaster = useToaster();
-  let editorStateRef = useRef<EditorState | null>(null);
-  let [charCount, setCharCount] = useState(0);
-  let [posting, setPosting] = useState(false);
+  let { editorStateRef, charCount, setCharCount, posting, post } =
+    useBskyPostSubmit({ onPosted: props.onPosted });
 
   let profile = {
     avatar: identity?.bsky_profiles?.record.avatar,
@@ -152,63 +138,28 @@ export const BskyShareModal = (props: {
     useScreenshot && props.shareModalOpen,
   );
 
-  let post = async () => {
-    if (!editorStateRef.current || !props.postUrl || posting) return;
-    setPosting(true);
-    // Block on the prefetched screenshot (kicked off when the modal opened) so
-    // the post's card ships with it. If the prefetch failed,
-    // preferUrlScreenshot has the server take its own screenshot instead.
-    let prefetchedThumb = screenshot.promiseRef.current
-      ? ((await screenshot.promiseRef.current) ?? undefined)
-      : undefined;
-    // Runtime import keeps the prosemirror module graph out of the static
-    // bundle; by submit time the composer chunk (same module) is loaded.
-    let { editorStateToFacetedText } = await import(
-      "../BlueskyPostComposer/ProsemirrorEditor"
-    );
-    let [text, facets] = editorStateToFacetedText(editorStateRef.current);
-    let res = await publishPostToBsky({
-      text,
-      facets,
-      url: props.postUrl,
-      document_record: props.docRecord,
-      documentUri: props.documentUri,
-      publicationUri: props.pubUri,
-      preferUrlScreenshot: useScreenshot,
-      prefetchedThumb,
-      langs: viewerPostLangs(),
-    });
-    setPosting(false);
-    if (!res.success) {
-      toaster({
-        content: isOAuthSessionError(res.error) ? (
-          <OAuthErrorMessage error={res.error} />
-        ) : (
-          "Hmm… Something went wrong. Try again!"
-        ),
-        type: "error",
+  let share = () => {
+    let url = props.postUrl;
+    if (!url) return;
+    post(async (text, facets) => {
+      // Block on the prefetched screenshot (kicked off when the modal opened)
+      // so the post's card ships with it. If the prefetch failed,
+      // preferUrlScreenshot has the server take its own screenshot instead.
+      let prefetchedThumb = screenshot.promiseRef.current
+        ? (await screenshot.promiseRef.current) ?? undefined
+        : undefined;
+      return publishPostToBsky({
+        text,
+        facets,
+        url,
+        document_record: props.docRecord,
+        documentUri: props.documentUri,
+        publicationUri: props.pubUri,
+        preferUrlScreenshot: useScreenshot,
+        prefetchedThumb,
+        langs: viewerPostLangs(),
       });
-      return;
-    }
-    let postAtUri = new AtUri(res.uri);
-    let postUrl = `https://bsky.app/profile/${postAtUri.host}/post/${postAtUri.rkey}`;
-    toaster({
-      content: (
-        <span>
-          Shared to Bluesky!{" "}
-          <a
-            href={postUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="underline text-accent-2!"
-          >
-            View it here.
-          </a>
-        </span>
-      ),
-      type: "success",
     });
-    props.onPosted();
   };
 
   // The #view embed wants a resolvable thumbnail URL, not the raw blob ref, so
@@ -224,7 +175,7 @@ export const BskyShareModal = (props: {
     url: props.postUrl ?? "",
     title,
     description,
-    thumb: useScreenshot ? (screenshot.previewSrc ?? undefined) : coverThumb,
+    thumb: useScreenshot ? screenshot.previewSrc ?? undefined : coverThumb,
     thumbPending: useScreenshot && !screenshot.previewSrc,
     publishedAt,
     publication: props.publication,
@@ -232,20 +183,11 @@ export const BskyShareModal = (props: {
   });
 
   let submitButton = (
-    <ButtonPrimary
-      className="place-self-end"
-      compact
-      onClick={post}
-      disabled={posting || charCount === 0 || charCount > 300}
-    >
-      {posting ? (
-        <DotLoader />
-      ) : (
-        <>
-          <BlueskyTiny /> Post
-        </>
-      )}
-    </ButtonPrimary>
+    <BskyPostSubmitButton
+      posting={posting}
+      charCount={charCount}
+      onClick={share}
+    />
   );
 
   let loggedIn = identity && identity.atp_did;
@@ -256,15 +198,13 @@ export const BskyShareModal = (props: {
       className="sm:w-full!"
     />
   ) : (
-    <>
-      <BlueskyPostComposer
-        profile={profile}
-        editorStateRef={editorStateRef}
-        charCount={charCount}
-        onCharCountChange={setCharCount}
-        embed={embed}
-      />
-    </>
+    <LazyBlueskyPostComposer
+      profile={profile}
+      editorStateRef={editorStateRef}
+      charCount={charCount}
+      onCharCountChange={setCharCount}
+      embed={embed}
+    />
   );
 
   return (
@@ -285,50 +225,3 @@ export const BskyShareModal = (props: {
     </>
   );
 };
-
-// Kicks off the card screenshot (a slow browser render) the moment the share
-// modal opens (`enabled`), so it's ready by the time the user finishes
-// composing. `promiseRef` resolves to the base64 webp handed to
-// publishPostToBsky (null on failure); `previewSrc` is an object URL for the
-// compose card preview once the image lands.
-function usePrefetchedScreenshot(url: string | undefined, enabled: boolean) {
-  let promiseRef = useRef<Promise<string | null> | null>(null);
-  let [previewSrc, setPreviewSrc] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!enabled || !url) return;
-    let cancelled = false;
-    let objectUrl: string | null = null;
-    promiseRef.current = fetch(
-      `/api/quote_screenshot?url=${encodeURIComponent(url)}`,
-    )
-      .then(async (res) => {
-        if (!res.ok) return null;
-        let blob = await res.blob();
-        if (!cancelled) {
-          objectUrl = URL.createObjectURL(blob);
-          setPreviewSrc(objectUrl);
-        }
-        return blobToBase64(blob);
-      })
-      .catch(() => null);
-    return () => {
-      cancelled = true;
-      promiseRef.current = null;
-      setPreviewSrc(null);
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [url, enabled]);
-
-  return { promiseRef, previewSrc };
-}
-
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    let reader = new FileReader();
-    // reader.result is a data: URL; the base64 payload follows the comma.
-    reader.onload = () => resolve((reader.result as string).split(",")[1]);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
-}

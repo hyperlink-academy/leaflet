@@ -17,16 +17,22 @@ export function clientMutationContext(
     ignoreUndo,
     defaultEntitySet,
     permission_token_id,
+    rootEntity,
+    sessionDid,
   }: {
     undoManager: UndoManager;
     rep: Replicache<ReplicacheMutators>;
     ignoreUndo: boolean;
     defaultEntitySet: string;
     permission_token_id: string;
+    rootEntity: string;
+    sessionDid: string | null;
   },
 ) {
   let ctx: MutationContext = {
     permission_token_id,
+    rootEntity,
+    sessionDid,
     async runOnServer(cb) {},
     async runOnClient(cb) {
       let supabase = supabaseBrowserClient();

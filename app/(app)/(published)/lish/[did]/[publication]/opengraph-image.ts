@@ -9,6 +9,9 @@ export async function generateStaticParams() {
   return [];
 }
 
+export const size = { width: 1400, height: 733 };
+export const contentType = "image/png";
+export const alt = "Preview of this publication's home page";
 
 export default async function OpenGraphImage(props: {
   params: Promise<{ publication: string; did: string }>;

@@ -107,6 +107,7 @@ const BlockTypeToHTML: {
   embed: async () => null,
   html: async () => null,
   signup: async () => null,
+  "post-header": async () => null,
   "bluesky-post": async (b, tx) => {
     let [post] = await scanIndex(tx).eav(b.entityID, "block/bluesky-post");
     if (!post) return null;
@@ -250,12 +251,15 @@ const BlockTypeToHTML: {
   },
   card: async (b, tx, a) => {
     let [card] = await scanIndex(tx).eav(b.entityID, "block/card");
+    if (!card) return "";
+    let [display] = await scanIndex(tx).eav(b.entityID, "page-link/display");
     let facts = await getAllFacts(tx, card.data.value);
     return (
       <div
         data-type="card"
         data-facts={JSON.stringify(facts)}
         data-entityid={card.data.value}
+        data-display={display?.data.value}
       />
     );
   },
@@ -277,6 +281,7 @@ const BlockTypeToHTML: {
     );
   },
   "posts-list": async () => null,
+  "recommended-pubs": async () => null,
 };
 
 async function renderBlock(b: Block, tx: ReadTransaction) {

@@ -33,7 +33,7 @@ export function AddDomainForm(props: {}) {
                 ? "Invalid domain! Use just the base domain"
                 : error === "domain_already_in_use"
                   ? "That domain is already in use!"
-                  : "An unknown error occured",
+                  : "An unknown error occurred",
             position: {
               y: rect ? rect?.right - rect?.width / 2 : 0,
               x: rect ? rect?.bottom - rect?.height / 2 : 0,

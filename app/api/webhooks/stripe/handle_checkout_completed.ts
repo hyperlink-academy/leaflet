@@ -1,6 +1,7 @@
 import { getStripe } from "stripe/client";
 import { supabaseServerClient } from "supabase/serverClient";
 import { PRODUCT_DEFINITION, parseEntitlements } from "stripe/products";
+import { trackUserEvent } from "src/activeUserAnalytics";
 
 export async function handleCheckoutCompleted(sessionId: string) {
   const s = await getStripe().checkout.sessions.retrieve(sessionId, {
@@ -23,6 +24,7 @@ export async function handleCheckoutCompleted(sessionId: string) {
   }
 
   const entitlements = parseEntitlements(PRODUCT_DEFINITION.metadata);
+  trackUserEvent({ id: identityId }, "pro_upgrade", { plan: lookupKey ?? "" });
 
   await supabaseServerClient.from("user_subscriptions").upsert(
     {

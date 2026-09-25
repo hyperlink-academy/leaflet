@@ -18,13 +18,13 @@ export async function deleteBlock(
     let [type] = await rep.query((tx) =>
       scanIndex(tx).eav(entity, "block/type"),
     );
-    if (type.data.value === "card") {
+    if (type?.data.value === "card") {
       let [childPages] = await rep?.query(
         (tx) => scanIndex(tx).eav(entity, "block/card") || [],
       );
       pagesToClose = [childPages?.data.value];
     }
-    if (type.data.value === "mailbox") {
+    if (type?.data.value === "mailbox") {
       let [archive] = await rep?.query(
         (tx) => scanIndex(tx).eav(entity, "mailbox/archive") || [],
       );

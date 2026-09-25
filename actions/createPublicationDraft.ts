@@ -4,7 +4,10 @@ import { createNewLeaflet } from "./createNewLeaflet";
 import { supabaseServerClient } from "supabase/serverClient";
 import { isConfirmedContributor } from "src/contributorPermissions";
 
-export async function createPublicationDraft(publication_uri: string) {
+export async function createPublicationDraft(
+  publication_uri: string,
+  pageType: "canvas" | "doc" = "doc",
+) {
   let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) return null;
 
@@ -16,13 +19,18 @@ export async function createPublicationDraft(publication_uri: string) {
   if (!publication) return null;
 
   let isOwner = publication.identity_did === identity.atp_did;
-  if (!isOwner && !(await isConfirmedContributor(publication_uri, identity.atp_did)))
+  if (
+    !isOwner &&
+    !(await isConfirmedContributor(publication_uri, identity.atp_did))
+  )
     return null;
 
   let newLeaflet = await createNewLeaflet({
-    pageType: "doc",
+    pageType,
+    canvasPostHeader: true,
     redirectUser: false,
     firstBlockType: "text",
+    analytics: { kind: "publication_draft", publication: publication_uri },
   });
 
   await supabaseServerClient

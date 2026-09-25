@@ -52,7 +52,7 @@ export const sync_document_metadata = inngest.createFunction(
       return { handle: handleResult.handle, deleted: true };
     }
 
-    await step.run("inflate-blob-pages", async () => {
+    const inflation = await step.run("inflate-blob-pages", async () => {
       // If the publisher offloaded pages to a JSON blob (see
       // publishToPublication.ts), fetch the blob, splice it back into
       // content.pages, and drop blobPages so downstream readers can treat
@@ -139,11 +139,13 @@ export const sync_document_metadata = inngest.createFunction(
 
     // For blob-offloaded records this function is the actual content writer
     // (the appview skips both the upsert and its revalidation ping), so the
-    // ISR pages can only be dropped once inflation has landed.
-    await step.run("revalidate-paths", async () => {
-      await revalidateDocumentPaths(document_uri);
-      return { revalidated: true };
-    });
+    // ISR pages can only be dropped once inflation has landed. Otherwise the
+    // appview already revalidated when it indexed the record.
+    if ("inflated" in inflation)
+      await step.run("revalidate-paths", async () => {
+        await revalidateDocumentPaths(document_uri);
+        return { revalidated: true };
+      });
 
     // Only fire newsletter broadcasts on first-time document creation. An
     // update to an existing post must never trigger a send — otherwise editing

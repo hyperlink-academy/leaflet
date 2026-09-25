@@ -36,6 +36,7 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
 
   let [editOpen, setEditOpen] = useState(false);
   let [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  let [lightboxAltExpanded, setLightboxAltExpanded] = useState(false);
 
   let imageEntities = imageFacts.map((f) => f.data.value);
 
@@ -70,7 +71,16 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
   let canOpenLightbox =
     !props.preview && (!entity_set.permissions.write || !!isSelected);
   let openLightbox = (index: number) => {
-    if (canOpenLightbox) setLightboxIndex(index);
+    if (canOpenLightbox) {
+      setLightboxAltExpanded(false);
+      setLightboxIndex(index);
+    }
+  };
+  // Alt text too long for the on-image box hands off to the lightbox, whether or
+  // not a plain click on the image would open it.
+  let openLightboxWithAlt = (index: number) => {
+    setLightboxAltExpanded(true);
+    setLightboxIndex(index);
   };
 
   let editable = !props.preview && entity_set.permissions.write;
@@ -117,6 +127,7 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
               editable={editable}
               selected={!!isSelected}
               onClick={() => openLightbox(i)}
+              onSeeMoreAlt={() => openLightboxWithAlt(i)}
               {...classes}
             />
           )}
@@ -131,6 +142,7 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
               editable={editable}
               selected={!!isSelected}
               onClick={() => openLightbox(i)}
+              onSeeMoreAlt={() => openLightboxWithAlt(i)}
               {...classes}
             />
           )}
@@ -146,6 +158,7 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
               editable={editable}
               selected={!!isSelected}
               onClick={() => openLightbox(i)}
+              onSeeMoreAlt={() => openLightboxWithAlt(i)}
               {...classes}
             />
           )}
@@ -165,6 +178,7 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
       <ImageGalleryLightbox
         count={imageEntities.length}
         index={lightboxIndex}
+        altExpanded={lightboxAltExpanded}
         onIndexChange={setLightboxIndex}
         renderSlide={(i) => <EditorLightboxSlide entityID={imageEntities[i]} />}
       />

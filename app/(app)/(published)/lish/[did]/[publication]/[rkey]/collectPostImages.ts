@@ -12,19 +12,11 @@ import {
   POST_BODY_IMAGE_WIDTH,
 } from "src/utils/blobRefToSrc";
 import { GalleryImage } from "components/Blocks/ImageGalleryBlock/shared";
+import { canvasBlockOrder } from "src/utils/canvasBlockOrder";
 
 // The clicked image is found by blob CID, which is stable no matter what
 // display transform each renderer requests.
 export type PostImage = GalleryImage & { cid: string };
-
-// Canvas blocks render in visual order; sharing the comparator keeps the
-// lightbox paging through canvas images in the same order they appear.
-export function canvasBlockOrder(
-  a: PubLeafletPagesCanvas.Block,
-  b: PubLeafletPagesCanvas.Block,
-) {
-  return a.y === b.y ? a.x - b.x : a.y - b.y;
-}
 
 // Collect every image on a page in document order — standalone image blocks and
 // each gallery's children flattened inline — so a standalone image's lightbox

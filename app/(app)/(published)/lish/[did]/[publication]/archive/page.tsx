@@ -92,7 +92,7 @@ export default async function PublicationArchive(props: {
   // The post rows are fetched alongside the shadowing check; they only go
   // unused in the rare case a document publishes at the /archive path.
   const [{ data: shadowingDocs }, postRows] = await Promise.all([
-    resolveDocumentFilter(did, publication_name, "archive").then((filter) =>
+    resolveDocumentFilter(did, publication.uri, "archive").then((filter) =>
       supabaseServerClient.from("documents").select("uri").or(filter).limit(1),
     ),
     fetchPublicationPostRows(publication.uri),
@@ -150,6 +150,8 @@ export default async function PublicationArchive(props: {
           }}
         >
           <div className="flex flex-col gap-3 px-3 sm:px-4">
+            {/* h2: the page's h1 is the pub name in PublicationHeader, which
+                this layout always renders above. */}
             <h2 className="text-primary">Archive</h2>
             <ul className="flex flex-col gap-2 list-none pl-0">
               {posts.map((post) => (

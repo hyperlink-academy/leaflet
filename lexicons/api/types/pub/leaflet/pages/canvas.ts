@@ -30,7 +30,9 @@ import type * as PubLeafletBlocksPoll from '../blocks/poll'
 import type * as PubLeafletBlocksButton from '../blocks/button'
 import type * as PubLeafletBlocksPostsList from '../blocks/postsList'
 import type * as PubLeafletBlocksSignup from '../blocks/signup'
+import type * as PubLeafletBlocksRecommendedPubs from '../blocks/recommendedPubs'
 import type * as PubLeafletBlocksMembersOnlyDelimiter from '../blocks/membersOnlyDelimiter'
+import type * as PubLeafletBlocksPostHeader from '../blocks/postHeader'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -76,7 +78,9 @@ export interface Block {
     | $Typed<PubLeafletBlocksButton.Main>
     | $Typed<PubLeafletBlocksPostsList.Main>
     | $Typed<PubLeafletBlocksSignup.Main>
+    | $Typed<PubLeafletBlocksRecommendedPubs.Main>
     | $Typed<PubLeafletBlocksMembersOnlyDelimiter.Main>
+    | $Typed<PubLeafletBlocksPostHeader.Main>
     | { $type: string }
   x: number
   y: number
@@ -84,6 +88,8 @@ export interface Block {
   height?: number
   /** The rotation of the block in degrees */
   rotation?: number
+  /** Fractional index ordering this block against its siblings on the z axis. Blocks without one stack below every block with one, ordered by position. */
+  stackOrder?: string
 }
 
 const hashBlock = 'block'

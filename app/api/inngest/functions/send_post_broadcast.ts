@@ -2,7 +2,7 @@ import { render } from "@react-email/render";
 import { AtUri } from "@atproto/syntax";
 import { inngest, events } from "../client";
 import { supabaseServerClient } from "supabase/serverClient";
-import { PostEmail } from "emails/post";
+import { PostEmail, type PostEmailPage } from "emails/post";
 import { emailPropsFromPublication } from "emails/fromPublication";
 import {
   getDocumentPages,
@@ -14,9 +14,13 @@ import {
   resolveFromDomain,
   resolveReplyToEmail,
 } from "src/utils/newsletterSender";
-import { PubLeafletPagesLinearDocument } from "lexicons/api";
+import {
+  PubLeafletPagesCanvas,
+  PubLeafletPagesLinearDocument,
+} from "lexicons/api";
 import type { AppBskyFeedDefs } from "@atproto/api";
 import { hydrateBskyPostBlocks } from "src/utils/fetchBskyPosts";
+import { manageSubscriptionUrl } from "src/subscriptions/manageUrl";
 import { fetchStandardSiteBlockData } from "src/utils/fetchStandardSiteBlockData";
 import { getProfiles } from "src/identity";
 import {
@@ -27,20 +31,23 @@ import {
 } from "src/utils/byline";
 import type { Json } from "supabase/database.types";
 import {
-  gateUnlocksWithSubscription,
-  getMembersDelimiterTierIds,
+  getMembersDelimiterGatePolicy,
   isEntitledToGatedPost,
+  membershipUnlocksGatedPost,
   pageHasMembersDelimiter,
-  resolveUnlockingTierIds,
-  tierUnlocksGatedPost,
   truncateBlocksAtMembersDelimiter,
 } from "src/membership";
 
+// Postmark's /email/batch caps a call at 500 messages AND 50 MB of payload;
+// long posts hit the byte cap first, so batches are sized by both.
 const BATCH_SIZE = 500;
+const MAX_BATCH_BYTES = 40 * 1024 * 1024;
 // Distinctive URL used once at render-time and string-replaced per recipient
 // so we only pay the React Email render cost once per batch.
 const UNSUB_PLACEHOLDER =
   "https://placeholder.leaflet.pub/unsubscribe-token-replace-me";
+const MANAGE_PLACEHOLDER =
+  "https://placeholder.leaflet.pub/manage-subscription-replace-me";
 
 export const send_post_broadcast = inngest.createFunction(
   {
@@ -71,7 +78,7 @@ export const send_post_broadcast = inngest.createFunction(
         supabaseServerClient
           .from("publications")
           .select(
-            "record, publication_domains(domain), publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at), publication_membership_settings(enabled), publication_membership_tiers(id, monthly_price_cents, active, is_free)",
+            "record, publication_domains(domain), publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at), publication_membership_settings(enabled), publication_membership_tiers(id, monthly_price_cents, active)",
           )
           .eq("uri", publication_uri)
           .maybeSingle(),
@@ -160,27 +167,44 @@ export const send_post_broadcast = inngest.createFunction(
     // The first page is the document body. Canvas pages don't map to a linear
     // email body — the email renders an empty postContent section and falls
     // back to the "See Full Post" link.
-    const firstPage = docRecord ? getDocumentPages(docRecord)?.[0] : undefined;
+    const docPages = docRecord ? (getDocumentPages(docRecord) ?? []) : [];
+    const firstPage = docPages[0];
     let blocks: PubLeafletPagesLinearDocument.Block[] =
       firstPage?.$type === "pub.leaflet.pages.linearDocument"
         ? (firstPage as PubLeafletPagesLinearDocument.Main).blocks ?? []
         : [];
+    // Pages without an id can't be the target of a page block.
+    const pages: PostEmailPage[] = docPages.flatMap((p): PostEmailPage[] => {
+      if (PubLeafletPagesLinearDocument.isMain(p) && p.id)
+        return [{ id: p.id, type: "doc", blocks: p.blocks ?? [] }];
+      if (PubLeafletPagesCanvas.isMain(p) && p.id)
+        return [{ id: p.id, type: "canvas", blocks: p.blocks ?? [] }];
+      return [];
+    });
 
     const pubTiers = loaded.pub.publication_membership_tiers ?? [];
     const hasDelimiter =
       !!loaded.pub.publication_membership_settings?.enabled &&
       pageHasMembersDelimiter({ blocks });
-    const unlockingTierIds = hasDelimiter
-      ? resolveUnlockingTierIds(getMembersDelimiterTierIds(blocks), pubTiers)
+    const gatePolicy = hasDelimiter
+      ? getMembersDelimiterGatePolicy(blocks)
       : null;
-    const gated =
-      hasDelimiter && !gateUnlocksWithSubscription(unlockingTierIds, pubTiers);
+    // Every recipient is already a subscriber, so a subscriber gate can send
+    // the full body to the whole list. Invalid policies remain gated.
+    const gated = hasDelimiter && gatePolicy?.audience !== "subscribers";
     const previewBlocks = gated
       ? truncateBlocksAtMembersDelimiter(blocks)
       : blocks;
 
     const activeTierPrices = pubTiers
-      .filter((t) => t.active && tierUnlocksGatedPost(t, unlockingTierIds))
+      .filter(
+        (tier) =>
+          tier.active &&
+          membershipUnlocksGatedPost(
+            { kind: "paid", tierId: tier.id },
+            gatePolicy,
+          ),
+      )
       .map((t) => t.monthly_price_cents);
     const membersUpsell = {
       joinUrl: `${pubProps.publicationUrl.replace(/\/$/, "")}/join`,
@@ -201,15 +225,31 @@ export const send_post_broadcast = inngest.createFunction(
     )) as Awaited<ReturnType<typeof fetchStandardSiteBlockData>>;
 
     const subscribers = await step.run("snapshot-subscribers", async () => {
-      const { data } = await supabaseServerClient
-        .from("publication_email_subscribers")
-        .select("id, email, unsubscribe_token, identity_id")
-        .eq("publication", publication_uri)
-        .eq("state", "confirmed");
-      const subs = data ?? [];
+      // A retried send (e.g. after a partial batch failure) must not email
+      // anyone who already got this post.
+      const [{ data }, { data: alreadySent }] = await Promise.all([
+        supabaseServerClient
+          .from("publication_email_subscribers")
+          .select("id, email, unsubscribe_token, identity_id")
+          .eq("publication", publication_uri)
+          .eq("state", "confirmed"),
+        supabaseServerClient
+          .from("publication_email_subscriber_events")
+          .select("subscriber")
+          .eq("publication", publication_uri)
+          .eq("event_type", "post_sent")
+          .eq("metadata->>document", document_uri),
+      ]);
+      const sentTo = new Set((alreadySent ?? []).map((e) => e.subscriber));
+      const subs = (data ?? []).filter((s) => !sentTo.has(s.id));
       await supabaseServerClient
         .from("publication_post_sends")
-        .update({ status: "sending", subscriber_count: subs.length })
+        .update({
+          status: "sending",
+          subscriber_count: subs.length,
+          error: null,
+          completed_at: null,
+        })
         .eq("publication", publication_uri)
         .eq("document", document_uri);
       return subs;
@@ -263,8 +303,8 @@ export const send_post_broadcast = inngest.createFunction(
               viewerDid: null,
               ownerDid: null,
               contributors: [],
-              membership: m,
-              unlockingTierIds,
+              paidMembership: m,
+              gatePolicy,
             });
             if (!entitledMember) continue;
             identityIds.add(m.identity_id);
@@ -324,6 +364,47 @@ export const send_post_broadcast = inngest.createFunction(
           ]
     ).filter((g) => g.recipients.length > 0);
 
+    const buildMessage = (
+      sub: (typeof subscribers)[number],
+      htmlTemplate: string,
+    ) => {
+      const unsubscribeUrl = `${assetsBaseUrl}/emails/unsubscribe?unsubscribe_token=${encodeURIComponent(
+        sub.unsubscribe_token,
+      )}`;
+      const manageUrl = manageSubscriptionUrl({
+        baseUrl: assetsBaseUrl,
+        email: sub.email,
+        publicationUrl: pubProps.publicationUrl,
+      });
+      const htmlBody = htmlTemplate
+        .split(UNSUB_PLACEHOLDER)
+        .join(unsubscribeUrl)
+        .split(MANAGE_PLACEHOLDER)
+        .join(manageUrl.replace(/&/g, "&amp;"));
+      return {
+        MessageStream: "broadcast",
+        From: fromHeader,
+        ReplyTo: replyToEmail,
+        To: sub.email,
+        Subject: postTitle,
+        HtmlBody: htmlBody,
+        Headers: [
+          {
+            Name: "List-Unsubscribe-Post",
+            Value: "List-Unsubscribe=One-Click",
+          },
+          {
+            Name: "List-Unsubscribe",
+            Value: `<${unsubscribeUrl}>`,
+          },
+        ],
+        Metadata: {
+          subscriber_id: sub.id,
+          publication: publication_uri,
+        },
+      };
+    };
+
     for (const group of groups) {
       // Render once per group with a placeholder, then string-replace per
       // recipient.
@@ -339,6 +420,7 @@ export const send_post_broadcast = inngest.createFunction(
               authorName,
               publishedAtLabel,
               blocks: group.blocks,
+              pages,
               bskyPosts,
               standardSitePosts,
               standardSitePublications,
@@ -346,15 +428,23 @@ export const send_post_broadcast = inngest.createFunction(
               did,
               assetsBaseUrl: `${assetsBaseUrl}/`,
               unsubscribeUrl: UNSUB_PLACEHOLDER,
+              manageUrl: MANAGE_PLACEHOLDER,
               membersUpsell: group.upsell ? membersUpsell : undefined,
             }),
           );
         },
       );
 
+      const bytesPerMessage = Buffer.byteLength(
+        JSON.stringify(buildMessage(group.recipients[0], htmlTemplate)),
+      );
+      const batchSize = Math.max(
+        1,
+        Math.min(BATCH_SIZE, Math.floor(MAX_BATCH_BYTES / bytesPerMessage)),
+      );
       const chunks: (typeof subscribers)[] = [];
-      for (let i = 0; i < group.recipients.length; i += BATCH_SIZE) {
-        chunks.push(group.recipients.slice(i, i + BATCH_SIZE));
+      for (let i = 0; i < group.recipients.length; i += batchSize) {
+        chunks.push(group.recipients.slice(i, i + batchSize));
       }
 
       for (let ci = 0; ci < chunks.length; ci++) {
@@ -369,36 +459,9 @@ export const send_post_broadcast = inngest.createFunction(
               message: string;
             }[]
           > => {
-            const messages = chunk.map((sub) => {
-              const unsubscribeUrl = `${assetsBaseUrl}/emails/unsubscribe?unsubscribe_token=${encodeURIComponent(
-                sub.unsubscribe_token,
-              )}`;
-              const htmlBody = htmlTemplate
-                .split(UNSUB_PLACEHOLDER)
-                .join(unsubscribeUrl);
-              return {
-                MessageStream: "broadcast",
-                From: fromHeader,
-                ReplyTo: replyToEmail,
-                To: sub.email,
-                Subject: postTitle,
-                HtmlBody: htmlBody,
-                Headers: [
-                  {
-                    Name: "List-Unsubscribe-Post",
-                    Value: "List-Unsubscribe=One-Click",
-                  },
-                  {
-                    Name: "List-Unsubscribe",
-                    Value: `<${unsubscribeUrl}>`,
-                  },
-                ],
-                Metadata: {
-                  subscriber_id: sub.id,
-                  publication: publication_uri,
-                },
-              };
-            });
+            const messages = chunk.map((sub) =>
+              buildMessage(sub, htmlTemplate),
+            );
 
             const res = await fetch("https://api.postmarkapp.com/email/batch", {
               method: "POST",
@@ -441,11 +504,16 @@ export const send_post_broadcast = inngest.createFunction(
                   message: r.message,
                 }) as unknown as Json,
           }));
+          // The snapshot step dedupes retries on these rows, so a lost insert
+          // would re-email the whole batch on a resend. Throw so Inngest
+          // retries the (atomic) insert and surfaces exhaustion in onFailure.
           const { error } = await supabaseServerClient
             .from("publication_email_subscriber_events")
             .insert(rows);
           if (error) {
-            console.error("[send_post_broadcast] event insert failed:", error);
+            throw new Error(
+              `event insert failed for batch ${group.key}-${ci}: ${error.message}`,
+            );
           }
         });
 

@@ -7,6 +7,7 @@ import { CommentEmptyTiny } from "../Icons/CommentEmptyTiny";
 import { CommentFilledSmall } from "../Icons/CommentFilledSmall";
 import { CommentEmptySmall } from "../Icons/CommentEmptySmall";
 import { DiscussionModal } from "./DiscussionModal";
+import { prefetchDocumentDiscussion } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/useDocumentDiscussionData";
 import { DrawerThreadContext } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
 import {
   InteractionButton,
@@ -26,16 +27,11 @@ export function DiscussionButton(props: {
   onClick?: (e: React.MouseEvent) => void;
   onPrefetch?: () => void;
   showWhenEmpty?: boolean;
-  // Lets the caller track when the discussion is open — the reader feed uses
-  // this to keep the post listing highlighted while the modal is up.
   onOpenChange?: (open: boolean) => void;
+  className?: string;
 }) {
-  // Inside a published post body a DrawerThreadContext is in scope; there we open
-  // this post's discussion in the interaction drawer (like a Bluesky post's
-  // thread) instead of the standalone modal used in listings/feeds.
   const drawerNav = useContext(DrawerThreadContext);
   const [discussionsOpen, setDiscussionsOpen] = useState(false);
-
   const commentsAvailable =
     props.showComments && (props.showWhenEmpty || props.commentsCount > 0);
   const mentionsAvailable = props.showMentions && props.quotesCount > 0;
@@ -55,6 +51,13 @@ export function DiscussionButton(props: {
       setDiscussionsOpen(true);
     }
   };
+
+  // The post page's own drawer reads its discussion off the page, so it
+  // passes its own prefetch; everywhere else the modal, drawer view and reader
+  // pane all load through useDocumentDiscussionData.
+  const prefetch =
+    props.onPrefetch ??
+    (() => prefetchDocumentDiscussion(props.documentUri, props.pageId));
 
   const ButtonWrapper = props.large
     ? LargeInteractionButton
@@ -77,9 +80,10 @@ export function DiscussionButton(props: {
     <>
       <ButtonWrapper
         onClick={openDiscussions}
-        onMouseEnter={props.onPrefetch}
-        onTouchStart={props.onPrefetch}
+        onMouseEnter={prefetch}
+        onTouchStart={prefetch}
         ariaLabel="Post discussions"
+        className={`${props.large ? "" : "hover:text-accent-contrast"} ${props.className ?? ""}`}
       >
         {icon}
         {total > 0 ? ` ${total}` : null}

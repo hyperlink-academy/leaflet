@@ -17,6 +17,7 @@ import { PubThemeDefaultsRGB } from "components/ThemeManager/themeDefaults";
 import { createPublicationDraftLeaflet } from "actions/createPublicationDraftLeaflet";
 import { resolvePublicationTheme } from "lexicons/src/normalize";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { trackUserEvent } from "src/activeUserAnalytics";
 
 let subdomainValidator = string()
   .min(3)
@@ -121,6 +122,7 @@ export async function createPublication({
         prevNextDirection: preferences.prevNextDirection,
         showRecommends: preferences.showRecommends,
         showFirstLast: preferences.showFirstLast,
+        showOtherPublicationsInTags: preferences.showOtherPublicationsInTags,
       },
     } satisfies SiteStandardPublication.Record;
   } else {
@@ -183,5 +185,6 @@ export async function createPublication({
     .from("publication_domains")
     .insert({ domain, publication: result.uri, identity: identity.atp_did });
 
+  trackUserEvent(identity, "create_publication", { publication: result.uri });
   return { success: true, publication };
 }

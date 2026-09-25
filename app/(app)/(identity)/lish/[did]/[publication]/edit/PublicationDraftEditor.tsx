@@ -11,6 +11,7 @@ import { SelectionManager } from "components/SelectionManager";
 import { EntitySetProvider } from "components/EntitySetProvider";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { Page } from "components/Pages/Page";
+import { ListDndProvider } from "components/Blocks/ListDnd";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { NewPublicationHeader } from "app/(app)/(published)/lish/[did]/[publication]/PublicationHeader";
 import { PublicationPagesEditNav } from "./PublicationPagesEditNav";
@@ -22,6 +23,7 @@ import {
 import { usePublicationNavEntries } from "./usePublicationNavEntries";
 import { PublicationEditMobileFooter } from "./PublicationEditMobileFooter";
 import { FindReplace } from "components/FindReplace";
+import { FoldStateProvider } from "components/FoldStateProvider";
 
 export function PublicationDraftEditor(props: {
   token: PermissionToken;
@@ -51,31 +53,35 @@ export function PublicationDraftEditor(props: {
         set={props.token.permission_token_rights[0].entity_set}
       >
         <SelectionManager />
-        <LeafletThemeProvider entityID={props.leaflet_id} local>
-          <FindReplace />
-          <div className="flex flex-col h-full w-full bg-accent-1">
-            <PublicationEditHeader
-              did={props.did}
-              publicationName={props.publicationName}
-            />
-            <div className="pubWrapper publicationScrollContainer editorScrollRoot flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-y-auto ">
-              <DraftLeafletBackground
-                entityID={props.leaflet_id}
-                className="h-full flex items-stretch place-items-center"
-              >
-                <PublicationDraftEditorContent
-                  leaflet_id={props.leaflet_id}
-                  did={props.did}
-                  record={record}
-                  iconUrl={iconUrl}
-                  publicationUri={props.publicationUri}
-                  newsletterMode={props.newsletterMode}
-                />
-              </DraftLeafletBackground>
+        <FoldStateProvider>
+          <LeafletThemeProvider entityID={props.leaflet_id}>
+            <FindReplace />
+            <div className="flex flex-col h-full w-full bg-accent-1">
+              <PublicationEditHeader
+                did={props.did}
+                publicationName={props.publicationName}
+              />
+              <div className="pubWrapper publicationScrollContainer editorScrollRoot flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-y-auto ">
+                <DraftLeafletBackground
+                  entityID={props.leaflet_id}
+                  className="h-full flex items-stretch place-items-center"
+                >
+                  <ListDndProvider>
+                    <PublicationDraftEditorContent
+                      leaflet_id={props.leaflet_id}
+                      did={props.did}
+                      record={record}
+                      iconUrl={iconUrl}
+                      publicationUri={props.publicationUri}
+                      newsletterMode={props.newsletterMode}
+                    />
+                  </ListDndProvider>
+                </DraftLeafletBackground>
+              </div>
+              <PublicationEditMobileFooter />
             </div>
-            <PublicationEditMobileFooter />
-          </div>
-        </LeafletThemeProvider>
+          </LeafletThemeProvider>
+        </FoldStateProvider>
       </EntitySetProvider>
     </ReplicacheProvider>
   );
@@ -137,9 +143,13 @@ function PublicationDraftEditorContent(props: {
   let wordmarkWidth = useEntity(props.leaflet_id, "theme/wordmark-width");
   let wordmark = wordmarkImage
     ? {
-      src: wordmarkImage.data.src,
-      width: wordmarkWidth?.data.value ?? undefined,
-    }
+        src: wordmarkImage.data.src,
+        width: wordmarkWidth?.data.value ?? undefined,
+        aspectRatio: {
+          width: wordmarkImage.data.width,
+          height: wordmarkImage.data.height,
+        },
+      }
     : null;
   // Read from the live theme context so the layout responds to page-background
   // toggles in the theme editor.

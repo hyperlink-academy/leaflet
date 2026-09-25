@@ -1,7 +1,17 @@
 "use client";
 
 import { Fact, useEntity, useReplicache } from "src/replicache";
-import { memo, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
+import {
+  BlockBodyDragContext,
+  ListDragHandleContext,
+  didListDragJustEnd,
+  dragHandleAttr,
+  useBlockBodyDrag,
+  useListDragHandle,
+  useListDragState,
+} from "./ListDndState";
 import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
 import { useBlockKeyboardHandlers } from "./useBlockKeyboardHandlers";
@@ -10,6 +20,8 @@ import { focusBlock } from "src/utils/focusBlock";
 import { useHandleDrop } from "./useHandleDrop";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { indent, outdent } from "src/utils/list-operations";
+import { toggleFold } from "src/utils/foldBlocks";
+import { useIsFolded } from "components/FoldStateProvider";
 import { useDrag } from "@use-gesture/react";
 import { TextBlock } from "./TextBlock/index";
 import { ImageBlock } from "./ImageBlock";
@@ -35,7 +47,9 @@ import { CodeBlock } from "./CodeBlock";
 import { HorizontalRule } from "./HorizontalRule";
 import { MembersOnlyDelimiterBlock } from "./MembersOnlyDelimiterBlock";
 import { PostsListBlock } from "./PostsListBlock";
+import { RecommendedPubsBlock } from "./RecommendedPubsBlock";
 import { SubscribeBlock } from "./SubscribeBlock";
+import { PostHeaderBlock } from "./PostHeaderBlock";
 import { deepEquals } from "src/utils/deepEquals";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
@@ -43,6 +57,7 @@ import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { Separator } from "components/Layout";
 import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
 import { deleteBlock } from "src/utils/deleteBlock";
+import { CanvasLayerControls } from "components/CanvasLayerControls";
 
 const SWIPE_THRESHOLD = 50;
 
@@ -73,6 +88,7 @@ export type BlockProps = {
   previousBlock: Block | null;
   nextPosition: string | null;
   headingFoldable?: boolean;
+  displayDepth?: number;
 } & Block;
 
 export const Block = memo(function Block(
@@ -101,6 +117,23 @@ export const Block = memo(function Block(
     }
   });
 
+  // The dragged block and its whole subtree stay in place, dimmed, while the
+  // DragOverlay carries the preview.
+  let isDragSource = useListDragState(
+    (s) =>
+      !props.preview &&
+      s.activeId !== null &&
+      (s.activeId === props.entityID ||
+        !!props.listData?.path.some((p) => p.entity === s.activeId)),
+  );
+  // Encoded as a primitive so the zustand subscription only re-renders this
+  // block when its own indicator appears, moves edge, or changes depth.
+  let dropIndicator = useListDragState((s) =>
+    !props.preview && s.dropTarget?.entityID === props.entityID
+      ? `${s.dropTarget.edge}:${s.dropTarget.depth}`
+      : null,
+  );
+
   let selected = useIsBlockSelected(props.entityID);
   let focused = useUIState(
     (s) =>
@@ -122,6 +155,8 @@ export const Block = memo(function Block(
       justify: "justify-start",
     }[alignment];
 
+  let displayedAsHeading = props.type === "heading";
+
   let [areYouSure, setAreYouSure] = useState(false);
   useEffect(() => {
     if (!selected) {
@@ -140,32 +175,12 @@ export const Block = memo(function Block(
       if (!rep || !props.listData || !entity_set.permissions.write) return;
       if (Math.abs(mx) < SWIPE_THRESHOLD) return;
       event?.preventDefault();
-      let { foldedBlocks, toggleFold } = useUIState.getState();
       if (mx > 0) {
         if (props.previousBlock) {
-          indent(
-            props,
-            props.previousBlock,
-            rep,
-            {
-              foldedBlocks,
-              toggleFold,
-            },
-            undoManager,
-          );
+          indent(props, props.previousBlock, rep, undoManager);
         }
       } else {
-        outdent(
-          props,
-          props.previousBlock,
-          rep,
-          {
-            foldedBlocks,
-            toggleFold,
-          },
-          undefined,
-          undoManager,
-        );
+        outdent(props, props.previousBlock, rep, undefined, undoManager);
       }
     },
     {
@@ -178,6 +193,13 @@ export const Block = memo(function Block(
     },
   );
 
+  let baseBlock = (
+    <BaseBlock
+      {...props}
+      areYouSure={areYouSure}
+      setAreYouSure={setAreYouSure}
+    />
+  );
   return (
     <div
       {...(!props.preview
@@ -203,19 +225,19 @@ export const Block = memo(function Block(
         px-3 sm:px-4 pt-1
 
         z-1 w-full
+        ${isDragSource ? "opacity-30" : ""}
         ${props.listData && focused ? "touch-pan-y" : ""}
       ${alignmentStyle}
       ${
         !props.nextBlock
           ? "pb-3 sm:pb-4"
-          : props.type === "heading" ||
-              (props.listData && props.nextBlock?.listData)
+          : displayedAsHeading || (props.listData && props.nextBlock?.listData)
             ? "pb-0"
             : "pb-2"
       }
-      ${props.type === "blockquote" && props.previousBlock?.type === "blockquote" ? (!props.listData ? "-mt-3" : "-mt-1") : ""}
+      ${!displayedAsHeading && props.type === "blockquote" && props.previousBlock?.type === "blockquote" ? (!props.listData ? "-mt-3" : "-mt-1") : ""}
       ${
-        props.type === "heading" &&
+        displayedAsHeading &&
         props.previousBlock &&
         props.previousBlock.type !== "horizontal-rule"
           ? props.previousBlock.type !== "heading"
@@ -230,21 +252,95 @@ export const Block = memo(function Block(
       }
       ${
         !props.previousBlock
-          ? props.type === "heading" || props.type === "text"
+          ? displayedAsHeading || props.type === "text"
             ? "mt-1 sm:mt-2"
             : "mt-2 sm:mt-3"
           : ""
       }`}
     >
       {!props.preview && <BlockMultiselectIndicator {...props} />}
-      <BaseBlock
-        {...props}
-        areYouSure={areYouSure}
-        setAreYouSure={setAreYouSure}
-      />
+      {dropIndicator && <ListDropIndicator indicator={dropIndicator} />}
+      {props.preview || !entity_set.permissions.write ? (
+        baseBlock
+      ) : (
+        <BlockListDnd
+          entityID={props.entityID}
+          isListItem={!!props.listData}
+          bodyDraggable={!isTextBlock[props.type]}
+        >
+          {baseBlock}
+        </BlockListDnd>
+      )}
     </div>
   );
 }, deepEqualsBlockProps);
+
+// Registers the block as a draggable and a drop target, and hands the
+// activator down to its handles: the ListMarker through ListDragHandleContext
+// and, for blocks that aren't text editors, the body through
+// BlockBodyDragContext (read by BlockLayout). Lives in its own leaf component
+// because dnd-kit's hooks re-render their consumers on every `over` change
+// during a drag: everything they touch here is memoized, so the block subtree
+// (passed through as `children`) bails out and only this wiring re-renders.
+// The measured node is an inset overlay div rather than the block wrapper
+// itself for the same reason.
+const BlockListDnd = (props: {
+  entityID: string;
+  isListItem: boolean;
+  bodyDraggable: boolean;
+  children: React.ReactNode;
+}) => {
+  let draggable = useDraggable({
+    id: props.entityID,
+    disabled: !props.isListItem && !props.bodyDraggable,
+  });
+  let droppable = useDroppable({ id: props.entityID });
+  let setNodeRef = useCallback(
+    (el: HTMLElement | null) => {
+      draggable.setNodeRef(el);
+      droppable.setNodeRef(el);
+    },
+    [draggable.setNodeRef, droppable.setNodeRef],
+  );
+  let { attributes, listeners, setActivatorNodeRef } = draggable;
+  let dragHandle = useMemo(
+    () =>
+      props.isListItem ? { attributes, listeners, setActivatorNodeRef } : null,
+    [props.isListItem, attributes, listeners, setActivatorNodeRef],
+  );
+  return (
+    <>
+      <div
+        ref={setNodeRef}
+        className="absolute inset-0 pointer-events-none"
+        aria-hidden
+      />
+      <ListDragHandleContext.Provider value={dragHandle}>
+        <BlockBodyDragContext.Provider
+          value={props.bodyDraggable ? listeners : null}
+        >
+          {props.children}
+        </BlockBodyDragContext.Provider>
+      </ListDragHandleContext.Provider>
+    </>
+  );
+};
+
+// The line marking where a dragged list item will drop, drawn on the edge of
+// the adjacent block and indented to the depth the item will land at.
+const ListDropIndicator = (props: { indicator: string }) => {
+  let [edge, depth] = props.indicator.split(":");
+  return (
+    <div
+      className={`listDropIndicator pointer-events-none absolute left-3 right-3 sm:left-4 sm:right-4 z-10 h-[3px] rounded-full bg-accent-contrast ${
+        edge === "top" ? "-top-[2px]" : "-bottom-[2px]"
+      }`}
+      style={{
+        marginLeft: `calc(${parseInt(depth, 10) - 1} * var(--list-marker-width))`,
+      }}
+    />
+  );
+};
 
 // Everything the Block render tree reads off its props. headingLevel /
 // headingPath / listData.checked / listData.listStart are deliberately not
@@ -262,6 +358,7 @@ function deepEqualsBlockProps(
     "type",
     "nextPosition",
     "headingFoldable",
+    "displayDepth",
     "preview",
   ] as const;
   if (scalarKeys.some((k) => prevProps[k] !== nextProps[k])) return false;
@@ -317,9 +414,7 @@ export const BaseBlock = (
   if (!BlockTypeComponent) return <div>unknown block</div>;
   return (
     <>
-      {props.type === "heading" && props.headingFoldable && (
-        <HeadingFoldButton {...props} />
-      )}
+      {props.headingFoldable && <HeadingFoldButton {...props} />}
       {props.listData && <ListMarker {...props} />}
       {props.areYouSure ? (
         <AreYouSure
@@ -363,7 +458,9 @@ const BlockTypeComponents: {
   "horizontal-rule": HorizontalRule,
   "members-only-delimiter": MembersOnlyDelimiterBlock,
   "posts-list": PostsListBlock,
+  "recommended-pubs": RecommendedPubsBlock,
   signup: SubscribeBlock,
+  "post-header": PostHeaderBlock,
 };
 
 const BlockMultiselectIndicator = (props: BlockProps) => {
@@ -415,10 +512,24 @@ export const BlockLayout = (props: {
   setAreYouSure?: (value: boolean) => void;
   extraOptions?: React.ReactNode;
 }) => {
-  // this is used to wrap non-text blocks in consistent selected styling, spacing, and top level options like delete
+  let bodyDrag = useBlockBodyDrag();
   return (
     <div
-      className={`nonTextBlockAndControls relative ${props.hasAlignment ? "w-fit" : "w-full"}`}
+      className={`nonTextBlockAndControls relative ${props.hasAlignment ? "w-fit" : "w-full"} ${bodyDrag ? "[-webkit-touch-callout:none]" : ""}`}
+      {...(bodyDrag ? dragHandleAttr("body") : {})}
+      onPointerDown={
+        bodyDrag
+          ? (e) => {
+              if (
+                (e.target as Element).closest(
+                  "button, a, input, textarea, select, [contenteditable], [data-draggable]",
+                )
+              )
+                return;
+              bodyDrag.onPointerDown?.(e);
+            }
+          : undefined
+      }
     >
       <div
         className={`nonTextBlock ${props.className} p-2 sm:p-3 overflow-hidden
@@ -434,7 +545,12 @@ export const BlockLayout = (props: {
         }
         `}
       >
-        {props.children}
+        {/* A block's own list marker sits beside its body, so any ListMarker
+            rendered inside (a page link's preview of its page's title) must
+            not inherit the handle and pick this block up. */}
+        <ListDragHandleContext.Provider value={null}>
+          {props.children}
+        </ListDragHandleContext.Provider>
       </div>
       {props.isSelected && (
         <NonTextBlockOptions
@@ -476,7 +592,17 @@ const NonTextBlockOptions = (props: {
     <div
       className={`flex gap-1 absolute -top-[25px] right-2 pb-0.5 pt-1 px-1 rounded-t-md bg-border text-bg-page ${props.optionsClassName}`}
     >
-      {focusedEntityType?.data.value !== "canvas" && (
+      {focusedEntityType?.data.value === "canvas" ? (
+        focusedEntity?.parent && (
+          <>
+            <CanvasLayerControls
+              parent={focusedEntity.parent}
+              entityID={focusedEntity.entityID}
+            />
+            <Separator classname="border-bg-page! h-4! mx-0.5" />
+          </>
+        )
+      ) : (
         <>
           <button
             onClick={async (e) => {
@@ -542,19 +668,17 @@ const NonTextBlockOptions = (props: {
   );
 };
 
-// Disclosure triangle for folding a heading's section. Lives in the left gutter
-// (absolutely positioned in the wrapper padding) so it never shifts the heading
-// text, and only shows on hover unless the heading is currently folded.
 const HeadingFoldButton = (props: { entityID: string }) => {
-  let folded = useUIState((s) => s.foldedBlocks.includes(props.entityID));
+  let { rep } = useReplicache();
+  let folded = useIsFolded(props.entityID);
   let headingLevel = useEntity(props.entityID, "block/heading-level")?.data
     .value;
   let top =
     headingLevel === 1
-      ? "top-[20px]"
+      ? "top-[16px]"
       : headingLevel === 2
-        ? "top-[14px]"
-        : "top-[11px]";
+        ? "top-[11px]"
+        : "top-[8px]";
   return (
     <button
       className={`headingFoldButton absolute -left-1 ${top} p-0.5 pl-[3px] rounded-r-full text-bg-page  transition-opacity
@@ -563,7 +687,7 @@ const HeadingFoldButton = (props: { entityID: string }) => {
             ? "opacity-100 bg-accent-contrast"
             : "opacity-0 sm:group-hover/blockWrapper:opacity-100 bg-border "
         }`}
-      onClick={() => useUIState.getState().toggleFold(props.entityID)}
+      onClick={() => toggleFold(rep, props.entityID)}
     >
       <ArrowDownTiny
         className={`transition-transform ${folded ? "-rotate-90" : ""}`}
@@ -578,6 +702,7 @@ export const ListMarker = (
   props: Block & {
     previousBlock?: Block | null;
     nextBlock?: Block | null;
+    displayDepth?: number;
   } & {
     className?: string;
   },
@@ -587,13 +712,12 @@ export const ListMarker = (
   let headingLevel = useEntity(props.entityID, "block/heading-level")?.data
     .value;
   let children = useEntity(props.entityID, "card/block");
-  let folded =
-    useUIState((s) => s.foldedBlocks.includes(props.entityID)) &&
-    children.length > 0;
+  let folded = useIsFolded(props.entityID) && children.length > 0;
 
-  let depth = props.listData?.depth;
+  let depth = props.displayDepth ?? props.listData?.depth;
   let { permissions } = useEntitySetContext();
   let { rep } = useReplicache();
+  let dragHandle = useListDragHandle();
 
   let [editingNumber, setEditingNumber] = useState(false);
   let [numberInputValue, setNumberInputValue] = useState("");
@@ -652,11 +776,21 @@ export const ListMarker = (
       }}
     >
       <button
-        onClick={() => {
-          if (children.length > 0)
-            useUIState.getState().toggleFold(props.entityID);
+        ref={dragHandle?.setActivatorNodeRef}
+        {...dragHandle?.attributes}
+        {...dragHandle?.listeners}
+        {...(dragHandle ? dragHandleAttr("marker") : {})}
+        onPointerDown={(e) => {
+          dragHandle?.listeners?.onPointerDown?.(e);
+          // Keep the hold from also triggering the block wrapper's own
+          // long-press/swipe handlers while the drag sensor's delay runs.
+          if (dragHandle) e.stopPropagation();
         }}
-        className={`listMarker group/list-marker ${listStyle?.data.value === "ordered" ? "" : "px-3 py-2"} ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
+        onClick={() => {
+          if (didListDragJustEnd()) return;
+          if (children.length > 0) toggleFold(rep, props.entityID);
+        }}
+        className={`listMarker group/list-marker ${listStyle?.data.value === "ordered" ? "" : "px-3 py-2"} ${children.length > 0 ? "cursor-pointer" : "cursor-default"} ${dragHandle ? "touch-none select-none" : ""}`}
       >
         {listStyle?.data.value === "ordered" ? (
           editingNumber ? (

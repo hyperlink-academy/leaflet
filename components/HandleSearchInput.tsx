@@ -16,10 +16,7 @@ import { INPUT_HIGHLIGHT_CLASS } from "./Subscribe/inputHighlight";
 export const HandleSearchInput = (props: {
   autoFocus?: boolean;
   action?: React.ReactNode;
-  // For callers that need a real button component (not the plain wrapper the
-  // `action` node gets); receives the submit callback and the current value.
   renderAction?: (submit: () => void, value: string) => React.ReactNode;
-  // `null` renders no leading slot; undefined falls back to the Atmosphere icon.
   leading?: React.ReactNode | null;
   placeholder?: string;
   className?: string;
@@ -27,22 +24,13 @@ export const HandleSearchInput = (props: {
   large?: boolean;
   compact?: boolean;
   loading?: boolean;
-  // Called with the typed or selected handle; `actor` is present when the value
-  // came from a suggestion. Resolving `true` clears the input (e.g. after a
-  // successful invite).
   onSubmit?: (
     handle: string,
     actor?: ActorSuggestion,
   ) => void | boolean | Promise<void | boolean>;
-  // Fires on every keystroke and on suggestion select, for callers that stash
-  // the handle instead of submitting (e.g. the paid join modal).
   onChange?: (value: string) => void;
-  // Flags the input as needing attention (e.g. a tier was picked before a
-  // handle was entered); cleared on focus via onFocus.
   highlight?: boolean;
   onFocus?: () => void;
-  // Reject typed values that aren't syntactically valid handles with a native
-  // validation bubble instead of submitting them (suggestion picks are trusted).
   validateHandle?: boolean;
 }) => {
   let {
@@ -125,6 +113,7 @@ export const HandleSearchInput = (props: {
             </div>
           )}
           <Input
+            inputMode="url"
             autoFocus={props.autoFocus}
             className={`appearance-none! grow outline-none! min-w-0 ${props.large ? "py-1!" : props.compact ? "py-0!" : "py-0.5"}`}
             placeholder={props.placeholder ?? "atmosphere.handle"}
@@ -141,10 +130,6 @@ export const HandleSearchInput = (props: {
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
-                // handle Enter here (with the current handleValue) instead of
-                // relying on the Combobox's window listener, which only submits
-                // when a suggestion is highlighted. stopPropagation keeps that
-                // listener from also firing with a stale value.
                 e.stopPropagation();
                 handleSelect(highlighted);
               }
@@ -159,6 +144,7 @@ export const HandleSearchInput = (props: {
           ) : props.onSubmit && props.action ? (
             <button
               type="button"
+              className="shrink-0 whitespace-nowrap"
               onClick={(e) => {
                 e.stopPropagation();
                 handleSelect();

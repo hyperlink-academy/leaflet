@@ -1,6 +1,7 @@
 "use client";
 import { AppBskyFeedDefs } from "@atproto/api";
-import { preload } from "swr";
+import { useRef } from "react";
+import { preload, useSWRConfig } from "swr";
 import { OpenPage } from "./postPageState";
 import { useOpenThread } from "./Interactions/drawerThreadContext";
 
@@ -35,6 +36,30 @@ export async function fetchThread(uri: string): Promise<ThreadType> {
 const prefetchThread = (uri: string) => {
   preload(getThreadKey(uri), () => fetchThread(uri));
 };
+
+// For click targets that span a whole post. Pointer-down prefetches at once;
+// hover waits for intent so a mouse crossing a list of posts doesn't fetch
+// every thread it passes over. Threads already in the cache are skipped: the
+// open thread's own main post is one of these targets, and sits under the
+// cursor right after the click that opened it.
+export function useThreadPrefetchHandlers(uri: string) {
+  let { cache } = useSWRConfig();
+  let prefetch = () => {
+    if (!cache.get(getThreadKey(uri))?.data) prefetchThread(uri);
+  };
+  let hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  let clearHover = () => {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+  };
+  return {
+    onMouseEnter: () => {
+      clearHover();
+      hoverTimer.current = setTimeout(prefetch, 150);
+    },
+    onMouseLeave: clearHover,
+    onPointerDown: prefetch,
+  };
+}
 
 // Quotes fetching
 export const getQuotesKey = (uri: string) => `quotes:${uri}`;

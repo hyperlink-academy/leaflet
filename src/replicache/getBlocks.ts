@@ -1,4 +1,4 @@
-import { Block } from "components/Blocks/Block";
+import type { Block } from "components/Blocks/Block";
 import { Replicache } from "replicache";
 import { Fact, ReplicacheMutators } from "src/replicache";
 import { Attribute } from "src/replicache/attributes";
@@ -33,7 +33,10 @@ function computeHeadingSections(blocks: Block[]): void {
 // A block is hidden when collapsed by a fold: either a folded list ancestor on
 // its own listData.path (excluding itself, so the folded row stays visible), or
 // a folded heading whose section contains it.
-export function isBlockHidden(block: Block, foldedBlocks: string[]): boolean {
+export function isBlockHidden(
+  block: Block,
+  foldedBlocks: readonly string[],
+): boolean {
   return (
     (block.listData?.path.some(
       (p) => foldedBlocks.includes(p.entity) && p.entity !== block.entityID,
@@ -145,6 +148,15 @@ function assembleBlocks(scan: SyncScan, entityID: string): Block[] {
   computeHeadingSections(result);
   computeDisplayNumbers(result);
   return result;
+}
+
+export function filterBlocksForZoom(pageBlocks: Block[], root?: string) {
+  if (!root) return pageBlocks;
+  return pageBlocks.filter(
+    (block) =>
+      block.entityID === root ||
+      block.listData?.path.some((ancestor) => ancestor.entity === root),
+  );
 }
 
 export const getBlocksWithTypeLocal = (

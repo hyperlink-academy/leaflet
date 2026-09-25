@@ -3,13 +3,22 @@ import type { Fact, ReplicacheMutators } from ".";
 import type { Attribute, Attributes, FilterAttributes } from "./attributes";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
-import { generateKeyBetween } from "fractional-indexing";
-import { v7 } from "uuid";
+import { generateKeyBetween, generateNKeysBetween } from "fractional-indexing";
+import { canvasStackingOrder } from "src/utils/canvasBlockOrder";
+import { v5, v7 } from "uuid";
 import { localImages } from "src/utils/addImage";
 import { clearImageUploadStatus } from "src/utils/imageUploadStatus";
+import { enqueueBlobCleanup } from "src/utils/blobCleanup";
+import { useUIState } from "src/useUIState";
+import {
+  isPageLinkDisplay,
+  type PageLinkDisplay,
+} from "src/utils/pageLinkDisplay";
 
 export type MutationContext = {
   permission_token_id: string;
+  rootEntity: string;
+  sessionDid: string | null;
   createEntity: (args: {
     entityID: string;
     permission_set: string;
@@ -41,6 +50,29 @@ type Mutation<T> = (
   ctx: MutationContext,
 ) => Promise<void>;
 
+// The canvas blocks of `page` in paint order, lowest first, each with the
+// fractional index it is layered by — null only for blocks placed before
+// layering existed.
+async function canvasLayers(ctx: MutationContext, page: string) {
+  let blocks = await ctx.scanIndex.eav(page, "canvas/block");
+  // Read one at a time: on the server these reads share a single database
+  // transaction, which can only have one query in flight.
+  let layers = [];
+  for (let fact of blocks) {
+    let stackOrder = await ctx.scanIndex.eav(
+      fact.data.value,
+      "canvas/block/stack-order",
+    );
+    layers.push({
+      entityID: fact.data.value,
+      x: fact.data.position.x,
+      y: fact.data.position.y,
+      stackOrder: stackOrder[0]?.data.value ?? null,
+    });
+  }
+  return layers.sort(canvasStackingOrder);
+}
+
 const addCanvasBlock: Mutation<{
   parent: string;
   permission_set: string;
@@ -48,6 +80,7 @@ const addCanvasBlock: Mutation<{
   type: Fact<"block/type">["data"]["value"];
   newEntityID: string;
   position: { x: number; y: number };
+  width?: number;
 }> = async (args, ctx) => {
   await ctx.createEntity({
     entityID: args.newEntityID,
@@ -67,6 +100,72 @@ const addCanvasBlock: Mutation<{
     entity: args.newEntityID,
     data: { type: "block-type-union", value: args.type },
     attribute: "block/type",
+  });
+  if (args.width !== undefined)
+    await ctx.assertFact({
+      entity: args.newEntityID,
+      attribute: "canvas/block/width",
+      data: { type: "number", value: args.width },
+    });
+  // Every block placed on a canvas gets a layer, so stacking is explicit from
+  // the moment it lands. Unlayered blocks sort first, so the last entry's
+  // index is the highest in use, or null on a canvas that predates layering —
+  // either way the new block goes on top.
+  let layers = await canvasLayers(ctx, args.parent);
+  let top = layers[layers.length - 1]?.stackOrder ?? null;
+  await ctx.assertFact({
+    entity: args.newEntityID,
+    attribute: "canvas/block/stack-order",
+    data: { type: "string", value: generateKeyBetween(top, null) },
+  });
+};
+
+const moveCanvasBlockLayer: Mutation<{
+  parent: string;
+  entityID: string;
+  action: "forward" | "backward" | "front" | "back";
+}> = async (args, ctx) => {
+  let layers = await canvasLayers(ctx, args.parent);
+  let index = layers.findIndex((l) => l.entityID === args.entityID);
+  if (index === -1) return;
+  let up = args.action === "forward" || args.action === "front";
+  if (up ? index === layers.length - 1 : index === 0) return;
+
+  // Blocks placed before layering existed have no index, and a fractional
+  // index can only put a block above them — so "below every sibling" is
+  // inexpressible while any of them are left. The first layering action on
+  // such a canvas freezes their current paint order into explicit indexes,
+  // leaving it looking identical.
+  let unlayered = layers.filter((l) => l.stackOrder === null).length;
+  if (unlayered > 0) {
+    let keys = generateNKeysBetween(
+      null,
+      layers[unlayered]?.stackOrder || null,
+      unlayered,
+    );
+    for (let i = 0; i < unlayered; i++) {
+      layers[i].stackOrder = keys[i];
+      await ctx.assertFact({
+        entity: layers[i].entityID,
+        attribute: "canvas/block/stack-order",
+        data: { type: "string", value: keys[i] },
+      });
+    }
+  }
+
+  let order = layers.map((l) => l.stackOrder as string);
+  let value =
+    args.action === "forward"
+      ? generateKeyBetween(order[index + 1], order[index + 2] || null)
+      : args.action === "backward"
+        ? generateKeyBetween(order[index - 2] || null, order[index - 1])
+        : args.action === "front"
+          ? generateKeyBetween(order[order.length - 1], null)
+          : generateKeyBetween(null, order[0]);
+  await ctx.assertFact({
+    entity: args.entityID,
+    attribute: "canvas/block/stack-order",
+    data: { type: "string", value },
   });
 };
 
@@ -104,26 +203,29 @@ const addBlock: Mutation<{
     data: { type: "block-type-union", value: args.type },
     attribute: "block/type",
   });
-  if (args.list) {
+  let parentIsBlock =
+    !args.list &&
+    (await ctx.scanIndex.eav(args.parent, "block/type")).length > 0;
+  if (args.list || parentIsBlock) {
     await ctx.assertFact({
       entity: args.newEntityID,
       attribute: "block/is-list",
       data: { type: "boolean", value: true },
     });
-    if (args.list.listStyle) {
-      await ctx.assertFact({
-        entity: args.newEntityID,
-        attribute: "block/list-style",
-        data: { type: "list-style-union", value: args.list.listStyle },
-      });
-    }
-    if (args.list.checklist !== undefined) {
-      await ctx.assertFact({
-        entity: args.newEntityID,
-        attribute: "block/check-list",
-        data: { type: "boolean", value: args.list.checklist },
-      });
-    }
+  }
+  if (args.list?.listStyle) {
+    await ctx.assertFact({
+      entity: args.newEntityID,
+      attribute: "block/list-style",
+      data: { type: "list-style-union", value: args.list.listStyle },
+    });
+  }
+  if (args.list?.checklist !== undefined) {
+    await ctx.assertFact({
+      entity: args.newEntityID,
+      attribute: "block/check-list",
+      data: { type: "boolean", value: args.list.checklist },
+    });
   }
 };
 
@@ -155,6 +257,7 @@ const moveBlock: Mutation<{
   position:
     | { type: "first" }
     | { type: "end" }
+    | { type: "before"; entity: string }
     | { type: "after"; entity: string };
 }> = async (args, ctx) => {
   let children = (
@@ -184,6 +287,14 @@ const moveBlock: Mutation<{
       newPosition = generateKeyBetween(
         newSiblings[newSiblings.length - 1]?.data.position || null,
         null,
+      );
+      break;
+    }
+    case "before": {
+      let index = newSiblings.findIndex((f) => f.data.value == pos.entity);
+      newPosition = generateKeyBetween(
+        (index > 0 && newSiblings[index - 1].data.position) || null,
+        newSiblings[index]?.data.position || null,
       );
       break;
     }
@@ -362,6 +473,7 @@ const addPageLinkBlock: Mutation<{
   firstBlockEntity: string;
   firstBlockFactID: string;
   pageEntity: string;
+  display?: PageLinkDisplay;
 }> = async (args, ctx) => {
   await ctx.createEntity({
     entityID: args.pageEntity,
@@ -372,6 +484,12 @@ const addPageLinkBlock: Mutation<{
     attribute: "block/card",
     data: { type: "reference", value: args.pageEntity },
   });
+  if (isPageLinkDisplay(args.display))
+    await ctx.assertFact({
+      entity: args.blockEntity,
+      attribute: "page-link/display",
+      data: { type: "page-link-display-union", value: args.display },
+    });
   await ctx.assertFact({
     attribute: "page/type",
     entity: args.pageEntity,
@@ -508,12 +626,7 @@ const removeBlock: Mutation<
   for (let block of [args].flat()) {
     let [image] = await ctx.scanIndex.eav(block.blockEntity, "block/image");
     await ctx.runOnServer(async ({ supabase }) => {
-      if (image) {
-        let paths = image.data.src.split("/");
-        await supabase.storage
-          .from("minilink-user-assets")
-          .remove([paths[paths.length - 1]]);
-      }
+      if (image) await enqueueBlobCleanup(supabase, image.data.src);
     });
     await ctx.runOnClient(async () => {
       if (image) {
@@ -869,12 +982,7 @@ const removeGalleryImage: Mutation<{
 }> = async (args, ctx) => {
   let [image] = await ctx.scanIndex.eav(args.imageEntity, "block/image");
   await ctx.runOnServer(async ({ supabase }) => {
-    if (image) {
-      let paths = image.data.src.split("/");
-      await supabase.storage
-        .from("minilink-user-assets")
-        .remove([paths[paths.length - 1]]);
-    }
+    if (image) await enqueueBlobCleanup(supabase, image.data.src);
   });
   await ctx.runOnClient(async () => {
     if (image) {
@@ -895,6 +1003,7 @@ const updatePublicationDraft: Mutation<{
   tags?: string[];
   localPublishedAt?: string | null;
   preferences?: {
+    showInDiscover?: boolean;
     showComments?: boolean;
     showMentions?: boolean;
     showRecommends?: boolean;
@@ -906,6 +1015,7 @@ const updatePublicationDraft: Mutation<{
       title?: string;
       tags?: string[];
       preferences?: {
+        showInDiscover?: boolean;
         showComments?: boolean;
         showMentions?: boolean;
         showRecommends?: boolean;
@@ -1068,6 +1178,45 @@ const deleteFootnote: Mutation<{
   await ctx.deleteEntity(args.footnoteEntityID);
 };
 
+const COLLAPSED_BLOCKS_FACT_NAMESPACE = "5f4bfb95-2a1f-49f4-8f6b-77f0f1a72897";
+const toggleCollapsedBlocks: Mutation<{
+  collapse?: string[];
+  uncollapse?: string[];
+}> = async (args, ctx) => {
+  await ctx.runOnClient(async () => {
+    useUIState.setState((s) => {
+      let foldedBlocks = s.foldedBlocks.filter(
+        (f) => !args.uncollapse?.includes(f),
+      );
+      for (let entity of args.collapse ?? [])
+        if (!foldedBlocks.includes(entity)) foldedBlocks.push(entity);
+      return { foldedBlocks };
+    });
+  });
+  if (!ctx.sessionDid) return;
+  let facts = await ctx.scanIndex.eav(ctx.rootEntity, "root/collapsed-blocks");
+  let mine = facts.find((f) => f.author_did === ctx.sessionDid);
+  let current = new Set(mine?.data.value ?? []);
+  for (let entity of args.uncollapse ?? []) current.delete(entity);
+  for (let entity of args.collapse ?? []) current.add(entity);
+  if (current.size === 0) {
+    if (mine) await ctx.retractFact(mine.id);
+    return;
+  }
+  await ctx.assertFact({
+    id:
+      mine?.id ??
+      v5(
+        `${ctx.rootEntity}:${ctx.sessionDid}`,
+        COLLAPSED_BLOCKS_FACT_NAMESPACE,
+      ),
+    entity: ctx.rootEntity,
+    attribute: "root/collapsed-blocks",
+    data: { type: "string-array", value: [...current] },
+    author_did: ctx.sessionDid,
+  });
+};
+
 // A comment and a reply share the same body: an entity holding the YJS
 // content plus author/created-at facts, all carrying the author's did so the
 // server's authentication gate (sessionDid must match author_did) verifies
@@ -1220,6 +1369,7 @@ export const mutations = {
   retractAttribute,
   addBlock,
   addCanvasBlock,
+  moveCanvasBlockLayer,
   addLastBlock,
   outdentBlock,
   moveBlockUp,
@@ -1247,6 +1397,7 @@ export const mutations = {
   updatePublicationDraft,
   updateLeafletMetadata,
   toggleDraftContributor,
+  toggleCollapsedBlocks,
   createFootnote,
   deleteFootnote,
   createEditorComment,

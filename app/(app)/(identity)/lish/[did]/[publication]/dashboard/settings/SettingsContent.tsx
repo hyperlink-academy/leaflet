@@ -102,6 +102,11 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
       ? true
       : record.preferences.showRecommends,
   );
+  let [showOtherPublicationsInTags, setShowOtherPublicationsInTags] = useState(
+    record?.preferences?.showOtherPublicationsInTags === undefined
+      ? true
+      : record.preferences.showOtherPublicationsInTags,
+  );
   let [showPrevNext, setShowPrevNext] = useState(
     record?.preferences?.showPrevNext === undefined
       ? true
@@ -180,6 +185,13 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
         : record.preferences.showRecommends;
     if (showRecommends !== savedShowRecommends) return true;
 
+    let savedShowOtherPublicationsInTags =
+      record.preferences?.showOtherPublicationsInTags === undefined
+        ? true
+        : record.preferences.showOtherPublicationsInTags;
+    if (showOtherPublicationsInTags !== savedShowOtherPublicationsInTags)
+      return true;
+
     let savedShowPrevNext =
       record.preferences?.showPrevNext === undefined
         ? true
@@ -219,6 +231,7 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
     showComments,
     showMentions,
     showRecommends,
+    showOtherPublicationsInTags,
     showPrevNext,
     showFirstLast,
     prevNextDirection,
@@ -283,6 +296,7 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
               showFirstLast,
               prevNextDirection,
               showRecommends,
+              showOtherPublicationsInTags,
             },
           });
         } catch {
@@ -359,6 +373,8 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
           setShowRecommends={setShowRecommends}
           showInDiscover={showInDiscover}
           setShowInDiscover={setShowInDiscover}
+          showOtherPublicationsInTags={showOtherPublicationsInTags}
+          setShowOtherPublicationsInTags={setShowOtherPublicationsInTags}
         />
 
         <SettingsSection title="Domains">
@@ -380,7 +396,9 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
 function UpgradeSection() {
   return (
     <SettingsSection>
-      <div className="mx-auto sm:py-4"><UpgradeContent /></div>
+      <div className="mx-auto sm:py-4">
+        <UpgradeContent />
+      </div>
     </SettingsSection>
   );
 }

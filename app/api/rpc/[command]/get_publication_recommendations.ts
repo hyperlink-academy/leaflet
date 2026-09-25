@@ -12,8 +12,8 @@ export const get_publication_recommendations = makeRoute({
     publication: z.string(),
   }),
   handler: async ({ publication }, { supabase }: Pick<Env, "supabase">) => {
-    // One row per edge; the indexer already dedupes, drops
-    // self-recommendations, and caps the list at 3.
+    // One row per edge; the indexer already dedupes and drops
+    // self-recommendations.
     const { data: rows } = await supabase
       .from("publication_recommendations")
       .select("recommendation")

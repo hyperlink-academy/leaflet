@@ -12,7 +12,9 @@ export function PublishedImageBlock(props: {
   displayWidth?: number;
   isFullBleed?: boolean;
   className?: string;
+  loading?: "lazy" | "eager";
   onOpenLightbox?: () => void;
+  onOpenAltInLightbox?: () => void;
 }) {
   let [reloads, setReloads] = useState(0);
   let src =
@@ -37,7 +39,9 @@ export function PublishedImageBlock(props: {
       >
         <img
           {...imgProps}
-          alt={props.alt}
+          alt={props.alt ?? ""}
+          loading={props.loading}
+          decoding="async"
           height={props.height}
           width={props.width}
           className={`${props.isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${props.className ?? ""}`}
@@ -56,7 +60,12 @@ export function PublishedImageBlock(props: {
           className={props.isFullBleed ? "rounded-none!" : "rounded-lg!"}
         />
       )}
-      {props.alt && <ReadOnlyAltText alt={props.alt} />}
+      {props.alt && (
+        <ReadOnlyAltText
+          alt={props.alt}
+          onSeeMore={props.onOpenAltInLightbox}
+        />
+      )}
     </div>
   );
 }

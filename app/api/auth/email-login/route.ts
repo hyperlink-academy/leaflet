@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { AUTH_TOKEN_COOKIE, resolveAuthToken } from "src/auth";
 import { postAuthRedirect } from "src/postAuthRedirect";
 import { publicationUriForHost } from "src/utils/publicationForHost";
-import { applyAfterSignInAction } from "src/emailSubscription";
+import { applyAfterSignInAction } from "src/subscriptions/email";
 import { parseActionFromSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { supabaseServerClient } from "supabase/serverClient";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";

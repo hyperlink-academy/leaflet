@@ -15,6 +15,12 @@ export async function generateStaticParams() {
   return [];
 }
 
+// The advertised dimensions match the screenshot fallback; the cover-blob
+// path serves the blob best-effort at its native size.
+export const size = { width: 1400, height: 733 };
+export const contentType = "image/png";
+export const alt = "Preview of this post";
+
 export default async function OpenGraphImage(props: {
   params: Promise<{ rkey: string; didOrHandle: string }>;
 }) {

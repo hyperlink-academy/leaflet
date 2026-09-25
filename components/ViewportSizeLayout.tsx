@@ -52,6 +52,7 @@ export function ViewportSizeLayout(props: { children: React.ReactNode }) {
   let { height, difference } = useVisualViewport();
   return (
     <div
+      className="viewportSizeLayout"
       style={{
         height:
           isIOS() && difference !== 0

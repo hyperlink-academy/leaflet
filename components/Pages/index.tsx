@@ -10,6 +10,7 @@ import { useCardBorderHidden } from "./useCardBorderHidden";
 import { BookendSpacer, SandwichSpacer } from "components/LeafletLayout";
 import { LeafletSidebar } from "app/(app)/(editor)/[leaflet_id]/Sidebar";
 import { Page } from "./Page";
+import { ListDndProvider } from "components/Blocks/ListDnd";
 import { IframePageView } from "./IframePageView";
 import { PageOptionButton } from "./PageOptions";
 import { CloseTiny } from "components/Icons/CloseTiny";
@@ -21,13 +22,15 @@ export function Pages(props: { rootPage: string; flow?: boolean }) {
   let params = useSearchParams();
   let queryRoot = params.get("page");
   let firstPage = queryRoot || rootPage?.data.value || props.rootPage;
-  let cardBorderHidden = useCardBorderHidden(rootPage.id);
+  let cardBorderHidden = useCardBorderHidden(rootPage?.id);
   let firstPageIsCanvas = useEntity(firstPage, "page/type");
   let fullPageScroll =
     !!cardBorderHidden && pages.length === 0 && !firstPageIsCanvas;
 
   return (
-    <>
+    // One drag context above every open page, so list items can be dragged
+    // between them (e.g. into an open subpage).
+    <ListDndProvider>
       <LeafletSidebar />
       {!fullPageScroll && !props.flow && (
         <BookendSpacer
@@ -103,7 +106,7 @@ export function Pages(props: { rootPage: string; flow?: boolean }) {
           }}
         />
       )}
-    </>
+    </ListDndProvider>
   );
 }
 

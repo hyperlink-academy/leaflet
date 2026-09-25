@@ -8,7 +8,7 @@ import type {
   NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { hasLeafletContent } from "lexicons/src/normalize";
-import { postHasMembersDelimiter } from "src/membership";
+import { getGatedPostPolicy, postHasMembersDelimiter } from "src/membership";
 import type { Post } from "actions/reader/getReaderFeed";
 
 import Link from "next/link";
@@ -16,17 +16,32 @@ import { useEffect, useRef, useState } from "react";
 import { PostByline } from "./PostByline";
 import { namedBylineProfiles } from "src/utils/byline";
 import { useSelectedPostListing } from "src/useSelectedPostState";
+import { useReaderPostViewer, type ReaderPanel } from "src/useReaderPostViewer";
+import { prefetchReaderPost } from "src/readerPost";
+import { preload } from "swr";
+import { checkUrlFrameable } from "actions/checkUrlFrameable";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { ExternalLinkTiny } from "./Icons/ExternalLinkTiny";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 import { RecommendButton } from "./Interactions/RecommendButton";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { DiscussionButton } from "./Interactions/DiscussionButton";
+import { TagButton } from "./Interactions/TagButton";
 import { InteractionShareButton } from "./Interactions/InteractionShareButton";
-import { PublicationPostItemLarge } from "app/(app)/(published)/lish/[did]/[publication]/PublicationPostItem";
+import {
+  PublicationPostItemLarge,
+  PublicationPostItemMedium,
+} from "app/(app)/(published)/lish/[did]/[publication]/PublicationPostItem";
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
 
-export const PostListing = (props: Post & { selected?: boolean }) => {
+export const PostListing = (
+  props: Post & {
+    selected?: boolean;
+    onOpenInViewer?: () => void;
+    onOpenPanelInViewer?: (panel: ReaderPanel) => void;
+    compact?: boolean;
+  },
+) => {
   let pubRecord = props.publication?.pubRecord as
     | NormalizedPublication
     | undefined;
@@ -90,12 +105,53 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
   // For standalone posts, link directly to the document
   let postUrl = getDocumentURL(postRecord, props.documents.uri, pubRecord);
 
-  let coverImageSrc = postRecord.coverImage
-    ? blobRefToSrc(postRecord.coverImage.ref, postUri.host, undefined, {
-        width: COVER_THUMBNAIL_WIDTH.large,
-      })
+  // Modified clicks (new tab, etc.) fall through to the link instead of the
+  // reader's viewer.
+  let openInViewer = props.onOpenInViewer;
+  let onPostLinkClick = openInViewer
+    ? (e: React.MouseEvent<HTMLAnchorElement>) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        openInViewer();
+      }
     : undefined;
 
+  // Warm the viewer — a leaflet post's data, or the hidden iframe for anything
+  // else (see useReaderPostViewer.preloadUrl) — on hover intent or touch-down.
+  // The 150ms hover delay keeps a mouse transiting the feed from firing a load
+  // per card; the delayed clear on touch-up outlives the tap's click, and
+  // clearing after the viewer opened is a no-op.
+  let setPreloadUrl = useReaderPostViewer((s) => s.setPreloadUrl);
+  let clearPreloadUrl = useReaderPostViewer((s) => s.clearPreloadUrl);
+  let hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  let startPreload = () => {
+    if (hasLeafletContent(postRecord))
+      return prefetchReaderPost(props.documents.uri);
+    setPreloadUrl(postUrl);
+    preload(`frameable-${postUrl}`, () => checkUrlFrameable(postUrl));
+  };
+  let preloadHandlers = openInViewer
+    ? {
+        onMouseEnter: () => {
+          hoverTimer.current = setTimeout(startPreload, 150);
+        },
+        onMouseLeave: () => {
+          if (hoverTimer.current) clearTimeout(hoverTimer.current);
+          clearPreloadUrl(postUrl);
+        },
+        onTouchStart: startPreload,
+        onTouchEnd: () => setTimeout(() => clearPreloadUrl(postUrl), 300),
+        onTouchCancel: () => setTimeout(() => clearPreloadUrl(postUrl), 300),
+      }
+    : undefined;
+
+  let coverImageSrc = postRecord.coverImage
+    ? blobRefToSrc(postRecord.coverImage.ref, postUri.host, undefined, {
+        width: props.compact
+          ? COVER_THUMBNAIL_WIDTH.medium
+          : COVER_THUMBNAIL_WIDTH.large,
+      })
+    : undefined;
 
   let author =
     namedContributors.length > 0 ? (
@@ -111,10 +167,13 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
         pubRecord={pubRecord}
         uri={props.publication.uri}
         postRecord={postRecord}
+        compact={props.compact}
       />
     ) : undefined;
   let interactions = (
-    <div className="text-sm flex gap-4 items-center text-tertiary shrink-0">
+    // Above the card's full-bleed PostLink overlay (z-[1]) so these controls
+    // receive their clicks instead of the link/viewer.
+    <div className="relative z-[2] text-sm flex gap-4 items-center text-tertiary shrink-0">
       <Interactions
         postUrl={postUrl}
         quotesCount={quotes}
@@ -126,6 +185,11 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
         documentUri={props.documents.uri}
         document={postRecord}
         publication={pubRecord}
+        publicationUri={props.publication?.uri}
+        showOtherPublicationsInTags={
+          pubRecord?.preferences?.showOtherPublicationsInTags !== false
+        }
+        openPanelInViewer={props.onOpenPanelInViewer}
       />
       <InteractionShareButton
         postRecord={postRecord}
@@ -137,8 +201,24 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
     </div>
   );
 
+  let itemProps = {
+    href: postUrl,
+    onClick: onPostLinkClick,
+    membersOnly: postHasMembersDelimiter(postRecord),
+    publicationUri: props.publication?.uri,
+    gatePolicy: getGatedPostPolicy(postRecord),
+    title: postRecord.title,
+    description: postRecord.description || getFirstParagraph(postRecord),
+    author,
+    date,
+    interactions,
+    pubInfo,
+    coverImageSrc,
+    coverImageAlt: postRecord.title,
+  };
+
   return (
-    <div className="postListing flex flex-col gap-1">
+    <div className="postListing flex flex-col gap-1" {...preloadHandlers}>
       <PublicationThemeWrapper postRecord={postRecord} pubRecord={pubRecord}>
         <div
           ref={elRef}
@@ -165,20 +245,11 @@ export const PostListing = (props: Post & { selected?: boolean }) => {
               : {}
           }
         >
-          <PublicationPostItemLarge
-            href={postUrl}
-            membersOnly={postHasMembersDelimiter(postRecord)}
-            title={postRecord.title}
-            description={
-              postRecord.description || getFirstParagraph(postRecord)
-            }
-            author={author}
-            date={date}
-            interactions={interactions}
-            pubInfo={pubInfo}
-            coverImageSrc={coverImageSrc}
-            coverImageAlt={postRecord.title}
-          />
+          {props.compact ? (
+            <PublicationPostItemMedium {...itemProps} />
+          ) : (
+            <PublicationPostItemLarge {...itemProps} />
+          )}
         </div>
       </PublicationThemeWrapper>
     </div>
@@ -190,30 +261,44 @@ const PubInfo = (props: {
   pubRecord: NormalizedPublication;
   uri: string;
   postRecord: NormalizedDocument;
+  compact?: boolean;
 }) => {
   let isLeaflet = hasLeafletContent(props.postRecord);
   let cleanUrl = props.pubRecord.url
     ?.replace(/^https?:\/\//, "")
     .replace(/^www\./, "");
 
+  let icon = props.pubRecord.icon
+    ? blobRefToSrc(props.pubRecord.icon.ref, new AtUri(props.uri).host)
+    : undefined;
+
+  // The medium standard-site-post block's pub line: a tiny icon and the name
+  // only, sized to sit above a clamped title rather than heading a card.
+  if (props.compact)
+    return (
+      <Link
+        href={props.href}
+        // `relative w-fit` keeps this clickable above the post's absolute
+        // PostLink overlay while limiting the hit area to just the pub name.
+        className="relative w-fit max-w-full flex items-center gap-1.5 text-accent-contrast font-bold no-underline! text-sm z-[2]"
+      >
+        <PubIcon
+          tiny
+          className="w-3! h-3!"
+          icon={icon}
+          pubName={props.pubRecord.name}
+        />
+        <span className="min-w-0 truncate">{props.pubRecord.name}</span>
+      </Link>
+    );
+
   return (
     <div className="flex justify-between gap-4 w-full pb-1">
       <Link
         href={props.href}
-        className="text-accent-contrast font-bold no-underline! text-sm flex gap-[6px] items-center relative grow w-max shrink-0 min-w-0"
+        className="text-accent-contrast font-bold no-underline! text-sm flex gap-[6px] items-center relative z-[2] grow w-max shrink-0 min-w-0"
       >
-        <PubIcon
-          tiny
-          icon={
-            props.pubRecord.icon
-              ? blobRefToSrc(
-                  props.pubRecord.icon.ref,
-                  new AtUri(props.uri).host,
-                )
-              : undefined
-          }
-          pubName={props.pubRecord.name}
-        />
+        <PubIcon tiny icon={icon} pubName={props.pubRecord.name} />
         <div className="w-max min-w-0">{props.pubRecord.name}</div>
       </Link>
       {!isLeaflet && (
@@ -250,12 +335,16 @@ const Interactions = (props: {
   documentUri: string;
   document: NormalizedDocument;
   publication?: NormalizedPublication;
+  publicationUri?: string;
+  showOtherPublicationsInTags: boolean;
+  openPanelInViewer?: (panel: ReaderPanel) => void;
 }) => {
   let setSelectedPostListing = useSelectedPostListing(
     (s) => s.setSelectedPostListing,
   );
   let defaultDrawer: "comments" | "quotes" =
     props.showComments && props.commentsCount > 0 ? "comments" : "quotes";
+  let openPanelInViewer = props.openPanelInViewer;
 
   return (
     <div className={`flex gap-4 text-tertiary text-sm  items-center`}>
@@ -263,6 +352,11 @@ const Interactions = (props: {
         <RecommendButton
           documentUri={props.documentUri}
           recommendsCount={props.recommendsCount}
+          onOpenRecommends={
+            openPanelInViewer
+              ? () => openPanelInViewer({ type: "recommends" })
+              : undefined
+          }
         />
         <DiscussionButton
           documentUri={props.documentUri}
@@ -272,6 +366,11 @@ const Interactions = (props: {
           showMentions={props.showMentions}
           postUrl={props.postUrl}
           title={props.document.title}
+          onClick={
+            openPanelInViewer
+              ? () => openPanelInViewer({ type: "discussion" })
+              : undefined
+          }
           onOpenChange={(open) => {
             // Keep the listing highlighted (read by the reader feed) while the
             // modal is up.
@@ -285,6 +384,14 @@ const Interactions = (props: {
             else setSelectedPostListing(null);
           }}
         />
+        {openPanelInViewer && (
+          <TagButton
+            tags={props.tags ?? []}
+            publicationUri={props.publicationUri}
+            showOtherPublications={props.showOtherPublicationsInTags}
+            onTagClick={(tag) => openPanelInViewer({ type: "tag", tag })}
+          />
+        )}
       </div>
     </div>
   );

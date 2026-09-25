@@ -23,11 +23,14 @@ import { buildPublicationPosts } from "src/utils/buildPublicationPosts";
 import { fetchPublicationPostRows } from "../getPublicationForPage";
 import {
   POSTS_LIST_PAGE_SIZE,
+  buildPostsListIndex,
   postsListFilterKey,
   resolvePostsListView,
+  resolveReaderControls,
   sortPostsForList,
   filterPostsByTags,
 } from "src/utils/postsListPagination";
+import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { buildChapterCards } from "src/utils/chapterGrouping";
 import { PublicationHomeLayout } from "../PublicationHomeLayout";
 import { getPublicationURL } from "src/utils/getPublicationURL";
@@ -119,6 +122,7 @@ export async function PublicationPageRenderer({
   const {
     bskyPostData,
     standardSitePostData: standardSitePosts,
+    standardSitePublicationData,
     pollData,
     prerenderedCodeBlocks,
   } = await collectAndFetchBlockResources({ agent, pages: resourcePages });
@@ -132,7 +136,12 @@ export async function PublicationPageRenderer({
   const allPosts = buildPublicationPosts(await postRowsPromise);
   const distinctFilters = new Map<
     string,
-    { tags: string[] | undefined; needsList: boolean; needsChapters: boolean }
+    {
+      tags: string[] | undefined;
+      needsList: boolean;
+      needsChapters: boolean;
+      needsIndex: boolean;
+    }
   >();
   for (const b of postsListBlocks) {
     const block = b.block as PubLeafletBlocksPostsList.Main;
@@ -141,15 +150,19 @@ export async function PublicationPageRenderer({
       tags: block.filterByTags,
       needsList: false,
       needsChapters: false,
+      needsIndex: false,
     };
     if (resolvePostsListView(block.view) === "chapter")
       entry.needsChapters = true;
-    else entry.needsList = true;
+    else {
+      entry.needsList = true;
+      if (resolveReaderControls(block)) entry.needsIndex = true;
+    }
     distinctFilters.set(key, entry);
   }
   const initialByFilterEntries = await Promise.all(
     Array.from(distinctFilters.entries()).map(
-      async ([key, { tags, needsList, needsChapters }]) => {
+      async ([key, { tags, needsList, needsChapters, needsIndex }]) => {
         const ordered = sortPostsForList(filterPostsByTags(allPosts, tags));
         const firstBatch = needsList
           ? ordered.slice(0, POSTS_LIST_PAGE_SIZE)
@@ -168,8 +181,12 @@ export async function PublicationPageRenderer({
         return [
           key,
           {
-            uris: needsList ? ordered.map((p) => p.uri) : [],
+            uris:
+              needsList && !needsIndex ? ordered.map((p) => p.uri) : undefined,
             initialPosts: attachBylineProfiles(firstBatch, profiles),
+            index: needsIndex
+              ? buildPostsListIndex(ordered, (p) => getFirstParagraph(p.record))
+              : undefined,
             latestPost,
             chapters: needsChapters
               ? buildChapterCards(ordered, {
@@ -269,6 +286,9 @@ export async function PublicationPageRenderer({
                   bskyPostData={JSON.parse(JSON.stringify(bskyPostData))}
                   standardSitePostData={JSON.parse(
                     JSON.stringify(standardSitePosts),
+                  )}
+                  standardSitePublicationData={JSON.parse(
+                    JSON.stringify(standardSitePublicationData),
                   )}
                   pollData={pollData}
                   prerenderedCodeBlocks={prerenderedCodeBlocks}

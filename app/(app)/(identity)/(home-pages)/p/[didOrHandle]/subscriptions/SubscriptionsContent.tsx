@@ -14,7 +14,10 @@ export const ProfileSubscriptionsContent = (props: {
   did: string;
   subscriptions: PublicationSubscription[];
   nextCursor: Cursor | null;
-
+  // Extra subscriptions merged ahead of the paginated atproto list — the
+  // viewer's own email-only subscriptions on the "Your Subscriptions" page.
+  // The public profile page never passes these.
+  prependSubscriptions?: PublicationSubscription[];
   excludeUris?: string[];
 }) => {
   const getKey = (
@@ -73,9 +76,16 @@ export const ProfileSubscriptionsContent = (props: {
     return () => observer.disconnect();
   }, [data, size, setSize, isValidating]);
 
-  const subscriptions = (
-    data ? data.flatMap((page) => page.subscriptions) : []
-  ).filter((sub) => !props.excludeUris?.includes(sub.uri));
+  const seenUris = new Set<string>();
+  const subscriptions = [
+    ...(props.prependSubscriptions ?? []),
+    ...(data ? data.flatMap((page) => page.subscriptions) : []),
+  ].filter((sub) => {
+    if (props.excludeUris?.includes(sub.uri) || seenUris.has(sub.uri))
+      return false;
+    seenUris.add(sub.uri);
+    return true;
+  });
 
   if (subscriptions.length === 0 && !isValidating) {
     return <EmptyState title="No subscriptions yet" />;

@@ -109,8 +109,7 @@ function createFeedRenderContext(
     "pub.leaflet.blocks.unorderedList": (b) => renderUnorderedList(b, ctx),
     "pub.leaflet.blocks.orderedList": (b) => renderOrderedList(b, ctx),
     "pub.leaflet.blocks.image": image,
-    "pub.leaflet.blocks.imageGallery": (b) =>
-      b.images.map(image).join("\n"),
+    "pub.leaflet.blocks.imageGallery": (b) => b.images.map(image).join("\n"),
     "pub.leaflet.blocks.website": (b) => {
       const label = b.title?.trim() || b.src;
       return `<p><a href="${escapeHtml(b.src)}">${escapeHtml(label)}</a></p>`;
@@ -134,7 +133,10 @@ function createFeedRenderContext(
     "pub.leaflet.blocks.html": () => "",
     "pub.leaflet.blocks.poll": () => "",
     "pub.leaflet.blocks.signup": () => "",
+    // The feed item already carries the post's title and metadata.
+    "pub.leaflet.blocks.postHeader": () => "",
     "pub.leaflet.blocks.postsList": () => "",
+    "pub.leaflet.blocks.recommendedPubs": () => "",
     "pub.leaflet.blocks.standardSitePost": () => "",
     "pub.leaflet.blocks.standardSitePublication": () => "",
     "pub.leaflet.blocks.page": () => "",
@@ -175,7 +177,9 @@ const plainTextExtractors: BlockHandlers<string> = {
   "pub.leaflet.blocks.html": () => "",
   "pub.leaflet.blocks.poll": () => "",
   "pub.leaflet.blocks.signup": () => "",
+  "pub.leaflet.blocks.postHeader": () => "",
   "pub.leaflet.blocks.postsList": () => "",
+  "pub.leaflet.blocks.recommendedPubs": () => "",
   "pub.leaflet.blocks.standardSitePost": () => "",
   "pub.leaflet.blocks.standardSitePublication": () => "",
   "pub.leaflet.blocks.page": () => "",
@@ -251,7 +255,10 @@ function renderListItems(
         nested = `<${tag}>${renderListItems(item.children, tag, ctx)}</${tag}>`;
       } else if ("orderedListChildren" in item && item.orderedListChildren) {
         nested = renderOrderedList(item.orderedListChildren, ctx);
-      } else if ("unorderedListChildren" in item && item.unorderedListChildren) {
+      } else if (
+        "unorderedListChildren" in item &&
+        item.unorderedListChildren
+      ) {
         nested = renderUnorderedList(item.unorderedListChildren, ctx);
       }
       return `<li>${checkbox}${content}${nested}</li>`;

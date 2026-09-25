@@ -7,6 +7,7 @@ import Client from "ioredis";
 import { AtUri } from "@atproto/api";
 import { supabaseServerClient } from "supabase/serverClient";
 import { enrichDocumentToPost } from "src/utils/enrichPost";
+import { TRENDING_RANK } from "src/utils/trendingRank";
 import type { Post } from "./getReaderFeed";
 
 let redisClient: Client | null = null;
@@ -33,17 +34,15 @@ export async function getHotFeed(): Promise<{ posts: Post[] }> {
   let uris: string[];
   try {
     const ranked = await db.execute(sql`
-      SELECT uri
-      FROM documents
-      WHERE indexed = true
-        AND sort_date > now() - interval '7 days'
+      SELECT d.uri
+      FROM documents d
+      WHERE d.indexed = true
+        AND d.sort_date > now() - interval '7 days'
         AND (
-          data->'preferences'->>'showInDiscover' IS NULL
-          OR data->'preferences'->>'showInDiscover' = 'true'
+          d.data->'preferences'->>'showInDiscover' IS NULL
+          OR d.data->'preferences'->>'showInDiscover' = 'true'
         )
-      ORDER BY
-        (bsky_like_count + recommend_count * 5)::numeric
-        / power(extract(epoch from (now() - sort_date)) / 3600 + 2, 1.5) DESC
+      ORDER BY ${TRENDING_RANK} DESC
       LIMIT 50
     `);
     uris = ranked.rows.map((row: any) => row.uri as string);

@@ -18,18 +18,13 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 import { Fragment } from "react";
 import { PollData } from "./fetchPollData";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
+import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import { LinearDocumentPage } from "./LinearDocumentPage";
 import { CanvasPage } from "./CanvasPage";
 import { GlobalImageLightbox } from "./GlobalImageLightbox";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
-import {
-  type OpenPage,
-  getPageKey,
-  useOpenPages,
-  useInitializeOpenPages,
-  openPage as openPageAction,
-  closePage,
-} from "./postPageState";
+import { type OpenPage, getPageKey } from "./postPageState";
+import { usePostFrame } from "./postFrame";
 import { IframePageView } from "components/Pages/IframePageView";
 import { usePostResources } from "./PostDataProvider";
 import type { BylineProfile } from "./PostHeader/PostHeader";
@@ -55,6 +50,7 @@ export type SharedPageProps = {
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  standardSitePublicationData: StandardSitePublicationData[];
   pollData: PollData[];
   document_uri: string;
   fullPageScroll: boolean;
@@ -121,12 +117,17 @@ export function PostPages({
   commentsSlot: React.ReactNode;
 }) {
   let drawer = useInlineDrawer(document_uri);
-  useInitializeOpenPages();
-  let openPageIds = useOpenPages();
+  let frame = usePostFrame();
+  let openPageIds = frame.openPages;
   const { pages } = useLeafletContent();
   // Not props: a members-only unlock swaps the pages and these three channels
   // together, and only PostDataProvider knows when that happened.
-  const { bskyPostData, standardSitePostData, pollData } = usePostResources();
+  const {
+    bskyPostData,
+    standardSitePostData,
+    standardSitePublicationData,
+    pollData,
+  } = usePostResources();
   const { quotesAndMentions } = useDocument();
   const record = document?.normalizedDocument;
   if (!document || !record) return null;
@@ -153,6 +154,7 @@ export function PostPages({
     prerenderedCodeBlocks,
     bskyPostData,
     standardSitePostData,
+    standardSitePublicationData,
     pollData,
     document_uri,
     hasPageBackground,
@@ -179,17 +181,21 @@ export function PostPages({
         }
       />
 
-      {/* Always mounted: the drawer reads its own open state and, on mobile,
-          needs to stay mounted while its close animation plays. */}
-      <InteractionDrawer
-        showPageBackground={pubRecord?.theme?.showPageBackground}
-        document_uri={document.uri}
-        commentsSlot={preferences.showComments === false ? null : commentsSlot}
-        quotesAndMentions={
-          preferences.showMentions === false ? [] : quotesAndMentions
-        }
-        did={did}
-      />
+      {/* Mounted even while closed: the drawer reads its own open state and,
+          on mobile, needs to stay mounted while its close animation plays. */}
+      {frame.drawer && (
+        <InteractionDrawer
+          showPageBackground={pubRecord?.theme?.showPageBackground}
+          document_uri={document.uri}
+          commentsSlot={
+            preferences.showComments === false ? null : commentsSlot
+          }
+          quotesAndMentions={
+            preferences.showMentions === false ? [] : quotesAndMentions
+          }
+          did={did}
+        />
+      )}
 
       {openPageIds.map((openPage, openPageIndex) => {
         const pageKey = getPageKey(openPage);
@@ -202,11 +208,11 @@ export function PostPages({
               <IframePageView
                 url={openPage.url}
                 onOpen={(url) => {
-                  openPageAction(openPage, { type: "iframe", url });
+                  frame.openPage(openPage, { type: "iframe", url });
                 }}
                 pageOptions={
                   <PageOptions
-                    onClick={() => closePage(openPage)}
+                    onClick={() => frame.closePage(openPage)}
                     hasPageBackground={hasPageBackground}
                   />
                 }
@@ -248,23 +254,25 @@ export function PostPages({
               }
               pageOptions={
                 <PageOptions
-                  onClick={() => closePage(openPage)}
+                  onClick={() => frame.closePage(openPage)}
                   hasPageBackground={hasPageBackground}
                 />
               }
             />
-            <InteractionDrawer
-              showPageBackground={pubRecord?.theme?.showPageBackground}
-              pageId={page.id}
-              document_uri={document.uri}
-              commentsSlot={
-                preferences.showComments === false ? null : commentsSlot
-              }
-              quotesAndMentions={
-                preferences.showMentions === false ? [] : quotesAndMentions
-              }
-              did={did}
-            />
+            {frame.drawer && (
+              <InteractionDrawer
+                showPageBackground={pubRecord?.theme?.showPageBackground}
+                pageId={page.id}
+                document_uri={document.uri}
+                commentsSlot={
+                  preferences.showComments === false ? null : commentsSlot
+                }
+                quotesAndMentions={
+                  preferences.showMentions === false ? [] : quotesAndMentions
+                }
+                did={did}
+              />
+            )}
           </Fragment>
         );
       })}

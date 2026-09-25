@@ -158,6 +158,7 @@ export async function sendPostPreview(args: {
           year: "numeric",
         }),
         blocks,
+        pages,
         bskyPosts,
         standardSitePosts,
         standardSitePublications,

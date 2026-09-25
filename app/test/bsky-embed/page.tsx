@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { notFound } from "next/navigation";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { BskyEmbed } from "components/Blocks/BlueskyPostBlock/BskyEmbed";
 
@@ -276,6 +277,7 @@ const VARIANTS: Variant[] = [
 ];
 
 export default function BskyEmbedTestPage() {
+  if (process.env.NODE_ENV === "production") notFound();
   const [width, setWidth] = useState(360);
   const [compact, setCompact] = useState(false);
   const [readerMode, setReaderMode] = useState(true);

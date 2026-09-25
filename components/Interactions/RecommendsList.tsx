@@ -1,16 +1,35 @@
 "use client";
-import useSWR from "swr";
+import useSWR, { preload } from "swr";
 import { callRPC } from "app/api/rpc/client";
 import { Avatar } from "../Avatar";
 import { DotLoader } from "../utils/DotLoader";
 import { ProfilePopover } from "../ProfilePopover";
-import { useContributorProfiles } from "src/hooks/useContributorProfiles";
+import {
+  prefetchContributorProfiles,
+  useContributorProfiles,
+} from "src/hooks/useContributorProfiles";
 
 // SWR cache key for the DIDs that recommended a document. Shared with
 // RecommendButton, which mutates this cache optimistically on toggle so the
 // recommender appears/disappears immediately.
 export const getDocumentRecommendsKey = (documentUri: string) =>
   `document-recommends:${documentUri}`;
+
+async function fetchDocumentRecommends(documentUri: string) {
+  const res = await callRPC("get_document_recommends", {
+    document: documentUri,
+  });
+  return res.result.dids;
+}
+
+// Warms both fetches RecommendsList waits on: the recommender DIDs, then their
+// profiles.
+export async function prefetchDocumentRecommends(documentUri: string) {
+  const dids = await preload(getDocumentRecommendsKey(documentUri), () =>
+    fetchDocumentRecommends(documentUri),
+  );
+  prefetchContributorProfiles(dids);
+}
 
 // Fetches the DIDs that recommended a document and hydrates them into basic
 // profiles, showing a loader until ready. Shared by the RecommendsModal and the
@@ -19,12 +38,7 @@ export const getDocumentRecommendsKey = (documentUri: string) =>
 export function RecommendsList(props: { documentUri: string }) {
   const { data: didsData, isLoading: didsLoading } = useSWR(
     getDocumentRecommendsKey(props.documentUri),
-    async () => {
-      const res = await callRPC("get_document_recommends", {
-        document: props.documentUri,
-      });
-      return res.result.dids;
-    },
+    () => fetchDocumentRecommends(props.documentUri),
   );
   const dids = didsData ?? [];
   const { data: profiles, isLoading: profilesLoading } =

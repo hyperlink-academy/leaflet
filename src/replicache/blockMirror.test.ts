@@ -46,6 +46,8 @@ function makeRep() {
           args,
           clientMutationContext(tx, {
             permission_token_id: "test-token",
+            rootEntity: "test-root",
+            sessionDid: null,
             undoManager,
             rep: rep!,
             ignoreUndo: true,

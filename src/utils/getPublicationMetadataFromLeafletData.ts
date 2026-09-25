@@ -33,13 +33,16 @@ export type PublicationMetadata = {
       created_at: string;
     }[];
     publication_newsletter_settings?: { enabled: boolean } | null;
-    publication_membership_settings?: { enabled: boolean } | null;
+    publication_membership_settings?: {
+      enabled: boolean;
+      subscriber_tier_name: string;
+      subscriber_tier_description: string | null;
+    } | null;
     publication_membership_tiers?: {
       id: string;
       name: string;
       monthly_price_cents: number;
       active: boolean;
-      is_free: boolean;
     }[];
   } | null;
   documents: {

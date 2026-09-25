@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { copyLeafletContents } from "src/utils/copyLeafletContents";
 import { supabaseServerClient } from "supabase/serverClient";
+import { trackDocumentCreated } from "src/activeUserAnalytics";
 
 export async function createNewLeafletFromTemplate(
   template_id: string,
@@ -18,6 +19,7 @@ export async function createNewLeafletFromTemplate(
     .eq("id", template_id)
     .single();
   if (!template?.root_entity) return { error: "Leaflet not found" } as const;
+  trackDocumentCreated({ kind: "template", template: template_id });
 
   let { permTokenId } = await copyLeafletContents({
     rootEntity: template.root_entity,

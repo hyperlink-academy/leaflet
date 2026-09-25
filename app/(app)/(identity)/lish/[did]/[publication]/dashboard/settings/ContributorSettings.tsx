@@ -157,7 +157,7 @@ function OwnerContributorSettings(props: {
     <>
       <SettingsSection title="Invite Contributors ">
         <div className="leading-snug text-secondary">
-          Contributors can write and publish to this publication!<br /> Posts they publish with have thier name in the byline but are still owned by you.
+          Contributors can write and publish to this publication!<br /> Posts they publish will have their name in the byline but are still owned by you.
            <br />
         </div>
         <div className="leading-snug text-secondary">

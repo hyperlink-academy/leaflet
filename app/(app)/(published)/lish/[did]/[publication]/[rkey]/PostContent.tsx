@@ -18,6 +18,8 @@ import type { ChapterCard } from "src/utils/chapterGrouping";
 import {
   postsListFilterKey,
   resolvePostsListView,
+  resolveReaderControls,
+  type PostsListIndexEntry,
 } from "src/utils/postsListPagination";
 import { getPostsByUris } from "../getPostsByUris";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
@@ -35,7 +37,11 @@ import { AppBskyFeedDefs } from "@atproto/api";
 import { PubBlueskyPostBlock } from "./Blocks/PublishBskyPostBlock";
 import { StandardSitePostItemView } from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
-import { StandardSitePublicationItem } from "components/Blocks/StandardSitePublicationBlock/StandardSitePublicationItem";
+import {
+  StandardSitePublicationItem,
+  StandardSitePublicationItemView,
+} from "components/Blocks/StandardSitePublicationBlock/StandardSitePublicationItem";
+import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import {
   WithPublicationTheme,
   PublicationThemeWrapper,
@@ -55,10 +61,13 @@ import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbe
 import { useIframeChannel } from "src/hooks/useIframeChannel";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { useDocument, useDocumentOptional } from "contexts/DocumentContext";
-import { openPage as openPageAction } from "./postPageState";
+import { usePostFrame } from "./postFrame";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { MembersOnlyPaywall } from "./MembersOnlyPaywall";
+import { PublishedRecommendedPubs } from "./Blocks/PublishedRecommendedPubs";
+import { PostHeader } from "./PostHeader/PostHeader";
+import { usePostHeaderBlockData } from "./PostHeader/postHeaderBlockContext";
 
 // Mirrors HeadingStyle in components/Blocks/TextBlock/index.tsx so published
 // headers match the editor exactly. Keep the two in sync — see the
@@ -74,14 +83,16 @@ type PostsListData = {
   publication: { uri: string; record: unknown };
   publicationRecord: NormalizedPublication | null;
   // Per tag-filter signature (postsListFilterKey), what the blocks using that
-  // filter need: list views the full ordered URI list plus an SSR-seeded,
-  // byline-resolved first batch; chapter views the server-grouped cards and
-  // the newest post for the "Latest" highlight.
+  // filter need: list views the full ordered post list (`uris`, or `index`
+  // when a block has reader controls) plus an SSR-seeded, byline-resolved
+  // first batch; chapter views the server-grouped cards and the newest post
+  // for the "Latest" highlight.
   initialByFilter: Record<
     string,
     {
-      uris: string[];
+      uris?: string[];
       initialPosts: PublicationPostsListPost[];
+      index?: PostsListIndexEntry[];
       latestPost?: PublicationPostsListPost;
       chapters?: ChapterCard[];
     }
@@ -101,6 +112,7 @@ export function PostContent({
   pollData,
   footnoteIndexMap,
   postsListData,
+  standardSitePublicationData,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
   pageId?: string;
@@ -110,6 +122,9 @@ export function PostContent({
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  // Server-fetched like standardSitePostData so the block is in the SSR HTML;
+  // callers that don't thread it fall back to the client SWR fetch.
+  standardSitePublicationData?: StandardSitePublicationData[];
   pollData: PollData[];
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   footnoteIndexMap?: Map<string, number>;
@@ -129,6 +144,7 @@ export function PostContent({
             pages={pages}
             bskyPostData={bskyPostData}
             standardSitePostData={standardSitePostData}
+            standardSitePublicationData={standardSitePublicationData}
             block={b}
             did={did}
             key={index}
@@ -160,6 +176,7 @@ export let Block = ({
   prerenderedCodeBlocks,
   bskyPostData,
   standardSitePostData,
+  standardSitePublicationData,
   pageId,
   pages,
   pollData,
@@ -180,6 +197,7 @@ export let Block = ({
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  standardSitePublicationData?: StandardSitePublicationData[];
   pollData: PollData[];
   footnoteIndexMap?: Map<string, number>;
   postsListData?: PostsListData;
@@ -190,6 +208,7 @@ export let Block = ({
   let openLightbox = useOpenImageLightbox();
   let canOpenLightbox = !!openLightbox && !preview;
   let document = useDocumentOptional();
+  let postHeaderData = usePostHeaderBlockData();
   let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
     style: {
@@ -271,6 +290,7 @@ export let Block = ({
           isCanvas={isCanvas}
           pages={pages}
           className={className}
+          display={block.display}
         />
       );
     },
@@ -331,6 +351,9 @@ export let Block = ({
           <PublishedStandardSitePublicationBlock
             uri={block.uri}
             showPublicationTheme={block.showPublicationTheme !== false}
+            initialData={standardSitePublicationData?.find(
+              (p) => p.uri === block.uri,
+            )}
           />
         </div>
       );
@@ -357,7 +380,7 @@ export let Block = ({
       );
     },
     "pub.leaflet.blocks.horizontalRule": () => {
-      return <hr className="my-2 w-full border-border-light" />;
+      return <hr className="my-4 w-full border-border-light" />;
     },
     "pub.leaflet.blocks.membersOnlyDelimiter": () => {
       // Full-access viewers read straight through; for everyone else the
@@ -386,6 +409,31 @@ export let Block = ({
         </div>
       );
     },
+    "pub.leaflet.blocks.postHeader": (block) => {
+      if (!postHeaderData) return null;
+      return (
+        <div className="postHeaderBlock w-full bg-bg-page block-border p-0!">
+          <PostHeader
+            data={postHeaderData.data}
+            profile={postHeaderData.profile}
+            contributors={postHeaderData.contributors}
+            preferences={postHeaderData.preferences}
+            compact={block.compact}
+          />
+        </div>
+      );
+    },
+    "pub.leaflet.blocks.recommendedPubs": (block) => {
+      if (!currentPublicationUri) return null;
+      return (
+        <div className={className} {...blockProps}>
+          <PublishedRecommendedPubs
+            publicationUri={currentPublicationUri}
+            compact={block.compact}
+          />
+        </div>
+      );
+    },
     "pub.leaflet.blocks.postsList": (block) => {
       if (!postsListData) return null;
       const view = resolvePostsListView(block.view);
@@ -401,6 +449,7 @@ export let Block = ({
               cards={seed.chapters ?? []}
               latestPost={seed.latestPost}
               highlightLatest={!!block.highlightFirstPost}
+              showPageCount={block.showPageCount ?? true}
             />
           </div>
         );
@@ -410,13 +459,14 @@ export let Block = ({
           <PaginatedPublicationPostsList
             publication={postsListData.publication}
             publicationRecord={postsListData.publicationRecord}
-            listId={`${postsListData.publication.uri}:${key}`}
             uris={seed.uris}
-            initialPosts={seed.initialPosts}
+            index={seed.index}
+            knownPosts={seed.initialPosts}
             loadBatch={getPostsByUris}
             view={view}
             highlightFirstPost={!!block.highlightFirstPost}
             limit={block.limit}
+            readerControls={resolveReaderControls(block)}
           />
         </div>
       );
@@ -453,6 +503,7 @@ export let Block = ({
               pages={pages}
               bskyPostData={bskyPostData}
               standardSitePostData={standardSitePostData}
+              standardSitePublicationData={standardSitePublicationData}
               index={[...index, i]}
               item={child}
               did={did}
@@ -474,6 +525,7 @@ export let Block = ({
               pages={pages}
               bskyPostData={bskyPostData}
               standardSitePostData={standardSitePostData}
+              standardSitePublicationData={standardSitePublicationData}
               index={[...index, i]}
               item={child}
               did={did}
@@ -583,8 +635,16 @@ export let Block = ({
             displayWidth={block.width}
             isFullBleed={isFullBleed}
             className={className}
+            // The first block of a page is the one image plausibly above the
+            // fold; everything below defers.
+            loading={isFirst ? undefined : "lazy"}
             onOpenLightbox={
               canOpenLightbox ? () => openLightbox?.(pageId, cid) : undefined
+            }
+            onOpenAltInLightbox={
+              canOpenLightbox
+                ? () => openLightbox?.(pageId, cid, { altExpanded: true })
+                : undefined
             }
           />
         </div>
@@ -601,7 +661,7 @@ export let Block = ({
       return (
         // all this margin stuff is a highly unfortunate hack so that the border-l on blockquote is the height of just the text rather than the height of the block, which includes padding.
         <blockquote
-          className={`blockquote py-0! mb-2! ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-3! pt-3!" : "mt-1!"}`}
+          className={`blockquote whitespace-pre-wrap py-0! mb-2! ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-3! pt-3!" : "mt-1!"}`}
           {...blockProps}
         >
           <TextBlock
@@ -618,7 +678,7 @@ export let Block = ({
     "pub.leaflet.blocks.text": (block) => {
       return (
         <p
-          className={`textBlock ${className} ${block.textSize === "small" ? "text-secondary" : "text-primary"}`}
+          className={`textBlock whitespace-pre-wrap ${className} ${block.textSize === "small" ? "text-secondary" : "text-primary"}`}
           {...blockProps}
           // em-based so small/large scale with the theme's custom base font
           // size, matching the editor's .textSizeSmall/.textSizeLarge classes.
@@ -667,44 +727,49 @@ export let Block = ({
             {children}
           </a>
         );
+      // Tags sit one level below the block's nominal level: the page's h1 is
+      // outside the body (PostHeader's title on posts, the publication name on
+      // publication pages), so body headings start at h2. Sizes stay on the
+      // nominal scale via the inline blockTextSize font-size, and the
+      // hNBlock class names keep matching the block level.
       if (block.level === 1)
         return (
-          <h1
-            className={`h1Block ${className} ${HeadingStyle[1]}`}
+          <h2
+            className={`h1Block whitespace-pre-wrap ${className} ${HeadingStyle[1]}`}
             {...headingProps}
             style={{ ...headingProps.style, fontSize: blockTextSize.h1 }}
           >
             {link(<TextBlock {...textBlockProps} />)}
-          </h1>
+          </h2>
         );
       if (block.level === 2)
         return (
-          <h2
-            className={`h2Block ${className} ${HeadingStyle[2]}`}
+          <h3
+            className={`h2Block whitespace-pre-wrap ${className} ${HeadingStyle[2]}`}
             {...headingProps}
             style={{ ...headingProps.style, fontSize: blockTextSize.h2 }}
           >
             {link(<TextBlock {...textBlockProps} />)}
-          </h2>
+          </h3>
         );
       if (block.level === 3)
         return (
-          <h3
-            className={`h3Block ${className} ${HeadingStyle[3]}`}
+          <h4
+            className={`h3Block whitespace-pre-wrap ${className} ${HeadingStyle[3]}`}
             {...headingProps}
             style={{ ...headingProps.style, fontSize: blockTextSize.h3 }}
           >
             {link(<TextBlock {...textBlockProps} />)}
-          </h3>
+          </h4>
         );
       return (
-        <h6
-          className={`h6Block ${className} ${HeadingStyle[4]}`}
+        <h5
+          className={`h6Block whitespace-pre-wrap ${className} ${HeadingStyle[4]}`}
           {...headingProps}
           style={{ ...headingProps.style, fontSize: blockTextSize.h4 }}
         >
           {link(<TextBlock {...textBlockProps} />)}
-        </h6>
+        </h5>
       );
     },
   };
@@ -715,8 +780,12 @@ export let Block = ({
 function PublishedStandardSitePublicationBlock(props: {
   uri: string;
   showPublicationTheme: boolean;
+  initialData?: StandardSitePublicationData;
 }) {
-  let { data: publication } = useStandardSitePublication(props.uri);
+  let { data: fetched } = useStandardSitePublication(
+    props.initialData ? null : props.uri,
+  );
+  let publication = props.initialData ?? fetched;
 
   return (
     <div className="standardSitePublicationBlock block-border overflow-hidden w-full">
@@ -726,7 +795,11 @@ function PublishedStandardSitePublicationBlock(props: {
         enabled={props.showPublicationTheme}
       >
         <div className="bg-bg-page">
-          <StandardSitePublicationItem uri={props.uri} />
+          {props.initialData ? (
+            <StandardSitePublicationItemView publication={props.initialData} />
+          ) : (
+            <StandardSitePublicationItem uri={props.uri} />
+          )}
         </div>
       </WithPublicationTheme>
     </div>
@@ -743,9 +816,10 @@ function PublishedIframeBlock(props: {
   let parentPage = props.pageId
     ? { type: "doc" as const, id: props.pageId }
     : undefined;
+  let frame = usePostFrame();
   let { iframeRef } = useIframeChannel({
     onOpen: (url) => {
-      openPageAction(parentPage, { type: "iframe", url });
+      frame.openPage(parentPage, { type: "iframe", url });
     },
     onReplaceWith: () => {},
     onAddBelow: () => {},
@@ -811,6 +885,7 @@ function ListItem(props: {
   className?: string;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  standardSitePublicationData?: StandardSitePublicationData[];
   pollData: PollData[];
   pageId?: string;
   footnoteIndexMap?: Map<string, number>;
@@ -823,6 +898,7 @@ function ListItem(props: {
           pollData={props.pollData}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
@@ -842,6 +918,7 @@ function ListItem(props: {
           pollData={props.pollData}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
@@ -857,22 +934,30 @@ function ListItem(props: {
   let isChecklist = props.item.checked !== undefined;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
-      <div
-        className={`listMarker shrink-0 mx-3 z-1 mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
-      />
-      {isChecklist && (
+      {/* One box for the marker and the checkbox, so the li's gap only
+          separates them from the content — as in the editor's ListMarker. The
+          checkbox rides a zero-height line 12px in (h-3 + pt-[12px]) to sit on
+          the first text line; mt-1 stands in for the top margin the published
+          renderer puts on the content block instead of the row. */}
+      <div className="flex shrink-0">
         <div
-          className={`pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}
-        >
-          {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
-        </div>
-      )}
+          className={`listMarker shrink-0 mx-3 z-1 mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
+        />
+        {isChecklist && (
+          <div
+            className={`shrink-0 flex items-center h-3 mt-1 pt-[12px] pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}
+          >
+            {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
+          </div>
+        )}
+      </div>
       <div className="flex flex-col w-full min-w-0">
         <Block
           pollData={props.pollData}
           pages={props.pages}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           block={{ block: props.item.content }}
           did={props.did}
           isList
@@ -895,6 +980,7 @@ function OrderedListItem(props: {
   className?: string;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  standardSitePublicationData?: StandardSitePublicationData[];
   pollData: PollData[];
   pageId?: string;
   startIndex?: number;
@@ -910,6 +996,7 @@ function OrderedListItem(props: {
           pollData={props.pollData}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
@@ -930,6 +1017,7 @@ function OrderedListItem(props: {
           pollData={props.pollData}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
@@ -944,22 +1032,25 @@ function OrderedListItem(props: {
   let isChecklist = props.item.checked !== undefined;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
-      <div className="listMarker shrink-0 ml-2 z-1 mt-[4px]">
-        {calculatedIndex}.
-      </div>
-      {isChecklist && (
-        <div
-          className={`pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}
-        >
-          {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
+      <div className="flex shrink-0">
+        <div className="listMarker shrink-0 ml-2 z-1 mt-[4px]">
+          {calculatedIndex}.
         </div>
-      )}
+        {isChecklist && (
+          <div
+            className={`shrink-0 flex items-center h-3 mt-1 pt-[12px] pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}
+          >
+            {props.item.checked ? <CheckboxChecked /> : <CheckboxEmpty />}
+          </div>
+        )}
+      </div>
       <div className="flex flex-col w-full min-w-0">
         <Block
           pollData={props.pollData}
           pages={props.pages}
           bskyPostData={props.bskyPostData}
           standardSitePostData={props.standardSitePostData}
+          standardSitePublicationData={props.standardSitePublicationData}
           block={{ block: props.item.content }}
           did={props.did}
           isList

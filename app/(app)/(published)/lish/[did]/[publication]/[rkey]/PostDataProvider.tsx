@@ -9,12 +9,14 @@ import { useIdentityData } from "components/IdentityProvider";
 import { getUnlockedPost, type UnlockedPost } from "actions/getUnlockedPost";
 import type { PostPageData } from "src/utils/getPostPageData";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
+import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import type { PollData } from "./fetchPollData";
 
 export type PostResources = {
   pages: PubLeafletContent.Main["pages"];
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
+  standardSitePublicationData: StandardSitePublicationData[];
   pollData: PollData[];
 };
 
@@ -51,8 +53,9 @@ export function PostDataProvider(props: {
   // Keyed per (post, viewer) in the SWR module cache so the unlock survives
   // navigations — a member returning to a post they already unlocked renders
   // the full content on the first frame instead of re-flashing the paywall
-  // while a fresh entitlement check round-trips. A join completes via a full
-  // page reload, so a cached { entitled: false } can't go stale mid-session.
+  // while a fresh entitlement check round-trips. A completed join revalidates
+  // these keys in place (JoinMembershipFlow's revalidateUnlocks), so a cached
+  // { entitled: false } can't go stale mid-session.
   const { data, error } = useSWRImmutable(
     gated && identity?.id ? ["unlocked-post", documentUri, identity.id] : null,
     () => getUnlockedPost(documentUri),

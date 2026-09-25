@@ -1,5 +1,5 @@
 import { useCardBorderHidden } from "./Pages/useCardBorderHidden";
-import { Toggle } from "./Toggle";
+import { ToggleWithLabel } from "./Toggle";
 
 export function SettingsPageLayout(props: {
   children: React.ReactNode;
@@ -69,16 +69,12 @@ export const ToggleSetting = (props: {
 }) => {
   return (
     <>
-      <Toggle fullWidth toggle={props.toggle} onToggle={props.onToggle}>
-        <div className="flex flex-col gap-0">
-          <div className="font-bold text-secondary leading-snug">
-            {props.label}
-          </div>
-          {props.helpText && (
-            <div className="text-tertiary text-sm">{props.helpText}</div>
-          )}
-        </div>
-      </Toggle>
+      <ToggleWithLabel
+        label={props.label}
+        helpText={props.helpText}
+        toggle={props.toggle}
+        onToggle={props.onToggle}
+      />
       <hr className="last:hidden border-border-light" />
     </>
   );

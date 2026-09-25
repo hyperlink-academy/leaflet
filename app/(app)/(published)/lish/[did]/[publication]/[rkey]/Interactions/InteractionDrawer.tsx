@@ -15,10 +15,15 @@ import { DoubleArrowRightTiny } from "components/Icons/DoubleArrowRightTiny";
 import { ToggleGroup } from "components/ToggleGroup";
 import { useDocument } from "contexts/DocumentContext";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DrawerThread, DrawerThreadContext } from "./drawerThreadContext";
+import {
+  DrawerThread,
+  DrawerThreadContext,
+  drawerThreadKey,
+} from "./drawerThreadContext";
 import { useDrawerOpen } from "./useDrawerOpen";
 import { ThreadView } from "../ThreadPage";
 import { StandardSitePostDrawerView } from "./StandardSitePostDrawerView";
+import { TagDrawerView } from "./TagDrawerView";
 import { useDocumentDiscussionData } from "./useDocumentDiscussionData";
 import { useIsMobile } from "src/hooks/isMobile";
 import { MobileSheet } from "components/MobileSheet";
@@ -33,15 +38,7 @@ export const InteractionDrawer = (props: {
   did: string;
   pageId?: string;
 }) => {
-  // Reset the drawer's scroll to the top whenever we navigate between views, so
-  // a pushed thread (or a back navigation) doesn't start scrolled partway down.
   const scrollRef = useRef<HTMLDivElement>(null);
-  let { threadStack } = useInteractionState(props.document_uri);
-
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: 0 });
-  }, [threadStack.length]);
-
   let isMobile = useIsMobile();
 
   // This component is mounted unconditionally (in PostPages) and reads the
@@ -52,18 +49,24 @@ export const InteractionDrawer = (props: {
     !!drawerState &&
     (props.pageId ? drawerState.pageId === props.pageId : !drawerState.pageId);
 
-  // Remember the last open tab so the content keeps rendering it while the
-  // sheet plays its exit animation (drawerState is already null by then).
+  // Remember the last open tab and thread view so the content keeps rendering
+  // them while the sheet plays its exit animation (drawerState is already null
+  // by then).
   let lastTab = useRef(drawerState?.drawer);
   if (open && drawerState?.drawer) lastTab.current = drawerState.drawer;
   let tab: "comments" | "quotes" =
     lastTab.current === "quotes" ? "quotes" : "comments";
+  let lastThread = useRef(drawerState?.thread);
+  if (open) lastThread.current = drawerState?.thread;
+  let thread = lastThread.current;
 
-  // On mobile the drawer slides up from the bottom as a sheet instead of sitting
-  // inline in the horizontal page sandwich. The content renders its own header
-  // and close button, so the sheet supplies no title/chrome of its own. The
-  // sheet stays mounted with open=false so MobileSheet's spring can play the
-  // slide-out animation before removing the portal.
+  // Reset the drawer's scroll to the top whenever we navigate between views, so
+  // a pushed thread (or a back navigation) doesn't start scrolled partway down.
+  let threadKey = thread ? `${thread.type}:${drawerThreadKey(thread)}` : "";
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [threadKey]);
+
   if (isMobile) {
     return (
       <MobileSheet
@@ -75,7 +78,7 @@ export const InteractionDrawer = (props: {
         id="interaction-drawer"
         contentRef={scrollRef}
       >
-        <InteractionDrawerContent {...props} tab={tab} />
+        <InteractionDrawerContent {...props} tab={tab} thread={thread} />
       </MobileSheet>
     );
   }
@@ -85,13 +88,13 @@ export const InteractionDrawer = (props: {
   return (
     <>
       <SandwichSpacer noWidth />
-      <div className="snap-center h-full  flex z-10 shrink-0 sm:max-w-prose sm:w-full w-[calc(100vw-12px)]">
+      <div className="interactionDrawer snap-center h-full  flex z-10 shrink-0 sm:max-w-prose sm:w-full w-[calc(100vw-12px)]">
         <div
           ref={scrollRef}
           id="interaction-drawer"
           className={`relative h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6  overflow-scroll flex flex-col  ${props.showPageBackground ? "light-container rounded-l-none! rounded-r-lg! -ml-[1px]" : " opaque-container rounded-lg! sm:ml-4"}`}
         >
-          <InteractionDrawerContent {...props} tab={tab} />
+          <InteractionDrawerContent {...props} tab={tab} thread={thread} />
         </div>
       </div>
     </>
@@ -106,6 +109,7 @@ const InteractionDrawerContent = (props: {
   did: string;
   pageId?: string;
   tab: "comments" | "quotes";
+  thread: DrawerThread | undefined;
 }) => {
   let { commentsCountByPage, recommendsCount } = useDocument();
   let commentsCount = commentsCountByPage[props.pageId ?? ""] ?? 0;
@@ -120,13 +124,8 @@ const InteractionDrawerContent = (props: {
 
   // The innermost thread/quotes view opened within the drawer, if any. When
   // present it replaces the comments/mentions tabs.
-  const activeThread = threadStack[threadStack.length - 1];
+  const activeThread = props.thread;
 
-  // A standard-site-post thread shows another post's own discussion. It's always
-  // at the root of the stack (Bluesky threads opened from its mentions become
-  // the active thread instead), so its comments/mentions toggle lives in the
-  // drawer header in place of a Back button. Its data is fetched here too (SWR
-  // dedupes with the view below) to drive that toggle.
   const sspUri =
     activeThread?.type === "standardSitePost" ? activeThread.uri : null;
   const ssp = useDocumentDiscussionData(sspUri ?? "", !!sspUri);
@@ -146,7 +145,7 @@ const InteractionDrawerContent = (props: {
     sspActiveTab = "comments";
 
   const filteredQuotesAndMentions = props.quotesAndMentions.filter((q) => {
-    if (!q.link) return !props.pageId; // Direct mentions without quote context go to main page
+    if (!q.link) return !props.pageId;
     const url = new URL(q.link);
     const quoteParam = url.pathname.split("/l-quote/")[1];
     if (!quoteParam) return !props.pageId;
@@ -154,8 +153,6 @@ const InteractionDrawerContent = (props: {
     return quotePosition?.pageId === props.pageId;
   });
 
-  // commentsSlot is null when comments are disabled by permissions; mentions
-  // are only available when there's something to show on this page.
   const commentsAvailable = props.commentsSlot != null;
   const mentionsAvailable = filteredQuotesAndMentions.length > 0;
   const commentsAndMentionsAvailable = commentsAvailable && mentionsAvailable;
@@ -205,6 +202,8 @@ const InteractionDrawerContent = (props: {
                   : `Comments${ssp.comments.length > 0 ? ` (${ssp.comments.length})` : ""}`}
               </h4>
             )
+          ) : activeThread?.type === "tag" ? (
+            <h3 className="truncate">More posts tagged "{activeThread.tag}"</h3>
           ) : activeThread?.type === "recommends" ? (
             <div className="flex items-center justify-between gap-2">
               <h3>Recommends</h3>
@@ -278,11 +277,14 @@ const InteractionDrawerContent = (props: {
       <DrawerThreadContext.Provider value={drawerNav}>
         {sspUri ? (
           <StandardSitePostDrawerView uri={sspUri} tab={sspActiveTab} />
+        ) : activeThread?.type === "tag" ? (
+          <TagDrawerView tag={activeThread.tag} />
         ) : activeThread?.type === "recommends" ? (
           <>
             <RecommendsList documentUri={activeThread.uri} />
           </>
-        ) : activeThread ? (
+        ) : activeThread?.type === "thread" ||
+          activeThread?.type === "quotes" ? (
           <ThreadView
             parentUri={activeThread.uri}
             initialTab={activeThread.type === "quotes" ? "quotes" : "replies"}

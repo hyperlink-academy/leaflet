@@ -13,6 +13,7 @@ import {
 import { LocalizedDate } from "./LocalizedDate";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
+import { getGatedPostPolicy } from "src/membership";
 import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
 import { useContributorProfiles } from "src/hooks/useContributorProfiles";
 import {
@@ -59,10 +60,10 @@ export function PublicationPostsList({
   fakePosts,
   view = "medium",
   highlightFirstPost = false,
-  preSorted = false,
   className,
   inList,
   disableLinks = false,
+  pageWidth,
 }: {
   publication: PublicationForURL;
   publicationRecord: NormalizedPublication | null;
@@ -70,20 +71,16 @@ export function PublicationPostsList({
   fakePosts?: PublicationPostsListFakePost[];
   view?: PublicationPostsListView;
   highlightFirstPost?: boolean;
-  // Posts already arrive newest-first (server keyset order). Skip the local
-  // publishedAt sort so paginated pages keep the order their cursor assumes.
-  preSorted?: boolean;
   className?: string;
   inList?: boolean;
-  // In the editor the list is something you're laying out, not reading, so its
-  // posts render as plain cards that don't navigate away from the page.
   disableLinks?: boolean;
+  // The width the list is actually being rendered at, which the editor passes
+  // from the draft theme — the published record's page width only catches up
+  // on publish, so a highlighted post would otherwise lay itself out for a
+  // width the editor isn't showing.
+  pageWidth?: number;
 }) {
-  // Resolve a byline name per post: the post's explicit contributors when
-  // present, otherwise the document author (publication owner). Server render
-  // paths attach `bylineProfiles` so they appear in the initial HTML; for any
-  // post without them (editor / theme preview) we resolve client-side here,
-  // batched into a single get_profiles lookup keyed on the full DID set.
+  const effectivePageWidth = pageWidth ?? publicationRecord?.theme?.pageWidth;
   const unresolvedDids = useMemo(() => {
     const dids = new Set<string>();
     for (const post of posts ?? []) {
@@ -124,18 +121,7 @@ export function PublicationPostsList({
               date={post.date}
             />
           ))
-        : (preSorted
-            ? posts
-            : posts?.slice().sort((a, b) => {
-                const aDate = a.record.publishedAt
-                  ? new Date(a.record.publishedAt)
-                  : new Date(0);
-                const bDate = b.record.publishedAt
-                  ? new Date(b.record.publishedAt)
-                  : new Date(0);
-                return bDate.getTime() - aDate.getTime();
-              })
-          )?.map((post, index) => {
+        : posts?.map((post, index) => {
             const doc_record = post.record;
             const quotes = post.mentionsCount;
             const comments =
@@ -176,6 +162,10 @@ export function PublicationPostsList({
               />
             );
 
+            const gatePolicy = post.membersOnly
+              ? getGatedPostPolicy(doc_record)
+              : null;
+
             const isHighlightedFirst = highlightFirstPost && index === 0;
             const Variant = isHighlightedFirst
               ? "large"
@@ -203,6 +193,8 @@ export function PublicationPostsList({
                     inList={inList ?? true}
                     href={disableLinks ? undefined : docUrl}
                     membersOnly={post.membersOnly}
+                    publicationUri={publication.uri}
+                    gatePolicy={gatePolicy}
                     title={doc_record.title}
                     description={
                       doc_record.description || getFirstParagraph(doc_record)
@@ -212,7 +204,7 @@ export function PublicationPostsList({
                     interactions={interactions}
                     coverImageSrc={coverImageSrc}
                     coverImageAlt={doc_record.title}
-                    pageWidth={publicationRecord?.theme?.pageWidth}
+                    pageWidth={effectivePageWidth}
                   />
                   <hr className="last:hidden border-border-light" />
                 </React.Fragment>
@@ -226,6 +218,8 @@ export function PublicationPostsList({
                     inList={inList ?? true}
                     href={disableLinks ? undefined : docUrl}
                     membersOnly={post.membersOnly}
+                    publicationUri={publication.uri}
+                    gatePolicy={gatePolicy}
                     title={doc_record.title}
                     author={authorByUri.get(post.uri)}
                     date={date}
@@ -242,6 +236,8 @@ export function PublicationPostsList({
                   inList={inList ?? true}
                   href={disableLinks ? undefined : docUrl}
                   membersOnly={post.membersOnly}
+                  publicationUri={publication.uri}
+                  gatePolicy={gatePolicy}
                   title={doc_record.title}
                   description={
                     doc_record.description || getFirstParagraph(doc_record)

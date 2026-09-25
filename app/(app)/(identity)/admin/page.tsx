@@ -70,7 +70,19 @@ export default async function AdminPage() {
 
   return (
     <>
-      <div className="w-full max-w-2xl mx-auto px-4 pt-8 -mb-8 flex justify-end">
+      <div className="w-full max-w-2xl mx-auto px-4 pt-8 -mb-8 flex justify-end gap-4">
+        <Link
+          href="/admin/active-users"
+          className="text-sm text-accent-contrast hover:underline"
+        >
+          Active users →
+        </Link>
+        <Link
+          href="/admin/import"
+          className="text-sm text-accent-contrast hover:underline"
+        >
+          Import posts →
+        </Link>
         <Link
           href="/admin/import-subscribers"
           className="text-sm text-accent-contrast hover:underline"

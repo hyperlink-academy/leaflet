@@ -61,6 +61,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let [lightbox, setLightbox] = useState<{
     ids: string[];
     index: number;
+    altExpanded?: boolean;
   } | null>(null);
 
   // Writers select the block first; a second click on the image opens the
@@ -68,7 +69,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let canOpenLightbox =
     !props.preview && (!entity_set.permissions.write || !!isSelected);
 
-  let openLightbox = () => {
+  let openLightbox = (opts?: { altExpanded?: boolean }) => {
     let ids = rep ? getPostImageEntities(rep, props.parent) : [];
     let index = ids.indexOf(props.entityID);
     // Fall back to just this image if it isn't in the gathered list (e.g. on the
@@ -77,7 +78,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       ids = [props.entityID];
       index = 0;
     }
-    setLightbox({ ids, index });
+    setLightbox({ ids, index, altExpanded: opts?.altExpanded });
   };
 
   let nextIsFullBleed = useEntity(
@@ -258,6 +259,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
         <ImageGalleryLightbox
           count={lightbox?.ids.length ?? 0}
           index={lightbox?.index ?? null}
+          altExpanded={lightbox?.altExpanded}
           onIndexChange={(i) => {
             if (i === null) setLightbox(null);
           }}
@@ -271,6 +273,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
           entityID={props.entityID}
           selected={!!isSelected}
           canEdit={entity_set.permissions.write}
+          onSeeMore={() => openLightbox({ altExpanded: true })}
         />
       ) : null}
     </BlockLayout>

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { decodeQuotePosition } from "src/utils/quotePosition";
 import PostPage, {
-  generateMetadata,
+  generateMetadata as postMetadata,
 } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/page";
 
 // On-demand ISR: rendered on first request, then served from the CDN and
@@ -15,7 +15,13 @@ export async function generateStaticParams() {
   return [];
 }
 
-export { generateMetadata } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/page";
+// Quote-share URLs duplicate the post page; the canonical inherited from the
+// post's metadata consolidates them (and any links they earn) into the post.
+export async function generateMetadata(props: {
+  params: Promise<{ publication: string; did: string; rkey: string }>;
+}) {
+  return await postMetadata(props);
+}
 export default async function Post(props: {
   params: Promise<{
     publication: string;

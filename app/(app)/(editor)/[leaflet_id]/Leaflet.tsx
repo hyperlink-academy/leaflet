@@ -15,10 +15,12 @@ import { WelcomeModal } from "./WelcomeModal";
 import { AddToHomeEffect } from "./AddToHomeEffect";
 import { EditorCommentSelectionPopover } from "components/EditorComments/EditorCommentSelectionPopover";
 import { FindReplace } from "components/FindReplace";
+import { FoldStateProvider } from "components/FoldStateProvider";
 
 export function Leaflet(props: {
   token: PermissionToken;
   initialFacts: Fact<Attribute>[];
+  viewerDid?: string | null;
   leaflet_id: string;
   initialHeadingFontId?: string;
   initialBodyFontId?: string;
@@ -33,26 +35,28 @@ export function Leaflet(props: {
       <EntitySetProvider
         set={props.token.permission_token_rights[0].entity_set}
       >
-        <ThemeProvider
-          entityID={props.leaflet_id}
-          initialHeadingFontId={props.initialHeadingFontId}
-          initialBodyFontId={props.initialBodyFontId}
-        >
-          <ThemeBackgroundProvider entityID={props.leaflet_id}>
-            <UpdateLeafletTitle entityID={props.leaflet_id} />
-            <WelcomeModal />
-            <AddToHomeEffect />
-            <SelectionManager />
-            <FindReplace />
-            {/* we need the padding bottom here because if we don't have it the mobile footer will cut off...
+        <FoldStateProvider serverDid={props.viewerDid}>
+          <ThemeProvider
+            entityID={props.leaflet_id}
+            initialHeadingFontId={props.initialHeadingFontId}
+            initialBodyFontId={props.initialBodyFontId}
+          >
+            <ThemeBackgroundProvider entityID={props.leaflet_id}>
+              <UpdateLeafletTitle entityID={props.leaflet_id} />
+              <WelcomeModal />
+              <AddToHomeEffect />
+              <SelectionManager />
+              <FindReplace />
+              {/* we need the padding bottom here because if we don't have it the mobile footer will cut off...
             the dropshadow on the page... the padding is compensated by a negative top margin in mobile footer  */}
-            <LeafletLayout className="!pb-[64px] sm:!pb-6">
-              <Pages rootPage={props.leaflet_id} />
-            </LeafletLayout>
-            <EditorCommentSelectionPopover />
-            <LeafletFooter entityID={props.leaflet_id} />
-          </ThemeBackgroundProvider>
-        </ThemeProvider>
+              <LeafletLayout className="!pb-[64px] sm:!pb-6">
+                <Pages rootPage={props.leaflet_id} />
+              </LeafletLayout>
+              <EditorCommentSelectionPopover />
+              <LeafletFooter entityID={props.leaflet_id} />
+            </ThemeBackgroundProvider>
+          </ThemeProvider>
+        </FoldStateProvider>
       </EntitySetProvider>
     </ReplicacheProvider>
   );

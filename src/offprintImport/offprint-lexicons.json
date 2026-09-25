@@ -1,0 +1,862 @@
+{
+  "app.offprint.block.blockquote": {
+    "main": {
+      "type": "object",
+      "required": [
+        "content"
+      ],
+      "properties": {
+        "content": {
+          "type": "array",
+          "items": {
+            "refs": [
+              "app.offprint.block.text",
+              "app.offprint.block.heading"
+            ],
+            "type": "union"
+          },
+          "description": "Nested content blocks within the blockquote"
+        }
+      }
+    }
+  },
+  "app.offprint.block.blueskyPost": {
+    "main": {
+      "type": "object",
+      "required": [
+        "post"
+      ],
+      "properties": {
+        "post": {
+          "ref": "com.atproto.repo.strongRef",
+          "type": "ref",
+          "description": "Strong reference to the Bluesky post"
+        }
+      }
+    }
+  },
+  "app.offprint.block.bulletList": {
+    "main": {
+      "type": "object",
+      "required": [
+        "children"
+      ],
+      "properties": {
+        "children": {
+          "type": "array",
+          "items": {
+            "ref": "#listItem",
+            "type": "ref"
+          },
+          "description": "List items"
+        }
+      }
+    },
+    "listItem": {
+      "type": "object",
+      "required": [
+        "content"
+      ],
+      "properties": {
+        "content": {
+          "ref": "app.offprint.block.text",
+          "type": "ref",
+          "description": "Text content of the list item"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "ref": "#listItem",
+            "type": "ref"
+          },
+          "description": "Nested list items"
+        }
+      }
+    }
+  },
+  "app.offprint.block.button": {
+    "main": {
+      "type": "object",
+      "required": [
+        "text",
+        "href"
+      ],
+      "properties": {
+        "href": {
+          "type": "string",
+          "format": "uri",
+          "description": "The URL the button links to"
+        },
+        "text": {
+          "type": "string",
+          "description": "The button label text"
+        },
+        "caption": {
+          "type": "string",
+          "description": "Optional caption text displayed above the button"
+        },
+        "alignment": {
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "type": "string",
+          "description": "Horizontal alignment"
+        }
+      }
+    }
+  },
+  "app.offprint.block.callout": {
+    "main": {
+      "type": "object",
+      "required": [
+        "plaintext"
+      ],
+      "properties": {
+        "color": {
+          "type": "string",
+          "description": "Background color (CSS color value)"
+        },
+        "emoji": {
+          "type": "string",
+          "default": "💡",
+          "description": "Emoji icon for the callout"
+        },
+        "facets": {
+          "type": "array",
+          "items": {
+            "ref": "app.offprint.richtext.facet",
+            "type": "ref"
+          },
+          "description": "Facets for text formatting"
+        },
+        "plaintext": {
+          "type": "string",
+          "description": "The callout text content"
+        }
+      }
+    }
+  },
+  "app.offprint.block.codeBlock": {
+    "main": {
+      "type": "object",
+      "required": [
+        "code"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "The code content"
+        },
+        "language": {
+          "type": "string",
+          "description": "Programming language for syntax highlighting"
+        },
+        "showLineNumbers": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to display line numbers"
+        }
+      }
+    }
+  },
+  "app.offprint.block.component": {
+    "main": {
+      "type": "object",
+      "required": [
+        "component"
+      ],
+      "properties": {
+        "component": {
+          "type": "string",
+          "format": "at-uri",
+          "description": "AT-URI of the `app.offprint.component` to inline. Referenced by URI (not a strongRef) so edits to the component cascade to every document that embeds it."
+        }
+      }
+    }
+  },
+  "app.offprint.block.heading": {
+    "main": {
+      "type": "object",
+      "required": [
+        "plaintext",
+        "level"
+      ],
+      "properties": {
+        "level": {
+          "type": "integer",
+          "maximum": 3,
+          "minimum": 1,
+          "required": true,
+          "description": "Heading level (1-3)"
+        },
+        "facets": {
+          "type": "array",
+          "items": {
+            "ref": "app.offprint.richtext.facet",
+            "type": "ref"
+          },
+          "description": "Facets for text formatting"
+        },
+        "plaintext": {
+          "type": "string",
+          "required": true,
+          "description": "The heading text content"
+        },
+        "textAlign": {
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "type": "string",
+          "description": "Text alignment"
+        }
+      }
+    }
+  },
+  "app.offprint.block.horizontalRule": {
+    "main": {
+      "type": "object",
+      "properties": []
+    }
+  },
+  "app.offprint.block.image": {
+    "main": {
+      "type": "object",
+      "properties": {
+        "alt": {
+          "type": "string",
+          "description": "Alt text for accessibility",
+          "maxGraphemes": 2000
+        },
+        "image": {
+          "type": "blob",
+          "accept": [
+            "image/*"
+          ],
+          "maxSize": 1000000,
+          "description": "The image blob"
+        },
+        "width": {
+          "type": "string",
+          "description": "CSS width value (e.g., \"50%\", \"300px\")"
+        },
+        "caption": {
+          "type": "string",
+          "description": "Image caption"
+        },
+        "alignment": {
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "type": "string",
+          "description": "Horizontal alignment"
+        },
+        "aspectRatio": {
+          "ref": "#aspectRatio",
+          "type": "ref"
+        },
+        "captionFacets": {
+          "type": "array",
+          "items": {
+            "ref": "app.offprint.richtext.facet",
+            "type": "ref"
+          },
+          "description": "Facets for caption formatting"
+        }
+      }
+    },
+    "aspectRatio": {
+      "type": "object",
+      "required": [
+        "width",
+        "height"
+      ],
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  },
+  "app.offprint.block.imageCarousel": {
+    "main": {
+      "type": "object",
+      "required": [
+        "images"
+      ],
+      "properties": {
+        "images": {
+          "type": "array",
+          "items": {
+            "ref": "app.offprint.block.imageGrid#gridImage",
+            "type": "ref"
+          },
+          "maxLength": 6,
+          "minLength": 2,
+          "description": "Array of images in the carousel (2-6)"
+        },
+        "caption": {
+          "type": "string",
+          "description": "Carousel caption"
+        }
+      }
+    }
+  },
+  "app.offprint.block.imageDiff": {
+    "main": {
+      "type": "object",
+      "required": [
+        "images"
+      ],
+      "properties": {
+        "width": {
+          "type": "string",
+          "description": "CSS width value"
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "ref": "app.offprint.block.imageGrid#gridImage",
+            "type": "ref"
+          },
+          "maxLength": 2,
+          "minLength": 2,
+          "description": "Exactly 2 images for comparison [before, after]"
+        },
+        "caption": {
+          "type": "string",
+          "description": "Comparison caption"
+        },
+        "alignment": {
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "type": "string",
+          "description": "Horizontal alignment"
+        }
+      }
+    }
+  },
+  "app.offprint.block.imageGrid": {
+    "main": {
+      "type": "object",
+      "required": [
+        "images"
+      ],
+      "properties": {
+        "images": {
+          "type": "array",
+          "items": {
+            "ref": "#gridImage",
+            "type": "ref"
+          },
+          "required": true,
+          "maxLength": 6,
+          "minLength": 2,
+          "description": "Array of images in the grid (2-6)"
+        },
+        "caption": {
+          "type": "string",
+          "description": "Grid caption"
+        },
+        "gridRows": {
+          "type": "integer",
+          "maximum": 2,
+          "minimum": 1,
+          "description": "Number of rows in the grid"
+        },
+        "aspectRatio": {
+          "enum": [
+            "landscape",
+            "portrait",
+            "square",
+            "mosaic"
+          ],
+          "type": "string",
+          "description": "Aspect ratio mode"
+        }
+      }
+    },
+    "gridImage": {
+      "type": "object",
+      "properties": {
+        "alt": {
+          "type": "string",
+          "maxGraphemes": 300
+        },
+        "blob": {
+          "type": "blob",
+          "accept": [
+            "image/*"
+          ],
+          "maxSize": 1000000
+        },
+        "aspectRatio": {
+          "ref": "app.offprint.block.image#aspectRatio",
+          "type": "ref"
+        }
+      }
+    }
+  },
+  "app.offprint.block.mathBlock": {
+    "main": {
+      "type": "object",
+      "required": [
+        "tex"
+      ],
+      "properties": {
+        "tex": {
+          "type": "string",
+          "description": "LaTeX/TeX source for the equation"
+        }
+      }
+    }
+  },
+  "app.offprint.block.orderedList": {
+    "main": {
+      "type": "object",
+      "required": [
+        "children"
+      ],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "default": 1,
+          "description": "Starting number for the list"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "ref": "#listItem",
+            "type": "ref"
+          },
+          "description": "List items"
+        }
+      }
+    },
+    "listItem": {
+      "type": "object",
+      "required": [
+        "content"
+      ],
+      "properties": {
+        "content": {
+          "ref": "app.offprint.block.text",
+          "type": "ref",
+          "description": "Text content of the list item"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "ref": "#listItem",
+            "type": "ref"
+          },
+          "description": "Nested list items"
+        }
+      }
+    }
+  },
+  "app.offprint.block.taskList": {
+    "main": {
+      "type": "object",
+      "required": [
+        "children"
+      ],
+      "properties": {
+        "children": {
+          "type": "array",
+          "items": {
+            "ref": "#taskItem",
+            "type": "ref"
+          },
+          "required": true,
+          "description": "Task items"
+        }
+      }
+    },
+    "taskItem": {
+      "type": "object",
+      "required": [
+        "content",
+        "checked"
+      ],
+      "properties": {
+        "checked": {
+          "type": "boolean",
+          "required": true,
+          "description": "Whether the task is completed"
+        },
+        "content": {
+          "ref": "app.offprint.block.text",
+          "type": "ref",
+          "required": true,
+          "description": "Text content of the task item"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "ref": "#taskItem",
+            "type": "ref"
+          },
+          "description": "Nested task items"
+        }
+      }
+    }
+  },
+  "app.offprint.block.text": {
+    "main": {
+      "type": "object",
+      "required": [
+        "plaintext"
+      ],
+      "properties": {
+        "facets": {
+          "type": "array",
+          "items": {
+            "ref": "app.offprint.richtext.facet",
+            "type": "ref"
+          },
+          "description": "Facets for text formatting"
+        },
+        "plaintext": {
+          "type": "string",
+          "description": "The plain text content"
+        },
+        "textAlign": {
+          "enum": [
+            "left",
+            "center",
+            "right",
+            "justify"
+          ],
+          "type": "string",
+          "description": "Text alignment"
+        }
+      }
+    }
+  },
+  "app.offprint.block.webBookmark": {
+    "main": {
+      "type": "object",
+      "required": [
+        "href",
+        "title"
+      ],
+      "properties": {
+        "href": {
+          "type": "string",
+          "format": "uri",
+          "description": "The URL of the bookmarked page"
+        },
+        "title": {
+          "type": "string",
+          "description": "Page title",
+          "maxGraphemes": 300
+        },
+        "preview": {
+          "type": "blob",
+          "accept": [
+            "image/*"
+          ],
+          "maxSize": 1000000,
+          "description": "Open Graph image for the page"
+        },
+        "siteName": {
+          "type": "string",
+          "description": "Name of the website",
+          "maxGraphemes": 100
+        },
+        "description": {
+          "type": "string",
+          "description": "Page description/excerpt",
+          "maxGraphemes": 1000
+        }
+      }
+    }
+  },
+  "app.offprint.block.webEmbed": {
+    "main": {
+      "type": "object",
+      "required": [
+        "href"
+      ],
+      "properties": {
+        "href": {
+          "type": "string",
+          "format": "uri",
+          "required": true,
+          "description": "The URL of the embedded page"
+        },
+        "title": {
+          "type": "string",
+          "description": "Page title",
+          "maxGraphemes": 300
+        },
+        "width": {
+          "type": "string",
+          "description": "CSS width value (e.g., \"100%\", \"75%\". \"50%\" minimum)"
+        },
+        "preview": {
+          "type": "blob",
+          "accept": [
+            "image/*"
+          ],
+          "maxSize": 1000000,
+          "description": "Screenshot of the embedded content (1280×720px)"
+        },
+        "embedUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "oEmbed URL for iframe embedding"
+        },
+        "siteName": {
+          "type": "string",
+          "description": "Name of the website",
+          "maxGraphemes": 100
+        },
+        "alignment": {
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "type": "string",
+          "description": "Horizontal alignment"
+        },
+        "embedWidth": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Native embed width in pixels"
+        },
+        "description": {
+          "type": "string",
+          "description": "Page description/excerpt",
+          "maxGraphemes": 1000
+        },
+        "embedHeight": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Native embed height in pixels"
+        }
+      }
+    }
+  },
+  "app.offprint.component": {
+    "main": {
+      "key": "tid",
+      "type": "record",
+      "record": {
+        "type": "object",
+        "required": [
+          "publication",
+          "name",
+          "content"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Label to identify this component in the dashboard (e.g. \"Newsletter footer\").",
+            "maxGraphemes": 200
+          },
+          "content": {
+            "ref": "app.offprint.content",
+            "type": "ref",
+            "description": "Component body. Same block format as documents."
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "Last edit timestamp."
+          },
+          "publication": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "Required AT-URI to the `site.standard.publication` this component belongs to."
+          }
+        }
+      }
+    }
+  },
+  "app.offprint.content": {
+    "main": {
+      "type": "object",
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "refs": [
+              "app.offprint.block.text",
+              "app.offprint.block.heading",
+              "app.offprint.block.blockquote",
+              "app.offprint.block.callout",
+              "app.offprint.block.bulletList",
+              "app.offprint.block.orderedList",
+              "app.offprint.block.taskList",
+              "app.offprint.block.codeBlock",
+              "app.offprint.block.horizontalRule",
+              "app.offprint.block.image",
+              "app.offprint.block.imageGrid",
+              "app.offprint.block.imageCarousel",
+              "app.offprint.block.imageDiff",
+              "app.offprint.block.webBookmark",
+              "app.offprint.block.webEmbed",
+              "app.offprint.block.button",
+              "app.offprint.block.mathBlock",
+              "app.offprint.block.blueskyPost"
+            ],
+            "type": "union"
+          },
+          "description": "Array of content blocks"
+        }
+      }
+    }
+  },
+  "app.offprint.richtext.facet": {
+    "bold": {
+      "type": "object",
+      "properties": []
+    },
+    "code": {
+      "type": "object",
+      "properties": []
+    },
+    "link": {
+      "type": "object",
+      "required": [
+        "uri"
+      ],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "main": {
+      "type": "object",
+      "required": [
+        "index",
+        "features"
+      ],
+      "properties": {
+        "index": {
+          "ref": "#byteSlice",
+          "type": "ref"
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "refs": [
+              "#bold",
+              "#italic",
+              "#underline",
+              "#strikethrough",
+              "#code",
+              "#highlight",
+              "#link",
+              "#mention",
+              "#webMention"
+            ],
+            "type": "union"
+          }
+        }
+      }
+    },
+    "italic": {
+      "type": "object",
+      "properties": []
+    },
+    "mention": {
+      "type": "object",
+      "required": [
+        "did"
+      ],
+      "properties": {
+        "did": {
+          "type": "string",
+          "format": "did"
+        },
+        "handle": {
+          "type": "string",
+          "format": "handle",
+          "description": "Optional cached handle for display"
+        }
+      }
+    },
+    "byteSlice": {
+      "type": "object",
+      "required": [
+        "byteStart",
+        "byteEnd"
+      ],
+      "properties": {
+        "byteEnd": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "End index (exclusive), zero-indexed byte offset in UTF-8 encoded text."
+        },
+        "byteStart": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Start index (inclusive), zero-indexed byte offset in UTF-8 encoded text."
+        }
+      }
+    },
+    "highlight": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "type": "string",
+          "description": "Optional highlight color (hex or CSS color)"
+        }
+      }
+    },
+    "underline": {
+      "type": "object",
+      "properties": []
+    },
+    "webMention": {
+      "type": "object",
+      "required": [
+        "uri",
+        "title"
+      ],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "format": "uri",
+          "description": "The URL being mentioned"
+        },
+        "title": {
+          "type": "string",
+          "description": "Page title for display",
+          "maxGraphemes": 100
+        },
+        "siteName": {
+          "type": "string",
+          "description": "Name of the website",
+          "maxGraphemes": 50
+        }
+      }
+    },
+    "strikethrough": {
+      "type": "object",
+      "properties": []
+    }
+  }
+}

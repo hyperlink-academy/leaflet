@@ -28,7 +28,10 @@ import { mergePreferences } from "src/utils/mergePreferences";
 import { DraftContributorSelector } from "./DraftContributorSelector";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 
-export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
+export const PublicationMetadata = (props: {
+  noInteractions?: boolean;
+  compact?: boolean;
+}) => {
   let { rep, permission_token } = useReplicache();
   let leaflet_id = permission_token.id;
   let {
@@ -66,6 +69,7 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
 
   return (
     <PostHeaderLayout
+      compact={props.compact}
       pubLink={
         <div className="flex gap-2 items-center">
           {pub.publications && (
@@ -99,17 +103,19 @@ export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
         />
       }
       postDescription={
-        <TextField
-          placeholder="add an optional description…"
-          className=""
-          value={description}
-          onChange={async (newDescription) => {
-            await rep?.mutate.updatePublicationDraft({
-              title,
-              description: newDescription,
-            });
-          }}
-        />
+        props.compact ? undefined : (
+          <TextField
+            placeholder="add an optional description…"
+            className=""
+            value={description}
+            onChange={async (newDescription) => {
+              await rep?.mutate.updatePublicationDraft({
+                title,
+                description: newDescription,
+              });
+            }}
+          />
+        )
       }
       postInfo={
         <>
@@ -250,7 +256,7 @@ const TextField = ({
   );
 };
 
-export const PublicationMetadataPreview = () => {
+export const PublicationMetadataPreview = (props: { compact?: boolean }) => {
   let { data: pub, normalizedDocument } = useLeafletPublicationData();
   let publishedAt = normalizedDocument?.publishedAt;
 
@@ -258,13 +264,14 @@ export const PublicationMetadataPreview = () => {
 
   return (
     <PostHeaderLayout
+      compact={props.compact}
       pubLink={
         <div className="text-accent-contrast font-bold hover:no-underline">
           {pub.publications?.name}
         </div>
       }
       postTitle={pub.title}
-      postDescription={pub.description}
+      postDescription={props.compact ? undefined : pub.description}
       postInfo={
         pub.doc ? (
           <p>Published {publishedAt && timeAgo(publishedAt)}</p>

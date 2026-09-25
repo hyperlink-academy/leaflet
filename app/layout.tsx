@@ -6,6 +6,8 @@ import "./globals.css";
 import localFont from "next/font/local";
 import { PopUpProvider } from "components/Toast";
 import { StaleClientNotice } from "components/Blocks/TextBlock/schemaVersion";
+import { TrackPageView } from "components/TrackPageView";
+import { PrintPrep } from "components/PrintPrep";
 
 export const metadata = {
   title: "Leaflet",
@@ -13,6 +15,9 @@ export const metadata = {
   metadataBase: new URL(`https://leaflet.pub`),
   openGraph: {
     images: ["/open-graph.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
   },
   appleWebApp: {
     title: "Leaflet",
@@ -70,7 +75,9 @@ export default function RootLayout({
           }}
         />
         <Analytics />
+        <TrackPageView />
         <ServiceWorker />
+        <PrintPrep />
         <InitialPageLoad>
           <PopUpProvider>
             <StaleClientNotice />

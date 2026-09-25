@@ -6,7 +6,10 @@ import { supabaseServerClient } from "supabase/serverClient";
 import {
   recordEmailSubscription,
   checkEmailSubscriptionAllowed,
-} from "src/emailSubscription";
+  disableEmailSubscription,
+  upsertSubscriber,
+  onEmailSubscriptionConfirmed,
+} from "src/subscriptions/email";
 import { PubConfirmEmail } from "emails/pubConfirmEmail";
 import { Ok, Err, type Result } from "src/result";
 import {
@@ -16,18 +19,15 @@ import {
   sendConfirmationEmail,
   type ConfirmationError,
 } from "src/utils/confirmationEmail";
+import { backfillAtprotoSubscriptionsForIdentity } from "src/subscriptions/atproto";
 import {
-  backfillAtprotoSubscriptionsForIdentity,
-  publishAtprotoSubscriptionForDid,
-  unsubscribeToPublication,
-} from "actions/publications/subscribeToPublication";
-import type { OAuthSessionError } from "src/atproto-oauth";
+  fullUnsubscribe,
+  type FullUnsubscribeError,
+} from "src/subscriptions/unsubscribe";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscribers";
 import { blobRefToSrc, EMAIL_ICON_TRANSFORM } from "src/utils/blobRefToSrc";
 import { AtUri } from "@atproto/api";
-import { after } from "next/server";
-import { trackSubscriptionEvent } from "src/subscriptionAnalytics";
 import {
   sanitizeSubscriptionSource,
   type SubscriptionSource,
@@ -45,11 +45,7 @@ type ConfirmError =
   | "link_invalid_state"
   | "email_belongs_to_other_account"
   | ConfirmationError;
-type UnsubscribeError =
-  | "unauthorized"
-  | "not_subscribed"
-  | "database_error"
-  | OAuthSessionError;
+type UnsubscribeError = "unauthorized" | FullUnsubscribeError;
 
 export async function requestPublicationEmailSubscription(
   publicationUri: string,
@@ -95,54 +91,16 @@ export async function requestPublicationEmailSubscription(
     return Ok({ confirmed: true });
   }
 
-  // A previous `unsubscribed` row makes the first event `resubscribed`.
   const pendingCode = generateConfirmationCode();
-  const { data: existing } = await supabaseServerClient
-    .from("publication_email_subscribers")
-    .select("state")
-    .eq("publication", publicationUri)
-    .eq("email", email)
-    .maybeSingle();
-  const wasUnsubscribed = existing?.state === "unsubscribed";
-
-  const { data: subscriber, error } = await supabaseServerClient
-    .from("publication_email_subscribers")
-    .upsert(
-      {
-        publication: publicationUri,
-        email,
-        identity_id: identity?.id ?? null,
-        state: "pending",
-        confirmation_code: pendingCode,
-        unsubscribed_at: null,
-      },
-      { onConflict: "publication,email" },
-    )
-    .select("id")
-    .single();
-  if (error || !subscriber) {
-    console.error("[subscribeEmail] upsert subscriber failed:", error);
-    return Err("database_error");
-  }
-
-  const { error: eventsError } = await supabaseServerClient
-    .from("publication_email_subscriber_events")
-    .insert([
-      {
-        subscriber: subscriber.id,
-        publication: publicationUri,
-        event_type: wasUnsubscribed ? "resubscribed" : "subscribe_requested",
-      },
-      {
-        subscriber: subscriber.id,
-        publication: publicationUri,
-        event_type: "confirmation_sent",
-      },
-    ]);
-  if (eventsError) {
-    console.error("[subscribeEmail] insert events failed:", eventsError);
-    return Err("database_error");
-  }
+  const upserted = await upsertSubscriber({
+    publicationUri,
+    email,
+    identityId: identity?.id ?? null,
+    state: "pending",
+    confirmationCode: pendingCode,
+    event: "confirmation_sent",
+  });
+  if (!upserted.ok) return Err(upserted.error);
 
   const sent = await sendConfirmationEmail({
     to: email,
@@ -221,124 +179,63 @@ export async function confirmPublicationEmailSubscription(
     return Err("database_error");
   }
 
-  const { data: confirmedIdentity } = await supabaseServerClient
-    .from("identities")
-    .select("atp_did")
-    .eq("id", identityId)
-    .maybeSingle();
-
-  // The atproto mirror below is the same subscription, not a second one — only
-  // the email event is tracked.
-  after(() =>
-    trackSubscriptionEvent({
-      event: "subscribe",
-      method: "email",
-      origin: "app",
-      publicationUri,
-      subscriberDid: confirmedIdentity?.atp_did,
-      subscriberEmail: email,
-      source: sanitizeSubscriptionSource(source),
-    }),
+  await onEmailSubscriptionConfirmed(
+    publicationUri,
+    email,
+    identityId,
+    sanitizeSubscriptionSource(source),
   );
-
-  if (confirmedIdentity?.atp_did) {
-    await publishAtprotoSubscriptionForDid(
-      confirmedIdentity.atp_did,
-      publicationUri,
-    );
-  }
-
   return Ok(null);
 }
 
+// A viewer is "subscribed" if they have an email subscription, an atproto
+// subscription, or a membership (see useViewerSubscription). Unsubscribe
+// clears all of them — except an active paid membership, which the reader must
+// cancel first (or, when it's already set to cancel at period end, confirm
+// forfeiting the remaining time via `cancelPaidImmediately`).
 export async function unsubscribeFromPublication(
   publicationUri: string,
+  opts?: { cancelPaidImmediately?: boolean },
 ): Promise<Result<null, UnsubscribeError>> {
   const identity = await getAuthIdentity();
   if (!identity?.id) return Err("unauthorized");
 
-  // A viewer is "subscribed" if they have EITHER an email subscription OR an
-  // atproto subscription (see useViewerSubscription). Unsubscribe must clear
-  // both — otherwise a user with only an atproto sub hits "not_subscribed"
-  // and a user with both ends up half-unsubscribed.
-  const [{ data: subscribers }, { data: atprotoSub }] = await Promise.all([
-    supabaseServerClient
-      .from("publication_email_subscribers")
-      .select("id, state")
-      .eq("publication", publicationUri)
-      .eq("identity_id", identity.id),
-    identity.atp_did
-      ? supabaseServerClient
-          .from("publication_subscriptions")
-          .select("uri")
-          .eq("identity", identity.atp_did)
-          .eq("publication", publicationUri)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-  ]);
-  // Identity may have multiple matching subscriber rows historically
-  // (different emails tied to the same identity, e.g. a linked address that
-  // predates an email change). Unsubscribe all of them at once — a single
-  // "Unsubscribe" click from this user should stop all future newsletter
-  // mail from this publication.
-  const active = (subscribers ?? []).filter((s) => s.state !== "unsubscribed");
+  return fullUnsubscribe({
+    publication: publicationUri,
+    identity,
+    cancelPaidImmediately: opts?.cancelPaidImmediately,
+    allowStripeCancel: true,
+  });
+}
 
-  if (active.length === 0 && !atprotoSub) {
-    if (subscribers && subscribers.length > 0) return Ok(null); // already unsubscribed; idempotent
-    return Err("not_subscribed");
-  }
+// The email-notifications toggle in the manage-subscription panel. Turning
+// email off only mutes delivery (the atproto record and any membership keep
+// the subscription alive); turning it on runs the resubscribe path with the
+// identity's own email.
+export async function setEmailNotifications(
+  publicationUri: string,
+  enabled: boolean,
+): Promise<
+  Result<
+    null,
+    | "unauthorized"
+    | "no_email"
+    | "database_error"
+    | "newsletter_disabled"
+    | "suppressed_spam_complaint"
+    | "suppression_delete_failed"
+  >
+> {
+  const identity = await getAuthIdentity();
+  if (!identity?.id) return Err("unauthorized");
 
-  if (active.length > 0) {
-    const ids = active.map((s) => s.id);
-    const nowIso = new Date().toISOString();
-    const [{ error: updateError }, { error: eventError }] = await Promise.all([
-      supabaseServerClient
-        .from("publication_email_subscribers")
-        .update({
-          state: "unsubscribed",
-          unsubscribed_at: nowIso,
-          confirmation_code: null,
-        })
-        .in("id", ids),
-      supabaseServerClient.from("publication_email_subscriber_events").insert(
-        active.map((s) => ({
-          subscriber: s.id,
-          publication: publicationUri,
-          event_type: "unsubscribe_requested",
-        })),
-      ),
-    ]);
-    if (updateError || eventError) {
-      console.error(
-        "[subscribeEmail] unsubscribe update/event failed:",
-        updateError ?? eventError,
-      );
-      return Err("database_error");
-    }
-    // The atproto half (if any) is tracked inside unsubscribeToPublication.
-    after(() =>
-      trackSubscriptionEvent({
-        event: "unsubscribe",
-        method: "email",
-        origin: "app",
-        publicationUri,
-        subscriberDid: identity.atp_did,
-        subscriberEmail: identity.email,
-      }),
-    );
-  }
+  if (!enabled) return disableEmailSubscription(publicationUri, identity);
 
-  if (atprotoSub) {
-    const atprotoResult = await unsubscribeToPublication(publicationUri);
-    if (!atprotoResult.success) return Err(atprotoResult.error);
-  }
-
-  // NOTE: Postmark Suppressions API is deliberately NOT called here. Per spec,
-  // in-app unsubscribes only flip local state — this prevents a Pub A
-  // unsubscribe from silently breaking Pub B deliveries on the shared broadcast
-  // stream. Phase 7 handles webhook-driven suppression reconciliation.
-
-  return Ok(null);
+  const email = identity.email?.toLowerCase();
+  if (!email) return Err("no_email");
+  const allowed = await checkEmailSubscriptionAllowed(publicationUri, email);
+  if (!allowed.ok) return Err(allowed.error);
+  return recordEmailSubscription(publicationUri, email, identity.id);
 }
 
 // Confirms an email subscription where the user has already chosen to link

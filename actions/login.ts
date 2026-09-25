@@ -12,6 +12,7 @@ import { redirect } from "next/navigation";
 import { pool } from "supabase/pool";
 import { supabaseServerClient } from "supabase/serverClient";
 import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscribers";
+import { trackUserEvent } from "src/activeUserAnalytics";
 
 export async function loginWithEmailToken(
   localLeaflets: { token: { id: string }; added_at: string }[],
@@ -82,6 +83,10 @@ export async function loginWithEmailToken(
           .single();
         identity = newIdentity!;
         newlyOwnedEmail = true;
+        trackUserEvent({ id: identity.id }, "signup", {
+          method: "email",
+          source: "",
+        });
       }
     }
 

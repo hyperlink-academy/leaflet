@@ -2,27 +2,21 @@
 import { buildOauthLoginUrl } from "src/utils/customDomain";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { Popover } from "components/Popover";
-import Link from "next/link";
 import { useState } from "react";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { subscribeToPublication } from "actions/publications/subscribeToPublication";
 import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
 import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
-import type { OAuthSessionError } from "src/atproto-oauth";
 import { HandleSearchInput } from "components/HandleSearchInput";
 import { Avatar } from "components/Avatar";
-import {
-  useIdentityData,
-  refreshIdentityData,
-} from "components/IdentityProvider";
+import { useIdentityData } from "components/IdentityProvider";
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { LinkIdentityModal } from "./LinkIdentityModal";
+import { markLocallySubscribed } from "./viewerSubscription";
 import { RSSTiny } from "components/Icons/RSSTiny";
 import { Tooltip } from "components/Tooltip";
 import { SubscribeButtonModeMenu } from "./SubscribeButton";
-import { RecommendedPublications } from "./RecommendedPublications";
-import { useSubscribeSuccessData } from "./useSubscribeSuccessData";
 import type { SubscriptionSource } from "src/subscriptionSource";
 const apps = [
   { name: "Leaflet", logo: "https://leaflet.pub/logos/leaflet.svg" },
@@ -65,7 +59,6 @@ export const SubscribeWithHandle = (props: {
   publicationUri: string;
   publicationUrl?: string;
   source?: SubscriptionSource;
-  onSubscribed?: () => void;
   onAtSuccess?: () => void;
   leading?: React.ReactNode;
   user: {
@@ -79,7 +72,6 @@ export const SubscribeWithHandle = (props: {
   let { data: record } = useRecordFromDid(identity?.atp_did);
   let [loading, setLoading] = useState(false);
   let [subscribing, setSubscribing] = useState(false);
-  let [oauthError, setOauthError] = useState<OAuthSessionError | null>(null);
   // When an email-only user subscribes via the atproto flow, we surface a
   // confirmation modal first ("link Bluesky to your account?") so they can't
   // accidentally orphan their email account.
@@ -135,14 +127,20 @@ export const SubscribeWithHandle = (props: {
     const subscribeAtproto = async () => {
       if (subscribing) return;
       setSubscribing(true);
-      setOauthError(null);
       let result = await subscribeToPublication(
         props.publicationUri,
         window.location.href,
         props.source,
       );
       if (!result.success) {
-        if (isOAuthSessionError(result.error)) setOauthError(result.error);
+        toaster({
+          type: "error",
+          content: isOAuthSessionError(result.error) ? (
+            <OAuthErrorMessage error={result.error} />
+          ) : (
+            "We couldn't subscribe you. Try again."
+          ),
+        });
         setSubscribing(false);
         return;
       }
@@ -154,11 +152,7 @@ export const SubscribeWithHandle = (props: {
           type: "success",
         });
       }
-      props.onSubscribed?.();
-      // onSubscribed only flips this instance's local state; the subscription
-      // now on the identity is what every other SubscribeButton on the page
-      // reads, and on a published page nothing else will refetch it.
-      refreshIdentityData();
+      markLocallySubscribed(props.publicationUri, "atproto");
       setSubscribing(false);
     };
     let subscribeButton = (
@@ -176,7 +170,7 @@ export const SubscribeWithHandle = (props: {
         onClick={subscribeAtproto}
       >
         {subscribing ? (
-          <DotLoader />
+          <DotLoader className="h-auto!" />
         ) : (
           <>
             {avatar}
@@ -193,61 +187,53 @@ export const SubscribeWithHandle = (props: {
       </ButtonPrimary>
     );
     return (
-      <div className="flex flex-col gap-2 w-fit max-w-full min-w-0">
-        <div className="flex items-stretch gap-1 min-w-0">
-          <div
-            className={`flex grow min-w-0 ${props.compact ? "group rounded-md outline-2 outline-transparent outline-offset-1 hover:outline-accent-1 focus-within:outline-accent-1 shrink-0" : ""}`}
-          >
-            {props.leading && (
-              <div className="shrink-0 flex items-center">{props.leading}</div>
-            )}
-            {props.compact && tooltipLabel ? (
-              <Tooltip
-                asChild
-                delayDuration={0}
-                side="top"
-                trigger={subscribeButton}
-                className="text-sm p-1! text-tertiary"
-              >
-                {tooltipLabel}
-              </Tooltip>
-            ) : (
-              subscribeButton
-            )}
-            {props.compact && (
-              <SubscribeButtonModeMenu
-                disabled={subscribing}
-                publicationUrl={props.publicationUrl}
-                accounts={[
-                  {
-                    value: "atproto",
-                    label: `@${props.user.handle}`,
-                    icon: avatar,
-                    selected: true,
-                    onSelect: subscribeAtproto,
-                  },
-                ]}
-              />
-            )}
-          </div>
-          {!props.compact && (
-            <a
-              href={`${props.publicationUrl}/rss`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`no-underline shrink-0 ${props.compact ? "w-6" : "w-7"}`}
+      <div className="flex items-stretch gap-1 w-fit max-w-full min-w-0">
+        <div
+          className={`flex grow min-w-0 max-w-full ${props.compact ? "group rounded-md outline-2 outline-transparent outline-offset-1 hover:outline-accent-1 focus-within:outline-accent-1 shrink-0" : ""}`}
+        >
+          {props.leading && (
+            <div className="shrink-0 flex items-center">{props.leading}</div>
+          )}
+          {props.compact && tooltipLabel ? (
+            <Tooltip
+              asChild
+              delayDuration={0}
+              side="top"
+              trigger={subscribeButton}
+              className="text-sm p-1! text-tertiary"
             >
-              <ButtonPrimary className="h-full! w-auto! py-0! px-0! aspect-square">
-                <RSSTiny />
-              </ButtonPrimary>
-            </a>
+              {tooltipLabel}
+            </Tooltip>
+          ) : (
+            subscribeButton
+          )}
+          {props.compact && (
+            <SubscribeButtonModeMenu
+              disabled={subscribing}
+              publicationUrl={props.publicationUrl}
+              accounts={[
+                {
+                  value: "atproto",
+                  label: `@${props.user.handle}`,
+                  icon: avatar,
+                  selected: true,
+                  onSelect: subscribeAtproto,
+                },
+              ]}
+            />
           )}
         </div>
-        {oauthError && (
-          <OAuthErrorMessage
-            error={oauthError}
-            className="text-center text-sm text-accent-1"
-          />
+        {!props.compact && (
+          <a
+            href={`${props.publicationUrl}/rss`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`no-underline shrink-0 ${props.compact ? "w-6" : "w-7"}`}
+          >
+            <ButtonPrimary className="h-full! w-auto! py-0! px-0! aspect-square">
+              <RSSTiny />
+            </ButtonPrimary>
+          </a>
         )}
       </div>
     );
@@ -349,44 +335,6 @@ export const LinkHandle = (props: { compact?: boolean }) => {
           }
         />
       </div>
-    </div>
-  );
-};
-
-export const AtSubscribeSuccess = (props: { publicationUri?: string }) => {
-  let { loading, publicationName, listings } = useSubscribeSuccessData(
-    props.publicationUri,
-  );
-  if (loading)
-    return (
-      <div className="flex justify-center items-center py-8 text-secondary w-full max-w-full sm:min-w-md">
-        <DotLoader />
-      </div>
-    );
-  return (
-    <div className="flex flex-col text-center justify-center p-4 text-secondary w-full max-w-full sm:w-auto sm:min-w-md sm:max-w-2xl">
-      <h2 className="text-primary pb-1">
-        {publicationName
-          ? `You've subscribed to ${publicationName}!`
-          : "You've Subscribed!"}
-      </h2>
-      You'll receive new posts in the <br />
-      <Link href={"https://leaflet.pub/reader"}>Leaflet Reader</Link>
-      <br />
-      <span className="text-tertiary text-sm">
-        or any standard.site enabled reader!
-      </span>
-      <hr className="my-4 border-border-light" />
-      <div className="flex flex-col">
-        <h4>Other ways to follow</h4>
-        <Link href="">Get the RSS Feed</Link>
-        <Link href="">Pin Custom Feed in Bluesky</Link>
-      </div>
-      <RecommendedPublications
-        publicationName={publicationName}
-        recommendingPublicationUri={props.publicationUri}
-        listings={listings}
-      />
     </div>
   );
 };

@@ -1,9 +1,8 @@
 import { BlockProps, BlockLayout } from "../Block";
 import { useEntity, useReplicache } from "src/replicache";
-import { useIsBlockSelected, useUIState } from "src/useUIState";
-import { Popover } from "components/Popover";
-import { Toggle } from "components/Toggle";
-import { SettingsTriggerButton } from "../SettingsTriggerButton";
+import { useIsBlockSelected } from "src/useUIState";
+import { ToggleWithLabel } from "components/Toggle";
+import { BlockSettings } from "../SettingsTriggerButton";
 import {
   StandardSitePublicationItem,
   StandardSitePublicationItemPlaceholder,
@@ -83,38 +82,21 @@ function StandardSitePublicationSettingsButton(props: { entityID: string }) {
     "standard-site-publication/show-publication-theme",
   );
   let showPubTheme = showPubThemeFact?.data.value !== false;
-  let popoverKey = `${props.entityID}-settings`;
-  let setOpenPopover = useUIState((s) => s.setOpenPopover);
-  let isOpen = useUIState((s) => s.openPopover === popoverKey);
 
   return (
-    <Popover
-      asChild
-      side="top"
-      align="end"
-      className="p-0!"
-      open={isOpen}
-      onOpenChange={(o) => setOpenPopover(o ? popoverKey : null)}
-      onOpenAutoFocus={(e) => e.preventDefault()}
-      trigger={
-        <SettingsTriggerButton aria-label="Standard Site Publication Settings" />
-      }
-    >
-      <div className="flex flex-col gap-2 w-fit pt-1 p-3! overflow-y-auto">
-        <Toggle
-          toggle={showPubTheme}
-          onToggle={() => {
-            if (!rep) return;
-            rep.mutate.assertFact({
-              entity: props.entityID,
-              attribute: "standard-site-publication/show-publication-theme",
-              data: { type: "boolean", value: !showPubTheme },
-            });
-          }}
-        >
-          <div className="font-bold">Use Publication Theme</div>
-        </Toggle>
-      </div>
-    </Popover>
+    <BlockSettings label="Publication">
+      <ToggleWithLabel
+        label="Use Publication Theme"
+        toggle={showPubTheme}
+        onToggle={() => {
+          if (!rep) return;
+          rep.mutate.assertFact({
+            entity: props.entityID,
+            attribute: "standard-site-publication/show-publication-theme",
+            data: { type: "boolean", value: !showPubTheme },
+          });
+        }}
+      />
+    </BlockSettings>
   );
 }

@@ -5,6 +5,7 @@ import { v7 } from "uuid";
 import { prosemirrorToYDoc } from "y-prosemirror";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
+import { isPageLinkDisplay } from "src/utils/pageLinkDisplay";
 import {
   multiBlockSchema,
   schema,
@@ -425,6 +426,14 @@ function buildBlockFromHTML(
           data: { type: "reference", value: newRootID },
         });
       }
+    }
+    const display = child.getAttribute("data-display");
+    if (isPageLinkDisplay(display)) {
+      facts.push({
+        entity: entityID,
+        attribute: "page-link/display",
+        data: { type: "page-link-display-union", value: display },
+      });
     }
   }
 

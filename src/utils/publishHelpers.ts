@@ -46,7 +46,10 @@ export function makePublishUploadHooks(
         } as unknown as BlobRef;
       }
       const data = await fetch(src);
-      if (data.status !== 200) return;
+      if (data.status !== 200) {
+        console.error("[publish] image fetch failed", src, data.status);
+        return;
+      }
       const binary = await data.blob();
       return uploadLock.withLock(async () => {
         const blob = await agent.com.atproto.repo.uploadBlob(binary, {
@@ -146,7 +149,12 @@ export async function extractThemeFromFacts(
           width: Math.floor(backgroundImageRepeat.data.value),
         }),
       };
-    }
+    } else
+      console.error(
+        "[publish] theme background image fetch failed",
+        backgroundImage.data.src,
+        imageData.status,
+      );
   }
 
   if (wordmarkImage?.data) {
@@ -162,8 +170,22 @@ export async function extractThemeFromFacts(
         ...(wordmarkWidth?.data.value && {
           width: Math.floor(wordmarkWidth.data.value),
         }),
+        // Intrinsic dimensions let renderers reserve space before the image
+        // loads, avoiding layout shift.
+        ...(wordmarkImage.data.width &&
+          wordmarkImage.data.height && {
+            aspectRatio: {
+              width: wordmarkImage.data.width,
+              height: wordmarkImage.data.height,
+            },
+          }),
       };
-    }
+    } else
+      console.error(
+        "[publish] wordmark image fetch failed",
+        wordmarkImage.data.src,
+        imageData.status,
+      );
   }
 
   return theme;

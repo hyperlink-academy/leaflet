@@ -90,6 +90,21 @@ export type Database = {
           },
         ]
       }
+      blob_cleanup_queue: {
+        Row: {
+          path: string
+          queued_at: string
+        }
+        Insert: {
+          path: string
+          queued_at?: string
+        }
+        Update: {
+          path?: string
+          queued_at?: string
+        }
+        Relationships: []
+      }
       bsky_follows: {
         Row: {
           follows: string
@@ -170,10 +185,40 @@ export type Database = {
           },
         ]
       }
+      comment_tombstones: {
+        Row: {
+          deleted_at: string
+          document: string | null
+          record: Json
+          uri: string
+        }
+        Insert: {
+          deleted_at?: string
+          document?: string | null
+          record: Json
+          uri: string
+        }
+        Update: {
+          deleted_at?: string
+          document?: string | null
+          record?: Json
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_tombstones_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       comments_on_documents: {
         Row: {
           document: string | null
           indexed_at: string
+          past_versions: Json
           profile: string | null
           record: Json
           uri: string
@@ -181,6 +226,7 @@ export type Database = {
         Insert: {
           document?: string | null
           indexed_at?: string
+          past_versions?: Json
           profile?: string | null
           record: Json
           uri: string
@@ -188,6 +234,7 @@ export type Database = {
         Update: {
           document?: string | null
           indexed_at?: string
+          past_versions?: Json
           profile?: string | null
           record?: Json
           uri?: string
@@ -346,6 +393,89 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "documents"
             referencedColumns: ["uri"]
+          },
+        ]
+      }
+      document_version_blob_refs: {
+        Row: {
+          path: string
+          version: string
+        }
+        Insert: {
+          path: string
+          version: string
+        }
+        Update: {
+          path?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_version_blob_refs_version_fkey"
+            columns: ["version"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_versions: {
+        Row: {
+          author_did: string | null
+          author_identity: string | null
+          byte_size: number
+          closure_hash: string
+          created_at: string
+          fact_count: number
+          id: string
+          kind: string
+          name: string | null
+          snapshot: Json | null
+          snapshot_path: string | null
+          token: string
+        }
+        Insert: {
+          author_did?: string | null
+          author_identity?: string | null
+          byte_size: number
+          closure_hash: string
+          created_at?: string
+          fact_count: number
+          id: string
+          kind?: string
+          name?: string | null
+          snapshot?: Json | null
+          snapshot_path?: string | null
+          token: string
+        }
+        Update: {
+          author_did?: string | null
+          author_identity?: string | null
+          byte_size?: number
+          closure_hash?: string
+          created_at?: string
+          fact_count?: number
+          id?: string
+          kind?: string
+          name?: string | null
+          snapshot?: Json | null
+          snapshot_path?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_versions_author_identity_fkey"
+            columns: ["author_identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_token_fkey"
+            columns: ["token"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1267,18 +1397,24 @@ export type Database = {
           created_at: string
           enabled: boolean
           publication: string
+          subscriber_tier_description: string | null
+          subscriber_tier_name: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           enabled?: boolean
           publication: string
+          subscriber_tier_description?: string | null
+          subscriber_tier_name?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           enabled?: boolean
           publication?: string
+          subscriber_tier_description?: string | null
+          subscriber_tier_name?: string
           updated_at?: string
         }
         Relationships: [
@@ -1299,7 +1435,6 @@ export type Database = {
           currency: string
           description: string | null
           id: string
-          is_free: boolean
           monthly_price_cents: number
           name: string
           publication: string
@@ -1316,7 +1451,6 @@ export type Database = {
           currency?: string
           description?: string | null
           id?: string
-          is_free?: boolean
           monthly_price_cents: number
           name: string
           publication: string
@@ -1333,7 +1467,6 @@ export type Database = {
           currency?: string
           description?: string | null
           id?: string
-          is_free?: boolean
           monthly_price_cents?: number
           name?: string
           publication?: string
@@ -1361,13 +1494,15 @@ export type Database = {
           current_period_end: string | null
           id: string
           identity_id: string
+          pending_cadence: string | null
+          pending_tier: string | null
           publication: string
           status: string | null
           stripe_account_id: string | null
           stripe_customer_id: string | null
           stripe_price_id: string | null
           stripe_subscription_id: string | null
-          tier: string | null
+          tier: string
           updated_at: string
         }
         Insert: {
@@ -1377,13 +1512,15 @@ export type Database = {
           current_period_end?: string | null
           id?: string
           identity_id: string
+          pending_cadence?: string | null
+          pending_tier?: string | null
           publication: string
           status?: string | null
           stripe_account_id?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
           stripe_subscription_id?: string | null
-          tier?: string | null
+          tier: string
           updated_at?: string
         }
         Update: {
@@ -1393,13 +1530,15 @@ export type Database = {
           current_period_end?: string | null
           id?: string
           identity_id?: string
+          pending_cadence?: string | null
+          pending_tier?: string | null
           publication?: string
           status?: string | null
           stripe_account_id?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
           stripe_subscription_id?: string | null
-          tier?: string | null
+          tier?: string
           updated_at?: string
         }
         Relationships: [
@@ -1411,6 +1550,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "publication_memberships_pending_tier_fkey"
+            columns: ["pending_tier"]
+            isOneToOne: false
+            referencedRelation: "publication_membership_tiers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "publication_memberships_publication_fkey"
             columns: ["publication"]
             isOneToOne: false
@@ -1418,11 +1564,11 @@ export type Database = {
             referencedColumns: ["uri"]
           },
           {
-            foreignKeyName: "publication_memberships_tier_fkey"
-            columns: ["tier"]
+            foreignKeyName: "publication_memberships_tier_publication_fkey"
+            columns: ["tier", "publication"]
             isOneToOne: false
             referencedRelation: "publication_membership_tiers"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "publication"]
           },
         ]
       }
@@ -2086,6 +2232,7 @@ export type Database = {
         }
         Returns: {
           attribute: string
+          author_did: string | null
           created_at: string
           data: Json
           entity: string
@@ -2187,6 +2334,36 @@ export type Database = {
           publication_uri: string
           publication_record: Json
           publication_name: string
+        }[]
+      }
+      get_subscription_feed_skeleton: {
+        Args: {
+          p_identity: string
+          p_cursor_timestamp?: string
+          p_cursor_uri?: string
+          p_limit?: number
+        }
+        Returns: {
+          uri: string
+          sort_date: string
+          post_ref: Json
+          bsky_post_ref: Json
+          published_at: string
+        }[]
+      }
+      get_follows_feed_skeleton: {
+        Args: {
+          p_identity: string
+          p_cursor_timestamp?: string
+          p_cursor_uri?: string
+          p_limit?: number
+        }
+        Returns: {
+          uri: string
+          sort_date: string
+          post_ref: Json
+          bsky_post_ref: Json
+          published_at: string
         }[]
       }
       get_tag_page_document_uris: {
@@ -2629,4 +2806,3 @@ export type Enums<
   : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
     ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never
-

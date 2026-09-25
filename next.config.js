@@ -28,10 +28,23 @@ const nextConfig = {
       },
     ];
   },
+  async headers() {
+    return [
+      {
+        // Generated opengraph-image routes are served with a hash suffix
+        // because they sit inside route groups. Keep them out of the search
+        // index — unfurl bots fetch og:image URLs directly and ignore robots
+        // directives, so previews are unaffected.
+        source:
+          "/:path*/:image(opengraph\\-image|opengraph\\-image\\-\\w+)",
+        headers: [{ key: "X-Robots-Tag", value: "noindex" }],
+      },
+    ];
+  },
   // Caps the CDN stale-while-revalidate window for ISR pages (default is one
   // year — a bad cached page could be served stale that long).
   expireTime: 86400,
-  serverExternalPackages: ["yjs", "pino"],
+  serverExternalPackages: ["yjs", "pino", "jsdom"],
   pageExtensions: ["js", "jsx", "ts", "tsx", "md", "mdx"],
   images: {
     loader: "custom",

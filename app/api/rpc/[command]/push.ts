@@ -5,6 +5,7 @@ import {
   email_auth_tokens,
   identities,
   permission_token_rights,
+  permission_tokens,
   replicache_clients,
 } from "drizzle/schema";
 import { getClientGroup } from "src/replicache/utils";
@@ -14,6 +15,7 @@ import type { Env } from "./route";
 import { cachedServerMutationContext } from "src/replicache/cachedServerMutationContext";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { pool } from "supabase/pool";
+import { trackUserEvent } from "src/activeUserAnalytics";
 
 const mutationV0Schema = z.object({
   id: z.number(),
@@ -70,6 +72,8 @@ export const push = makeRoute({
     let authToken =
       cookieStore.get("auth_token")?.value ||
       cookieStore.get("external_auth_token")?.value;
+    let sessionDid: string | null = null;
+    let sessionIdentityId: string | null = null;
 
     let timeWaitingForLock: number;
     let timeWaitingForDbConnection: number;
@@ -108,6 +112,10 @@ export const push = makeRoute({
           .select()
           .from(permission_token_rights)
           .where(eq(permission_token_rights.token, token.id));
+        let [tokenRow] = await tx
+          .select({ root_entity: permission_tokens.root_entity })
+          .from(permission_tokens)
+          .where(eq(permission_tokens.id, token.id));
         timeGettingTokenRights = performance.now() - tokenRightsStart;
 
         // Resolve the session cookie to a DID once per push. The cookie value
@@ -115,14 +123,14 @@ export const push = makeRoute({
         // cookie doesn't error the transaction. No DID resolves for anonymous
         // or email-only sessions, in which case authenticated-fact writes are
         // dropped downstream.
-        let sessionDid: string | null = null;
         if (authToken && isUuid(authToken)) {
           let [row] = await tx
-            .select({ atp_did: identities.atp_did })
+            .select({ atp_did: identities.atp_did, id: identities.id })
             .from(email_auth_tokens)
             .leftJoin(identities, eq(email_auth_tokens.identity, identities.id))
             .where(eq(email_auth_tokens.id, authToken));
           sessionDid = row?.atp_did ?? null;
+          sessionIdentityId = row?.id ?? null;
         }
 
         let { getContext, flush } = cachedServerMutationContext(
@@ -130,6 +138,7 @@ export const push = makeRoute({
           token.id,
           token_rights,
           sessionDid,
+          tokenRow?.root_entity ?? "",
         );
 
         let lastMutations = new Map<string, number>();
@@ -203,6 +212,9 @@ export const push = makeRoute({
         event: "poke",
         payload: { message: "poke" },
       });
+
+      if (mutationTimings.length > 0 && sessionIdentityId)
+        trackUserEvent({ id: sessionIdentityId, atp_did: sessionDid }, "push");
     } catch (e) {
       timeProcessingMutations = performance.now() - start;
       console.log(e);

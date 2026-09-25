@@ -26,11 +26,10 @@ import {
 } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 
-import { Popover } from "components/Popover";
 import { Modal } from "components/Modal";
 import { Input } from "components/Input";
 
-import { SettingsTriggerButton } from "../SettingsTriggerButton";
+import { BlockSettings } from "../SettingsTriggerButton";
 import { AddSmall } from "components/Icons/AddSmall";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { GridSmall } from "components/Icons/GridSmall";
@@ -57,76 +56,67 @@ export function ImageGalleryOptions(props: {
     });
 
   return (
-    <Popover
-      asChild
-      side="top"
-      align="end"
-      sideOffset={6}
-      className=" w-full sm:w-md"
-      trigger={<SettingsTriggerButton aria-label="Image Gallery Settings" />}
-    >
-      <div className="flex flex-col gap-3 text-primary py-1 min-w-[220px]">
-        <div className="flex flex-col gap-3">
-          <h3>Format Images</h3>
-          <div className="flex gap-2 w-full">
-            {(
-              [
-                { value: "grid", Icon: GridSmall },
-                { value: "carousel", Icon: CarouselSmall },
-                { value: "strip", Icon: StripSmall },
-              ] as { value: GalleryFormat; Icon: typeof GridSmall }[]
-            ).map(({ value, Icon }) => {
-              let selected = props.format === value;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  aria-label={value}
-                  aria-pressed={selected}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => setFormat(value)}
-                  className={`flex-1 flex items-center justify-center py-1.5 px-2 border rounded-md outline-2 ${
-                    selected
-                      ? "bg-[var(--accent-light)] border-accent-contrast text-accent-contrast outline-accent-contrast outline-offset-1"
-                      : "opaque-container border-transparent text-tertiary outline-transparent"
-                  }`}
-                >
-                  <Icon />
-                </button>
-              );
-            })}
-          </div>
-          {props.format === "strip" || props.format === "grid" ? (
-            <>
-              <hr className="border-border-light " />
-              <GapControl entityID={props.entityID} gap={props.gap} />
-            </>
-          ) : null}
-          {props.format === "grid" && (
-            <>
-              <hr className="border-border-light " />
-
-              <MaxWidthControl
-                entityID={props.entityID}
-                maxWidth={props.maxWidth}
-              />
-            </>
-          )}
+    <BlockSettings label="Image Gallery" className="w-full sm:w-md">
+      <div className="flex flex-col gap-3">
+        <h4>Gallery Format</h4>
+        <div className="flex gap-2 w-full">
+          {(
+            [
+              { value: "grid", Icon: GridSmall },
+              { value: "carousel", Icon: CarouselSmall },
+              { value: "strip", Icon: StripSmall },
+            ] as { value: GalleryFormat; Icon: typeof GridSmall }[]
+          ).map(({ value, Icon }) => {
+            let selected = props.format === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-label={value}
+                aria-pressed={selected}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setFormat(value)}
+                className={`flex-1 flex items-center justify-center py-1.5 px-2 border rounded-md outline-2 ${
+                  selected
+                    ? "bg-[var(--accent-light)] border-accent-contrast text-accent-contrast outline-accent-contrast outline-offset-1"
+                    : "opaque-container border-transparent text-tertiary outline-transparent"
+                }`}
+              >
+                <Icon />
+              </button>
+            );
+          })}
         </div>
+        {props.format === "strip" || props.format === "grid" ? (
+          <>
+            <hr className="border-border-light " />
+            <GapControl entityID={props.entityID} gap={props.gap} />
+          </>
+        ) : null}
+        {props.format === "grid" && (
+          <>
+            <hr className="border-border-light " />
 
-        <hr className="border-border-light my-1" />
-
-        <ButtonPrimary
-          fullWidth
-          type="button"
-          className=""
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={props.onEditImages}
-        >
-          Edit Images
-        </ButtonPrimary>
+            <MaxWidthControl
+              entityID={props.entityID}
+              maxWidth={props.maxWidth}
+            />
+          </>
+        )}
       </div>
-    </Popover>
+
+      <hr className="border-border-light my-1" />
+
+      <ButtonPrimary
+        fullWidth
+        type="button"
+        className=""
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={props.onEditImages}
+      >
+        Edit Images
+      </ButtonPrimary>
+    </BlockSettings>
   );
 }
 
@@ -158,7 +148,7 @@ function GapControl(props: { entityID: string; gap: number }) {
 
   return (
     <div className="flex flex-col gap-1">
-      <label className="flex items-center justify-between gap-2 text-sm">
+      <label className="flex items-center justify-between gap-2">
         <span className="font-bold">Gap</span>
         <Input
           type="number"
@@ -235,7 +225,7 @@ function MaxWidthControl(props: { entityID: string; maxWidth: number }) {
 
   return (
     <div className="flex flex-col gap-1">
-      <label className="flex items-center justify-between gap-2 text-sm">
+      <label className="flex items-center justify-between gap-2">
         <span className="font-bold ">Max Width</span>
         <Input
           type="number"

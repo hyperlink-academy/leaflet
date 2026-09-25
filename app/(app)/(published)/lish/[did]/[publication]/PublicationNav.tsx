@@ -94,9 +94,6 @@ export function PublicationNav(props: {
         </div>
 
         {props.subscribe && props.hideSubscribeInHeader && (
-          /* Wide enough for the widest state the button resolves into (the
-          "Subscribed / Manage" row), so identity landing can't take width off
-          the tab strip when the tabs are crowded enough to scroll. */
           <div className="sm:flex hidden justify-end min-w-40 shrink-0">
             <SubscribeButton
               {...props.subscribe}

@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import useSWR, { preload } from "swr";
 import { callRPC } from "app/api/rpc/client";
 
 // Fetches basic profiles (handle/displayName/avatar) for a set of contributor
@@ -6,11 +6,18 @@ import { callRPC } from "app/api/rpc/client";
 // shared across components and refetches when the set changes. `data` is a
 // record of did -> profile (empty object until loaded).
 export function useContributorProfiles(dids: string[]) {
-  return useSWR(
-    dids.length ? `contributor-profiles-${[...dids].sort().join(",")}` : null,
-    async () => {
-      let res = await callRPC("get_profiles", { dids });
-      return res?.result?.profiles ?? {};
-    },
-  );
+  return useSWR(contributorProfilesKey(dids), () => fetchProfiles(dids));
+}
+
+export function prefetchContributorProfiles(dids: string[]) {
+  let key = contributorProfilesKey(dids);
+  if (key) preload(key, () => fetchProfiles(dids));
+}
+
+const contributorProfilesKey = (dids: string[]) =>
+  dids.length ? `contributor-profiles-${[...dids].sort().join(",")}` : null;
+
+async function fetchProfiles(dids: string[]) {
+  let res = await callRPC("get_profiles", { dids });
+  return res?.result?.profiles ?? {};
 }

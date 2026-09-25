@@ -3,6 +3,7 @@ import { useUIState } from "src/useUIState";
 
 import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "src/utils/focusPage";
+import { getEditorPrefs } from "src/utils/editorPrefs";
 import { v7 } from "uuid";
 import { Replicache } from "replicache";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
@@ -14,6 +15,7 @@ import { focusElement } from "src/utils/focusElement";
 import { BlockButtonSmall } from "components/Icons/BlockButtonSmall";
 import { BlockCalendarSmall } from "components/Icons/BlockCalendarSmall";
 import { BlockCanvasPageSmall } from "components/Icons/BlockCanvasPageSmall";
+import { BlockPostHeaderSmall } from "components/Icons/BlockPostHeaderSmall";
 import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { BlockEmbedSmall } from "components/Icons/BlockEmbedSmall";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
@@ -21,6 +23,7 @@ import { ImageGallerySmall } from "components/Icons/ImageGallerySmall";
 import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
 import { BlockPollSmall } from "components/Icons/BlockPollSmall";
 import { PostListSmall } from "components/Icons/PostListSmall";
+import { RecommendFilledSmall } from "components/Icons/RecommendFilledSmall";
 import {
   ParagraphSmall,
   Header1Small,
@@ -106,7 +109,11 @@ type Command = {
   alternateNames?: string[];
   hiddenInPublication?: boolean;
   hiddenOnPublicationPage?: boolean;
+  hiddenInPost?: boolean;
   publicationOnly?: boolean;
+  // Only offered on canvas pages; linear documents render the equivalent
+  // above their blocks already.
+  canvasOnly?: boolean;
   // Only shown when the publication has paid memberships enabled, the current
   // page is the post's first page, and no delimiter exists yet (gating is
   // computed against the served first page, and one delimiter is enough).
@@ -407,6 +414,7 @@ export const blockCommands: Command[] = [
         pageEntity: newPage,
         type: "doc",
         permission_set: props.entity_set,
+        display: getEditorPrefs().pageLinkDisplay,
       });
 
       useUIState.getState().openPage(props.parent, newPage);
@@ -447,6 +455,7 @@ export const blockCommands: Command[] = [
         firstBlockEntity: v7(),
         pageEntity: newPage,
         permission_set: props.entity_set,
+        display: getEditorPrefs().pageLinkDisplay,
       });
       useUIState.getState().openPage(props.parent, newPage);
       focusPage(newPage, rep, "focusFirstBlock");
@@ -469,17 +478,40 @@ export const blockCommands: Command[] = [
       });
     },
   },
-
-  // PUBLICATION BLOCKS — shown anywhere within a publication (posts and publication pages)
   {
     name: "Post List",
     icon: <PostListSmall />,
     type: "publication",
     alternateNames: ["posts", "archive", "feed", "listing"],
     publicationOnly: true,
+    hiddenInPost: true,
     onSelect: async (rep, props) => {
       props.entityID && clearCommandSearchText(props.entityID);
       await createBlockWithType(rep, props, "posts-list");
+    },
+  },
+  {
+    name: "Recommended Pubs",
+    icon: <RecommendFilledSmall />,
+    type: "publication",
+    alternateNames: ["recommendations", "recommended", "publications", "pubs"],
+    publicationOnly: true,
+    onSelect: async (rep, props) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      await createBlockWithType(rep, props, "recommended-pubs");
+    },
+  },
+  {
+    name: "Post Title",
+    icon: <BlockPostHeaderSmall />,
+    type: "publication",
+    alternateNames: ["header", "metadata", "byline", "post header"],
+    publicationOnly: true,
+    hiddenOnPublicationPage: true,
+    canvasOnly: true,
+    onSelect: async (rep, props) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      await createBlockWithType(rep, props, "post-header");
     },
   },
   {
@@ -507,7 +539,16 @@ export const blockCommands: Command[] = [
       let existing = getPageBlocks(rep, props.parent);
       if (existing.some((b) => b.type === "members-only-delimiter")) return;
       props.entityID && clearCommandSearchText(props.entityID);
-      await createBlockWithType(rep, props, "members-only-delimiter");
+      const entity = await createBlockWithType(
+        rep,
+        props,
+        "members-only-delimiter",
+      );
+      await rep.mutate.assertFact({
+        entity,
+        attribute: "block/members-only-audience",
+        data: { type: "string", value: "paid" },
+      });
       um.add({
         undo: () => {
           props.entityID && focusTextBlock(props.entityID);

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { notFound } from "next/navigation";
 import { SWRConfig } from "swr";
 import {
   IdentityContextProvider,
@@ -37,9 +38,12 @@ function makeIdentity(opts: {
     atp_did: opts.hasHandle ? profile.did : null,
     email: opts.hasEmail ? "reader@example.com" : null,
     bsky_profiles: opts.hasHandle ? { ...profile, record: profile } : null,
-    publication_subscriptions: opts.subscribed
-      ? [{ publication: PUBLICATION_URI }]
-      : [],
+    // An atproto subscription implies an atproto account — gate on the handle
+    // so the unified `subscribed` derivation sees a coherent identity.
+    publication_subscriptions:
+      opts.subscribed && opts.hasHandle
+        ? [{ publication: PUBLICATION_URI }]
+        : [],
     publication_email_subscribers:
       opts.subscribed && opts.hasEmail
         ? [{ publication: PUBLICATION_URI, state: "confirmed" }]
@@ -156,6 +160,7 @@ function ComponentSection(props: { title: string; render: Render }) {
 }
 
 export default function SubscribePreviewPage() {
+  if (process.env.NODE_ENV === "production") notFound();
   return (
     <div className="max-w-3xl mx-auto flex flex-col gap-10 p-6">
       <h1>Subscribe Variants</h1>
