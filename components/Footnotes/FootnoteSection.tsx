@@ -19,6 +19,7 @@ export function FootnoteSection(props: { hiddenOnDesktop?: boolean }) {
           key={fn.footnoteEntityID}
           footnoteEntityID={fn.footnoteEntityID}
           index={fn.index}
+          sourceBlockID={fn.blockID}
           editable={permissions.write}
           onDelete={
             permissions.write

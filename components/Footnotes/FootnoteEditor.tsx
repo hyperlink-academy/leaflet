@@ -26,14 +26,32 @@ import { FootnoteItemLayout } from "./FootnoteItemLayout";
 import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
 import { useFootnoteContext } from "./FootnoteContext";
+import { EditorFootnoteSourcePreview } from "./FootnoteSourcePreview";
 
-export function FootnoteEditor(props: {
-  footnoteEntityID: string;
-  index: number;
-  editable: boolean;
-  onDelete?: () => void;
-  autoFocus?: boolean;
-}) {
+type SourcePreviewProps = {
+  // The block holding this footnote's ref. When set, the index previews that
+  // block on hover/tap — used by the end-of-page footnote list.
+  sourceBlockID?: string;
+};
+
+function sourcePreviewFor(footnoteEntityID: string, blockID?: string) {
+  if (!blockID) return undefined;
+  return {
+    footnoteID: footnoteEntityID,
+    sourceSelector: `.footnote-ref[data-footnote-id="${CSS.escape(footnoteEntityID)}"]`,
+    content: <EditorFootnoteSourcePreview blockID={blockID} />,
+  };
+}
+
+export function FootnoteEditor(
+  props: {
+    footnoteEntityID: string;
+    index: number;
+    editable: boolean;
+    onDelete?: () => void;
+    autoFocus?: boolean;
+  } & SourcePreviewProps,
+) {
   // Read-only viewers don't need a live ProseMirror instance (with its yjs
   // doc, realtime registration, and remote-cursor overlay) per footnote —
   // render the stored content statically, the same way RenderedTextBlock does
@@ -45,16 +63,25 @@ export function FootnoteEditor(props: {
       <RenderedFootnote
         footnoteEntityID={props.footnoteEntityID}
         index={props.index}
+        sourceBlockID={props.sourceBlockID}
       />
     );
   return <EditableFootnote {...props} />;
 }
 
-function RenderedFootnote(props: { footnoteEntityID: string; index: number }) {
+function RenderedFootnote(
+  props: { footnoteEntityID: string; index: number } & SourcePreviewProps,
+) {
   let content = useEntity(props.footnoteEntityID, "block/text");
   return (
     <div data-footnote-editor={props.footnoteEntityID}>
-      <FootnoteItemLayout index={props.index}>
+      <FootnoteItemLayout
+        index={props.index}
+        sourcePreview={sourcePreviewFor(
+          props.footnoteEntityID,
+          props.sourceBlockID,
+        )}
+      >
         {content ? (
           <RenderYJSFragment value={content.data.value} wrapper="p" />
         ) : (
@@ -65,13 +92,15 @@ function RenderedFootnote(props: { footnoteEntityID: string; index: number }) {
   );
 }
 
-function EditableFootnote(props: {
-  footnoteEntityID: string;
-  index: number;
-  editable: boolean;
-  onDelete?: () => void;
-  autoFocus?: boolean;
-}) {
+function EditableFootnote(
+  props: {
+    footnoteEntityID: string;
+    index: number;
+    editable: boolean;
+    onDelete?: () => void;
+    autoFocus?: boolean;
+  } & SourcePreviewProps,
+) {
   let mountRef = useRef<HTMLDivElement | null>(null);
   let rep = useReplicache();
   let {
@@ -279,6 +308,10 @@ function EditableFootnote(props: {
     <div data-footnote-editor={props.footnoteEntityID}>
       <FootnoteItemLayout
         index={props.index}
+        sourcePreview={sourcePreviewFor(
+          props.footnoteEntityID,
+          props.sourceBlockID,
+        )}
         indexAction={() => {
           let pm = mountRef.current?.querySelector(
             ".ProseMirror",

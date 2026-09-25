@@ -9,6 +9,7 @@ import {
   PubLeafletBlocksUnorderedList,
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
+import { useMemo } from "react";
 import { TextBlockCore } from "../Blocks/TextBlockCore";
 import {
   FootnoteItemLayout,
@@ -20,6 +21,12 @@ export type PublishedFootnote = {
   index: number;
   contentPlaintext: string;
   contentFacets?: PubLeafletRichtextFacet.Main[];
+  // The block the footnote's ref sits in, previewed from the footnote list.
+  source?: {
+    plaintext: string;
+    facets?: PubLeafletRichtextFacet.Main[];
+    isHeading: boolean;
+  };
 };
 
 export function collectFootnotesFromBlocks(
@@ -29,7 +36,13 @@ export function collectFootnotesFromBlocks(
   let seen = new Set<string>();
   let idx = 1;
 
-  function scanFacets(facets?: PubLeafletRichtextFacet.Main[]) {
+  function scanFacets(
+    content:
+      | PubLeafletBlocksText.Main
+      | PubLeafletBlocksHeader.Main
+      | PubLeafletBlocksBlockquote.Main,
+  ) {
+    let facets = content.facets;
     if (!facets || !Array.isArray(facets)) return;
     for (let facet of facets) {
       for (let feature of facet.features) {
@@ -41,6 +54,11 @@ export function collectFootnotesFromBlocks(
               index: idx++,
               contentPlaintext: feature.contentPlaintext,
               contentFacets: feature.contentFacets,
+              source: {
+                plaintext: content.plaintext,
+                facets,
+                isHeading: PubLeafletBlocksHeader.isMain(content),
+              },
             });
           }
         }
@@ -55,18 +73,16 @@ export function collectFootnotesFromBlocks(
       | PubLeafletBlocksBlockquote.Main
       | { $type?: string },
   ) {
-    if (PubLeafletBlocksText.isMain(content)) {
-      scanFacets(content.facets);
-    } else if (PubLeafletBlocksHeader.isMain(content)) {
-      scanFacets(content.facets);
-    } else if (PubLeafletBlocksBlockquote.isMain(content)) {
-      scanFacets(content.facets);
+    if (
+      PubLeafletBlocksText.isMain(content) ||
+      PubLeafletBlocksHeader.isMain(content) ||
+      PubLeafletBlocksBlockquote.isMain(content)
+    ) {
+      scanFacets(content);
     }
   }
 
-  function scanOrderedListItems(
-    items: PubLeafletBlocksOrderedList.ListItem[],
-  ) {
+  function scanOrderedListItems(items: PubLeafletBlocksOrderedList.ListItem[]) {
     for (let item of items) {
       scanBlockContent(item.content);
       if (item.children?.length) {
@@ -116,27 +132,68 @@ export function buildFootnoteIndexMap(
   return map;
 }
 
+// The preview is a copy of text already on the page, so its refs mustn't
+// reuse the real refs' fnref- ids or links.
+function PreviewFootnoteRef(props: { footnoteId: string; index: number }) {
+  return (
+    <sup
+      className="text-accent-contrast -ml-0.5 -mr-1 -my-1 p-1"
+      data-footnote-id={props.footnoteId}
+    >
+      {props.index}
+    </sup>
+  );
+}
+
 export function PublishedFootnoteSection(props: {
   footnotes: PublishedFootnote[];
 }) {
+  let indexMap = useMemo(
+    () => buildFootnoteIndexMap(props.footnotes),
+    [props.footnotes],
+  );
   if (props.footnotes.length === 0) return null;
 
   return (
     <FootnoteSectionLayout className="mt-4">
       {props.footnotes.map((fn) => (
-        <PublishedFootnoteItem key={fn.footnoteId} footnote={fn} />
+        <PublishedFootnoteItem
+          key={fn.footnoteId}
+          footnote={fn}
+          indexMap={indexMap}
+        />
       ))}
     </FootnoteSectionLayout>
   );
 }
 
-function PublishedFootnoteItem(props: { footnote: PublishedFootnote }) {
+function PublishedFootnoteItem(props: {
+  footnote: PublishedFootnote;
+  indexMap: Map<string, number>;
+}) {
   let fn = props.footnote;
   return (
     <FootnoteItemLayout
       index={fn.index}
       indexHref={`#fnref-${fn.footnoteId}`}
       id={`fn-${fn.footnoteId}`}
+      sourcePreview={
+        fn.source && {
+          footnoteID: fn.footnoteId,
+          sourceSelector: `[id="fnref-${fn.footnoteId}"]`,
+          content: (
+            <div className={fn.source.isHeading ? "font-bold" : ""}>
+              <TextBlockCore
+                plaintext={fn.source.plaintext}
+                facets={fn.source.facets}
+                index={[]}
+                footnoteIndexMap={props.indexMap}
+                renderers={{ FootnoteRef: PreviewFootnoteRef }}
+              />
+            </div>
+          ),
+        }
+      }
     >
       {fn.contentPlaintext ? (
         <TextBlockCore
