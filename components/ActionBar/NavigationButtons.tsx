@@ -15,11 +15,6 @@ import { ButtonPrimary } from "components/Buttons";
 import { LoginModal } from "components/LoginButton";
 import { GoToArrowLined } from "components/Icons/GoToArrowLined";
 import { TutorialNavTooltip } from "app/(app)/(identity)/(home-pages)/(writer)/home/Tutorial/TutorialNavTooltip";
-function useIsActive(href: string) {
-  let pathname = usePathname();
-  return pathname === href || pathname.startsWith(href + "/");
-}
-
 const WRITER_PATHS = ["/home", "/looseleafs", "/notifications"] as const;
 
 export function useIsOnWriterPage() {
@@ -52,20 +47,17 @@ export function NavigationButton() {
 
 export const WriterButton = () => {
   let { identity } = useIdentityData();
-  let current = useIsOnWriterPage();
   let hasDocs =
     (identity?.permission_token_on_homepage.length ?? 0) > 0 ||
     (identity?.contributor_leaflets?.length ?? 0) > 0;
 
   if (identity && hasDocs)
     return (
-      <SpeedyLink eager href={"/home"} className="hover:!no-underline">
-        <ActionButton
-          className={"w-full!"}
-          icon={<WriterSmall />}
-          label="Write"
-          active={current}
-        />
+      <SpeedyLink eager href={"/home"} className="hover:no-underline!">
+        <ButtonPrimary fullWidth className="mx-auto">
+          <WriterSmall />
+          Write <GoToArrowLined />
+        </ButtonPrimary>
       </SpeedyLink>
     );
 
@@ -100,18 +92,15 @@ export const WriterButton = () => {
 
 export const ReaderButton = () => {
   let { identity } = useIdentityData();
-  let current = useIsActive("/reader");
   let hasSubs = (identity?.publication_subscriptions?.length ?? 0) > 0;
 
   if (identity && hasSubs)
     return (
       <SpeedyLink eager href={"/reader"} className="hover:no-underline!">
-        <ActionButton
-          className="w-full!"
-          icon={<ReaderUnreadSmall />}
-          label="Read"
-          active={current}
-        />
+        <ButtonPrimary fullWidth className="mx-auto">
+          <ReaderUnreadSmall />
+          Read <GoToArrowLined />
+        </ButtonPrimary>
       </SpeedyLink>
     );
 
