@@ -126,7 +126,7 @@ type Command = {
   membersOnlyDelimiter?: boolean;
   onSelect: (
     rep: Replicache<ReplicacheMutators>,
-    props: Props & { entity_set: string },
+    props: Props & { entity_set: string; hasPaidTiers?: boolean },
     undoManager: UndoManager,
   ) => Promise<any>;
 };
@@ -566,10 +566,10 @@ export const blockCommands: Command[] = [
     },
   },
   {
-    name: "Members Only Divider",
+    name: "Paywall",
     icon: <LockTiny />,
     type: "publication",
-    alternateNames: ["members", "membership", "paywall", "premium"],
+    alternateNames: ["members", "membership", "members only", "premium"],
     publicationOnly: true,
     hiddenOnPublicationPage: true,
     membersOnlyDelimiter: true,
@@ -587,7 +587,10 @@ export const blockCommands: Command[] = [
       await rep.mutate.assertFact({
         entity,
         attribute: "block/members-only-audience",
-        data: { type: "string", value: "paid" },
+        data: {
+          type: "string",
+          value: props.hasPaidTiers ? "paid" : "subscribers",
+        },
       });
       um.add({
         undo: () => {
