@@ -5,16 +5,29 @@ import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { AddTiny } from "components/Icons/AddTiny";
 import { useRouter } from "next/navigation";
 
+function useCreateDraft(publication: string) {
+  let router = useRouter();
+  return async () => {
+    let newLeaflet = await createPublicationDraft(publication);
+    router.push(`/${newLeaflet}`);
+  };
+}
+
+export function NewDraftButton(props: {
+  publication: string;
+  secondary?: boolean;
+  children: React.ReactNode;
+}) {
+  let handleOnClick = useCreateDraft(props.publication);
+  let Button = props.secondary ? ButtonSecondary : ButtonPrimary;
+  return <Button onClick={handleOnClick}>{props.children}</Button>;
+}
+
 export function NewDraftActionButton(props: {
   publication: string;
   compact?: boolean;
 }) {
-  let router = useRouter();
-
-  async function handleOnClick() {
-    let newLeaflet = await createPublicationDraft(props.publication);
-    router.push(`/${newLeaflet}`);
-  }
+  let handleOnClick = useCreateDraft(props.publication);
 
   if (props.compact)
     return (

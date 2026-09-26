@@ -168,19 +168,10 @@ export const PublicationAnalytics = (props: {
 
   if (!isPro)
     return (
-      <div
-        className={`sm:mx-auto mt-2 sm:mt-4 rounded-lg border ${
-          props.showPageBackground
-            ? "border-border-light px-4 py-3"
-            : "border-transparent"
-        }`}
-        style={{
-          backgroundColor: props.showPageBackground
-            ? "rgba(var(--bg-page), var(--bg-page-alpha))"
-            : "transparent",
-        }}
-      >
-        <UpgradeContent />
+      <div className="grow flex flex-col items-center justify-center py-8">
+        <div className="opaque-container rounded-lg! w-full sm:w-max max-w-full px-4 pt-5 pb-6">
+          <UpgradeContent />
+        </div>
       </div>
     );
 

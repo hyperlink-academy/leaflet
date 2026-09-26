@@ -43,10 +43,6 @@ export const UpgradeContent = (props: { signedOut?: boolean }) => {
           <hr className="my-4 border-border-light" />
 
           <div className="font-bold text-primary">Group Publications</div>
-
-          <hr className="my-4 border-border-light" />
-          <div className="font-bold text-primary">Coming VERY soon</div>
-          <div className="">Paid Membership</div>
         </div>
         <div className="sm:w-64  w-full accent-container flex justify-center items-center">
           <div className="flex flex-col justify-center text-center py-6 px-3 ">

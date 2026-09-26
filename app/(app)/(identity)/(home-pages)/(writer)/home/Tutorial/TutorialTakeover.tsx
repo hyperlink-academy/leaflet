@@ -62,7 +62,11 @@ const WelcomeToLeaflet = (props: StepProps) => {
             Leaflet is a platform for writing blogs and newsletters. Create
             publications, write posts, and discover your community.
           </div>
-          <div className="h-36 w-full mx-auto bg-test my-2" />
+          <img
+            src="/illustrations/welcome-to-leaflet.webp"
+            alt=""
+            className="w-full h-auto mx-auto my-2"
+          />
 
           <div>Let us show you around!</div>
         </div>
@@ -154,7 +158,11 @@ const GetStarted = (props: StepProps) => {
         <h2>Get started!</h2>
         <div className="flex gap-4 sm:flex-row flex-col items-stretch">
           <div className="light-container p-3 basis-1/2 flex flex-col gap-1">
-            <div className=" w-24 h-24 rounded-full bg-test mx-auto mb-2" />
+            <img
+              src="/illustrations/start-a-publication.webp"
+              alt=""
+              className="h-24 w-auto object-contain mx-auto mb-2"
+            />
             <h3>Start a Publication</h3>
             <div className="text-base grow">
               Start a blog, newsletter, comic, novel, zine, etc. Make a homepage
@@ -165,7 +173,11 @@ const GetStarted = (props: StepProps) => {
             </ButtonPrimary>
           </div>
           <div className="light-container p-3 basis-1/2 flex flex-col gap-1">
-            <div className=" w-24 h-24 rounded-full bg-test mx-auto mb-2" />
+            <img
+              src="/illustrations/start-writing.webp"
+              alt=""
+              className="h-24 w-auto object-contain mx-auto mb-2"
+            />
             <h3>Write something</h3>
             <div className="text-base grow">
               Just start writing! You can add this to a publication later, share

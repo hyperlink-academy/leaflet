@@ -123,7 +123,7 @@ export default async function PublicationDashboardLayout(props: {
             Published: { href: `${baseHref}/posts`, icon: <PublishSmall /> },
             ...(isOwner
               ? {
-                  Subs: {
+                  Subscribers: {
                     href: `${baseHref}/subs`,
                     icon: <SubscribersSmall />,
                   },

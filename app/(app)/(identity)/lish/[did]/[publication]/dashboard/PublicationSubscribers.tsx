@@ -11,6 +11,7 @@ import {
 import { AtmosphereAccount } from "components/Icons/AtmosphereAccount";
 import { EmailTiny } from "components/Icons/EmailTiny";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
+import { DashboardEmptyState } from "./DashboardEmptyState";
 import { CheckboxMenuItem, Menu, MenuSeparator } from "components/Menu";
 import type { MembershipTiers, PaidTier } from "src/membership";
 
@@ -50,15 +51,7 @@ export function PublicationSubscribers(props: {
     return !tierNarrowed || selectedPaidTiers.includes(s.memberTier.id);
   });
 
-  let activeStatuses = (
-    Object.keys(subscriberStatus) as SubscriberStatus[]
-  ).filter((k) => subscriberStatus[k]);
-  let isDefaultStatusFilter =
-    activeStatuses.length === 1 &&
-    activeStatuses[0] === "subscribed" &&
-    !membersOnly &&
-    !freeSelected &&
-    selected.length === 0;
+  let hasSubscribers = props.subscribers.length > 0;
 
   let bgStyle = props.showPageBackground
     ? { backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha)) " }
@@ -71,50 +64,57 @@ export function PublicationSubscribers(props: {
     <DashboardPageLayout
       scrollKey={`dashboard-${props.publicationUri}-Subs`}
       pageTitle="Subscribers"
-      mobileActions={<SubscriberStatusFilter tiers={props.tiers} />}
+      mobileActions={
+        hasSubscribers && <SubscriberStatusFilter tiers={props.tiers} />
+      }
       publication={props.publicationUri}
-      showHeader={true}
+      showHeader={hasSubscribers}
       controls={
-        <div className="flex items-center justify-between gap-3 text-sm">
-          <div className="font-bold text-secondary px-1">
-            {filtered.length} Subscriber{filtered.length !== 1 && "s"}
+        hasSubscribers && (
+          <div className="flex items-center justify-between gap-3 text-sm">
+            <div className="font-bold text-secondary px-1">
+              {filtered.length} Subscriber{filtered.length !== 1 && "s"}
+            </div>
+            <SubscriberStatusFilter tiers={props.tiers} />
           </div>
-          <SubscriberStatusFilter tiers={props.tiers} />
-        </div>
+        )
       }
     >
-      {filtered.length === 0 ? (
+      {!hasSubscribers ? (
+        <DashboardEmptyState
+          title="No subscribers yet!"
+          description={
+            <p>
+              No one has subscribed to your publication yet… Get the word out!
+            </p>
+          }
+          cta={
+            <ButtonPrimary
+              onClick={(e) => {
+                e.preventDefault();
+                let rect = (
+                  e.currentTarget as Element
+                )?.getBoundingClientRect();
+                navigator.clipboard.writeText(props.publicationShareUrl);
+                smoker({
+                  position: {
+                    x: rect ? rect.left + (rect.right - rect.left) / 2 : 0,
+                    y: rect ? rect.top + 26 : 0,
+                  },
+                  text: "Copied Publication URL!",
+                });
+              }}
+            >
+              Copy Share Link
+            </ButtonPrimary>
+          }
+        />
+      ) : filtered.length === 0 ? (
         <div
           className={`italic text-tertiary flex flex-col gap-0 text-center justify-center py-4 border rounded-md ${bgBorder}`}
           style={bgStyle}
         >
-          {isDefaultStatusFilter ? (
-            <>
-              <p className="font-bold"> No subscribers yet </p>
-              <p>Start sharing your publication!</p>
-              <ButtonPrimary
-                className="mx-auto mt-2"
-                onClick={(e) => {
-                  e.preventDefault();
-                  let rect = (
-                    e.currentTarget as Element
-                  )?.getBoundingClientRect();
-                  navigator.clipboard.writeText(props.publicationShareUrl);
-                  smoker({
-                    position: {
-                      x: rect ? rect.left + (rect.right - rect.left) / 2 : 0,
-                      y: rect ? rect.top + 26 : 0,
-                    },
-                    text: "Copied Publication URL!",
-                  });
-                }}
-              >
-                Copy Share Link
-              </ButtonPrimary>
-            </>
-          ) : (
-            <p className="font-bold">No subscribers match your filters!</p>
-          )}
+          <p className="font-bold">No subscribers match your filters!</p>
         </div>
       ) : (
         <div className={`rounded-md ${bgBorder}`} style={bgStyle}>

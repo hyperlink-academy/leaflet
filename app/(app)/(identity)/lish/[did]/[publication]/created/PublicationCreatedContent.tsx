@@ -6,6 +6,7 @@ import {
   usePublicationData,
   useNormalizedPublicationRecord,
 } from "../dashboard/PublicationSWRProvider";
+import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 
 export function PublicationCreatedContent(props: { dashboardHref: string }) {
   let { data } = usePublicationData();
@@ -30,15 +31,18 @@ export function PublicationCreatedContent(props: { dashboardHref: string }) {
               }
             />
           </div>
-          <div>
+          <div className="min-w-0 w-full">
             View it here:{" "}
             <a
               href={record.url}
               target="_blank"
               rel="noreferrer"
-              className="font-bold break-all inline-block"
+              className="font-bold break-all inline-flex gap-1 items-center max-w-full min-w-0 "
             >
-              {record.url.replace(/^https?:\/\//, "")}
+              <div className="min-w-0 truncate">
+                {record.url.replace(/^https?:\/\//, "")}
+              </div>
+              <ExternalLinkTiny className="shrink-0" />
             </a>
           </div>
           <Link href={props.dashboardHref}>
