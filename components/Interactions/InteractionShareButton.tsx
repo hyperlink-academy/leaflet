@@ -204,6 +204,8 @@ export const BskyShareModal = (props: {
       charCount={charCount}
       onCharCountChange={setCharCount}
       embed={embed}
+      autoFocus
+      hideCharacterCounter
     />
   );
 

@@ -1,7 +1,14 @@
 "use client";
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { ButtonPrimary } from "components/Buttons";
 import { useSmoker } from "components/Toast";
+import { Modal } from "components/Modal";
+import { ShareTiny } from "components/Icons/ShareTiny";
+import { SharePublicationComposer } from "components/Subscribe/SubscribeSuccessFollowUps";
+import {
+  usePublicationData,
+  useNormalizedPublicationRecord,
+} from "./PublicationSWRProvider";
 import { Separator } from "components/Layout";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import {
@@ -12,7 +19,12 @@ import { AtmosphereAccount } from "components/Icons/AtmosphereAccount";
 import { EmailTiny } from "components/Icons/EmailTiny";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { DashboardEmptyState } from "./DashboardEmptyState";
-import { CheckboxMenuItem, Menu, MenuSeparator } from "components/Menu";
+import {
+  CheckboxMenuItem,
+  Menu,
+  MenuItem,
+  MenuSeparator,
+} from "components/Menu";
 import type { MembershipTiers, PaidTier } from "src/membership";
 
 export type SubscriberStatus = "subscribed" | "unconfirmed" | "unsubscribed";
@@ -38,7 +50,6 @@ export function PublicationSubscribers(props: {
   showPageBackground: boolean;
   tiers: MembershipTiers | null;
 }) {
-  let smoker = useSmoker();
   let { subscriberStatus } = useDashboardState();
   let { membersOnly, selected, freeSelected, selectedPaidTiers, tierNarrowed } =
     useTierFilter(props.tiers?.paid ?? []);
@@ -81,34 +92,19 @@ export function PublicationSubscribers(props: {
       }
     >
       {!hasSubscribers ? (
-        <DashboardEmptyState
-          title="No subscribers yet!"
-          description={
+        <DashboardEmptyState>
+          <h3 className="text-primary">No subscribers yet!</h3>
+          <div className="text-secondary flex flex-col gap-2">
             <p>
               No one has subscribed to your publication yet… Get the word out!
             </p>
-          }
-          cta={
-            <ButtonPrimary
-              onClick={(e) => {
-                e.preventDefault();
-                let rect = (
-                  e.currentTarget as Element
-                )?.getBoundingClientRect();
-                navigator.clipboard.writeText(props.publicationShareUrl);
-                smoker({
-                  position: {
-                    x: rect ? rect.left + (rect.right - rect.left) / 2 : 0,
-                    y: rect ? rect.top + 26 : 0,
-                  },
-                  text: "Copied Publication URL!",
-                });
-              }}
-            >
-              Copy Share Link
-            </ButtonPrimary>
-          }
-        />
+          </div>
+          <div className="flex flex-wrap justify-center gap-2 pt-2">
+            <SharePublicationButton
+              publicationShareUrl={props.publicationShareUrl}
+            />
+          </div>
+        </DashboardEmptyState>
       ) : filtered.length === 0 ? (
         <div
           className={`italic text-tertiary flex flex-col gap-0 text-center justify-center py-4 border rounded-md ${bgBorder}`}
@@ -140,6 +136,62 @@ export function PublicationSubscribers(props: {
     </DashboardPageLayout>
   );
 }
+
+const SharePublicationButton = (props: { publicationShareUrl: string }) => {
+  let smoker = useSmoker();
+  let [bskyShareOpen, setBskyShareOpen] = useState(false);
+  let { data } = usePublicationData();
+  let record = useNormalizedPublicationRecord();
+  let uri = data?.publication?.uri;
+
+  return (
+    <>
+      <Menu
+        asChild
+        trigger={
+          <ButtonPrimary>
+            <ShareTiny /> Share Publication
+          </ButtonPrimary>
+        }
+      >
+        {uri && record && (
+          <MenuItem onSelect={() => setBskyShareOpen(true)}>
+            Share on Bluesky
+          </MenuItem>
+        )}
+        <MenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            let rect = (e.currentTarget as Element)?.getBoundingClientRect();
+            navigator.clipboard.writeText(props.publicationShareUrl);
+            smoker({
+              position: {
+                x: rect ? rect.left + (rect.right - rect.left) / 2 : 0,
+                y: rect ? rect.top + 26 : 0,
+              },
+              text: "Copied Publication URL!",
+            });
+          }}
+        >
+          Copy Link
+        </MenuItem>
+      </Menu>
+      {uri && record && (
+        <Modal
+          sheetOnMobile
+          open={bskyShareOpen}
+          onOpenChange={setBskyShareOpen}
+          className="max-w-full w-lg"
+        >
+          <SharePublicationComposer
+            publication={{ uri, record }}
+            onPosted={() => setBskyShareOpen(false)}
+          />
+        </Modal>
+      )}
+    </>
+  );
+};
 
 const SubscriberListItem = (props: {
   handle: string | undefined;

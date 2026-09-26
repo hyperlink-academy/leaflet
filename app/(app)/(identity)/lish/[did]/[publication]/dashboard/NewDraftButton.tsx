@@ -1,7 +1,11 @@
 "use client";
 import { createPublicationDraft } from "actions/createPublicationDraft";
 import { ActionButton } from "components/ActionBar/ActionButton";
-import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
+import {
+  ButtonPrimary,
+  ButtonSecondary,
+  ButtonTertiary,
+} from "components/Buttons";
 import { AddTiny } from "components/Icons/AddTiny";
 import { useRouter } from "next/navigation";
 
@@ -15,11 +19,15 @@ function useCreateDraft(publication: string) {
 
 export function NewDraftButton(props: {
   publication: string;
-  secondary?: boolean;
+  type?: "primary" | "secondary" | "tertiary";
   children: React.ReactNode;
 }) {
   let handleOnClick = useCreateDraft(props.publication);
-  let Button = props.secondary ? ButtonSecondary : ButtonPrimary;
+  let Button = {
+    primary: ButtonPrimary,
+    secondary: ButtonSecondary,
+    tertiary: ButtonTertiary,
+  }[props.type ?? "primary"];
   return <Button onClick={handleOnClick}>{props.children}</Button>;
 }
 

@@ -10,17 +10,13 @@ import { DotLoader } from "components/utils/DotLoader";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { useToaster } from "components/Toast";
 import { actionErrorContent } from "components/OAuthError";
+import { CharacterCounter } from "./CharacterCounter";
 
-// Loaded on demand rather than bundled: the composer drags in prosemirror,
-// which every reader would otherwise download for a button most never click.
 export const LazyBlueskyPostComposer = dynamic(
   () => import("./BlueskyPostComposer").then((m) => m.BlueskyPostComposer),
   { ssr: false, loading: () => <DotLoader /> },
 );
 
-// Editor state and submit flow shared by every "post to Bluesky" form. `post`
-// serializes the composed text and hands it to `publish`, which calls the
-// relevant server action; success and failure are toasted here.
 export function useBskyPostSubmit(args: { onPosted: () => void }) {
   let toaster = useToaster();
   let editorStateRef = useRef<EditorState | null>(null);
@@ -64,20 +60,24 @@ export function BskyPostSubmitButton(props: {
   onClick: () => void;
 }) {
   return (
-    <ButtonPrimary
-      className="place-self-end"
-      compact
-      onClick={props.onClick}
-      disabled={props.posting || props.charCount === 0 || props.charCount > 300}
-    >
-      {props.posting ? (
-        <DotLoader />
-      ) : (
-        <>
-          <BlueskyTiny /> Post
-        </>
-      )}
-    </ButtonPrimary>
+    <div className="flex items-center gap-2 place-self-end">
+      <CharacterCounter count={props.charCount} limit={300} />
+      <ButtonPrimary
+        compact
+        onClick={props.onClick}
+        disabled={
+          props.posting || props.charCount === 0 || props.charCount > 300
+        }
+      >
+        {props.posting ? (
+          <DotLoader />
+        ) : (
+          <>
+            <BlueskyTiny /> Post
+          </>
+        )}
+      </ButtonPrimary>
+    </div>
   );
 }
 

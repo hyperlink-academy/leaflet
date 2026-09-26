@@ -63,29 +63,28 @@ function PublishedEmpty(props: { publication: string }) {
   let router = useRouter();
   let params = useParams<{ did: string; publication: string }>();
   return (
-    <DashboardEmptyState
-      title="No published posts!"
-      description={
+    <DashboardEmptyState>
+      <h3 className="text-primary">No published posts!</h3>
+      <div className="text-secondary flex flex-col gap-2">
         <p>
           You haven&apos;t published anything to this publication yet! Once you
           do, it&apos;ll appear here.
         </p>
-      }
-      cta={
-        <>
-          <ButtonPrimary
-            onClick={() =>
-              router.push(`/lish/${params.did}/${params.publication}/dashboard`)
-            }
-          >
-            Go to Drafts
-          </ButtonPrimary>
-          <NewDraftButton publication={props.publication} secondary>
-            <AddTiny /> Start a New Draft
-          </NewDraftButton>
-        </>
-      }
-    />
+      </div>
+      <div className="flex flex-col justify-center gap-1 pt-2">
+        <ButtonPrimary
+          className="mx-auto"
+          onClick={() =>
+            router.push(`/lish/${params.did}/${params.publication}/dashboard`)
+          }
+        >
+          Go to Drafts
+        </ButtonPrimary>
+        <NewDraftButton publication={props.publication} type="tertiary">
+          Start a New Draft
+        </NewDraftButton>
+      </div>
+    </DashboardEmptyState>
   );
 }
 

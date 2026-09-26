@@ -18,8 +18,6 @@ export function useVisibleDrafts() {
   let isOwner =
     !!identity?.atp_did &&
     identity.atp_did === pub_data.publication.identity_did;
-  // Contributors only see drafts where they are listed in leaflet_contributors.
-  // Owners see everything.
   let visibleDrafts = isOwner
     ? pub_data.drafts
     : pub_data.drafts.filter((d) =>
@@ -84,32 +82,28 @@ export function DraftList(props: {
 
 const DraftsEmpty = (props: { publication: string }) => {
   return (
-    <DashboardEmptyState
-      title="Write your first Draft!"
-      illustration={
-        <img
-          src="/illustrations/welcome-to-publication.webp"
-          alt=""
-          className="w-full max-w-xs h-auto mx-auto mb-2"
-        />
-      }
-      description={
-        <>
-          <p>
-            Now that your publication is all set up, it&apos;s time to start
-            writing!
-          </p>
-          <p>
-            Drafts in progress will appear here. Things you&apos;ve already
-            published are in the Published tab!
-          </p>
-        </>
-      }
-      cta={
+    <DashboardEmptyState>
+      <img
+        src="/illustrations/welcome-to-publication.webp"
+        alt=""
+        className="w-full max-w-md h-auto mx-auto mb-2"
+      />
+      <h2 className="text-primary">Welcome to your new Publication!</h2>
+      <div className="text-secondary flex flex-col gap-2">
+        <p className="font-bold">
+          Now that you're all set up, <br />
+          it&apos;s time to start writing!
+        </p>
+        <p>
+          Drafts will appear here. Things you&apos;ve already published are in
+          the Published tab!
+        </p>
+      </div>
+      <div className="flex flex-wrap justify-center gap-2 pt-2">
         <NewDraftButton publication={props.publication}>
           <AddTiny /> New Draft
         </NewDraftButton>
-      }
-    />
+      </div>
+    </DashboardEmptyState>
   );
 };
