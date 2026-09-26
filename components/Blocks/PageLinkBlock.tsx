@@ -8,16 +8,13 @@ import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { usePageMetadata } from "src/hooks/queries/usePageMetadata";
 import { CSSProperties, useEffect, useRef, useState } from "react";
-import {
-  useBlocks,
-  useCanvasBlocksWithType,
-} from "src/hooks/queries/useBlocks";
+import { useBlocks } from "src/hooks/queries/useBlocks";
 import { CompactPageLink } from "./CompactPageLink";
 import {
   PageLinkSettingsButton,
   usePageLinkDisplay,
 } from "./PageLinkBlockSettings";
-import { Canvas, CanvasBackground, CanvasContent } from "components/Canvas";
+import { CanvasContent } from "components/Canvas";
 import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
@@ -67,10 +64,7 @@ export function PageLinkBlock(
           }}
         >
           {display === "compact" ? (
-            <CompactLinkBlock
-              pageEntity={page.data.value}
-              type={type === "canvas" ? "canvas" : "doc"}
-            />
+            <CompactLinkBlock pageEntity={page.data.value} />
           ) : type === "canvas" ? (
             <CanvasLinkBlock entityID={page.data.value} />
           ) : (
@@ -81,43 +75,21 @@ export function PageLinkBlock(
     </CardThemeProvider>
   );
 }
-function CompactLinkBlock(props: {
-  pageEntity: string;
-  type: "doc" | "canvas";
-}) {
-  let title = usePageTitleBlock(props.pageEntity, props.type);
+function CompactLinkBlock(props: { pageEntity: string }) {
+  let [title] = usePageMetadata(props.pageEntity);
   return (
     <CompactPageLink
       isHeading={title?.type === "heading"}
       title={
         title && (
           <div className="flex gap-2">
-            {title.listBlock && (
-              <ListMarker {...title.listBlock} className="pt-[8px]!" />
-            )}
+            {title.listData && <ListMarker {...title} className="pt-[8px]!" />}
             <RenderedTextBlock entityID={title.entityID} type="text" />
           </div>
         )
       }
     />
   );
-}
-
-// Canvases keep their blocks in canvas/block rather than card/block, so the
-// title comes from the topmost-leftmost text block instead of the first child.
-function usePageTitleBlock(pageEntity: string, type: "doc" | "canvas") {
-  let [docTitle] = usePageMetadata(type === "doc" ? pageEntity : null);
-  let canvasTitle = useCanvasBlocksWithType(
-    type === "canvas" ? pageEntity : null,
-  ).find((b) => b.type === "text" || b.type === "heading");
-  if (docTitle)
-    return {
-      entityID: docTitle.entityID,
-      type: docTitle.type,
-      listBlock: docTitle.listData ? docTitle : undefined,
-    };
-  if (canvasTitle)
-    return { entityID: canvasTitle.value, type: canvasTitle.type };
 }
 
 function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
@@ -295,7 +267,7 @@ function PagePreview(props: { entityID: string }) {
   );
 }
 
-const CanvasLinkBlock = (props: { entityID: string; preview?: boolean }) => {
+const CanvasLinkBlock = (props: { entityID: string }) => {
   let pageWidth = `var(--page-width-unitless)`;
   return (
     <div
@@ -310,11 +282,7 @@ const CanvasLinkBlock = (props: { entityID: string; preview?: boolean }) => {
           transform: `scale(calc(((${pageWidth} - 36) / 1272 )))`,
         }}
       >
-        {props.preview ? (
-          <CanvasBackground entityID={props.entityID} />
-        ) : (
-          <CanvasContent entityID={props.entityID} preview />
-        )}
+        <CanvasContent entityID={props.entityID} preview />
       </div>
     </div>
   );

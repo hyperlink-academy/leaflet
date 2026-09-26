@@ -1,16 +1,21 @@
-import { useEntity, useReplicache } from "src/replicache";
+import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { v7 } from "uuid";
 import { BaseBlock } from "./Blocks/Block";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { registerBlockGroup } from "src/utils/blockGroups";
+import {
+  type CSSProperties,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useDrag } from "src/hooks/useDrag";
 import { useLongPress } from "src/hooks/useLongPress";
 import { focusBlock } from "src/utils/focusBlock";
 import { elementId } from "src/utils/elementId";
 import { useUIState } from "src/useUIState";
 import useMeasure from "react-use-measure";
-import { useIsMobile } from "src/hooks/isMobile";
-import { Media } from "./Media";
 import { TooltipButton } from "./Buttons";
 import { useBlockKeyboardHandlers } from "./Blocks/useBlockKeyboardHandlers";
 import { AddSmall } from "./Icons/AddSmall";
@@ -19,65 +24,124 @@ import { Popover } from "./Popover";
 import { Separator } from "./Layout";
 import { CommentTiny } from "./Icons/CommentTiny";
 import { AddTags, PublicationMetadata } from "./Pages/PublicationMetadata";
-import { useLeafletPublicationData } from "./PageSWRDataProvider";
+import {
+  useLeafletPublicationData,
+  useLeafletPublicationPage,
+} from "./PageSWRDataProvider";
 import { useHandleCanvasDrop } from "./Blocks/useHandleCanvasDrop";
 import { useBlockMouseHandlers } from "./Blocks/useBlockMouseHandlers";
 import { RecommendEmptyTiny } from "./Icons/RecommendTiny";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { mergePreferences } from "src/utils/mergePreferences";
-import { CANVAS_DRAG_STACK_ORDER } from "src/utils/canvasBlockOrder";
+import {
+  CANVAS_DRAG_STACK_ORDER,
+  canvasBlockOrder,
+} from "src/utils/canvasBlockOrder";
+import { Replicache } from "replicache";
+import { UndoManager } from "src/undoManager";
 import { useCanvasStackOrders } from "src/hooks/queries/useCanvasStacking";
 import { useCanvasBlocksWithType } from "src/hooks/queries/useBlocks";
+import {
+  CanvasZoomProvider,
+  getCanvasZoom,
+  useCanvasZoomEngine,
+} from "src/canvasZoom/CanvasZoomProvider";
+import { CanvasZoomLayer } from "src/canvasZoom/CanvasZoomLayer";
+import { CanvasFocusZoom } from "src/canvasZoom/CanvasFocusZoom";
+import { CanvasOverlay } from "src/canvasZoom/CanvasPageScroll";
+import { CanvasZoomControls } from "./CanvasZoomControls";
+import {
+  type CanvasMobileView,
+  mobileViewArea,
+} from "src/canvasZoom/mobileView";
+import {
+  CheckboxMenuItem,
+  Menu,
+  MenuSeparator,
+  RadioMenuGroup,
+  RadioMenuItem,
+} from "./Menu";
+import { MobileViewSmall } from "./Icons/MobileViewSmall";
+import { EditTiny } from "./Icons/EditTiny";
+import { CanvasInkLayer } from "./Blocks/DrawingBlock/CanvasInkLayer";
+import { InkToolbar } from "./Blocks/DrawingBlock/InkToolbar";
+import { useInkSession } from "./Blocks/DrawingBlock/useInkSession";
+import { useCanvasSize } from "src/hooks/queries/useCanvasSize";
+import { type CanvasBounds, clampToCanvas } from "src/utils/embeddedCanvasSize";
 
 export function Canvas(props: {
   entityID: string;
   preview?: boolean;
   first?: boolean;
+  /** Below a publication header: the page scrolls it (CanvasPageScroll). */
+  pageScroll?: boolean;
 }) {
   let entity_set = useEntitySetContext();
-  let ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    let abort = new AbortController();
-    let isTouch = false;
-    let startX: number, startY: number, scrollLeft: number, scrollTop: number;
-    let el = ref.current;
-    ref.current?.addEventListener(
-      "wheel",
-      (e) => {
-        if (!el) return;
-        if (
-          (e.deltaX > 0 && el.scrollLeft >= el.scrollWidth - el.clientWidth) ||
-          (e.deltaX < 0 && el.scrollLeft <= 0) ||
-          (e.deltaY > 0 && el.scrollTop >= el.scrollHeight - el.clientHeight) ||
-          (e.deltaY < 0 && el.scrollTop <= 0)
-        ) {
-          return;
-        }
-        e.preventDefault();
-        el.scrollLeft += e.deltaX;
-        el.scrollTop += e.deltaY;
-      },
-      { passive: false, signal: abort.signal },
-    );
-    return () => abort.abort();
-  });
+  // Readers on a view-only link get the same lock as published viewers.
+  let lockViewerZoom =
+    !!useEntity(props.entityID, "canvas/lock-viewer-zoom")?.data.value &&
+    !entity_set.permissions.write;
+  let size = useCanvasSize(props.entityID);
+  let mobileArea = mobileViewArea(
+    useEntity(props.entityID, "canvas/mobile-view")?.data.value,
+  );
 
   return (
-    <div
-      ref={ref}
-      id={elementId.page(props.entityID).canvasScrollArea}
-      className={`
-        canvasWrapper
-        h-full w-fit
-        overflow-y-scroll
-      `}
+    <CanvasZoomProvider
+      pageKey={props.entityID}
+      pageScroll={props.pageScroll}
+      contentWidth={size.width}
+      centered={size.fixed}
+      initialArea={mobileArea}
+      lockViewerZoom={lockViewerZoom}
+      // Writers double tap empty canvas to add a block.
+      doubleTapZoom={!!props.preview || !entity_set.permissions.write}
     >
-      <AddCanvasBlockButton entityID={props.entityID} entity_set={entity_set} />
+      <CanvasOverlay edge="top">
+        {/* A drawing is a picture in its parent page, with no phone framing
+            or post metadata of its own. */}
+        {!size.fixed && (
+          <div className="absolute top-6 right-3 sm:top-4 sm:right-4 z-20 flex flex-row gap-2 items-start">
+            {!props.preview && entity_set.permissions.write && (
+              <MobileViewToggle entityID={props.entityID} />
+            )}
+            <CanvasMetadata
+              entityID={props.entityID}
+              isSubpage={!props.first}
+            />
+          </div>
+        )}
+        {!props.preview && entity_set.permissions.write && (
+          <InkToolbar pageID={props.entityID} />
+        )}
+      </CanvasOverlay>
+      {!props.preview && entity_set.permissions.write && (
+        <CanvasFocusZoom pageEntityID={props.entityID} />
+      )}
 
-      <CanvasMetadata entityID={props.entityID} isSubpage={!props.first} />
+      <div
+        id={elementId.page(props.entityID).canvasScrollArea}
+        // A class rather than an inline width: the zoom engine owns the
+        // box's inline width, which it rewrites to fit a scrollbar gutter.
+        style={{ "--canvas-width": `${size.width}px` } as CSSProperties}
+        className={`
+          canvasWrapper
+          w-(--canvas-width) max-w-full
+          ${props.pageScroll ? "canvasPageScroll" : "h-full overflow-y-scroll"}
+          ${size.fixed ? "bg-border-light" : ""}
+          touch-pan-x touch-pan-y
+        `}
+      >
+        <CanvasZoomLayer contentHeight={size.height} mobileArea={mobileArea}>
+          <CanvasContent {...props} />
+        </CanvasZoomLayer>
+      </div>
 
-      <CanvasContent {...props} />
-    </div>
+      <CanvasOverlay edge="bottom">
+        <AddCanvasBlockButton entityID={props.entityID} canvas={size} />
+        <CanvasZoomControls className="absolute left-2 bottom-16 sm:left-4 sm:bottom-[88px] z-10 bg-bg-page rounded-md px-1 py-0.5" />
+      </CanvasOverlay>
+    </CanvasZoomProvider>
   );
 }
 
@@ -85,9 +149,10 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   let blocks = useEntity(props.entityID, "canvas/block");
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
-  let height = Math.max(...blocks.map((f) => f.data.position.y), 0);
+  let size = useCanvasSize(props.entityID);
   let handleDrop = useHandleCanvasDrop(props.entityID);
   let stackOrders = useCanvasStackOrders(props.entityID);
+  let inking = useInkSession((s) => s.page === props.entityID);
 
   return (
     <div
@@ -103,23 +168,17 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
             behavior: "smooth",
             inline: "nearest",
           });
-        if (e.detail === 2 || e.ctrlKey || e.metaKey) {
+        if ((e.detail === 2 || e.ctrlKey || e.metaKey) && rep) {
           let parentRect = e.currentTarget.getBoundingClientRect();
-          let newEntityID = v7();
-          // addCanvasBlock writes a fact per attribute; grouping keeps placing
-          // a block a single Cmd-Z rather than one per fact.
-          await undoManager.withUndoGroup(async () => {
-            await rep?.mutate.addCanvasBlock({
-              newEntityID,
-              parent: props.entityID,
-              position: {
-                x: Math.max(e.clientX - parentRect.left, 0),
-                y: Math.max(e.clientY - parentRect.top - 12, 0),
-              },
-              factID: v7(),
-              type: "text",
-              permission_set: entity_set.set,
-            });
+          let zoom = getCanvasZoom(props.entityID);
+          let newEntityID = await addCanvasTextBlock(rep, undoManager, {
+            parent: props.entityID,
+            canvas: size,
+            position: {
+              x: Math.max((e.clientX - parentRect.left) / zoom, 0),
+              y: Math.max((e.clientY - parentRect.top) / zoom - 12, 0),
+            },
+            permission_set: entity_set.set,
           });
           focusBlock(
             { type: "text", parent: props.entityID, entityID: newEntityID },
@@ -139,19 +198,28 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
         !props.preview && entity_set.permissions.write ? handleDrop : undefined
       }
       style={{
-        minHeight: height + 512,
+        width: size.width,
+        minHeight: size.height,
+        // Any other canvas fills the viewport past its last block.
+        height: size.fixed ? size.height : "100%",
         contain: "size layout paint",
       }}
-      className="relative h-full w-[1272px]"
+      className={`relative ${size.fixed ? `bg-bg-page ${props.preview ? "" : "shadow-sm"}` : ""}`}
     >
-      <CanvasBackground entityID={props.entityID} />
+      <CanvasBackground
+        entityID={props.entityID}
+        // A drawing reads as a picture inline; the grid only helps placing
+        // blocks while editing it.
+        defaultPattern={size.fixed && props.preview ? "plain" : "grid"}
+      />
+      {!props.preview && entity_set.permissions.write && (
+        <MobileViewGuides entityID={props.entityID} />
+      )}
+      {!props.preview && entity_set.permissions.write && inking && (
+        <CanvasInkLayer pageID={props.entityID} />
+      )}
       {[...blocks]
-        .sort((a, b) => {
-          if (a.data.position.y === b.data.position.y) {
-            return a.data.position.x - b.data.position.x;
-          }
-          return a.data.position.y - b.data.position.y;
-        })
+        .sort((a, b) => canvasBlockOrder(a.data.position, b.data.position))
         .map((b) => {
           return (
             <CanvasBlock
@@ -161,7 +229,8 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
               position={b.data.position}
               factID={b.id}
               stackOrder={stackOrders.get(b.data.value)}
-              key={b.id}
+              canvas={size}
+              key={b.data.value}
             />
           );
         })}
@@ -169,11 +238,103 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   );
 }
 
+const MOBILE_VIEW_LABELS: Record<CanvasMobileView, string> = {
+  unconstrained: "Fit whole canvas",
+  left: "Anchor to left edge",
+  center: "Anchor to center",
+};
+
+// Picks how a phone frames this canvas; the anchored views draw their
+// area on the canvas as guides.
+const MobileViewToggle = (props: { entityID: string }) => {
+  let { rep } = useReplicache();
+  let fact = useEntity(props.entityID, "canvas/mobile-view");
+  let view: CanvasMobileView = fact?.data.value || "unconstrained";
+  let lockFact = useEntity(props.entityID, "canvas/lock-viewer-zoom");
+  let locked = !!lockFact?.data.value;
+  return (
+    <div>
+      <Menu
+        asChild
+        side="bottom"
+        align="end"
+        trigger={
+          <button
+            aria-label="Mobile view"
+            title="Mobile view"
+            className={`flex items-center rounded-md p-1 bg-bg-page border border-border-light hover:text-accent-contrast ${view === "unconstrained" ? "text-tertiary" : "text-accent-contrast"}`}
+          >
+            <MobileViewSmall />
+          </button>
+        }
+      >
+        <div className="px-2 pt-1 pb-0.5 text-xs text-tertiary">
+          Mobile view
+        </div>
+        <RadioMenuGroup
+          value={view}
+          onValueChange={(value) => {
+            rep?.mutate.assertFact({
+              id: fact?.id,
+              entity: props.entityID,
+              attribute: "canvas/mobile-view",
+              data: {
+                type: "canvas-mobile-view-union",
+                value: value as CanvasMobileView,
+              },
+            });
+          }}
+        >
+          {(Object.keys(MOBILE_VIEW_LABELS) as CanvasMobileView[]).map((v) => (
+            <RadioMenuItem key={v} value={v} selected={v === view}>
+              {MOBILE_VIEW_LABELS[v]}
+            </RadioMenuItem>
+          ))}
+        </RadioMenuGroup>
+        <MenuSeparator />
+        <CheckboxMenuItem
+          compact
+          checked={locked}
+          onSelect={(e) => {
+            e.preventDefault();
+            rep?.mutate.assertFact({
+              id: lockFact?.id,
+              entity: props.entityID,
+              attribute: "canvas/lock-viewer-zoom",
+              data: { type: "boolean", value: !locked },
+            });
+          }}
+        >
+          Lock viewer zoom
+        </CheckboxMenuItem>
+      </Menu>
+    </div>
+  );
+};
+
+// Guides for the anchored mobile view area, in canvas px so they scale with
+// the zoom; painted under the blocks.
+const MobileViewGuides = (props: { entityID: string }) => {
+  let area = mobileViewArea(
+    useEntity(props.entityID, "canvas/mobile-view")?.data.value,
+  );
+  if (!area) return null;
+  return (
+    <div
+      aria-hidden
+      className="canvasMobileViewGuides absolute top-0 bottom-0 pointer-events-none border-x border-dashed border-accent-1"
+      style={{ left: area.left, width: area.width }}
+    />
+  );
+};
+
 const CanvasMetadata = (props: {
   entityID: string;
   isSubpage: boolean | undefined;
 }) => {
   let { data: pub, normalizedPublication } = useLeafletPublicationData();
+  // A publication's own page has no post metadata.
+  let isPublicationPage = !!useLeafletPublicationPage();
   let { rep } = useReplicache();
   // A post header block on the canvas carries the tags and metadata itself.
   let hasHeaderBlock = useCanvasBlocksWithType(props.entityID).some(
@@ -189,7 +350,7 @@ const CanvasMetadata = (props: {
   if (!pub || !pub.publications) return null;
 
   if (!normalizedPublication) return null;
-  if (hasHeaderBlock) return null;
+  if (hasHeaderBlock || isPublicationPage) return null;
   let merged = mergePreferences(
     postPreferences || undefined,
     normalizedPublication.preferences,
@@ -199,7 +360,7 @@ const CanvasMetadata = (props: {
   let showRecommends = merged.showRecommends !== false;
 
   return (
-    <div className="flex flex-row gap-3 items-center absolute top-6 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
+    <div className="flex flex-row gap-3 items-center bg-bg-page border-border-light rounded-md px-2 py-1 h-fit">
       {showRecommends && (
         <div className="flex gap-1 text-tertiary items-center">
           <RecommendEmptyTiny className="text-border" /> —
@@ -237,10 +398,12 @@ const CanvasMetadata = (props: {
 
 const AddCanvasBlockButton = (props: {
   entityID: string;
-  entity_set: { set: string };
+  canvas: CanvasBounds;
 }) => {
   let { rep, undoManager } = useReplicache();
-  let { permissions } = useEntitySetContext();
+  let entity_set = useEntitySetContext();
+  let { permissions } = entity_set;
+  let engine = useCanvasZoomEngine();
   let blocks = useEntity(props.entityID, "canvas/block");
 
   if (!permissions.write) return null;
@@ -257,35 +420,45 @@ const AddCanvasBlockButton = (props: {
         }
         className="w-fit p-2 rounded-full bg-accent-1 border-2 outline-solid outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-2"
         onMouseDown={() => {
-          let page = document.getElementById(
-            elementId.page(props.entityID).canvasScrollArea,
-          );
-          if (!page) return;
-          let newEntityID = v7();
-          // The group stays open until the mutation settles, so every fact
-          // addCanvasBlock writes lands in one Cmd-Z step.
-          undoManager.withUndoGroup(async () => {
-            await rep?.mutate.addCanvasBlock({
-              newEntityID,
-              parent: props.entityID,
-              position: {
-                x: page?.clientWidth + page?.scrollLeft - 468,
-                y: 32 + page.scrollTop,
-              },
-              factID: v7(),
-              type: "text",
-              permission_set: props.entity_set.set,
-            });
+          let box = engine.boxRef.current;
+          if (!box || !rep) return;
+          // Just inside the top right corner of what is on screen, below
+          // a nav stuck over a page-scrolled canvas.
+          let navBottom =
+            parseFloat(
+              getComputedStyle(box).getPropertyValue("--canvas-nav-bottom"),
+            ) || 0;
+          let corner = engine.canvasPointAt({
+            x: engine.viewportRect().width,
+            y: navBottom,
           });
-          setTimeout(() => {
-            focusBlock(
-              { type: "text", entityID: newEntityID, parent: props.entityID },
-              { type: "start" },
-            );
-          }, 20);
+          addCanvasTextBlock(rep, undoManager, {
+            parent: props.entityID,
+            canvas: props.canvas,
+            position: {
+              x: corner.x - 468,
+              y: Math.max(0, corner.y + 32),
+            },
+            permission_set: entity_set.set,
+          }).then((newEntityID) =>
+            setTimeout(() => {
+              focusBlock(
+                { type: "text", entityID: newEntityID, parent: props.entityID },
+                { type: "start" },
+              );
+            }, 20),
+          );
         }}
       >
         <AddSmall />
+      </TooltipButton>
+      <TooltipButton
+        side="left"
+        tooltipContent={<div className="px-1">Draw</div>}
+        className="w-fit p-3 rounded-full bg-bg-page border-2 border-accent-1 outline-solid outline-transparent hover:outline-1 hover:outline-accent-1 text-accent-1"
+        onMouseDown={() => useInkSession.getState().start(props.entityID)}
+      >
+        <EditTiny />
       </TooltipButton>
     </div>
   );
@@ -298,20 +471,29 @@ function CanvasBlock(props: {
   position: { x: number; y: number };
   factID: string;
   stackOrder: number | undefined;
+  canvas: CanvasBounds;
 }) {
   let width =
     useEntity(props.entityID, "canvas/block/width")?.data.value || 360;
-  let rotation =
-    useEntity(props.entityID, "canvas/block/rotation")?.data.value || 0;
+  // Published records store whole degrees, so the editor shows and saves
+  // exactly what will publish.
+  let rotation = Math.round(
+    useEntity(props.entityID, "canvas/block/rotation")?.data.value || 0,
+  );
   let [ref, rect] = useMeasure();
   let type = useEntity(props.entityID, "block/type");
+  let isGroup = type?.data.value === "group";
   let { rep } = useReplicache();
-  let isMobile = useIsMobile();
+  useLayoutEffect(() => {
+    if (isGroup) return registerBlockGroup(props.entityID, props.parent);
+  }, [isGroup, props.entityID, props.parent]);
 
   let { permissions } = useEntitySetContext();
+  // Drag deltas arrive in screen px; block positions and widths are canvas px.
   let onDragEnd = useCallback(
     (dragPosition: { x: number; y: number }) => {
       if (!permissions.write) return;
+      let zoom = getCanvasZoom(props.parent);
       rep?.mutate.assertFact({
         id: props.factID,
         entity: props.parent,
@@ -319,14 +501,18 @@ function CanvasBlock(props: {
         data: {
           type: "spatial-reference",
           value: props.entityID,
-          position: {
-            x: props.position.x + dragPosition.x,
-            y: props.position.y + dragPosition.y,
-          },
+          position: clampToCanvas(
+            {
+              x: props.position.x + dragPosition.x / zoom,
+              y: props.position.y + dragPosition.y / zoom,
+            },
+            { width, height: rect.height / zoom },
+            props.canvas,
+          ),
         },
       });
     },
-    [props, rep, permissions],
+    [props, rep, permissions, width, rect.height],
   );
   let { dragDelta, handlers: dragHandlers } = useDrag({
     onDragEnd,
@@ -339,7 +525,7 @@ function CanvasBlock(props: {
         attribute: "canvas/block/width",
         data: {
           type: "number",
-          value: width + dragPosition.x,
+          value: width + dragPosition.x / getCanvasZoom(props.parent),
         },
       });
     },
@@ -349,26 +535,12 @@ function CanvasBlock(props: {
 
   let RotateOnDragEnd = useCallback(
     (dragDelta: { x: number; y: number }) => {
-      let originX = rect.x + rect.width / 2;
-      let originY = rect.y + rect.height / 2;
-
-      let angle =
-        find_angle(
-          { x: rect.x + rect.width, y: rect.y + rect.height },
-          { x: originX, y: originY },
-          {
-            x: rect.x + rect.width + dragDelta.x,
-            y: rect.y + rect.height + dragDelta.y,
-          },
-        ) *
-        (180 / Math.PI);
-
       rep?.mutate.assertFact({
         entity: props.entityID,
         attribute: "canvas/block/rotation",
         data: {
           type: "number",
-          value: (rotation + angle) % 360,
+          value: Math.round(rotation + rotationDelta(rect, dragDelta)) % 360,
         },
       });
     },
@@ -378,7 +550,7 @@ function CanvasBlock(props: {
 
   let { isLongPress, longPressHandlers: longPressHandlers } = useLongPress(
     () => {
-      if (isLongPress.current && permissions.write) {
+      if (isLongPress.current && permissions.write && !isGroup) {
         focusBlock(
           {
             type: type?.data.value || "text",
@@ -390,25 +562,13 @@ function CanvasBlock(props: {
       }
     },
   );
-  let angle = 0;
-  if (rotateHandle.dragDelta) {
-    let originX = rect.x + rect.width / 2;
-    let originY = rect.y + rect.height / 2;
-
-    angle =
-      find_angle(
-        { x: rect.x + rect.width, y: rect.y + rect.height },
-        { x: originX, y: originY },
-        {
-          x: rect.x + rect.width + rotateHandle.dragDelta.x,
-          y: rect.y + rect.height + rotateHandle.dragDelta.y,
-        },
-      ) *
-      (180 / Math.PI);
-  }
-  let x = props.position.x + (dragDelta?.x || 0);
-  let y = props.position.y + (dragDelta?.y || 0);
-  let transform = `translate(${x}px, ${y}px) rotate(${rotation + angle}deg) scale(${!dragDelta ? "1.0" : "1.02"})`;
+  let angle = rotateHandle.dragDelta
+    ? rotationDelta(rect, rotateHandle.dragDelta)
+    : 0;
+  let liveZoom = getCanvasZoom(props.parent);
+  let x = props.position.x + (dragDelta?.x || 0) / liveZoom;
+  let y = props.position.y + (dragDelta?.y || 0) / liveZoom;
+  let transform = `translate(${x}px, ${y}px) rotate(${Math.round(rotation + angle)}deg) scale(${!dragDelta ? "1.0" : "1.02"})`;
   let [areYouSure, setAreYouSure] = useState(false);
   let blockProps = useMemo(() => {
     return {
@@ -432,11 +592,26 @@ function CanvasBlock(props: {
     type?.data.value,
   ]);
   useBlockKeyboardHandlers(blockProps, areYouSure, setAreYouSure);
-  let mouseHandlers = useBlockMouseHandlers(blockProps);
+  let blockMouseHandlers = useBlockMouseHandlers(blockProps);
+  // A group's children handle their own clicks; the group itself is only
+  // selected by clicking its frame.
+  let mouseHandlers = isGroup
+    ? {
+        ...blockMouseHandlers,
+        onMouseDown: (e: React.MouseEvent) => {
+          if (e.target === e.currentTarget) blockMouseHandlers.onMouseDown(e);
+        },
+      }
+    : blockMouseHandlers;
 
   let isList = useEntity(props.entityID, "block/is-list");
+  // Editing inside a group keeps the group's handles up.
   let isFocused = useUIState(
-    (s) => s.focusedEntity?.entityID === props.entityID,
+    (s) =>
+      s.focusedEntity?.entityID === props.entityID ||
+      (isGroup &&
+        s.focusedEntity?.entityType === "block" &&
+        s.focusedEntity.parent === props.entityID),
   );
 
   return (
@@ -444,7 +619,7 @@ function CanvasBlock(props: {
       ref={ref}
       {...(!props.preview ? { ...longPressHandlers, ...mouseHandlers } : {})}
       id={props.preview ? undefined : elementId.block(props.entityID).container}
-      className={`canvasBlockWrapper absolute group/canvas-block will-change-transform rounded-lg flex items-stretch origin-center p-3`}
+      className={`canvasBlockWrapper absolute group/canvas-block rounded-lg flex items-stretch origin-center p-3`}
       style={{
         top: 0,
         left: 0,
@@ -452,7 +627,7 @@ function CanvasBlock(props: {
         // focus too would hide the effect of the layering buttons, which act
         // on the block that is focused.
         zIndex: dragDelta ? CANVAS_DRAG_STACK_ORDER : props.stackOrder,
-        width: width + (widthHandle.dragDelta?.x || 0),
+        width: width + (widthHandle.dragDelta?.x || 0) / liveZoom,
         transform,
       }}
     >
@@ -463,16 +638,18 @@ function CanvasBlock(props: {
       <div
         className={` w-full ${dragDelta || widthHandle.dragDelta || rotateHandle.dragDelta ? "pointer-events-none" : ""} `}
       >
-        <BaseBlock
-          {...blockProps}
-          listData={
-            isList?.data.value
-              ? { path: [], parent: props.parent, depth: 1 }
-              : undefined
-          }
-          areYouSure={areYouSure}
-          setAreYouSure={setAreYouSure}
-        />
+        {type && (
+          <BaseBlock
+            {...blockProps}
+            listData={
+              isList?.data.value
+                ? { path: [], parent: props.parent, depth: 1 }
+                : undefined
+            }
+            areYouSure={areYouSure}
+            setAreYouSure={setAreYouSure}
+          />
+        )}
       </div>
 
       {!props.preview && permissions.write && (
@@ -508,7 +685,10 @@ function CanvasBlock(props: {
   );
 }
 
-export const CanvasBackground = (props: { entityID: string }) => {
+const CanvasBackground = (props: {
+  entityID: string;
+  defaultPattern: "grid" | "plain";
+}) => {
   let cardBackgroundImage = useEntity(
     props.entityID,
     "theme/card-background-image",
@@ -523,7 +703,7 @@ export const CanvasBackground = (props: { entityID: string }) => {
 
   let canvasPattern =
     useEntity(props.entityID, "canvas/background-pattern")?.data.value ||
-    "grid";
+    props.defaultPattern;
   return (
     <div
       className="w-full h-full pointer-events-none"
@@ -628,8 +808,12 @@ const Gripper = (props: {
   return (
     <div
       onMouseDown={props.onMouseDown}
-      onPointerDown={props.onMouseDown}
-      className="gripper w-[9px] shrink-0 py-1 mr-1 cursor-grab touch-none"
+      // A cancelled pointerdown suppresses the mousedown the wrapper selects
+      // the block on, so a mouse starts its drag from mousedown instead.
+      onPointerDown={(e) => {
+        if (e.pointerType !== "mouse") props.onMouseDown(e);
+      }}
+      className="gripper absolute z-10 left-0 top-3 bottom-3 w-[9px] py-1 cursor-grab touch-none"
     >
       <div className="h-full grid grid-cols-1 grid-rows-1 ">
         {/* the gripper is two svg's stacked on top of each other.
@@ -647,10 +831,51 @@ const Gripper = (props: {
   );
 };
 
-type P = { x: number; y: number };
-function find_angle(P2: P, P1: P, P3: P) {
-  if (P1.x === P3.x && P1.y === P3.y) return 0;
-  let a = Math.atan2(P3.y - P1.y, P3.x - P1.x);
-  let b = Math.atan2(P2.y - P1.y, P2.x - P1.x);
-  return a - b;
+// addCanvasBlock writes a fact per attribute; the group keeps placing a block
+// a single Cmd-Z rather than one per fact, held open until the mutation
+// settles.
+async function addCanvasTextBlock(
+  rep: Replicache<ReplicacheMutators>,
+  undoManager: UndoManager,
+  {
+    canvas,
+    ...args
+  }: {
+    parent: string;
+    canvas: CanvasBounds;
+    position: { x: number; y: number };
+    permission_set: string;
+  },
+) {
+  let newEntityID = v7();
+  await undoManager.withUndoGroup(() =>
+    rep.mutate.addCanvasBlock({
+      ...args,
+      position: clampToCanvas(args.position, NEW_BLOCK_SIZE, canvas),
+      newEntityID,
+      factID: v7(),
+      type: "text",
+    }),
+  );
+  return newEntityID;
+}
+
+// A new text block's footprint, for keeping it inside a drawing.
+const NEW_BLOCK_SIZE = { width: 360, height: 48 };
+
+// Degrees the rotate handle has swept around the block's center, from its
+// resting spot at the block's bottom-right corner.
+function rotationDelta(
+  rect: { x: number; y: number; width: number; height: number },
+  dragDelta: { x: number; y: number },
+) {
+  let corner = { x: rect.x + rect.width, y: rect.y + rect.height };
+  let origin = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+  let dragged = { x: corner.x + dragDelta.x, y: corner.y + dragDelta.y };
+  if (origin.x === dragged.x && origin.y === dragged.y) return 0;
+  return (
+    (Math.atan2(dragged.y - origin.y, dragged.x - origin.x) -
+      Math.atan2(corner.y - origin.y, corner.x - origin.x)) *
+    (180 / Math.PI)
+  );
 }

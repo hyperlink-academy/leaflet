@@ -30,8 +30,10 @@ const WEB_WEBP_QUALITY = 80;
 // The only variant format the image proxies will produce. Kept to a closed
 // allowlist for the same reason widths are snapped to a ladder: the value is
 // caller-controlled and each distinct one mints a permanent stored variant.
-export function parseImageFormat(value: string | null): "email" | undefined {
-  return value === "email" ? "email" : undefined;
+export function parseImageFormat(
+  value: string | null,
+): "email" | "mp4" | undefined {
+  return value === "email" || value === "mp4" ? value : undefined;
 }
 
 // Encodes a stored variant for an image-proxy request, or null when the

@@ -1,45 +1,42 @@
 "use client";
+import { useIsMobile } from "src/hooks/isMobile";
 import {
   PubLeafletPagesCanvas,
   PubLeafletPagesLinearDocument,
-  PubLeafletPublication,
 } from "lexicons/api";
 import { PostPageData } from "src/utils/getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { AppBskyFeedDefs } from "@atproto/api";
-import { useMemo } from "react";
+import { useMemo, type ComponentProps } from "react";
 import { PageWrapper } from "components/Pages/Page";
-import { Block } from "./PostContent";
-import {
-  canvasBlockOrder,
-  canvasStackOrders,
-} from "src/utils/canvasBlockOrder";
-import { CanvasBackgroundPattern } from "components/Canvas";
+import { CanvasZoomProvider } from "src/canvasZoom/CanvasZoomProvider";
+import { CanvasZoomLayer } from "src/canvasZoom/CanvasZoomLayer";
+import { CanvasOverlay } from "src/canvasZoom/CanvasPageScroll";
+import { mobileViewArea, type CanvasArea } from "src/canvasZoom/mobileView";
+import { CanvasZoomControls } from "components/CanvasZoomControls";
+import { CanvasBlocks } from "./CanvasBlockContent";
+import { canvasContentHeight } from "src/utils/canvasBlockOrder";
 import { getQuoteCount, Interactions } from "./Interactions/Interactions";
 import { Separator } from "components/Layout";
 import { Popover } from "components/Popover";
 import { InfoSmall } from "components/Icons/InfoSmall";
-import {
-  PostByline,
-  PostHeader,
-  type BylineProfile,
-} from "./PostHeader/PostHeader";
+import { PostHeader, type BylineProfile } from "./PostHeader/PostHeader";
 import { useInlineDrawer } from "./Interactions/useDrawerOpen";
 import { DrawerThreadPageProvider } from "./Interactions/drawerThreadContext";
-import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
 import { usePostFrame } from "./postFrame";
-import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
-import { useIsMobile } from "src/hooks/isMobile";
 import { PubLeafletBlocksPostHeader } from "lexicons/api";
 import { PostHeaderBlockProvider } from "./PostHeader/postHeaderBlockContext";
 
 export function CanvasPage({
   blocks,
   pages,
+  mobileView,
+  lockViewerZoom,
   ...props
 }: Omit<SharedPageProps, "allPages"> & {
   blocks: PubLeafletPagesCanvas.Block[];
+  mobileView?: PubLeafletPagesCanvas.Main["mobileView"];
+  lockViewerZoom?: boolean;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) {
   const {
@@ -48,8 +45,6 @@ export function CanvasPage({
     profile,
     contributors,
     preferences,
-    pubRecord,
-    theme,
     prerenderedCodeBlocks,
     bskyPostData,
     standardSitePostData,
@@ -58,7 +53,6 @@ export function CanvasPage({
     pageId,
     pageOptions,
     fullPageScroll,
-    hasPageBackground,
   } = props;
   let headerData = useMemo(
     () => ({ data: document, profile, contributors, preferences }),
@@ -108,6 +102,9 @@ export function CanvasPage({
             pollData={pollData}
             pageId={pageId}
             pages={pages}
+            zoomKey={pageId ? `${document_uri}#${pageId}` : document_uri}
+            mobileArea={mobileViewArea(mobileView)}
+            lockViewerZoom={!!lockViewerZoom}
           />
         </PostHeaderBlockProvider>
       </DrawerThreadPageProvider>
@@ -115,127 +112,44 @@ export function CanvasPage({
   );
 }
 
-function CanvasContent({
-  blocks,
-  did,
-  prerenderedCodeBlocks,
-  bskyPostData,
-  standardSitePostData,
-  pageId,
-  pollData,
-  pages,
-}: {
-  blocks: PubLeafletPagesCanvas.Block[];
-  did: string;
-  prerenderedCodeBlocks?: Map<string, string>;
-  pollData: PollData[];
-  bskyPostData: AppBskyFeedDefs.PostView[];
-  standardSitePostData: StandardSitePostData[];
-  pageId?: string;
-  pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
+// A publication's canvas page (`pageScroll`) sits below the publication
+// header inside a CanvasPageArea and scrolls with the page.
+export function CanvasContent({
+  zoomKey,
+  mobileArea,
+  lockViewerZoom,
+  pageScroll,
+  ...props
+}: Omit<ComponentProps<typeof CanvasBlocks>, "preview"> & {
+  zoomKey: string;
+  mobileArea: CanvasArea | null;
+  lockViewerZoom: boolean;
+  pageScroll?: boolean;
 }) {
-  let sortedBlocks = useMemo(
-    () => [...blocks].sort(canvasBlockOrder),
-    [blocks],
-  );
-  let stackOrders = useMemo(
-    () => canvasStackOrders(sortedBlocks),
-    [sortedBlocks],
-  );
-  let height =
-    sortedBlocks.length > 0 ? Math.max(...sortedBlocks.map((b) => b.y), 0) : 0;
-
   return (
-    <div className="canvasWrapper h-full w-fit overflow-y-scroll postContent">
-      <div
-        style={{
-          minHeight: height + 512,
-          contain: "size layout paint",
-        }}
-        className="relative h-full w-[1272px]"
-      >
-        <CanvasBackground />
-
-        {sortedBlocks.map((canvasBlock, index) => {
-          return (
-            <CanvasBlock
-              key={index}
-              canvasBlock={canvasBlock}
-              did={did}
-              pollData={pollData}
-              prerenderedCodeBlocks={prerenderedCodeBlocks}
-              bskyPostData={bskyPostData}
-              standardSitePostData={standardSitePostData}
-              pageId={pageId}
-              pages={pages}
-              index={index}
-              stackOrder={stackOrders[index]}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function CanvasBlock({
-  canvasBlock,
-  did,
-  prerenderedCodeBlocks,
-  bskyPostData,
-  standardSitePostData,
-  pollData,
-  pageId,
-  pages,
-  index,
-  stackOrder,
-}: {
-  canvasBlock: PubLeafletPagesCanvas.Block;
-  did: string;
-  prerenderedCodeBlocks?: Map<string, string>;
-  bskyPostData: AppBskyFeedDefs.PostView[];
-  standardSitePostData: StandardSitePostData[];
-  pollData: PollData[];
-  pageId?: string;
-  pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
-  index: number;
-  stackOrder: number;
-}) {
-  let { x, y, width, rotation } = canvasBlock;
-  let transform = `translate(${x}px, ${y}px)${rotation ? ` rotate(${rotation}deg)` : ""}`;
-
-  // Wrap the block in a LinearDocument.Block structure for compatibility
-  let linearBlock: PubLeafletPagesLinearDocument.Block = {
-    $type: "pub.leaflet.pages.linearDocument#block",
-    block: canvasBlock.block,
-  };
-
-  return (
-    <div
-      className="absolute rounded-lg flex items-stretch origin-center p-3"
-      style={{
-        top: 0,
-        left: 0,
-        width,
-        zIndex: stackOrder,
-        transform,
-      }}
+    <CanvasZoomProvider
+      pageKey={zoomKey}
+      pageScroll={pageScroll}
+      initialArea={mobileArea}
+      lockViewerZoom={lockViewerZoom}
     >
-      <div className="contents">
-        <Block
-          pollData={pollData}
-          pageId={pageId}
-          pages={pages}
-          bskyPostData={bskyPostData}
-          standardSitePostData={standardSitePostData}
-          block={linearBlock}
-          did={did}
-          index={[index]}
-          preview={false}
-          prerenderedCodeBlocks={prerenderedCodeBlocks}
-        />
+      {/* w-[1272px] max-w-full: the page keeps its full-canvas width while
+          the zoomed-out spacer shrinks, and the box (not the page card
+          around it) carries the horizontal overflow when zoomed in. */}
+      <div
+        className={`canvasWrapper w-[1272px] max-w-full ${pageScroll ? "canvasPageScroll" : "h-full overflow-y-scroll"} touch-pan-x touch-pan-y postContent`}
+      >
+        <CanvasZoomLayer
+          contentHeight={canvasContentHeight(props.blocks)}
+          mobileArea={mobileArea}
+        >
+          <CanvasBlocks {...props} preview={false} />
+        </CanvasZoomLayer>
       </div>
-    </div>
+      <CanvasOverlay edge="bottom">
+        <CanvasZoomControls className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-20 bg-bg-page border border-border-light rounded-md px-1 py-0.5" />
+      </CanvasOverlay>
+    </CanvasZoomProvider>
   );
 }
 
@@ -292,14 +206,6 @@ const CanvasMetadata = (props: {
           </Popover>
         </>
       )}
-    </div>
-  );
-};
-
-const CanvasBackground = () => {
-  return (
-    <div className="w-full h-full pointer-events-none">
-      <CanvasBackgroundPattern pattern="grid" />
     </div>
   );
 };

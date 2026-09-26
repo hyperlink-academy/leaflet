@@ -1,11 +1,12 @@
 import { MutableRefObject, useCallback } from "react";
-import { Fact, ReplicacheMutators, useReplicache } from "src/replicache";
+import { ReplicacheMutators, useReplicache } from "src/replicache";
 import { EditorView } from "prosemirror-view";
-import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import {
-  DOMParser as ProsemirrorDOMParser,
-  Node as ProsemirrorNode,
-} from "prosemirror-model";
+  restoreEditorState,
+  setEditorState,
+  useEditorStates,
+} from "src/state/useEditorState";
+import { Node as ProsemirrorNode } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
 import { schema } from "./schema";
 import { generateKeyBetween, generateNKeysBetween } from "fractional-indexing";
@@ -18,12 +19,10 @@ import { Replicache } from "replicache";
 import { markdownToHtml } from "src/htmlMarkdownParsers";
 import { betterIsUrl } from "src/utils/isURL";
 import { TextSelection } from "prosemirror-state";
-import type { FilterAttributes } from "src/replicache/attributes";
 import { UndoManager } from "src/undoManager";
 import type { FactInput } from "src/replicache/mutations";
 import {
   buildBlocksFromElements,
-  flattenHTMLToTextBlocks,
   parsePasteHTMLToElements,
   type BlockType,
   type BuiltBlock,
@@ -31,8 +30,7 @@ import {
 import { resolveCopiedFootnoteRefs } from "src/utils/paste/resolveCopiedFootnoteRefs";
 import { renderFootnoteDefHTML } from "src/utils/renderFootnoteDefHTML";
 import { scanIndex } from "src/replicache/utils";
-
-const parser = ProsemirrorDOMParser.fromSchema(schema);
+import { groupCanvasBlock } from "src/utils/groupCanvasBlock";
 
 export const useHandlePaste = (
   entityID: string,
@@ -97,10 +95,11 @@ export const useHandlePaste = (
         if (
           !(children.length === 1 && children[0].tagName === "IMG" && hasImage)
         ) {
-          const pasteParent = propsRef.current.listData
-            ? propsRef.current.listData.parent
-            : propsRef.current.parent;
-          const useBulkPath = propsRef.current.pageType === "doc";
+          const { listData, parent, position, nextPosition } = propsRef.current;
+          // A lone canvas block has no "after it"; if the paste brings
+          // blocks, it becomes the first block of a group that takes them.
+          const groupEntity =
+            propsRef.current.pageType === "canvas" ? v7() : null;
           resolveCopiedFootnoteRefs(children, (footnoteEntityID) =>
             rep.query(async (tx) => {
               let [text] = await scanIndex(tx).eav(
@@ -109,39 +108,27 @@ export const useHandlePaste = (
               );
               return text ? renderFootnoteDefHTML(text.data.value) : null;
             }),
-          ).then(() => {
-            if (useBulkPath) {
-              bulkPaste({
-                children,
-                rep,
-                undoManager,
-                entity_set,
-                propsRef,
-                pasteParent,
-              });
-            } else {
-              let currentPosition = propsRef.current.position;
-              children.forEach((child, index) => {
-                createBlockFromHTMLLegacy(child, {
-                  undoManager,
-                  parentType: propsRef.current.pageType,
-                  first: index === 0,
-                  activeBlockProps: propsRef,
-                  entity_set,
-                  rep,
-                  parent: pasteParent,
-                  getPosition: () => {
-                    currentPosition = generateKeyBetween(
-                      currentPosition || null,
-                      propsRef.current.nextPosition,
-                    );
-                    return currentPosition;
-                  },
-                  last: index === children.length - 1,
-                });
-              });
-            }
-          });
+          ).then(() =>
+            bulkPaste({
+              children,
+              rep,
+              undoManager,
+              entity_set,
+              propsRef,
+              pasteParent: groupEntity ?? (listData ? listData.parent : parent),
+              position: groupEntity ? generateKeyBetween(null, null) : position,
+              nextPosition: groupEntity ? null : nextPosition,
+              prepareParent: groupEntity
+                ? () =>
+                    groupCanvasBlock(rep, undoManager, {
+                      page: parent,
+                      blockEntity: propsRef.current.entityID,
+                      groupEntity,
+                      permission_set: entity_set.set,
+                    })
+                : undefined,
+            }),
+          );
         }
       }
 
@@ -241,6 +228,9 @@ async function bulkPaste({
   entity_set,
   propsRef,
   pasteParent,
+  position,
+  nextPosition,
+  prepareParent,
 }: {
   children: HTMLElement[];
   rep: Replicache<ReplicacheMutators>;
@@ -248,6 +238,11 @@ async function bulkPaste({
   entity_set: { set: string };
   propsRef: MutableRefObject<BlockProps>;
   pasteParent: string;
+  position: string | null;
+  nextPosition: string | null;
+  // Runs before the first block is committed under pasteParent; a paste the
+  // active block absorbs whole never needs it.
+  prepareParent?: () => Promise<void>;
 }) {
   let result = buildBlocksFromElements(children, {
     parent: pasteParent,
@@ -307,8 +302,8 @@ async function bulkPaste({
   const positions =
     topLevel.length > 0
       ? generateNKeysBetween(
-          propsRef.current.position || null,
-          propsRef.current.nextPosition || null,
+          position || null,
+          nextPosition || null,
           topLevel.length,
         )
       : [];
@@ -368,31 +363,32 @@ async function bulkPaste({
     }
   }
 
-  // Single transaction for entity creation; second for all facts. We split
-  // these to fit the existing generic mutators — both honor ignoreUndo.
-  entities.ignoreUndo = true;
-  allFacts.ignoreUndo = true;
-  if (entities.length > 0) await rep.mutate.createEntity(entities);
-  if (allFacts.length > 0) await rep.mutate.assertFact(allFacts);
-
   const activeID = propsRef.current.entityID;
   const newEntityIDs = entities.map((e) => e.entityID);
 
-  // Group the live-editor undo with the bulk undo so a single Cmd-Z reverses
-  // the whole paste.
-  undoManager.withUndoGroup(() => {
+  // One undo group spans preparing the parent, the live-editor undo and the
+  // bulk undo so a single Cmd-Z reverses the whole paste.
+  await undoManager.withUndoGroup(async () => {
+    if (topLevel.length > 0 && prepareParent) await prepareParent();
+    // Single transaction for entity creation; second for all facts. We split
+    // these to fit the existing generic mutators — both honor ignoreUndo.
+    entities.ignoreUndo = true;
+    allFacts.ignoreUndo = true;
+    if (entities.length > 0) await rep.mutate.createEntity(entities);
+    if (allFacts.length > 0) await rep.mutate.assertFact(allFacts);
+
     if (activeReuseUndo) {
       const { oldEditorState, newEditorState } = activeReuseUndo;
       undoManager.add({
         undo: () => {
           const view = useEditorStates.getState().editorStates[activeID]?.view;
           if (view && !view.hasFocus()) view.focus();
-          setEditorState(activeID, { editor: oldEditorState });
+          restoreEditorState(activeID, oldEditorState);
         },
         redo: () => {
           const view = useEditorStates.getState().editorStates[activeID]?.view;
           if (view && !view.hasFocus()) view.focus();
-          setEditorState(activeID, { editor: newEditorState });
+          restoreEditorState(activeID, newEditorState);
         },
       });
     }
@@ -463,451 +459,3 @@ async function bulkPaste({
     );
   }
 }
-
-// Legacy per-block paste path. Kept for canvas paste (parentType === "canvas").
-// Delete in a follow-up release.
-const createBlockFromHTMLLegacy = (
-  child: Element,
-  {
-    first,
-    last,
-    activeBlockProps,
-    rep,
-    undoManager,
-    entity_set,
-    getPosition,
-    parent,
-    parentType,
-    listStyle,
-    depth = 1,
-  }: {
-    parentType: "canvas" | "doc";
-    parent: string;
-    first: boolean;
-    last: boolean;
-    activeBlockProps?: MutableRefObject<BlockProps>;
-    rep: Replicache<ReplicacheMutators>;
-    undoManager: UndoManager;
-    entity_set: { set: string };
-    getPosition: () => string;
-    listStyle?: "ordered" | "unordered";
-    depth?: number;
-  },
-) => {
-  let type: Fact<"block/type">["data"]["value"] | null;
-  let headingLevel: number | null = null;
-  let hasChildren = false;
-
-  if (child.tagName === "UL" || child.tagName === "OL") {
-    let children = Array.from(child.children);
-    if (children.length > 0) hasChildren = true;
-    const childListStyle = child.tagName === "OL" ? "ordered" : "unordered";
-    for (let c of children) {
-      createBlockFromHTMLLegacy(c, {
-        first: first && c === children[0],
-        last: last && c === children[children.length - 1],
-        activeBlockProps,
-        rep,
-        undoManager,
-        entity_set,
-        getPosition,
-        parent,
-        parentType,
-        listStyle: childListStyle,
-        depth,
-      });
-    }
-  }
-  switch (child.tagName) {
-    case "BLOCKQUOTE": {
-      type = "blockquote";
-      break;
-    }
-    case "LI":
-    case "SPAN": {
-      type = "text";
-      break;
-    }
-    case "PRE": {
-      type = "code";
-      break;
-    }
-    case "P": {
-      type = "text";
-      break;
-    }
-    case "H1": {
-      headingLevel = 1;
-      type = "heading";
-      break;
-    }
-    case "H2": {
-      headingLevel = 2;
-      type = "heading";
-      break;
-    }
-    case "H3": {
-      headingLevel = 3;
-      type = "heading";
-      break;
-    }
-    case "H4":
-    case "H5":
-    case "H6": {
-      headingLevel = 3;
-      type = "heading";
-      break;
-    }
-    case "DIV": {
-      type = "card";
-      break;
-    }
-    case "IMG": {
-      type = "image";
-      break;
-    }
-    case "A": {
-      // Only explicit buttons get their own block; plain links are
-      // autolinked inline as a link mark within a text block.
-      type = child.getAttribute("data-type") === "button" ? "link" : "text";
-      break;
-    }
-    case "HR": {
-      type = "horizontal-rule";
-      break;
-    }
-    default:
-      type = null;
-  }
-  let content = parser.parse(child);
-  if (!type) return;
-
-  let entityID: string;
-  let position: string;
-  if (
-    (parentType === "canvas" && activeBlockProps?.current) ||
-    (first &&
-      (activeBlockProps?.current.type === "heading" ||
-        activeBlockProps?.current.type === "blockquote" ||
-        type === activeBlockProps?.current.type))
-  )
-    entityID = activeBlockProps.current.entityID;
-  else {
-    entityID = v7();
-    if (parentType === "doc") {
-      position = getPosition();
-      rep.mutate.addBlock({
-        permission_set: entity_set.set,
-        factID: v7(),
-        newEntityID: entityID,
-        parent: parent,
-        type: type,
-        position,
-      });
-    }
-    if (type === "heading" && headingLevel) {
-      rep.mutate.assertFact({
-        entity: entityID,
-        attribute: "block/heading-level",
-        data: { type: "number", value: headingLevel },
-      });
-    }
-  }
-  let alignment = child.getAttribute("data-alignment");
-  if (alignment && ["right", "left", "center"].includes(alignment)) {
-    rep.mutate.assertFact({
-      entity: entityID,
-      attribute: "block/text-alignment",
-      data: {
-        type: "text-alignment-type-union",
-        value: alignment as "right" | "left" | "center",
-      },
-    });
-  }
-  let textSize = child.getAttribute("data-text-size");
-  if (textSize && ["default", "small", "large"].includes(textSize)) {
-    rep.mutate.assertFact({
-      entity: entityID,
-      attribute: "block/text-size",
-      data: {
-        type: "text-size-union",
-        value: textSize as "default" | "small" | "large",
-      },
-    });
-  }
-  if (child.tagName === "A") {
-    let href = child.getAttribute("href");
-    let dataType = child.getAttribute("data-type");
-    if (href && dataType === "button") {
-      rep.mutate.assertFact([
-        {
-          entity: entityID,
-          attribute: "block/type",
-          data: { type: "block-type-union", value: "button" },
-        },
-        {
-          entity: entityID,
-          attribute: "button/text",
-          data: { type: "string", value: child.textContent || "" },
-        },
-        {
-          entity: entityID,
-          attribute: "button/url",
-          data: { type: "string", value: href },
-        },
-      ]);
-    }
-    // Non-button links fall through and are parsed inline as a link mark
-    // (see the parser.parse(child) handling below) rather than becoming a
-    // standalone link block.
-  }
-  if (child.tagName === "PRE") {
-    let lang = child.getAttribute("data-lang");
-    if (!lang && child.firstElementChild?.className) {
-      let match =
-        child.firstElementChild.className.match(/language-([\w.+-]+)/);
-      if (match) lang = match[1];
-    }
-    if (!lang) lang = child.getAttribute("data-language") || "plaintext";
-    if (child.textContent) {
-      rep.mutate.assertFact([
-        {
-          entity: entityID,
-          attribute: "block/type",
-          data: { type: "block-type-union", value: "code" },
-        },
-        {
-          entity: entityID,
-          attribute: "block/code-language",
-          data: { type: "string", value: lang },
-        },
-        {
-          entity: entityID,
-          attribute: "block/code",
-          data: {
-            type: "string",
-            value: child.textContent.replace(/^\n+|\n+$/g, ""),
-          },
-        },
-      ]);
-    }
-  }
-  if (child.tagName === "IMG") {
-    let src = child.getAttribute("src");
-    if (src) {
-      fetch(src)
-        .then((res) => res.blob())
-        .then((Blob) => {
-          const file = new File([Blob], "image.png", { type: Blob.type });
-          addImage(file, rep, {
-            attribute: "block/image",
-            entityID: entityID,
-          });
-        })
-        .catch(() => {});
-    }
-  }
-  if (child.tagName === "DIV" && child.getAttribute("data-tex")) {
-    let tex = child.getAttribute("data-tex");
-    rep.mutate.assertFact([
-      {
-        entity: entityID,
-        attribute: "block/type",
-        data: { type: "block-type-union", value: "math" },
-      },
-      {
-        entity: entityID,
-        attribute: "block/math",
-        data: { type: "string", value: (tex || "").trim() },
-      },
-    ]);
-  }
-
-  if (child.tagName === "DIV" && child.getAttribute("data-bluesky-post")) {
-    let postData = child.getAttribute("data-bluesky-post");
-    if (postData) {
-      rep.mutate.assertFact([
-        {
-          entity: entityID,
-          attribute: "block/type",
-          data: { type: "block-type-union", value: "bluesky-post" },
-        },
-        {
-          entity: entityID,
-          attribute: "block/bluesky-post",
-          data: { type: "bluesky-post", value: JSON.parse(postData) },
-        },
-      ]);
-    }
-  }
-
-  if (child.tagName === "DIV" && child.getAttribute("data-entityid")) {
-    let oldEntityID = child.getAttribute("data-entityid") as string;
-    let factsData = child.getAttribute("data-facts");
-    if (factsData) {
-      let facts = JSON.parse(factsData) as Fact<any>[];
-
-      let oldEntityIDToNewID = {} as { [k: string]: string };
-      let oldEntities = facts.reduce((acc, f) => {
-        if (!acc.includes(f.entity)) acc.push(f.entity);
-        return acc;
-      }, [] as string[]);
-      let newEntities = [] as string[];
-      for (let oldEntity of oldEntities) {
-        let newEntity = v7();
-        oldEntityIDToNewID[oldEntity] = newEntity;
-        newEntities.push(newEntity);
-      }
-
-      let newFacts = [] as Array<
-        Pick<Fact<any>, "entity" | "attribute" | "data">
-      >;
-      for (let fact of facts) {
-        let entity = oldEntityIDToNewID[fact.entity];
-        let data = fact.data;
-        if (
-          data.type === "ordered-reference" ||
-          data.type == "spatial-reference" ||
-          data.type === "reference"
-        ) {
-          data.value = oldEntityIDToNewID[data.value];
-        }
-        newFacts.push({ entity, attribute: fact.attribute, data });
-      }
-      rep.mutate.createEntity(
-        newEntities.map((e) => ({
-          entityID: e,
-          permission_set: entity_set.set,
-        })),
-      );
-      rep.mutate.assertFact(newFacts.filter((f) => f.data.type !== "image"));
-      let newCardEntity = oldEntityIDToNewID[oldEntityID];
-      rep.mutate.assertFact({
-        entity: entityID,
-        attribute: "block/card",
-        data: { type: "reference", value: newCardEntity },
-      });
-      let images: Pick<
-        Fact<keyof FilterAttributes<{ type: "image" }>>,
-        "entity" | "data" | "attribute"
-      >[] = newFacts.filter((f) => f.data.type === "image");
-      for (let image of images) {
-        fetch(image.data.src)
-          .then((res) => res.blob())
-          .then((Blob) => {
-            const file = new File([Blob], "image.png", { type: Blob.type });
-            addImage(file, rep, {
-              attribute: image.attribute,
-              entityID: image.entity,
-            });
-          })
-          .catch(() => {});
-      }
-    }
-  }
-
-  if (child.tagName === "LI") {
-    let nestedList = Array.from(child.children)
-      .flatMap((f) => flattenHTMLToTextBlocks(f as HTMLElement))
-      .find((f) => f.tagName === "UL" || f.tagName === "OL");
-    let checked = child.getAttribute("data-checked");
-    if (checked !== null) {
-      rep.mutate.assertFact({
-        entity: entityID,
-        attribute: "block/check-list",
-        data: { type: "boolean", value: checked === "true" ? true : false },
-      });
-    }
-    rep.mutate.assertFact({
-      entity: entityID,
-      attribute: "block/is-list",
-      data: { type: "boolean", value: true },
-    });
-    if (listStyle) {
-      rep.mutate.assertFact({
-        entity: entityID,
-        attribute: "block/list-style",
-        data: { type: "list-style-union", value: listStyle },
-      });
-    }
-    if (nestedList) {
-      hasChildren = true;
-      let currentPosition: string | null = null;
-      createBlockFromHTMLLegacy(nestedList, {
-        parentType,
-        first: false,
-        last: last,
-        activeBlockProps,
-        rep,
-        undoManager,
-        entity_set,
-        getPosition: () => {
-          currentPosition = generateKeyBetween(currentPosition, null);
-          return currentPosition;
-        },
-        parent: entityID,
-        depth: depth + 1,
-      });
-    }
-  }
-
-  setTimeout(() => {
-    let block = useEditorStates.getState().editorStates[entityID];
-    if (block) {
-      let tr = block.editor.tr;
-      if (
-        block.editor.selection.from !== undefined &&
-        block.editor.selection.to !== undefined
-      )
-        tr.delete(block.editor.selection.from, block.editor.selection.to);
-      tr.replaceSelectionWith(content);
-      let newState = block.editor.apply(tr);
-      setEditorState(entityID, {
-        editor: newState,
-      });
-
-      undoManager.add({
-        redo: () => {
-          useEditorStates.setState((oldState) => {
-            let view = oldState.editorStates[entityID]?.view;
-            if (!view?.hasFocus()) view?.focus();
-            return {
-              editorStates: {
-                ...oldState.editorStates,
-                [entityID]: {
-                  ...oldState.editorStates[entityID]!,
-                  editor: newState,
-                },
-              },
-            };
-          });
-        },
-        undo: () => {
-          useEditorStates.setState((oldState) => {
-            let view = oldState.editorStates[entityID]?.view;
-            if (!view?.hasFocus()) view?.focus();
-            return {
-              editorStates: {
-                ...oldState.editorStates,
-                [entityID]: {
-                  ...oldState.editorStates[entityID]!,
-                  editor: block.editor,
-                },
-              },
-            };
-          });
-        },
-      });
-    }
-    if (last && !hasChildren && !first) {
-      focusBlock(
-        {
-          entityID: entityID,
-          type: type,
-          parent: parent,
-        },
-        { type: "end" },
-      );
-    }
-  }, 10);
-};

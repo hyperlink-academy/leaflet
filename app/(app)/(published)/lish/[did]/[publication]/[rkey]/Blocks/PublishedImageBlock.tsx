@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { ReadOnlyAltText } from "components/Blocks/ReadOnlyAltText";
 import { ImageErrorState, useImageLoadStatus } from "components/ImageLoadState";
+import { useCanvasImage } from "src/canvasZoom/CanvasZoomProvider";
+import { AnimatedImageVideo } from "components/Blocks/AnimatedImageVideo";
 
 export function PublishedImageBlock(props: {
   src: string;
@@ -13,10 +15,17 @@ export function PublishedImageBlock(props: {
   isFullBleed?: boolean;
   className?: string;
   loading?: "lazy" | "eager";
+  mimeType?: string;
+  /** Video rendition of an animated GIF, played in place of the image. */
+  videoSrc?: string;
   onOpenLightbox?: () => void;
   onOpenAltInLightbox?: () => void;
 }) {
   let [reloads, setReloads] = useState(0);
+  let { decoding, className: canvasImageClass } = useCanvasImage(
+    props.src,
+    props.mimeType,
+  );
   let src =
     reloads === 0
       ? props.src
@@ -27,6 +36,7 @@ export function PublishedImageBlock(props: {
     !props.isFullBleed && props.displayWidth
       ? { width: props.displayWidth, maxWidth: "100%", height: "auto" as const }
       : undefined;
+  let mediaClassName = `${props.isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${props.className ?? ""}`;
 
   return (
     <div
@@ -37,17 +47,26 @@ export function PublishedImageBlock(props: {
         className={`block ${props.isFullBleed ? "w-full" : "w-fit"} ${props.onOpenLightbox ? "cursor-pointer" : ""}`}
         onClick={props.onOpenLightbox}
       >
-        <img
-          {...imgProps}
-          alt={props.alt ?? ""}
-          loading={props.loading}
-          decoding="async"
-          height={props.height}
+        <AnimatedImageVideo
+          videoSrc={props.videoSrc}
+          alt={props.alt}
           width={props.width}
-          className={`${props.isFullBleed ? "w-full border-none" : "rounded-lg border border-transparent "}  ${props.className ?? ""}`}
-          src={src}
+          height={props.height}
+          className={mediaClassName}
           style={imageStyle}
-        />
+        >
+          <img
+            {...imgProps}
+            alt={props.alt ?? ""}
+            loading={props.loading}
+            decoding={decoding}
+            height={props.height}
+            width={props.width}
+            className={`${mediaClassName} ${canvasImageClass}`}
+            src={src}
+            style={imageStyle}
+          />
+        </AnimatedImageVideo>
       </button>
       {status === "error" && (
         <ImageErrorState

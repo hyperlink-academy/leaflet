@@ -1,5 +1,6 @@
 "use client";
 
+import { pageOfParent } from "src/utils/blockGroups";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { TextBlockTypeToolbar } from "./TextBlockTypeToolbar";
 import { InlineLinkToolbar } from "./InlineLinkToolbar";
@@ -159,7 +160,7 @@ export const Toolbar = (props: {
                 useUIState.setState(() => ({
                   focusedEntity: {
                     entityType: "page",
-                    entityID: props.pageID,
+                    entityID: pageOfParent(props.pageID),
                   },
                   selectedBlocks: [],
                 }));

@@ -26,6 +26,7 @@ import type * as PubLeafletBlocksBskyPost from '../blocks/bskyPost'
 import type * as PubLeafletBlocksStandardSitePost from '../blocks/standardSitePost'
 import type * as PubLeafletBlocksStandardSitePublication from '../blocks/standardSitePublication'
 import type * as PubLeafletBlocksPage from '../blocks/page'
+import type * as PubLeafletBlocksEmbeddedCanvas from '../blocks/embeddedCanvas'
 import type * as PubLeafletBlocksPoll from '../blocks/poll'
 import type * as PubLeafletBlocksButton from '../blocks/button'
 import type * as PubLeafletBlocksPostsList from '../blocks/postsList'
@@ -33,6 +34,8 @@ import type * as PubLeafletBlocksSignup from '../blocks/signup'
 import type * as PubLeafletBlocksRecommendedPubs from '../blocks/recommendedPubs'
 import type * as PubLeafletBlocksMembersOnlyDelimiter from '../blocks/membersOnlyDelimiter'
 import type * as PubLeafletBlocksPostHeader from '../blocks/postHeader'
+import type * as PubLeafletBlocksDrawing from '../blocks/drawing'
+import type * as PubLeafletPagesLinearDocument from './linearDocument'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -42,6 +45,14 @@ export interface Main {
   $type?: 'pub.leaflet.pages.canvas'
   id?: string
   blocks: Block[]
+  /** How a narrow viewport frames the canvas: the whole canvas scaled to fit the width (unconstrained, the default), or a phone-width area anchored to the canvas's left edge or centered on it, shown at up to 1:1. */
+  mobileView?: 'unconstrained' | 'left' | 'center' | (string & {})
+  /** Fixed canvas width in canvas px. With height, bounds the canvas: blocks are clipped to the area. Absent, the canvas is 1272px wide and grows with its content. */
+  width?: number
+  /** Fixed canvas height in canvas px; see width. */
+  height?: number
+  /** Viewers cannot zoom the canvas: no wheel, pinch, double-tap or zoom controls. */
+  lockViewerZoom?: boolean
 }
 
 const hashMain = 'main'
@@ -74,6 +85,7 @@ export interface Block {
     | $Typed<PubLeafletBlocksStandardSitePost.Main>
     | $Typed<PubLeafletBlocksStandardSitePublication.Main>
     | $Typed<PubLeafletBlocksPage.Main>
+    | $Typed<PubLeafletBlocksEmbeddedCanvas.Main>
     | $Typed<PubLeafletBlocksPoll.Main>
     | $Typed<PubLeafletBlocksButton.Main>
     | $Typed<PubLeafletBlocksPostsList.Main>
@@ -81,6 +93,8 @@ export interface Block {
     | $Typed<PubLeafletBlocksRecommendedPubs.Main>
     | $Typed<PubLeafletBlocksMembersOnlyDelimiter.Main>
     | $Typed<PubLeafletBlocksPostHeader.Main>
+    | $Typed<PubLeafletBlocksDrawing.Main>
+    | $Typed<PubLeafletPagesLinearDocument.Main>
     | { $type: string }
   x: number
   y: number

@@ -1,4 +1,5 @@
 import { useSelectingMouse } from "components/SelectionManager/selectionState";
+import { pageOfParent } from "src/utils/blockGroups";
 import { MouseEvent, useCallback, useRef } from "react";
 import { useUIState } from "src/useUIState";
 import { Block } from "./Block";
@@ -72,7 +73,7 @@ export function useBlockMouseHandlers(props: Block) {
       useUIState.getState().focusAndSelectBlock(props);
 
       // scroll to the page containing the block, if offscreen
-      let parentPage = elementId.page(props.parent).container;
+      let parentPage = elementId.page(pageOfParent(props.parent)).container;
       setTimeout(() => {
         scrollIntoViewIfNeeded(
           document.getElementById(parentPage),

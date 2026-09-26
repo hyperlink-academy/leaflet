@@ -8,6 +8,10 @@ import {
   encodeImageVariant,
   parseImageFormat,
 } from "src/utils/serverImageEncoding";
+import { transcodeGifToMp4 } from "src/utils/serverVideoEncoding";
+
+// The GIF-to-video transcode runs inside the request.
+export const maxDuration = 60;
 
 let idResolver = new IdResolver();
 
@@ -19,6 +23,7 @@ const CACHE_CONTROL =
 // CID-addressed content never changes, so cache it at the edge for a year.
 const CDN_CACHE_CONTROL =
   "public, s-maxage=31536000, immutable, stale-while-revalidate=604800";
+const RETRY_CACHE_CONTROL = "public, max-age=60, s-maxage=60";
 
 /**
  * Fetches a blob from an AT Protocol PDS given a DID and CID
@@ -64,13 +69,13 @@ function publicUrl(path: string) {
 // (currently in overage), while Supabase serves the same bytes as cheap
 // cached egress. Only this tiny 302 comes from Vercel, edge-cached for a
 // year since CID-addressed content never changes.
-function redirect(to: string) {
+function redirect(to: string, cacheControl?: string) {
   return new NextResponse(null, {
     status: 302,
     headers: {
       Location: to,
-      "Cache-Control": CACHE_CONTROL,
-      "CDN-Cache-Control": CDN_CACHE_CONTROL,
+      "Cache-Control": cacheControl ?? CACHE_CONTROL,
+      "CDN-Cache-Control": cacheControl ?? CDN_CACHE_CONTROL,
     },
   });
 }
@@ -130,8 +135,16 @@ export async function GET(req: NextRequest) {
 
   if (width || height || format) {
     // Thumbnail: resized once with sharp (Supabase's image transform bills
-    // per origin image per month), stored, and served by redirect.
-    const variantPath = `${COVER_IMAGE_PREFIX}/resized/${format ? `${format}/` : ""}w${width ?? 0}-h${height ?? 0}/${params.cid}`;
+    // per origin image per month), stored, and served by redirect. The mp4
+    // variant is the video rendition of an animated GIF; anything that isn't
+    // one redirects to the original so the <video> errors out and the client
+    // keeps its <img>. Failures (timeout, storage) redirect the same way but
+    // only briefly, so the variant is retried instead of pinned to the GIF
+    // for a year.
+    const isVideo = format === "mp4";
+    const variantPath = isVideo
+      ? `${COVER_IMAGE_PREFIX}/resized/mp4/${params.cid}`
+      : `${COVER_IMAGE_PREFIX}/resized/${format ? `${format}/` : ""}w${width ?? 0}-h${height ?? 0}/${params.cid}`;
     const variantUrl = publicUrl(variantPath);
     const existing = await fetch(variantUrl, { method: "HEAD" });
     if (existing.ok) return redirect(variantUrl);
@@ -145,34 +158,37 @@ export async function GET(req: NextRequest) {
       }
       if (bytes) {
         try {
-          const output = await encodeImageVariant(Buffer.from(bytes), {
-            format,
-            resize:
-              width || height
-                ? { width, height, fit: "inside", withoutEnlargement: true }
-                : undefined,
-          });
-          // Already email-safe with no resize asked for, so there is no
-          // variant worth storing.
+          const output = isVideo
+            ? await transcodeGifToMp4(Buffer.from(bytes))
+            : await encodeImageVariant(Buffer.from(bytes), {
+                format,
+                resize:
+                  width || height
+                    ? { width, height, fit: "inside", withoutEnlargement: true }
+                    : undefined,
+              });
+          // Already email-safe with no resize asked for (or not an animated
+          // GIF), so there is no variant worth storing.
           if (!output) return redirect(original.url);
 
           const { error } = await supabaseServerClient.storage
             .from(COVER_IMAGE_BUCKET)
             .upload(variantPath, new Uint8Array(output.data), {
-              contentType: `image/${output.format}`,
+              contentType: `${isVideo ? "video" : "image"}/${output.format}`,
               cacheControl: "31536000",
               upsert: true,
             });
           if (!error) return redirect(variantUrl);
           console.log("failed to store cover variant", variantPath, error);
         } catch (e) {
-          console.log("failed to resize cover image", e);
+          console.log("failed to encode cover variant", variantPath, e);
         }
       }
       // Couldn't produce a variant; the cached original still beats
       // streaming the full blob through this function.
-      return redirect(original.url);
+      return redirect(original.url, isVideo ? RETRY_CACHE_CONTROL : undefined);
     }
+    if (isVideo) return new NextResponse(null, { status: 404 });
     // Fall through to streaming if nothing could be cached.
   } else {
     const original = await ensureOriginalCached(params.did, params.cid);

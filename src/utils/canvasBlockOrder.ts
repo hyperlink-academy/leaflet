@@ -1,16 +1,19 @@
-import type { PubLeafletPagesCanvas } from "lexicons/api";
+type Position = { x: number; y: number };
 
 // Canvas blocks carry no document order; every surface that needs a reading
 // order (titles, lightbox paging, email thumbnails) sorts with this so they
-// agree.
-export function canvasBlockOrder(
-  a: PubLeafletPagesCanvas.Block,
-  b: PubLeafletPagesCanvas.Block,
-) {
+// agree. Takes anything positioned: record blocks and editor positions alike.
+export function canvasBlockOrder(a: Position, b: Position) {
   return a.y === b.y ? a.x - b.x : a.y - b.y;
 }
 
-export type CanvasLayer = { x: number; y: number; stackOrder?: string | null };
+// The content div has size containment, so its laid-out height is exactly
+// this min-height; the zoom spacer is sized from the same number.
+export function canvasContentHeight(blocks: { y: number }[]) {
+  return Math.max(...blocks.map((b) => b.y), 0) + 512;
+}
+
+export type CanvasLayer = Position & { stackOrder?: string | null };
 
 // Paint order, lowest first. Every block placed on a canvas gets a stackOrder;
 // the ones without are from before layering existed, so they keep the position
@@ -20,14 +23,10 @@ export function canvasStackingOrder(a: CanvasLayer, b: CanvasLayer) {
   let aOrder = a.stackOrder ?? null;
   let bOrder = b.stackOrder ?? null;
   if (aOrder === null || bOrder === null) {
-    if (aOrder === bOrder) return positionOrder(a, b);
+    if (aOrder === bOrder) return canvasBlockOrder(a, b);
     return aOrder === null ? -1 : 1;
   }
-  return aOrder === bOrder ? positionOrder(a, b) : aOrder < bOrder ? -1 : 1;
-}
-
-function positionOrder(a: CanvasLayer, b: CanvasLayer) {
-  return a.y === b.y ? a.x - b.x : a.y - b.y;
+  return aOrder === bOrder ? canvasBlockOrder(a, b) : aOrder < bOrder ? -1 : 1;
 }
 
 // Resolves each block's fractional stackOrder to the dense integer the DOM

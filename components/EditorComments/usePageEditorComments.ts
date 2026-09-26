@@ -2,7 +2,7 @@ import {
   BlockStructureMirror,
   blockListAttributes,
 } from "src/replicache/blockMirror";
-import { getBlocksFromMirror } from "src/replicache/getBlocks";
+import { getPageReadingOrder } from "src/replicache/getBlocks";
 import { useMirrorQuery } from "src/hooks/useMirrorQuery";
 import { useEntitySetContext } from "components/EntitySetProvider";
 
@@ -29,33 +29,20 @@ function computeComments(
   mirror: BlockStructureMirror,
   pageID: string,
 ): PageEditorComments {
-  // getBlocksFromMirror flattens nested list items into document order, so
+  // getPageReadingOrder flattens nested list items into document order, so
   // comments on nested list items are found along with everything else.
-  let cardBlocks = getBlocksFromMirror(mirror, pageID);
-  let canvasBlocks = mirror.eav(pageID, "canvas/block");
-
-  let sortedCanvasBlocks = canvasBlocks
-    .map((b) => ({ value: b.data.value, position: b.data.position }))
-    .toSorted((a, b) => {
-      if (a.position.y === b.position.y) return a.position.x - b.position.x;
-      return a.position.y - b.position.y;
-    });
-
-  let sorted = [
-    ...cardBlocks.map((b) => ({ value: b.entityID })),
-    ...sortedCanvasBlocks,
-  ];
+  let sorted = getPageReadingOrder(mirror, pageID);
 
   let comments: EditorCommentInfo[] = [];
   for (let block of sorted) {
-    let blockComments = mirror.eav(block.value, "block/comment");
+    let blockComments = mirror.eav(block.entityID, "block/comment");
     let sortedComments = blockComments.toSorted((a, b) =>
       a.data.position > b.data.position ? 1 : -1,
     );
     for (let c of sortedComments) {
       comments.push({
         commentEntityID: c.data.value,
-        blockID: block.value,
+        blockID: block.entityID,
       });
     }
   }

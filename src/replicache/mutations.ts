@@ -134,6 +134,85 @@ const addCanvasBlock: Mutation<{
   });
 };
 
+// Makes a lone canvas block the first child of a new group that takes over
+// its spot, size and layer on the canvas. The canvas/block fact is repointed
+// in place, so undo swaps the original block straight back.
+const groupCanvasBlock: Mutation<{
+  page: string;
+  blockEntity: string;
+  groupEntity: string;
+  childFactID: string;
+  permission_set: string;
+}> = async (args, ctx) => {
+  let canvasFact = (await ctx.scanIndex.eav(args.page, "canvas/block")).find(
+    (f) => f.data.value === args.blockEntity,
+  );
+  if (!canvasFact) return;
+  await ctx.createEntity({
+    entityID: args.groupEntity,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    entity: args.groupEntity,
+    attribute: "block/type",
+    data: { type: "block-type-union", value: "group" },
+  });
+  for (let attribute of [
+    "canvas/block/width",
+    "canvas/block/rotation",
+    "canvas/block/stack-order",
+  ] as const) {
+    let [fact] = await ctx.scanIndex.eav(args.blockEntity, attribute);
+    if (fact)
+      await ctx.assertFact({
+        entity: args.groupEntity,
+        attribute,
+        data: fact.data,
+      });
+  }
+  await ctx.assertFact({
+    id: args.childFactID,
+    entity: args.groupEntity,
+    attribute: "card/block",
+    data: {
+      type: "ordered-reference",
+      value: args.blockEntity,
+      position: generateKeyBetween(null, null),
+    },
+  });
+  await ctx.assertFact({
+    id: canvasFact.id,
+    entity: args.page,
+    attribute: "canvas/block",
+    data: { ...canvasFact.data, value: args.groupEntity },
+  });
+};
+
+// Reverses groupCanvasBlock: the block takes the group's place on the canvas
+// again and the group is deleted.
+const ungroupCanvasBlock: Mutation<{
+  page: string;
+  blockEntity: string;
+  groupEntity: string;
+}> = async (args, ctx) => {
+  let canvasFact = (await ctx.scanIndex.eav(args.page, "canvas/block")).find(
+    (f) => f.data.value === args.groupEntity,
+  );
+  if (!canvasFact) return;
+  // A collaborator may have added blocks to the group since it was made;
+  // deleting it would orphan them.
+  let children = await ctx.scanIndex.eav(args.groupEntity, "card/block");
+  if (children.length !== 1 || children[0].data.value !== args.blockEntity)
+    return;
+  await ctx.assertFact({
+    id: canvasFact.id,
+    entity: args.page,
+    attribute: "canvas/block",
+    data: { ...canvasFact.data, value: args.blockEntity },
+  });
+  await ctx.deleteEntity(args.groupEntity);
+};
+
 const moveCanvasBlockLayer: Mutation<{
   parent: string;
   entityID: string;
@@ -217,9 +296,11 @@ const addBlock: Mutation<{
     data: { type: "block-type-union", value: args.type },
     attribute: "block/type",
   });
-  let parentIsBlock =
-    !args.list &&
-    (await ctx.scanIndex.eav(args.parent, "block/type")).length > 0;
+  // A group's children are a plain linear document, not list items.
+  let [parentType] = args.list
+    ? []
+    : await ctx.scanIndex.eav(args.parent, "block/type");
+  let parentIsBlock = !!parentType && parentType.data.value !== "group";
   if (args.list || parentIsBlock) {
     await ctx.assertFact({
       entity: args.newEntityID,
@@ -478,6 +559,39 @@ const outdentBlock: Mutation<{
   });
 };
 
+const addEmbeddedCanvasBlock: Mutation<{
+  permission_set: string;
+  blockEntity: string;
+  pageEntity: string;
+  width: number;
+  height: number;
+}> = async (args, ctx) => {
+  await ctx.createEntity({
+    entityID: args.pageEntity,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    entity: args.blockEntity,
+    attribute: "block/card",
+    data: { type: "reference", value: args.pageEntity },
+  });
+  await ctx.assertFact({
+    attribute: "page/type",
+    entity: args.pageEntity,
+    data: { type: "page-type-union", value: "canvas" },
+  });
+  await ctx.assertFact({
+    entity: args.pageEntity,
+    attribute: "canvas/fixed-width",
+    data: { type: "number", value: args.width },
+  });
+  await ctx.assertFact({
+    entity: args.pageEntity,
+    attribute: "canvas/fixed-height",
+    data: { type: "number", value: args.height },
+  });
+};
+
 const addPageLinkBlock: Mutation<{
   type: "canvas" | "doc";
   permission_set: string;
@@ -524,8 +638,8 @@ const retractFact: Mutation<{ factID: string }> = async (args, ctx) => {
   await ctx.retractFact(args.factID);
 };
 
-// Add a content page to a publication draft leaflet's nav, seeded with a
-// single empty text block.
+// Add a content page to a publication draft leaflet's nav. A doc page is
+// seeded with a single empty text block; a canvas page starts empty.
 const addPublicationNavPage: Mutation<{
   rootEntity: string;
   pageEntity: string;
@@ -533,9 +647,11 @@ const addPublicationNavPage: Mutation<{
   navFactID: string;
   route: string;
   title: string;
+  pageType?: "doc" | "canvas";
   firstBlockEntity: string;
   firstBlockFactID: string;
 }> = async (args, ctx) => {
+  let pageType = args.pageType ?? "doc";
   let entries = await ctx.scanIndex.eav(args.rootEntity, "root/page");
   let last = entries.toSorted(byPosition)[entries.length - 1];
   await ctx.createEntity({
@@ -555,7 +671,7 @@ const addPublicationNavPage: Mutation<{
   await ctx.assertFact({
     entity: args.pageEntity,
     attribute: "page/type",
-    data: { type: "page-type-union", value: "doc" },
+    data: { type: "page-type-union", value: pageType },
   });
   await ctx.assertFact({
     entity: args.pageEntity,
@@ -567,6 +683,7 @@ const addPublicationNavPage: Mutation<{
     attribute: "page/title",
     data: { type: "string", value: args.title },
   });
+  if (pageType === "canvas") return;
   await addBlock(
     {
       factID: args.firstBlockFactID,
@@ -628,10 +745,16 @@ const removePublicationNavEntry: Mutation<{
   await ctx.deleteEntity(args.entity);
 };
 
+// Pass `parent` when it may be a canvas group: a group with nothing left in it
+// is removed along with its last block.
 const removeBlock: Mutation<
-  { blockEntity: string } | { blockEntity: string }[]
+  | { blockEntity: string; parent?: string }
+  | { blockEntity: string; parent?: string }[]
 > = async (args, ctx) => {
   for (let block of [args].flat()) {
+    let [type] = await ctx.scanIndex.eav(block.blockEntity, "block/type");
+    if (type?.data.value === "group")
+      await removeDescendants(block.blockEntity, ctx);
     let [image] = await ctx.scanIndex.eav(block.blockEntity, "block/image");
     await ctx.runOnServer(async ({ supabase }) => {
       if (image) await enqueueBlobCleanup(supabase, image.data.src);
@@ -648,8 +771,22 @@ const removeBlock: Mutation<
       }
     });
     await ctx.deleteEntity(block.blockEntity);
+    if (!block.parent) continue;
+    let [parentType] = await ctx.scanIndex.eav(block.parent, "block/type");
+    if (
+      parentType?.data.value === "group" &&
+      (await ctx.scanIndex.eav(block.parent, "card/block")).length === 0
+    )
+      await removeBlock({ blockEntity: block.parent }, ctx);
   }
 };
+
+async function removeDescendants(entity: string, ctx: MutationContext) {
+  for (let child of await ctx.scanIndex.eav(entity, "card/block")) {
+    await removeDescendants(child.data.value, ctx);
+    await removeBlock({ blockEntity: child.data.value }, ctx);
+  }
+}
 
 const deleteEntity: Mutation<{ entity: string }> = async (args, ctx) => {
   await ctx.deleteEntity(args.entity);
@@ -1377,12 +1514,15 @@ export const mutations = {
   retractAttribute,
   addBlock,
   addCanvasBlock,
+  groupCanvasBlock,
+  ungroupCanvasBlock,
   moveCanvasBlockLayer,
   addLastBlock,
   outdentBlock,
   moveBlockUp,
   moveBlockDown,
   addPageLinkBlock,
+  addEmbeddedCanvasBlock,
   addPublicationNavPage,
   addPublicationNavLink,
   removePublicationNavEntry,

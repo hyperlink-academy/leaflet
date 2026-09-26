@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
+import { pageOfParent, isBlockGroup } from "src/utils/blockGroups";
 import { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import type { Node } from "prosemirror-model";
@@ -6,7 +7,6 @@ import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { ySyncPlugin, ySyncPluginKey } from "y-prosemirror";
 import { Replicache } from "replicache";
-import { produce } from "immer";
 
 import { schema } from "./schema";
 import { UndoManager } from "src/undoManager";
@@ -14,7 +14,7 @@ import { TextBlockKeymap } from "./keymap";
 import { inputrules } from "./inputRules";
 import { highlightSelectionPlugin } from "./plugins";
 import { autolink } from "./autolink-plugin";
-import { useEditorStates } from "src/state/useEditorState";
+import { restoreEditorState, useEditorStates } from "src/state/useEditorState";
 import {
   useEntity,
   useReplicache,
@@ -124,7 +124,11 @@ export function useMountProsemirror({
                   if (store.commentIDs?.join(" ") === commentIDs.join(" ")) {
                     store.close();
                   } else {
-                    store.open(commentIDs, anchor, propsRef.current.parent);
+                    store.open(
+                      commentIDs,
+                      anchor,
+                      pageOfParent(propsRef.current.parent),
+                    );
                   }
                   event.preventDefault();
                   return true;
@@ -132,10 +136,16 @@ export function useMountProsemirror({
                 // On desktop canvas pages there's no side column, so open the
                 // sheet directly; on doc pages the side column thread expands
                 // on hover, so the click just places the cursor.
-                if (propsRef.current.pageType === "canvas") {
+                if (
+                  propsRef.current.pageType === "canvas" ||
+                  isBlockGroup(propsRef.current.parent)
+                ) {
                   useEditorCommentSheetStore
                     .getState()
-                    .openSheet(propsRef.current.parent, commentIDs[0]);
+                    .openSheet(
+                      pageOfParent(propsRef.current.parent),
+                      commentIDs[0],
+                    );
                   event.preventDefault();
                   return true;
                 }
@@ -163,13 +173,19 @@ export function useMountProsemirror({
 
             // On mobile/tablet or canvas, show popover
             let isDesktop = window.matchMedia("(min-width: 1280px)").matches;
-            let isCanvas = propsRef.current.pageType === "canvas";
+            let isCanvas =
+              propsRef.current.pageType === "canvas" ||
+              isBlockGroup(propsRef.current.parent);
             if (!isDesktop || isCanvas) {
               let store = useFootnotePopoverStore.getState();
               if (store.activeFootnoteID === footnoteID) {
                 store.close();
               } else {
-                store.open(footnoteID, sup, propsRef.current.parent);
+                store.open(
+                  footnoteID,
+                  sup,
+                  pageOfParent(propsRef.current.parent),
+                );
               }
               return;
             }
@@ -239,7 +255,7 @@ export function useMountProsemirror({
                   linkMark.attrs.href,
                   anchor,
                   entityID,
-                  propsRef.current.parent,
+                  pageOfParent(propsRef.current.parent),
                 );
             }
             return;
@@ -339,14 +355,11 @@ export function useMountProsemirror({
 
         // Handle undo/redo history with timeout-based grouping
         let isBulkOp = tr.getMeta("bulkOp");
-        let setState = (s: EditorState) => () =>
-          useEditorStates.setState(
-            produce((draft) => {
-              let view = draft.editorStates[entityID]?.view;
-              if (!view?.hasFocus() && !isBulkOp) view?.focus();
-              draft.editorStates[entityID]!.editor = s;
-            }),
-          );
+        let setState = (s: EditorState) => () => {
+          let view = useEditorStates.getState().editorStates[entityID]?.view;
+          if (!view?.hasFocus() && !isBulkOp) view?.focus();
+          restoreEditorState(entityID, s);
+        };
 
         trackUndoRedo(
           tr,

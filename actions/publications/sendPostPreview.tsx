@@ -89,10 +89,9 @@ export async function sendPostPreview(args: {
     },
   });
   const firstPage = pages[0];
-  const blocks =
-    firstPage?.type === "doc"
-      ? (firstPage.blocks as PubLeafletPagesLinearDocument.Block[])
-      : [];
+  const blocks = PubLeafletPagesLinearDocument.isMain(firstPage)
+    ? firstPage.blocks
+    : [];
   const bskyPosts = await hydrateBskyPostBlocks(blocks);
   const { standardSitePosts, standardSitePublications } =
     await fetchStandardSiteBlockData(blocks);

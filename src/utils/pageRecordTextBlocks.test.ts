@@ -78,4 +78,24 @@ describe("pageRecordTextBlocks", () => {
       ),
     ).toEqual(["top left", "top right", "bottom"]);
   });
+
+  it("reads a canvas group's blocks in their own order", () => {
+    let blocks = [
+      { x: 0, y: 100, width: 100, block: text("below") },
+      {
+        x: 0,
+        y: 0,
+        width: 100,
+        block: {
+          $type: "pub.leaflet.pages.linearDocument",
+          blocks: linear(header("group title"), text("group body")),
+        },
+      },
+    ] as PubLeafletPagesCanvas.Block[];
+    expect(
+      pageRecordTextBlocks(blocks, { isCanvas: true, limit: 3 }).map(
+        (b) => b.plaintext,
+      ),
+    ).toEqual(["group title", "group body", "below"]);
+  });
 });

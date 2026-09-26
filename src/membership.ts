@@ -170,6 +170,11 @@ export function truncatePagesAtMembersDelimiter(pages: unknown[]): void {
   const collect = (page: PageLike) => {
     for (const b of page.blocks ?? []) {
       const block = b?.block;
+      // A canvas's linear-document group can link pages from inside it.
+      if (block?.$type === "pub.leaflet.pages.linearDocument") {
+        collect(block as PageLike);
+        continue;
+      }
       if (
         block?.$type === "pub.leaflet.blocks.page" &&
         typeof block.id === "string" &&

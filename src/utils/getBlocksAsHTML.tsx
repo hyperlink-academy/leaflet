@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { Block } from "components/Blocks/Block";
 import { List, parseBlocksToList } from "./parseBlocksToList";
+import { getBlocksWithTypeLocal } from "src/replicache/getBlocks";
 import Katex from "katex";
 import { renderFootnoteDefHTML } from "./renderFootnoteDefHTML";
 
@@ -28,28 +29,29 @@ export async function getBlocksAsHTML(
   rep: Replicache<ReplicacheMutators>,
   selectedBlocks: Block[],
 ) {
-  let data = await rep?.query(async (tx) => {
-    let result: string[] = [];
-    let parsed = parseBlocksToList(selectedBlocks);
-    for (let pb of parsed) {
-      if (pb.type === "block") result.push(await renderBlock(pb.block, tx));
-      else {
-        // Check if the first child is an ordered list
-        let isOrdered = pb.children[0]?.block.listData?.listStyle === "ordered";
-        let tag = isOrdered ? "ol" : "ul";
-        result.push(
-          `<${tag}>${(
-            await Promise.all(
-              pb.children.map(async (c) => await renderList(c, tx)),
-            )
-          ).join("\n")}
+  return rep?.query((tx) => renderBlocks(selectedBlocks, tx));
+}
+
+async function renderBlocks(blocks: Block[], tx: ReadTransaction) {
+  let result: string[] = [];
+  let parsed = parseBlocksToList(blocks);
+  for (let pb of parsed) {
+    if (pb.type === "block") result.push(await renderBlock(pb.block, tx));
+    else {
+      // Check if the first child is an ordered list
+      let isOrdered = pb.children[0]?.block.listData?.listStyle === "ordered";
+      let tag = isOrdered ? "ol" : "ul";
+      result.push(
+        `<${tag}>${(
+          await Promise.all(
+            pb.children.map(async (c) => await renderList(c, tx)),
+          )
+        ).join("\n")}
           </${tag}>`,
-        );
-      }
+      );
     }
-    return result;
-  });
-  return data;
+  }
+  return result;
 }
 
 async function renderList(l: List, tx: ReadTransaction): Promise<string> {
@@ -108,6 +110,15 @@ const BlockTypeToHTML: {
   html: async () => null,
   signup: async () => null,
   "post-header": async () => null,
+  drawing: async () => null,
+  group: async (b, tx) => {
+    let facts = await getAllFacts(tx, b.entityID);
+    let html = await renderBlocks(
+      getBlocksWithTypeLocal(facts, b.entityID),
+      tx,
+    );
+    return <div dangerouslySetInnerHTML={{ __html: html.join("\n") }} />;
+  },
   "bluesky-post": async (b, tx) => {
     let [post] = await scanIndex(tx).eav(b.entityID, "block/bluesky-post");
     if (!post) return null;
@@ -260,6 +271,18 @@ const BlockTypeToHTML: {
         data-facts={JSON.stringify(facts)}
         data-entityid={card.data.value}
         data-display={display?.data.value}
+      />
+    );
+  },
+  "embedded-canvas": async (b, tx) => {
+    let [card] = await scanIndex(tx).eav(b.entityID, "block/card");
+    if (!card) return "";
+    let facts = await getAllFacts(tx, card.data.value);
+    return (
+      <div
+        data-type="embedded-canvas"
+        data-facts={JSON.stringify(facts)}
+        data-entityid={card.data.value}
       />
     );
   },

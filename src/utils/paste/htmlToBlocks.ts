@@ -181,6 +181,8 @@ function buildBlockFromHTML(
   let finalType: BlockType = baseType;
   if (isMath) finalType = "math";
   else if (isBlueskyPost) finalType = "bluesky-post";
+  else if (isCardPaste && child.getAttribute("data-type") === "embedded-canvas")
+    finalType = "embedded-canvas";
 
   const entityID = v7();
   const facts: FactInput[] = [];

@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { addImage, localImages } from "src/utils/addImage";
 import { useImageLoadStatus } from "components/ImageLoadState";
+import { useCanvasImage } from "src/canvasZoom/CanvasZoomProvider";
 import { ImageStatusOverlay } from "./ImageStatusOverlay";
 import { useImageUploadStatus } from "src/utils/imageUploadStatus";
 import { addBlockBelow } from "src/utils/addBlockBelow";
@@ -44,6 +45,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     uploadSrc ? s.uploads[uploadSrc]?.state === "failed" : false,
   );
   let [reloads, setReloads] = useState(0);
+  let { decoding, className: canvasImageClass } = useCanvasImage(imageSrc);
   let {
     status: loadStatus,
     imgProps,
@@ -224,12 +226,12 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
               {...imgProps}
               key={reloads}
               loading="lazy"
-              decoding="async"
+              decoding={decoding}
               alt={altText}
               src={localSrc ?? image.data.fallback}
               height={image?.data.height}
               width={image?.data.width}
-              className={isFullBleed ? "w-full" : undefined}
+              className={`${isFullBleed ? "w-full" : ""} ${canvasImageClass}`}
               style={imageStyle}
             />
           ) : (

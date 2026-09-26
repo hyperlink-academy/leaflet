@@ -1,9 +1,4 @@
-import {
-  PubLeafletContent,
-  PubLeafletPagesCanvas,
-  PubLeafletPagesLinearDocument,
-  PubLeafletPublicationPage,
-} from "lexicons/api";
+import { PubLeafletPublicationPage } from "lexicons/api";
 
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
@@ -30,21 +25,6 @@ export async function leafletToPublicationPageRecord(opts: {
     hooks: opts.hooks,
   });
 
-  const pagesArray: PubLeafletContent.Main["pages"] = pages.map((p) => {
-    if (p.type === "canvas") {
-      return {
-        $type: "pub.leaflet.pages.canvas" as const,
-        id: p.id,
-        blocks: p.blocks as PubLeafletPagesCanvas.Block[],
-      };
-    }
-    return {
-      $type: "pub.leaflet.pages.linearDocument" as const,
-      id: p.id,
-      blocks: p.blocks as PubLeafletPagesLinearDocument.Block[],
-    };
-  });
-
   return {
     $type: "pub.leaflet.publicationPage",
     publication: opts.publication_uri,
@@ -53,7 +33,7 @@ export async function leafletToPublicationPageRecord(opts: {
     publishedAt: opts.publishedAt ?? new Date().toISOString(),
     content: {
       $type: "pub.leaflet.content",
-      pages: pagesArray,
+      pages,
     },
   };
 }

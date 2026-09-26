@@ -174,13 +174,12 @@ export const send_post_broadcast = inngest.createFunction(
         ? (firstPage as PubLeafletPagesLinearDocument.Main).blocks ?? []
         : [];
     // Pages without an id can't be the target of a page block.
-    const pages: PostEmailPage[] = docPages.flatMap((p): PostEmailPage[] => {
-      if (PubLeafletPagesLinearDocument.isMain(p) && p.id)
-        return [{ id: p.id, type: "doc", blocks: p.blocks ?? [] }];
-      if (PubLeafletPagesCanvas.isMain(p) && p.id)
-        return [{ id: p.id, type: "canvas", blocks: p.blocks ?? [] }];
-      return [];
-    });
+    const pages = docPages.filter(
+      (p): p is PostEmailPage =>
+        (PubLeafletPagesLinearDocument.isMain(p) ||
+          PubLeafletPagesCanvas.isMain(p)) &&
+        !!p.id,
+    );
 
     const pubTiers = loaded.pub.publication_membership_tiers ?? [];
     const hasDelimiter =
