@@ -305,7 +305,7 @@ const MobileViewToggle = (props: { entityID: string }) => {
             });
           }}
         >
-          Lock viewer zoom
+          Lock viewer zoom and scroll
         </CheckboxMenuItem>
       </Menu>
     </div>

@@ -12,20 +12,25 @@ import type { CanvasArea } from "./mobileView";
  */
 export function CanvasZoomLayer(props: {
   contentHeight: number;
-  /** Anchored mobile view area; the stylesheet's default zoom fits it. */
+  /**
+   * Anchored mobile view area; the stylesheet's default zoom fits it, and
+   * shifts a locked canvas to it.
+   */
   mobileArea?: CanvasArea | null;
   children: ReactNode;
 }) {
-  let { layerRef, spacerRef, contentWidth, centered } = useCanvasZoomEngine();
+  let { layerRef, spacerRef, contentWidth, centered, locked } =
+    useCanvasZoomEngine();
   return (
     <div
       ref={spacerRef}
-      className={`canvasZoomSpacer ${centered ? "canvasZoomCentered" : ""}`}
+      className={`canvasZoomSpacer ${centered ? "canvasZoomCentered" : ""} ${locked ? "canvasZoomLocked" : ""}`}
       style={
         {
           "--canvas-content-width": contentWidth,
           "--canvas-content-height": props.contentHeight,
           "--canvas-mobile-area": props.mobileArea?.width,
+          "--canvas-mobile-left": props.mobileArea?.left,
         } as CSSProperties
       }
     >

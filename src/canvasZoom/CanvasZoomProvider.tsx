@@ -57,6 +57,14 @@
  * offset is always in range; that padding is real scrollable space and is
  * dropped again once a native scroll has moved it fully off screen.
  *
+ * Locked. With `lockViewerZoom` the viewer can neither zoom nor scroll
+ * sideways, and the stylesheet alone frames the canvas (`.canvasZoomLocked`
+ * in globals.css): the spacer is as wide as the box, so there is nothing to
+ * scroll, and the layer is shifted to the anchored mobile area by its
+ * transform. The engine writes nothing to a locked canvas, so the frame in
+ * the server-rendered HTML is the one that stays. Vertical scrolling is
+ * untouched, since the canvas grows with its content.
+ *
  * Reading zoom:
  *   - `useCanvasZoom().zoom` is the settled value (React state).
  *   - `useCanvasZoomRef()` / `getCanvasZoom(pageKey)` return the live value,
@@ -147,6 +155,8 @@ export type CanvasZoomEngine = {
   /** Half a viewport of margin around the content (contentMargin). */
   centered: boolean;
   pageScroll: boolean;
+  /** Framed by the stylesheet: no zoom and no sideways scroll. */
+  locked: boolean;
   /** Zoom the next rendered frame will show (pending target or live). */
   targetZoom: () => number;
   /** The canvas viewport in client coordinates. */
@@ -178,7 +188,7 @@ type CanvasZoomContextValue = {
   max: number;
   /** False until the client has read the on-screen zoom. */
   ready: boolean;
-  /** Gestures and controls are off. */
+  /** Gestures, controls and sideways scrolling are off. */
   locked: boolean;
   zoomRef: RefObject<number>;
   zoomIn: () => void;
@@ -199,7 +209,10 @@ export function CanvasZoomProvider(props: {
   pageKey: string;
   /** Double tap zooms in (touch); off where a double tap means something else. */
   doubleTapZoom?: boolean;
-  /** Viewers get no zoom gestures or controls; the initial framing stays. */
+  /**
+   * Viewers get no zoom gestures or controls and cannot scroll sideways;
+   * the initial framing stays.
+   */
   lockViewerZoom?: boolean;
   /** The page around the box scrolls vertically; the box only sideways. */
   pageScroll?: boolean;
@@ -212,7 +225,8 @@ export function CanvasZoomProvider(props: {
   /**
    * Area a fresh mount frames: the stylesheet already fits its width (via
    * `--canvas-mobile-area` on the layer's spacer), and the scroller is put
-   * on its left edge here. A zoom kept from an earlier mount wins.
+   * on its left edge here. A zoom kept from an earlier mount wins. A locked
+   * canvas is put there by the stylesheet instead.
    */
   initialArea?: CanvasArea | null;
   children: ReactNode;
@@ -223,6 +237,7 @@ export function CanvasZoomProvider(props: {
   initialArea.current = props.initialArea;
   let contentWidth = props.contentWidth ?? CONTENT_WIDTH;
   let centered = !!props.centered;
+  let locked = !!props.lockViewerZoom;
   let boxRef = useRef<HTMLElement>(null);
   let scrollerRef = useRef<HTMLElement>(null);
   let layerRef = useRef<HTMLDivElement>(null);
@@ -243,6 +258,7 @@ export function CanvasZoomProvider(props: {
   // Only the engine writes the spacer padding, so it is tracked here rather
   // than read back from style on hot paths.
   let pads = useRef<Pads>(NO_PADS);
+  let wasLocked = useRef(locked);
   let lastFrame = useRef(0);
   let raf = useRef(0);
   let idleTimer = useRef(0);
@@ -450,6 +466,7 @@ export function CanvasZoomProvider(props: {
       contentWidth,
       centered,
       pageScroll,
+      locked,
       targetZoom: () => pending.current?.zoom ?? zoomRef.current,
       viewportRect: () => {
         let s = scrollers();
@@ -522,7 +539,7 @@ export function CanvasZoomProvider(props: {
       },
     };
     return engine;
-  }, [pageKey, contentWidth, centered, pageScroll]);
+  }, [pageKey, contentWidth, centered, pageScroll, locked]);
 
   // Runs before paint so a restored zoom never flashes.
   useIsomorphicLayoutEffect(() => {
@@ -538,8 +555,15 @@ export function CanvasZoomProvider(props: {
     spacer.style.padding = "";
     minRef.current = minZoom(box.clientWidth, contentWidth);
     setMin(minRef.current);
+    // A canvas locked while mounted drops what the engine had put on it.
+    if (locked) {
+      spacer.style.removeProperty("--canvas-zoom");
+      layer.style.removeProperty("--canvas-zoom");
+      if (layer.style.transform) layer.style.transform = "";
+      if (box.scrollLeft) box.scrollLeft = 0;
+    }
     let applied = appliedScale(layer);
-    let restored = hasCanvasZoom(pageKey);
+    let restored = !locked && hasCanvasZoom(pageKey);
     let z = restored
       ? clampZoom(getCanvasZoom(pageKey), minRef.current, MAX_ZOOM)
       : applied;
@@ -551,8 +575,12 @@ export function CanvasZoomProvider(props: {
       spacer.style.setProperty("--canvas-zoom", String(z));
       layer.style.setProperty("--canvas-zoom", String(z));
     }
+    // A canvas unlocked while mounted stays on the area it was locked to.
+    let unlocked = wasLocked.current && !locked;
+    wasLocked.current = locked;
     let area = initialArea.current;
-    if (!restored && area && area.left > 0) box.scrollLeft = area.left * z;
+    if (!locked && (!restored || unlocked) && area && area.left > 0)
+      box.scrollLeft = area.left * z;
     // Opens with the content centered in its margins.
     if (centered) {
       box.scrollLeft = (contentWidth * z) / 2;
@@ -562,7 +590,7 @@ export function CanvasZoomProvider(props: {
     setCanvasZoom(pageKey, z);
     setZoomState(z);
     setReady(true);
-  }, [pageKey, contentWidth, centered, pageScroll]);
+  }, [pageKey, contentWidth, centered, pageScroll, locked]);
 
   // The stylesheet's default zoom follows the mobile area, but a mounted canvas
   // keeps the zoom the engine already holds; the area only frames fresh loads.
@@ -571,20 +599,27 @@ export function CanvasZoomProvider(props: {
   useIsomorphicLayoutEffect(() => {
     if (mountedArea.current === areaWidth) return;
     mountedArea.current = areaWidth;
+    if (locked) return;
     let z = String(zoomRef.current);
     spacerRef.current?.style.setProperty("--canvas-zoom", z);
     layerRef.current?.style.setProperty("--canvas-zoom", z);
-  }, [areaWidth]);
+  }, [areaWidth, locked]);
 
   useEffect(() => {
     let box = boxRef.current;
     let scroller = scrollerRef.current;
-    if (!box || !scroller || !layerRef.current || !spacerRef.current) return;
+    let layer = layerRef.current;
+    if (!box || !scroller || !layer || !spacerRef.current) return;
     let abort = new AbortController();
     let signal = abort.signal;
 
     let boxObserver = new ResizeObserver(() => {
       if (!pageScroll) fitScrollerToGutter(box, contentWidth);
+      // The stylesheet's zoom follows the box's width.
+      if (locked) {
+        zoomRef.current = appliedScale(layer);
+        setCanvasZoom(pageKey, zoomRef.current);
+      }
       let m = minZoom(box.clientWidth, contentWidth);
       if (m === minRef.current) return;
       minRef.current = m;
@@ -622,9 +657,8 @@ export function CanvasZoomProvider(props: {
       pending.current = null;
       gesture.current = null;
     };
-  }, [engine, contentWidth, pageScroll]);
+  }, [engine, pageKey, contentWidth, pageScroll, locked]);
 
-  let locked = !!props.lockViewerZoom;
   useCanvasZoomGestures(engine, !locked);
   useCanvasDoubleTap(engine, (props.doubleTapZoom ?? true) && !locked);
 

@@ -1383,6 +1383,30 @@ body > iframe[src*="js.stripe.com"] {
   transform-origin: 0 0;
   transform: scale(var(--canvas-zoom));
 }
+/* Locked (lockViewerZoom): nothing scrolls sideways, since the spacer is as
+   wide as the box and clips the layer. The layer is shifted by the offset a
+   scroll to the anchored mobile area (--canvas-mobile-left, canvas px) would
+   have landed on, capped like one at the content's right edge, so the
+   server-rendered HTML is already framed. */
+.canvasZoomSpacer.canvasZoomLocked {
+  width: 100%;
+}
+.canvasZoomLocked > .canvasZoomLayer {
+  transform: translateX(
+      calc(
+        -1 *
+          min(
+            var(--canvas-mobile-left, 0) * var(--canvas-zoom) * 1px,
+            max(
+              0px,
+              var(--canvas-content-width, 1272) * var(--canvas-zoom) * 1px -
+                100cqw
+            )
+          )
+      )
+    )
+    scale(var(--canvas-zoom));
+}
 @supports (opacity: tan(atan2(1px, 1px))) {
   .canvasZoomSpacer,
   .canvasZoomLayer {

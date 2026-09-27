@@ -2362,7 +2362,7 @@ export const schemaDict = {
           lockViewerZoom: {
             type: 'boolean',
             description:
-              'Viewers cannot zoom the canvas: no wheel, pinch, double-tap or zoom controls.',
+              'Viewers cannot zoom the canvas or scroll it sideways: no wheel, pinch, double-tap or zoom controls, and the initial framing (see mobileView) stays. Vertical scrolling is unaffected.',
           },
         },
       },
