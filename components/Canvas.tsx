@@ -168,6 +168,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
             behavior: "smooth",
             inline: "nearest",
           });
+        if (props.preview || !entity_set.permissions.write) return;
         if ((e.detail === 2 || e.ctrlKey || e.metaKey) && rep) {
           let parentRect = e.currentTarget.getBoundingClientRect();
           let zoom = getCanvasZoom(props.entityID);
