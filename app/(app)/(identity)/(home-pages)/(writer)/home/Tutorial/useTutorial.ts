@@ -9,10 +9,16 @@ import {
 import useSWR from "swr";
 import { getHomeDocs } from "src/utils/homeDocsStorage";
 
+const LOCAL_DISMISSED_KEY = "tutorialDismissed";
+
 export function useTutorial() {
   let { identity, mutate } = useIdentityData();
   let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs());
-
+  // Logged-out users have no identity row to store the flag on.
+  let { data: localDismissed, mutate: mutateLocalDismissed } = useSWR(
+    LOCAL_DISMISSED_KEY,
+    () => window.localStorage.getItem(LOCAL_DISMISSED_KEY) === "true",
+  );
 
   let hasContent = identity
     ? identity.publications.length > 0 ||
@@ -22,12 +28,16 @@ export function useTutorial() {
     : !!localLeaflets?.some((d) => !d.hidden);
 
   return {
-
     tutorial: identity
       ? !!identity.tutorial
-      : localLeaflets !== undefined && !hasContent,
+      : localLeaflets !== undefined && localDismissed === false && !hasContent,
     hasContent,
     removeTutorial: async () => {
+      if (!identity) {
+        window.localStorage.setItem(LOCAL_DISMISSED_KEY, "true");
+        mutateLocalDismissed(true, { revalidate: false });
+        return;
+      }
       // Optimistic without a revalidate: a refetch racing the write below
       // would hand back tutorial: true and flash the banner back in.
       mutateIdentityData(mutate, (draft) => {

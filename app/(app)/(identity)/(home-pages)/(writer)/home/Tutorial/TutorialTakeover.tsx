@@ -1,11 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import {
-  ButtonPrimary,
-  ButtonSecondary,
-  ButtonTertiary,
-} from "components/Buttons";
+import { preload } from "react-dom";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { GoToArrowLined } from "components/Icons/GoToArrowLined";
 import {
   useActivateTutorialNavTour,
@@ -13,10 +10,10 @@ import {
 } from "./TutorialNavTooltip";
 import { useTutorial } from "./useTutorial";
 
-type Step = "welcome" | "home" | "nav" | "create";
+type Step = "welcome" | "home" | "nav";
 
 type StepProps = { setStep: (step: Step) => void };
-let className = "flex flex-col gap-6 max-w-md w-full sm:p-8 p-4";
+let className = "flex flex-col gap-4 sm:gap-6 max-w-md w-full sm:px-4 ";
 
 const SkipTutorial = () => {
   let { removeTutorial } = useTutorial();
@@ -32,6 +29,9 @@ const SkipTutorial = () => {
 
 export function TutorialTakeover() {
   let [step, setStep] = useState<Step>("welcome");
+  // Finishing the tutorial lands on the home empty state.
+  preload("/illustrations/start-a-publication.webp", { as: "image" });
+  preload("/illustrations/start-writing.webp", { as: "image" });
   useBlurTutorialNav(step === "welcome" || step === "home");
 
   return (
@@ -44,8 +44,6 @@ export function TutorialTakeover() {
             return <Home setStep={setStep} />;
           case "nav":
             return <Navigation setStep={setStep} />;
-          case "create":
-            return <GetStarted setStep={setStep} />;
         }
       })()}
     </div>
@@ -55,19 +53,27 @@ export function TutorialTakeover() {
 const WelcomeToLeaflet = (props: StepProps) => {
   return (
     <>
-      <div className={className}>
-        <div className="flex flex-col gap-2 text-lg">
-          <h2>Welcome to Leaflet!</h2>
-          <div className="">
-            Leaflet is a platform for writing blogs and newsletters. Create
-            publications, write posts, and discover your community.
-          </div>
-          <img
-            src="/illustrations/welcome-to-leaflet.webp"
-            alt=""
-            className="w-full h-auto mx-auto my-2"
+      <div className={`${className} max-w-3xl!`}>
+        <picture className="">
+          <source
+            media="(min-width: 640px)"
+            srcSet="/illustrations/welcome-to-leaflet.webp"
           />
-
+          <img
+            src="/illustrations/welcome-to-leaflet-mobile.webp"
+            alt="Welcome to Leaflet!"
+            className="w-full max h-auto sm:mb-2 rounded-lg"
+          />
+        </picture>
+        <div className="flex flex-col gap-2 sm:text-lg max-w-xl mx-auto">
+          <div className="font-bold">
+            Leaflet is a platform for writing
+            <br /> blogs and newsletters.
+          </div>{" "}
+          <div>
+            Here, you can create publications, write posts, and discover your
+            community.
+          </div>
           <div>Let us show you around!</div>
         </div>
         <div className="flex flex-col gap-2">
@@ -75,7 +81,7 @@ const WelcomeToLeaflet = (props: StepProps) => {
             className="mx-auto w-36!"
             onClick={() => props.setStep("home")}
           >
-            Next (2/4) <GoToArrowLined />
+            Next (1/3) <GoToArrowLined />
           </ButtonPrimary>
           <SkipTutorial />
         </div>
@@ -107,7 +113,7 @@ const Home = (props: StepProps) => {
               className="w-36!"
               onClick={() => props.setStep("nav")}
             >
-              Next (3/4) <GoToArrowLined />
+              Next (2/3) <GoToArrowLined />
             </ButtonPrimary>
           </div>
           <SkipTutorial />
@@ -119,6 +125,7 @@ const Home = (props: StepProps) => {
 
 const Navigation = (props: StepProps) => {
   useActivateTutorialNavTour();
+  let { removeTutorial } = useTutorial();
 
   return (
     <div className={className}>
@@ -138,64 +145,10 @@ const Navigation = (props: StepProps) => {
           >
             Back
           </ButtonSecondary>
-          <ButtonPrimary
-            className="w-36!"
-            onClick={() => props.setStep("create")}
-          >
-            Next (4/4) <GoToArrowLined />
+          <ButtonPrimary className="w-36!" onClick={removeTutorial}>
+            Finish <GoToArrowLined />
           </ButtonPrimary>
         </div>
-        <SkipTutorial />
-      </div>
-    </div>
-  );
-};
-
-const GetStarted = (props: StepProps) => {
-  return (
-    <div className={`${className} max-w-lg!`}>
-      <div className="flex flex-col gap-2 text-lg">
-        <h2>Get started!</h2>
-        <div className="flex gap-4 sm:flex-row flex-col items-stretch">
-          <div className="light-container p-3 basis-1/2 flex flex-col gap-1">
-            <img
-              src="/illustrations/start-a-publication.webp"
-              alt=""
-              className="h-24 w-auto object-contain mx-auto mb-2"
-            />
-            <h3>Start a Publication</h3>
-            <div className="text-base grow">
-              Start a blog, newsletter, comic, novel, zine, etc. Make a homepage
-              and publish posts!
-            </div>
-            <ButtonPrimary fullWidth className="place-self-end mt-2">
-              Go
-            </ButtonPrimary>
-          </div>
-          <div className="light-container p-3 basis-1/2 flex flex-col gap-1">
-            <img
-              src="/illustrations/start-writing.webp"
-              alt=""
-              className="h-24 w-auto object-contain mx-auto mb-2"
-            />
-            <h3>Write something</h3>
-            <div className="text-base grow">
-              Just start writing! You can add this to a publication later, share
-              it with friends, or just write it for you.
-            </div>
-            <ButtonPrimary fullWidth className="place-self-end mt-2">
-              Go
-            </ButtonPrimary>
-          </div>
-        </div>
-      </div>
-      <div className="flex flex-col gap-2">
-        <ButtonSecondary
-          className="w-36! mx-auto"
-          onClick={() => props.setStep("nav")}
-        >
-          Back
-        </ButtonSecondary>
         <SkipTutorial />
       </div>
     </div>

@@ -27,6 +27,10 @@ import { useSubscribe } from "src/replicache/useSubscribe";
 import { mergePreferences } from "src/utils/mergePreferences";
 import { CANVAS_DRAG_STACK_ORDER } from "src/utils/canvasBlockOrder";
 import { useCanvasStackOrders } from "src/hooks/queries/useCanvasStacking";
+import {
+  CustomizeTutorialTooltip,
+  useTutorialOpen,
+} from "app/(app)/(identity)/lish/[did]/[publication]/edit/CustomizeTutorialTooltip";
 
 export function Canvas(props: {
   entityID: string;
@@ -233,51 +237,53 @@ const AddCanvasBlockButton = (props: {
   let { rep, undoManager } = useReplicache();
   let { permissions } = useEntitySetContext();
   let blocks = useEntity(props.entityID, "canvas/block");
+  let tutorialOpen = useTutorialOpen("canvas-add");
 
   if (!permissions.write) return null;
   return (
     <div className="absolute right-2 sm:bottom-4 sm:right-4 bottom-2 sm:top-auto z-10 flex flex-col gap-1 justify-center">
-      <TooltipButton
-        side="left"
-        open={blocks.length === 0 ? true : undefined}
-        tooltipContent={
-          <div className="flex flex-col justify-end text-center px-1 leading-snug ">
-            <div>Add a Block!</div>
-            <div className="font-normal">or double click anywhere</div>
-          </div>
-        }
-        className="w-fit p-2 rounded-full bg-accent-1 border-2 outline-solid outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-2"
-        onMouseDown={() => {
-          let page = document.getElementById(
-            elementId.page(props.entityID).canvasScrollArea,
-          );
-          if (!page) return;
-          let newEntityID = v7();
-          // The group stays open until the mutation settles, so every fact
-          // addCanvasBlock writes lands in one Cmd-Z step.
-          undoManager.withUndoGroup(async () => {
-            await rep?.mutate.addCanvasBlock({
-              newEntityID,
-              parent: props.entityID,
-              position: {
-                x: page?.clientWidth + page?.scrollLeft - 468,
-                y: 32 + page.scrollTop,
-              },
-              factID: v7(),
-              type: "text",
-              permission_set: props.entity_set.set,
-            });
-          });
-          setTimeout(() => {
-            focusBlock(
-              { type: "text", entityID: newEntityID, parent: props.entityID },
-              { type: "start" },
+      <CustomizeTutorialTooltip target="canvas-add" className="flex">
+        <TooltipButton
+          side="left"
+          open={blocks.length === 0 ? true : undefined}
+          hideTooltip={tutorialOpen}
+          tooltipContent={
+            <div className="flex flex-col justify-end text-center px-1 leading-snug ">
+              <div>Add a Block!</div>
+              <div className="font-normal">or double click anywhere</div>
+            </div>
+          }
+          className="w-fit p-2 rounded-full bg-accent-1 border-2 outline-solid outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-2"
+          onMouseDown={() => {
+            let page = document.getElementById(
+              elementId.page(props.entityID).canvasScrollArea,
             );
-          }, 20);
-        }}
-      >
-        <AddSmall />
-      </TooltipButton>
+            if (!page) return;
+            let newEntityID = v7();
+            undoManager.withUndoGroup(async () => {
+              await rep?.mutate.addCanvasBlock({
+                newEntityID,
+                parent: props.entityID,
+                position: {
+                  x: page?.clientWidth + page?.scrollLeft - 468,
+                  y: 32 + page.scrollTop,
+                },
+                factID: v7(),
+                type: "text",
+                permission_set: props.entity_set.set,
+              });
+            });
+            setTimeout(() => {
+              focusBlock(
+                { type: "text", entityID: newEntityID, parent: props.entityID },
+                { type: "start" },
+              );
+            }, 20);
+          }}
+        >
+          <AddSmall />
+        </TooltipButton>
+      </CustomizeTutorialTooltip>
     </div>
   );
 };

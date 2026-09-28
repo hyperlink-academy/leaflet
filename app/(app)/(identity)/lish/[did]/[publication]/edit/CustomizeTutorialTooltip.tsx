@@ -15,23 +15,47 @@ export type CustomizeTutorialTarget =
   | "new-page"
   | "content"
   | "text"
-  | "posts-list";
+  | "posts-list"
+  | "canvas-add";
+
+const PUBLICATION_TARGETS: CustomizeTutorialTarget[] = [
+  "theme",
+  "new-page",
+  "content",
+  "text",
+  "posts-list",
+];
+
+type DescriptionOverrides = Partial<Record<CustomizeTutorialTarget, string>>;
 
 // The targets are spread across the header, the nav, and blocks rendered deep
 // inside the page editor — a store reaches them without threading a prop
 // through every block.
 export const useCustomizeTutorial = create<{
   active: boolean;
+  targets: CustomizeTutorialTarget[];
+  descriptions: DescriptionOverrides;
   contentFocused: boolean;
   dismissed: CustomizeTutorialTarget[];
-  setActive: (active: boolean) => void;
+  setActive: (
+    active: boolean,
+    targets?: CustomizeTutorialTarget[],
+    descriptions?: DescriptionOverrides,
+  ) => void;
   setContentFocused: (focused: boolean) => void;
   dismiss: (target: CustomizeTutorialTarget) => void;
 }>((set) => ({
   active: false,
+  targets: [],
+  descriptions: {},
   contentFocused: false,
   dismissed: [],
-  setActive: (active) => set({ active }),
+  setActive: (active, targets, descriptions) =>
+    set(
+      targets
+        ? { active, targets, descriptions: descriptions ?? {} }
+        : { active },
+    ),
   setContentFocused: (focused) =>
     set((s) => ({
       contentFocused: focused,
@@ -53,13 +77,23 @@ export const useCustomizeTutorial = create<{
 // TEMP: forces the tooltips on for testing. Remove before shipping.
 const FORCE_TUTORIAL = true;
 
-export function useActivateCustomizeTutorial(enabled: boolean) {
+export function useActivateCustomizeTutorial(
+  enabled: boolean,
+  targets: CustomizeTutorialTarget[] = PUBLICATION_TARGETS,
+  descriptions: DescriptionOverrides = {},
+) {
   let setActive = useCustomizeTutorial((s) => s.setActive);
   let setContentFocused = useCustomizeTutorial((s) => s.setContentFocused);
   let on = enabled || FORCE_TUTORIAL;
+  let targetsKey = targets.join(",");
+  let descriptionsKey = JSON.stringify(descriptions);
   useEffect(() => {
     if (!on) return;
-    setActive(true);
+    setActive(
+      true,
+      targetsKey.split(",") as CustomizeTutorialTarget[],
+      JSON.parse(descriptionsKey),
+    );
     let onFocus = (
       s: ReturnType<typeof useUIState.getState>,
       prev?: ReturnType<typeof useUIState.getState>,
@@ -84,7 +118,7 @@ export function useActivateCustomizeTutorial(enabled: boolean) {
       window.removeEventListener("pointerdown", onPointerDown, true);
       setActive(false);
     };
-  }, [on, setActive, setContentFocused]);
+  }, [on, targetsKey, descriptionsKey, setActive, setContentFocused]);
 }
 
 type TooltipPlacement = {
@@ -140,6 +174,13 @@ const TOUR_COPY: {
     align: "center",
     mobile: { side: "top", align: "end", yOffset: 0 },
   },
+  "canvas-add": {
+    title: "Add blocks",
+    description:
+      "Click the +  or double click anywhere to add text, images, embeds, etc",
+    side: "top",
+    align: "end",
+  },
 };
 
 const ENTER_ORDER: CustomizeTutorialTarget[] = ["theme", "new-page", "content"];
@@ -154,6 +195,7 @@ export function useTutorialOpen(
   return useCustomizeTutorial(
     (s) =>
       s.active &&
+      s.targets.includes(target) &&
       !s.dismissed.includes(target) &&
       (BLOCK_TARGETS.includes(target)
         ? blockFocused && s.contentFocused
@@ -165,6 +207,7 @@ function TutorialTooltipContent(props: { target: CustomizeTutorialTarget }) {
   let isMobile = useIsMobile();
   let { title, description, mobile } = TOUR_COPY[props.target];
   let dismiss = useCustomizeTutorial((s) => s.dismiss);
+  let override = useCustomizeTutorial((s) => s.descriptions[props.target]);
   // The content is portaled, but React still bubbles its events up to the
   // blocks the tooltip lives in, which would focus or select them.
   let stop = (e: React.SyntheticEvent) => e.stopPropagation();
@@ -192,7 +235,7 @@ function TutorialTooltipContent(props: { target: CustomizeTutorialTarget }) {
         </button>
       </div>
       <div className="text-secondary text-sm leading-snug">
-        {(isMobile && mobile?.description) || description}
+        {override || (isMobile && mobile?.description) || description}
       </div>
     </>
   );
