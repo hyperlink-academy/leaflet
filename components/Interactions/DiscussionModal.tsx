@@ -16,8 +16,10 @@ import {
 import { ThreadView } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/ThreadPage";
 import { StandardSitePostDrawerView } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/StandardSitePostDrawerView";
 import { RecommendsList } from "./RecommendsList";
-import { decodeQuotePosition } from "src/utils/quotePosition";
-import { useDocumentDiscussionData } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/useDocumentDiscussionData";
+import {
+  filterQuotesForPage,
+  useDocumentDiscussionData,
+} from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/useDocumentDiscussionData";
 import { GoToArrow } from "../Icons/GoToArrow";
 import { GoBackTiny } from "../Icons/GoBackTiny";
 import { DoubleArrowRightTiny } from "../Icons/DoubleArrowRightTiny";
@@ -40,28 +42,42 @@ export function DiscussionContent(props: {
   showComments: boolean;
   showMentions: boolean;
   pageId?: string;
+  // Offer the comments view with nothing in it yet, for surfaces where this
+  // is the only place to write the first comment.
+  showWhenEmpty?: boolean;
+  initialTab?: "comments" | "quotes";
+  initialThread?: DrawerThread;
   bgColor?: string;
   // Replaces the header's link to the post, for surfaces that already have it
   // on screen (the reader's post viewer) and need their own control instead.
   postLinkButton?: React.ReactNode;
   headerClassName?: string;
 }) {
-  const commentsAvailable = props.showComments && props.commentsCount > 0;
+  const commentsAvailable =
+    props.showComments && (props.commentsCount > 0 || !!props.showWhenEmpty);
   const mentionsAvailable = props.showMentions && props.quotesCount > 0;
   const bothAvailable = commentsAvailable && mentionsAvailable;
+  const defaultTab: "comments" | "quotes" =
+    props.initialTab === "quotes" && mentionsAvailable
+      ? "quotes"
+      : props.initialTab === "comments" && commentsAvailable
+        ? "comments"
+        : commentsAvailable && (props.commentsCount > 0 || !mentionsAvailable)
+        ? "comments"
+        : "quotes";
 
-  const [tab, setTab] = useState<"comments" | "quotes">(
-    commentsAvailable ? "comments" : "quotes",
-  );
+  const [tab, setTab] = useState(defaultTab);
 
   useEffect(() => {
-    if (props.open) setTab(commentsAvailable ? "comments" : "quotes");
+    if (props.open) setTab(defaultTab);
   }, [props.open]);
 
   const { isLoading, data, did, pages, documentContextValue, comments } =
     useDocumentDiscussionData(props.document_uri, props.open);
 
-  const [threadStack, setThreadStack] = useState<DrawerThread[]>([]);
+  const [threadStack, setThreadStack] = useState<DrawerThread[]>(
+    props.initialThread ? [props.initialThread] : [],
+  );
   const drawerNav = useMemo(
     () => ({
       push: (thread: DrawerThread) =>
@@ -80,14 +96,10 @@ export function DiscussionContent(props: {
     topRef.current?.scrollIntoView({ block: "nearest" });
   }, [threadStack.length]);
 
-  const quotesAndMentions = (data?.quotesAndMentions ?? []).filter((q) => {
-    if (!q.link) return !props.pageId;
-    const url = new URL(q.link);
-    const quoteParam = url.pathname.split("/l-quote/")[1];
-    if (!quoteParam) return !props.pageId;
-    const quotePosition = decodeQuotePosition(quoteParam);
-    return quotePosition?.pageId === props.pageId;
-  });
+  const quotesAndMentions = filterQuotesForPage(
+    data?.quotesAndMentions ?? [],
+    props.pageId,
+  );
 
   return (
     <>
@@ -141,7 +153,9 @@ export function DiscussionContent(props: {
           ) : (
             <div className="font-bold text-tertiary text-sm! ">
               {commentsAvailable
-                ? `Comments (${props.commentsCount})`
+                ? props.commentsCount > 0
+                  ? `Comments (${props.commentsCount})`
+                  : "Comments"
                 : `Bluesky Mentions (${props.quotesCount})`}
             </div>
           )}{" "}

@@ -31,14 +31,13 @@ import { useIsMobile } from "src/hooks/isMobile";
 import { useReplicache, useEntity } from "src/replicache";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { Json } from "supabase/database.types";
-import {
-  useBlocks,
-  useCanvasBlocksWithType,
-} from "src/hooks/queries/useBlocks";
+import { usePageReadingOrder } from "src/hooks/queries/useBlocks";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { YJSFragmentToString } from "src/utils/yjsFragmentToString";
 import { moveLeafletToPublication } from "actions/publications/moveLeafletToPublication";
+import { addPostHeaderBlock } from "src/utils/addPostHeaderBlock";
+import { useEntitySetContext } from "components/EntitySetProvider";
 import { AddTiny } from "components/Icons/AddTiny";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { useLocalPublishedAt } from "components/Pages/Backdater";
@@ -330,7 +329,9 @@ const SaveAsDraftButton = (props: {
   entitiesToDelete: string[];
 }) => {
   let { mutate } = useLeafletPublicationData();
-  let { rep } = useReplicache();
+  let { rep, rootEntity } = useReplicache();
+  let entity_set = useEntitySetContext();
+  let firstPage = useEntity(rootEntity, "root/page")[0]?.data.value;
   let [isLoading, setIsLoading] = useState(false);
 
   return (
@@ -346,6 +347,11 @@ const SaveAsDraftButton = (props: {
           props.metadata,
           props.entitiesToDelete,
         );
+        if (rep && firstPage)
+          await addPostHeaderBlock(rep, {
+            page: firstPage,
+            permission_set: entity_set.set,
+          });
         await Promise.all([rep?.pull(), mutate()]);
         setIsLoading(false);
       }}
@@ -419,7 +425,7 @@ const PubSelector = (props: {
               <div className="text-border text-sm font-normal">
                 Publish to a blog on AT Proto
               </div>
-              <hr className="my-2 drashed border-border-light border-dashed" />
+              <hr className="my-2 border-border-light border-dashed" />
               <div className="text-tertiary text-sm font-normal ">
                 You don't have any Publications yet.{" "}
                 <a target="_blank" href="/lish/createPub">
@@ -497,16 +503,12 @@ const PubOption = (props: {
 
 let useTitle = (entityID: string) => {
   let rootPage = useEntity(entityID, "root/page")[0].data.value;
-  let canvasBlocks = useCanvasBlocksWithType(rootPage).filter(
+  let isCanvas = useEntity(rootPage, "page/type")?.data.value === "canvas";
+  let blocks = usePageReadingOrder(rootPage).filter(
     (b) => b.type === "text" || b.type === "heading",
   );
-  let blocks = useBlocks(rootPage).filter(
-    (b) => b.type === "text" || b.type === "heading",
-  );
-  // Canvas items are fact data (entity in .value); linear blocks are Blocks
-  // (entity in .entityID) — read each arm's own field.
-  let firstBlockEntity = canvasBlocks[0]?.value ?? blocks[0]?.entityID ?? null;
-  let firstBlockType = canvasBlocks[0]?.type ?? blocks[0]?.type;
+  let firstBlockEntity = blocks[0]?.entityID ?? null;
+  let firstBlockType = blocks[0]?.type;
 
   let firstBlockText = useEntity(firstBlockEntity, "block/text")?.data.value;
 
@@ -520,7 +522,6 @@ let useTitle = (entityID: string) => {
   }, [firstBlockText]);
 
   // Only handle second block logic for linear documents, not canvas
-  let isCanvas = canvasBlocks.length > 0;
   let secondBlock = !isCanvas ? blocks[1] : undefined;
   let secondBlockTextValue = useEntity(
     secondBlock?.entityID || null,

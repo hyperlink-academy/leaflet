@@ -8,6 +8,7 @@ import {
   PubLeafletPagesCanvas,
 } from "lexicons/api";
 import { type $Typed } from "lexicons/api/util";
+import { pageBlocksInOrder } from "src/utils/pageBlocksInOrder";
 import { AtpAgent, AppBskyFeedDefs } from "@atproto/api";
 import { supabaseServerClient } from "supabase/serverClient";
 import {
@@ -48,7 +49,7 @@ export async function collectAndFetchBlockResources({
   prerenderedCodeBlocks: Map<string, string>;
 }> {
   const allBlocks: PubLeafletPagesLinearDocument.Block[] = pages.flatMap(
-    (p) => (p as PubLeafletPagesLinearDocument.Main).blocks ?? [],
+    (p) => pageBlocksInOrder(p).map((b) => b.block),
   );
 
   const bskyPostBlocks = extractBlocksByType<
@@ -111,7 +112,7 @@ export async function collectAndFetchBlockResources({
       const isServerRendered =
         pageIndex === 0 || (!!openPageId && page.id === openPageId);
       if (!isServerRendered) return;
-      const pageCode = await extractCodeBlocks(page.blocks ?? []);
+      const pageCode = await extractCodeBlocks(page);
       const pageKey = pageIndex === 0 ? "" : (page.id ?? "");
       for (const [blockIndex, html] of pageCode) {
         prerenderedCodeBlocks.set(`${pageKey}:${blockIndex}`, html);

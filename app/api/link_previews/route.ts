@@ -74,7 +74,7 @@ async function get_link_image_preview(url: string) {
       upsert: true,
     });
   } else {
-    console.log("an error occured rendering the website", url);
+    console.log("an error occurred rendering the website", url);
   }
 
   return {

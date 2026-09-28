@@ -1579,6 +1579,7 @@ export type Database = {
         Row: {
           confirmation_code: string | null
           created_at: string
+          embed_redirect_url: string | null
           enabled: boolean
           publication: string
           reply_to_email: string | null
@@ -1588,6 +1589,7 @@ export type Database = {
         Insert: {
           confirmation_code?: string | null
           created_at?: string
+          embed_redirect_url?: string | null
           enabled?: boolean
           publication: string
           reply_to_email?: string | null
@@ -1597,6 +1599,7 @@ export type Database = {
         Update: {
           confirmation_code?: string | null
           created_at?: string
+          embed_redirect_url?: string | null
           enabled?: boolean
           publication?: string
           reply_to_email?: string | null

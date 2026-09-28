@@ -12,7 +12,7 @@ import {
   POST_BODY_IMAGE_WIDTH,
 } from "src/utils/blobRefToSrc";
 import { GalleryImage } from "components/Blocks/ImageGalleryBlock/shared";
-import { canvasBlockOrder } from "src/utils/canvasBlockOrder";
+import { pageBlocksInOrder } from "src/utils/pageBlocksInOrder";
 
 // The clicked image is found by blob CID, which is stable no matter what
 // display transform each renderer requests.
@@ -26,11 +26,7 @@ export function collectPostImages(
   page: PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main,
   did: string,
 ): PostImage[] {
-  let blocks = PubLeafletPagesCanvas.isMain(page)
-    ? [...(page.blocks || [])]
-        .sort(canvasBlockOrder)
-        .map((b) => ({ block: b.block }))
-    : (page.blocks ?? []);
+  let blocks = pageBlocksInOrder(page).map((b) => b.block);
   let images: PostImage[] = [];
 
   let walkBlock = (b: {

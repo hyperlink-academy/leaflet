@@ -12,6 +12,10 @@ import {
   PubLeafletPagesLinearDocument,
   PubLeafletBlocksCode,
 } from "lexicons/api";
+import {
+  pageBlocksInOrder,
+  type IndexedBlock,
+} from "src/utils/pageBlocksInOrder";
 import { useDocument } from "contexts/DocumentContext";
 import { useLeafletContent } from "contexts/LeafletContentContext";
 import {
@@ -24,8 +28,8 @@ import { useActiveHighlightState } from "../useHighlight";
 import { PostContent } from "../PostContent";
 import { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { flushSync } from "react-dom";
-import { openPage } from "../postPageState";
-import useSWR, { mutate } from "swr";
+import { usePostFrame } from "../postFrame";
+import useSWR, { preload } from "swr";
 import { DotLoader } from "components/utils/DotLoader";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
@@ -72,10 +76,7 @@ export function prefetchQuotesData(
 ) {
   const uris = quotesAndMentions.map((q) => q.uri);
   const key = getQuotesSWRKey(uris);
-  if (key) {
-    // Start fetching without blocking
-    mutate(key, fetchBskyPosts(uris), { revalidate: false });
-  }
+  if (key) preload(key, () => fetchBskyPosts(uris));
 }
 
 export const DiscussionDrawerContent = (props: {
@@ -195,20 +196,19 @@ export const QuoteContent = (props: {
   did: string;
 }) => {
   let isMobile = useIsMobile();
+  let frame = usePostFrame();
   const { uri: document_uri } = useDocument();
   const { pages } = useLeafletContent();
 
-  let page: PubLeafletPagesLinearDocument.Main | undefined = (
-    props.position.pageId
-      ? pages.find(
-          (p) =>
-            (p as PubLeafletPagesLinearDocument.Main).id ===
-            props.position.pageId,
-        )
-      : pages[0]
-  ) as PubLeafletPagesLinearDocument.Main;
+  let page = props.position.pageId
+    ? pages.find(
+        (p) =>
+          (p as PubLeafletPagesLinearDocument.Main).id ===
+          props.position.pageId,
+      )
+    : pages[0];
   // Extract blocks within the quote range
-  const content = extractQuotedBlocks(page.blocks || [], props.position, []);
+  const content = extractQuotedBlocks(pageBlocksInOrder(page!), props.position);
   return (
     <div
       className="quoteSection"
@@ -222,10 +222,7 @@ export const QuoteContent = (props: {
       <div
         className="quoteSectionQuote text-secondary text-sm text-left hover:cursor-pointer"
         onClick={(e) => {
-          if (props.position.pageId)
-            flushSync(() =>
-              openPage(undefined, { type: "doc", id: props.position.pageId! }),
-            );
+          flushSync(() => frame.showPage(props.position.pageId));
           let scrollMargin = isMobile
             ? 16
             : e.currentTarget.getBoundingClientRect().top;
@@ -271,15 +268,12 @@ export const QuoteContent = (props: {
 };
 
 function extractQuotedBlocks(
-  blocks: PubLeafletPagesLinearDocument.Block[],
+  blocks: IndexedBlock[],
   quotePosition: QuotePosition,
-  currentPath: number[],
 ): PubLeafletPagesLinearDocument.Block[] {
   const result: PubLeafletPagesLinearDocument.Block[] = [];
 
-  blocks.forEach((block, index) => {
-    const blockPath = [...currentPath, index];
-
+  blocks.forEach(({ block, index: blockPath }) => {
     // Handle different block types
     if (PubLeafletBlocksUnorderedList.isMain(block.block)) {
       // For lists, recursively extract quoted items

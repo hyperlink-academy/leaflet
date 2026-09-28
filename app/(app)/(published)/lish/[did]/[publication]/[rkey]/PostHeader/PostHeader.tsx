@@ -1,15 +1,11 @@
 "use client";
 import { getPublicationURL } from "src/utils/getPublicationURL";
-import {
-  Interactions,
-  getQuoteCount,
-  openDrawerThread,
-} from "../Interactions/Interactions";
+import { Interactions, getQuoteCount } from "../Interactions/Interactions";
+import { usePostFrame } from "../postFrame";
 import {
   type DrawerThread,
   DrawerThreadContext,
 } from "../Interactions/drawerThreadContext";
-import { useDocumentOptional } from "contexts/DocumentContext";
 import { PostPageData } from "src/utils/getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { usePostEditLink } from "../usePostEditLink";
@@ -43,6 +39,7 @@ export function PostHeader(props: {
     showRecommends?: boolean;
   };
   isCanvas?: boolean;
+  compact?: boolean;
 }) {
   let document = props.data;
 
@@ -50,10 +47,12 @@ export function PostHeader(props: {
   let profile = props.profile;
   let pub = props.data?.documents_in_publications[0]?.publications;
   let editLink = usePostEditLink(document?.uri, pub?.identity_did);
+  let { headerInteractions } = usePostFrame();
 
   if (!document?.data || !record) return null;
   return (
     <PostHeaderLayout
+      compact={props.compact}
       pubLink={
         <>
           {pub && (
@@ -79,15 +78,16 @@ export function PostHeader(props: {
         </>
       }
       postTitle={record.title}
-      postDescription={record.description}
+      postDescription={props.compact ? undefined : record.description}
       postInfo={
         <>
           <PostByline
             record={record}
             profile={profile}
             contributors={props.contributors}
+            hideTags={!headerInteractions}
           />
-          {!props.isCanvas && (
+          {!props.isCanvas && headerInteractions && (
             <Interactions
               className="sm:mt-0 mt-1"
               showComments={props.preferences.showComments !== false}
@@ -110,6 +110,7 @@ export function PostByline(props: {
   record: NonNullable<PostPageData>["normalizedDocument"];
   profile?: ProfileViewDetailed;
   contributors?: BylineProfile[];
+  hideTags?: boolean;
 }) {
   // Only keep contributors that resolve to a real name (displayName or handle).
   // Unresolved profiles (bare DIDs) would otherwise render empty clickable
@@ -118,17 +119,10 @@ export function PostByline(props: {
   let namedContributors = (props.contributors ?? []).filter(
     (c) => c.displayName || c.handle,
   );
-  const document = useDocumentOptional();
-  const documentUri = document?.uri;
+  const frame = usePostFrame();
   const tagDrawerNav = useMemo(
-    () =>
-      documentUri
-        ? {
-            push: (thread: DrawerThread) =>
-              openDrawerThread(documentUri, thread),
-          }
-        : null,
-    [documentUri],
+    () => ({ push: (thread: DrawerThread) => frame.openThread(thread) }),
+    [frame],
   );
   const record = props.record;
   const formattedDate = useLocalizedDate(
@@ -140,7 +134,7 @@ export function PostByline(props: {
     },
   );
   const tags = record.tags ?? [];
-  const tagCount = tags.length;
+  const tagCount = props.hideTags ? 0 : tags.length;
 
   return (
     <div className="flex flex-row gap-2 items-center">
@@ -183,8 +177,8 @@ export function PostByline(props: {
       {tagCount > 0 && (
         <>
           <Separator classname="h-4!" />
-          {/* TagPopover reads this off context to open the tag in this post's
-              own interaction drawer. */}
+          {/* TagPopover reads this off context to open the tag wherever the
+              post's frame shows tags. */}
           <DrawerThreadContext.Provider value={tagDrawerNav}>
             <TagPopover tags={tags} />
           </DrawerThreadContext.Provider>
@@ -194,22 +188,29 @@ export function PostByline(props: {
   );
 }
 
+// `compact` is the post header block's condensed mode: tighter spacing and a
+// smaller title, for a header that shares a canvas with the content.
 export const PostHeaderLayout = (props: {
   pubLink: React.ReactNode;
   postTitle: React.ReactNode | undefined;
   postDescription: React.ReactNode | undefined;
   postInfo: React.ReactNode;
+  compact?: boolean;
 }) => {
   return (
     <header
-      className="postHeader w-full flex flex-col px-3 sm:px-4 sm:pt-3 pt-2 pb-5"
+      className={`postHeader w-full flex flex-col px-3 sm:px-4 ${props.compact ? "pt-2 pb-3" : "sm:pt-3 pt-2 pb-5"}`}
       id="post-header"
     >
-      <div className="pubInfo relative flex text-accent-contrast font-bold justify-between w-full">
+      <div
+        className={`pubInfo relative flex text-accent-contrast font-bold justify-between w-full ${props.compact ? "text-sm" : ""}`}
+      >
         {props.pubLink}
       </div>
       {props.postTitle && (
-        <h1 className="postTitle text-2xl leading-tight pt-0.5 font-bold outline-hidden bg-transparent">
+        <h1
+          className={`postTitle leading-tight pt-0.5 font-bold outline-hidden bg-transparent ${props.compact ? "text-lg" : "text-2xl"}`}
+        >
           {props.postTitle}
         </h1>
       )}
@@ -218,7 +219,9 @@ export const PostHeaderLayout = (props: {
           {props.postDescription}
         </div>
       ) : null}
-      <div className="postInfo text-sm text-tertiary pt-3 flex gap-1 flex-wrap justify-between">
+      <div
+        className={`postInfo text-sm text-tertiary flex gap-1 flex-wrap justify-between ${props.compact ? "pt-1.5" : "pt-3"}`}
+      >
         {props.postInfo}
       </div>
     </header>

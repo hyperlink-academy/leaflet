@@ -44,7 +44,13 @@ const nextConfig = {
   // Caps the CDN stale-while-revalidate window for ISR pages (default is one
   // year — a bad cached page could be served stale that long).
   expireTime: 86400,
-  serverExternalPackages: ["yjs", "pino", "jsdom"],
+  // ffmpeg-static locates its binary from its own __dirname, so it must be
+  // loaded from node_modules rather than bundled.
+  serverExternalPackages: ["yjs", "pino", "jsdom", "ffmpeg-static"],
+  // ffmpeg-static resolves its binary at runtime, so the tracer would drop it.
+  outputFileTracingIncludes: {
+    "/api/atproto_images": ["./node_modules/ffmpeg-static/ffmpeg"],
+  },
   pageExtensions: ["js", "jsx", "ts", "tsx", "md", "mdx"],
   images: {
     loader: "custom",

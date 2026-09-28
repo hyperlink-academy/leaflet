@@ -23,6 +23,7 @@ export const get_domain_status = makeRoute({
         }),
       ]);
 
+      let { apexName } = projectDomain;
       if (!projectDomain.verified) {
         // Vercel only re-checks ownership and kicks off certificate issuance
         // when the verify endpoint is POSTed (the dashboard's refresh button
@@ -33,19 +34,20 @@ export const get_domain_status = makeRoute({
             teamId: VERCEL_TEAM,
             domain,
           });
-          if (result.verified) return { config };
+          if (result.verified) return { config, apexName };
         } catch (e) {
           console.log(e);
         }
         if (!projectDomain.verification) {
-          return { config };
+          return { config, apexName };
         }
         return {
           verification: projectDomain.verification,
           config,
+          apexName,
         } as const;
       }
-      return { config };
+      return { config, apexName };
     } catch (e) {
       let errorResponse = e as NextApiResponse;
       if (errorResponse.statusCode === 404)

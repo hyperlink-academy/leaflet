@@ -32,6 +32,10 @@ export function AnchoredPopover(props: {
   // Per-popover padding plus an identifier class (e.g. "footnote-popover",
   // which globals.css uses to scope the document font onto the content).
   className?: string;
+  // Lets hover-driven callers keep the popover open while the pointer moves
+  // from the anchor onto the popover itself.
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
   children: ReactNode;
 }) {
   let {
@@ -85,6 +89,8 @@ export function AnchoredPopover(props: {
           sideOffset={4}
           collisionPadding={12}
           onOpenAutoFocus={(e) => e.preventDefault()}
+          onMouseEnter={props.onMouseEnter}
+          onMouseLeave={props.onMouseLeave}
           onInteractOutside={(e) => {
             // The opening tap can move focus into the editor right after; when
             // dismissOnFocusOutside is off, a focus shift never dismisses —

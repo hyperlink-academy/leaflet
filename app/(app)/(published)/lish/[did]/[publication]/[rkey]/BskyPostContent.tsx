@@ -8,7 +8,11 @@ import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { Separator } from "components/Layout";
 import { OpenPage } from "./postPageState";
 import { useOpenThread } from "./Interactions/drawerThreadContext";
-import { ThreadLink, QuotesLink } from "./PostLinks";
+import {
+  ThreadLink,
+  QuotesLink,
+  useThreadPrefetchHandlers,
+} from "./PostLinks";
 import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { Avatar } from "components/Avatar";
 import { timeAgo } from "src/utils/timeAgo";
@@ -52,6 +56,7 @@ export function BskyPostContent(props: {
     hasQuote,
   } = props;
   const openThread = useOpenThread();
+  const threadPrefetchHandlers = useThreadPrefetchHandlers(post.uri);
 
   const record = post.record as AppBskyFeedPost.Record;
   const postId = post.uri.split("/")[4];
@@ -66,6 +71,7 @@ export function BskyPostContent(props: {
       {hasThreadContent && (
         <button
           className="absolute inset-0"
+          {...threadPrefetchHandlers}
           onClick={() => {
             openThread(parent, { type: "thread", uri: post.uri });
           }}
@@ -183,6 +189,7 @@ export function CompactBskyPostContent(props: {
     clientHost = "bsky.app",
   } = props;
   const openThread = useOpenThread();
+  const threadPrefetchHandlers = useThreadPrefetchHandlers(post.uri);
 
   const record = post.record as AppBskyFeedPost.Record;
   const postId = post.uri.split("/")[4];
@@ -197,6 +204,7 @@ export function CompactBskyPostContent(props: {
       {hasThreadContent && (
         <button
           className="absolute inset-0 "
+          {...threadPrefetchHandlers}
           onClick={() => {
             openThread(parent, { type: "thread", uri: post.uri });
           }}
@@ -211,6 +219,7 @@ export function CompactBskyPostContent(props: {
         <div className={`flex flex-col min-w-0 w-full`}>
           <button
             className={`bskyPostTextContent flex flex-col grow mt-0.5 text-left text-xs text-tertiary ${hasThreadContent ? "" : "cursor-default"}`}
+            {...(hasThreadContent ? threadPrefetchHandlers : {})}
             onClick={
               hasThreadContent
                 ? () => {

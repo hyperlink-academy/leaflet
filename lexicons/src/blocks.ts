@@ -35,6 +35,22 @@ export const PubLeafletBlocksPage: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksEmbeddedCanvas: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.embeddedCanvas",
+  defs: {
+    main: {
+      type: "object",
+      required: ["id"],
+      description:
+        "A fixed-size canvas shown in full inline. id refers to a pub.leaflet.pages.canvas in the document's pages whose width and height bound it.",
+      properties: {
+        id: { type: "string" },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksBskyPost: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.bskyPost",
@@ -486,6 +502,12 @@ export const PubLeafletBlocksPostsList: LexiconDoc = {
       properties: {
         view: { type: "string", knownValues: ["small", "medium", "chapter"] },
         highlightFirstPost: { type: "boolean" },
+        showPageCount: {
+          type: "boolean",
+          default: true,
+          description:
+            "In the chapter view, show the number of pages under each chapter.",
+        },
         filterByTags: { type: "array", items: { type: "string" } },
         limit: {
           type: "integer",
@@ -566,6 +588,82 @@ export const PubLeafletBlocksSignup: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksPostHeader: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.postHeader",
+  defs: {
+    main: {
+      type: "object",
+      description:
+        "The post's header (publication, title, description, byline) placed as a block, so canvas posts can position it. Renders the document's own metadata; carries no content of its own.",
+      required: [],
+      properties: {
+        compact: {
+          type: "boolean",
+          description:
+            "Show a condensed header: title and byline only, without the description.",
+        },
+      },
+    },
+  },
+};
+
+export const PubLeafletBlocksDrawing: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.drawing",
+  defs: {
+    main: {
+      type: "object",
+      description:
+        "Freehand ink strokes. The view box is the area of drawing space the block shows, scaled to the block's width; strokes may reach past it.",
+      required: ["viewBox", "strokes"],
+      properties: {
+        viewBox: { type: "ref", ref: "#viewBox" },
+        strokes: { type: "array", items: { type: "ref", ref: "#stroke" } },
+      },
+    },
+    viewBox: {
+      type: "object",
+      required: ["x", "y", "width", "height"],
+      properties: {
+        x: { type: "integer" },
+        y: { type: "integer" },
+        width: { type: "integer", minimum: 1 },
+        height: { type: "integer", minimum: 1 },
+      },
+    },
+    stroke: {
+      type: "object",
+      description:
+        "One pen stroke, drawn in order, rendered as a variable-width outline of its input points (as perfect-freehand does).",
+      required: ["points", "color", "size"],
+      properties: {
+        points: {
+          type: "array",
+          items: { type: "integer" },
+          description:
+            "Flattened input points as x, y, pressure triples: x and y in drawing space, pressure from 0 to 1000.",
+        },
+        color: {
+          type: "string",
+          description:
+            "A CSS hex color, or one of the document theme's colors: primary (text), accent, or tertiary (faded text).",
+        },
+        size: {
+          type: "integer",
+          minimum: 1,
+          description: "The stroke's base diameter in drawing space.",
+        },
+        simulatePressure: {
+          type: "boolean",
+          description:
+            "The input had no real pressure (a mouse or finger); derive it from the stroke's speed instead.",
+        },
+      },
+    },
+  },
+};
+
 export const BlockLexicons = [
   PubLeafletBlocksIFrame,
   PubLeafletBlocksHtml,
@@ -584,12 +682,15 @@ export const BlockLexicons = [
   PubLeafletBlocksStandardSitePost,
   PubLeafletBlocksStandardSitePublication,
   PubLeafletBlocksPage,
+  PubLeafletBlocksEmbeddedCanvas,
   PubLeafletBlocksPoll,
   PubLeafletBlocksButton,
   PubLeafletBlocksPostsList,
   PubLeafletBlocksSignup,
   PubLeafletBlocksRecommendedPubs,
   PubLeafletBlocksMembersOnlyDelimiter,
+  PubLeafletBlocksPostHeader,
+  PubLeafletBlocksDrawing,
 ];
 export const BlockUnion: LexRefUnion = {
   type: "union",

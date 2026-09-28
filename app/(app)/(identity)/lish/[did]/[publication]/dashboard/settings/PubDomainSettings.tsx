@@ -73,7 +73,7 @@ export const PubDomainSettings = () => {
             <div className="text-sm  mt-2">
               <div className="font-bold">ALTERNATES</div>
               <div>
-                These all links to your publication and won't redirect to your
+                These all link to your publication and won't redirect to your
                 default domain.
               </div>
             </div>

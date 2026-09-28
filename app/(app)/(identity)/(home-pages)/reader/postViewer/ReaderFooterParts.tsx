@@ -48,6 +48,7 @@ export const ReaderFooterPostInfo = (
               className="text-sm text-tertiary sm:pr-0 pr-2"
             />
             <DiscussionButton
+              showWhenEmpty
               documentUri={post.documents.uri}
               commentsCount={interactions.commentsCount}
               quotesCount={interactions.quotesCount}

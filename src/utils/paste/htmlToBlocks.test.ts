@@ -332,6 +332,39 @@ describe("Leaflet copy → paste round trip", () => {
     expect(newIDs).toContain(factValue("card/block"));
     expect(factValue("page-link/display")).toBe("compact");
   });
+
+  test("a pasted embedded canvas stays one and keeps its canvas size", () => {
+    const facts = [
+      {
+        id: "f1",
+        entity: "old-canvas-page",
+        attribute: "page/type",
+        data: { type: "page-type-union", value: "canvas" },
+      },
+      {
+        id: "f2",
+        entity: "old-canvas-page",
+        attribute: "canvas/fixed-height",
+        data: { type: "number", value: 240 },
+      },
+    ];
+    const result = build(
+      `<div data-type="embedded-canvas" data-entityid="old-canvas-page" data-facts='${JSON.stringify(facts)}'></div>`,
+    );
+    expect(result.blocks).toHaveLength(1);
+    const embedded = result.blocks[0];
+    expect(embedded.type).toBe("embedded-canvas");
+    const page = (
+      embedded.facts.find((f) => f.attribute === "block/card")!.data as any
+    ).value;
+    expect(page).not.toBe("old-canvas-page");
+    expect(result.extraEntities.map((e) => e.entityID)).toContain(page);
+    expect(
+      embedded.facts.find(
+        (f) => f.entity === page && f.attribute === "canvas/fixed-height",
+      )?.data,
+    ).toEqual({ type: "number", value: 240 });
+  });
 });
 
 // Leaflet's blockquote is a single text block, so a quote containing more than

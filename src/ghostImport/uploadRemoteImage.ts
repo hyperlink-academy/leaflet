@@ -14,9 +14,22 @@ export async function uploadRemoteImage(url: string): Promise<ImageData> {
   const contentType = res.headers.get("content-type") ?? "";
   if (!contentType.startsWith("image/"))
     throw new Error(`${url} is not an image (${contentType})`);
-  const bytes = Buffer.from(await res.arrayBuffer());
+  return uploadImageBytes(
+    Buffer.from(await res.arrayBuffer()),
+    contentType,
+    url,
+  );
+}
+
+// `source` names the image in errors.
+export async function uploadImageBytes(
+  bytes: Buffer,
+  contentType: string,
+  source: string,
+): Promise<ImageData> {
   const { width, height } = await sharp(bytes).metadata();
-  if (!width || !height) throw new Error(`Could not read the size of ${url}`);
+  if (!width || !height)
+    throw new Error(`Could not read the size of ${source}`);
 
   // The browser uploader keeps the extension on animated files so the image
   // proxy serves them untouched.
@@ -24,7 +37,7 @@ export async function uploadRemoteImage(url: string): Promise<ImageData> {
   const { error } = await supabaseServerClient.storage
     .from(ASSET_BUCKET)
     .upload(fileID, bytes, { contentType, cacheControl: "31536000" });
-  if (error) throw new Error(`Uploading ${url} failed: ${error.message}`);
+  if (error) throw new Error(`Uploading ${source} failed: ${error.message}`);
   const src = supabaseServerClient.storage
     .from(ASSET_BUCKET)
     .getPublicUrl(fileID).data.publicUrl;

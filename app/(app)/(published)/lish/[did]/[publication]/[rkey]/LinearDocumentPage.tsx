@@ -90,7 +90,7 @@ export function LinearDocumentPage({
               preferences={preferences}
             />
           )}
-          <DrawerThreadPageProvider document_uri={document_uri} pageId={pageId}>
+          <DrawerThreadPageProvider pageId={pageId}>
             <PostContent
               pollData={pollData}
               pages={pages as PubLeafletPagesLinearDocument.Main[]}
@@ -104,7 +104,10 @@ export function LinearDocumentPage({
               footnoteIndexMap={footnoteIndexMap}
             />
           </DrawerThreadPageProvider>
-          <PublishedFootnoteSection footnotes={footnotes} />
+          <PublishedFootnoteSection
+            footnotes={footnotes}
+            footnoteIndexMap={footnoteIndexMap}
+          />
         </article>
         <PostPrevNextButtons
           showPrevNext={preferences.showPrevNext !== false && !isSubpage}

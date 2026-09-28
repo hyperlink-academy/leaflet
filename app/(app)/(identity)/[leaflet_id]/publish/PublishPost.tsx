@@ -16,7 +16,8 @@ import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/act
 import { AtUri } from "@atproto/syntax";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
-import { useReplicache } from "src/replicache";
+import { useEntity, useReplicache } from "src/replicache";
+import { addPostHeaderBlock } from "src/utils/addPostHeaderBlock";
 import { uploadCoverImage } from "src/utils/uploadCoverImage";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { editorStateToFacetedText } from "components/BlueskyPostComposer/ProsemirrorEditor";
@@ -38,7 +39,6 @@ import {
   PublicationThemeProvider,
   PublicationBackgroundProvider,
 } from "components/ThemeManager/PublicationThemeProvider";
-import { useEntity } from "src/replicache";
 import { LeafletContent } from "app/(app)/(identity)/(home-pages)/(writer)/home/LeafletList/LeafletContent";
 import { Contributor } from "lexicons/api/types/site/standard/document";
 import {
@@ -115,7 +115,8 @@ const PublishPostForm = (
   >(null);
   let [publishError, setPublishError] = useState<string | null>(null);
   let params = useParams();
-  let { rep } = useReplicache();
+  let { rep, permission_token } = useReplicache();
+  let firstPage = useEntity(props.root_entity, "root/page")[0]?.data.value;
 
   // Title and description come from Replicache, the same source the editor's
   // Update button uses. The server props were captured when this page rendered,
@@ -198,6 +199,18 @@ const PublishPostForm = (
     setPublishError(null);
     let result: Awaited<ReturnType<typeof publishToPublication>>;
     try {
+      // Publishing a loose canvas into a publication moves it there, so it
+      // gets the header block a canvas draft is created with.
+      let permission_set =
+        permission_token.permission_token_rights[0]?.entity_set;
+      if (
+        rep &&
+        !props.hasDraft &&
+        props.publication_uri &&
+        firstPage &&
+        permission_set
+      )
+        await addPostHeaderBlock(rep, { page: firstPage, permission_set });
       await rep?.push();
       result = await publishToPublication({
         root_entity: props.root_entity,

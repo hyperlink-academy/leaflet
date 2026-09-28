@@ -39,10 +39,14 @@ export const BlockCommandBar = ({
   // only (that's the page the server truncates), and at most one per post.
   let membershipsEnabled =
     !!pub?.publications?.publication_membership_settings?.enabled;
+  let hasPaidTiers = (
+    pub?.publications?.publication_membership_tiers ?? []
+  ).some((t) => t.active);
   let firstPage = useEntity(rootEntity, "root/page")[0]?.data.value;
   let hasMembersDelimiter = useBlocks(props.parent).some(
     (b) => b.type === "members-only-delimiter",
   );
+  let isCanvas = useEntity(props.parent, "page/type")?.data.value === "canvas";
 
   // This clears '/' AND anything typed after it
   const clearCommandSearchText = () => {
@@ -80,6 +84,9 @@ export const BlockCommandBar = ({
     const hiddenOnPubPage =
       !!command.hiddenOnPublicationPage && inPublicationEdit;
     const hiddenInPubPost = !!command.hiddenInPost && !inPublicationEdit;
+    const allowedOnPage = isCanvas
+      ? !command.hiddenOnCanvas
+      : !command.canvasOnly;
 
     return (
       matchesSearch &&
@@ -87,7 +94,8 @@ export const BlockCommandBar = ({
       hasMembership &&
       allowedInPublication &&
       !hiddenOnPubPage &&
-      !hiddenInPubPost
+      !hiddenInPubPost &&
+      allowedOnPage
     );
   });
 
@@ -105,7 +113,7 @@ export const BlockCommandBar = ({
           if (!command || !rep) return;
           await command.onSelect(
             rep,
-            { ...props, entity_set: entity_set.set },
+            { ...props, entity_set: entity_set.set, hasPaidTiers },
             undoManager,
           );
         });
@@ -127,7 +135,7 @@ export const BlockCommandBar = ({
                   if (!rep) return;
                   await result.onSelect(
                     rep,
-                    { ...props, entity_set: entity_set.set },
+                    { ...props, entity_set: entity_set.set, hasPaidTiers },
                     undoManager,
                   );
                 })

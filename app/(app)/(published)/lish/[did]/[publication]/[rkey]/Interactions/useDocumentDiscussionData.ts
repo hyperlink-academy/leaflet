@@ -10,6 +10,8 @@ import {
 } from "src/utils/normalizeRecords";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 import type { Comment } from "./Comments";
+import { prefetchQuotesData } from "./Quotes";
+import { decodeQuotePosition } from "src/utils/quotePosition";
 
 type DocumentInteractionsData = {
   comments: Comment[];
@@ -23,8 +25,36 @@ const discussionKey = (document_uri: string) =>
 const fetchDiscussion = (document_uri: string) =>
   callRPC("get_document_interactions", { document_uri });
 
-export function prefetchDocumentDiscussion(document_uri: string) {
-  preload(discussionKey(document_uri), () => fetchDiscussion(document_uri));
+// The mentions that belong to one page of a document: the main page when
+// `pageId` is undefined.
+export function filterQuotesForPage(
+  quotesAndMentions: { uri: string; link?: string }[],
+  pageId: string | undefined,
+) {
+  return quotesAndMentions.filter((q) => {
+    if (!q.link) return !pageId;
+    const url = new URL(q.link);
+    const quoteParam = url.pathname.split("/l-quote/")[1];
+    if (!quoteParam) return !pageId;
+    const quotePosition = decodeQuotePosition(quoteParam);
+    return quotePosition?.pageId === pageId;
+  });
+}
+
+// Warms the discussion, then the Bluesky posts its mentions tab hydrates. The
+// page filter has to match the one the content applies, since the posts are
+// cached by their exact uri list.
+export async function prefetchDocumentDiscussion(
+  document_uri: string,
+  pageId?: string,
+) {
+  const res = await preload(discussionKey(document_uri), () =>
+    fetchDiscussion(document_uri),
+  );
+  const data = res as unknown as DocumentInteractionsData | undefined;
+  prefetchQuotesData(
+    filterQuotesForPage(data?.quotesAndMentions ?? [], pageId),
+  );
 }
 
 // Fetches a document's comments and Bluesky mentions and builds the Document /

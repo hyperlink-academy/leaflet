@@ -15,6 +15,12 @@ import { focusElement } from "src/utils/focusElement";
 import { BlockButtonSmall } from "components/Icons/BlockButtonSmall";
 import { BlockCalendarSmall } from "components/Icons/BlockCalendarSmall";
 import { BlockCanvasPageSmall } from "components/Icons/BlockCanvasPageSmall";
+import { BlockPostHeaderSmall } from "components/Icons/BlockPostHeaderSmall";
+import { BlockEmbeddedCanvasSmall } from "components/Icons/BlockEmbeddedCanvasSmall";
+import {
+  DEFAULT_EMBEDDED_CANVAS_SIZE,
+  EMBEDDED_CANVAS_SIZES,
+} from "src/utils/embeddedCanvasSize";
 import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { BlockEmbedSmall } from "components/Icons/BlockEmbedSmall";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
@@ -110,13 +116,17 @@ type Command = {
   hiddenOnPublicationPage?: boolean;
   hiddenInPost?: boolean;
   publicationOnly?: boolean;
+  // Only offered on canvas pages; linear documents render the equivalent
+  // above their blocks already.
+  canvasOnly?: boolean;
+  hiddenOnCanvas?: boolean;
   // Only shown when the publication has paid memberships enabled, the current
   // page is the post's first page, and no delimiter exists yet (gating is
   // computed against the served first page, and one delimiter is enough).
   membersOnlyDelimiter?: boolean;
   onSelect: (
     rep: Replicache<ReplicacheMutators>,
-    props: Props & { entity_set: string },
+    props: Props & { entity_set: string; hasPaidTiers?: boolean },
     undoManager: UndoManager,
   ) => Promise<any>;
 };
@@ -475,6 +485,40 @@ export const blockCommands: Command[] = [
     },
   },
   {
+    name: "Drawing",
+    icon: <BlockEmbeddedCanvasSmall />,
+    type: "page",
+    alternateNames: ["sketch", "diagram", "canvas"],
+    hiddenOnPublicationPage: true,
+    // Its canvas is edited as a page of its own, which a canvas can't hold.
+    hiddenOnCanvas: true,
+    onSelect: async (rep, props, um) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      let newPage = v7();
+      // Opened straight away to draw in; undo closes it with the block.
+      await um.withUndoGroup(async () => {
+        let entity = await createBlockWithType(rep, props, "embedded-canvas");
+        await rep.mutate.addEmbeddedCanvasBlock({
+          blockEntity: entity,
+          pageEntity: newPage,
+          permission_set: props.entity_set,
+          ...EMBEDDED_CANVAS_SIZES[DEFAULT_EMBEDDED_CANVAS_SIZE],
+        });
+        um.add({
+          undo: () => {
+            useUIState.getState().closePage(newPage);
+          },
+          redo: () => {
+            useUIState.getState().openPage(props.parent, newPage);
+            focusPage(newPage, rep);
+          },
+        });
+      });
+      useUIState.getState().openPage(props.parent, newPage);
+      focusPage(newPage, rep);
+    },
+  },
+  {
     name: "Post List",
     icon: <PostListSmall />,
     type: "publication",
@@ -498,6 +542,19 @@ export const blockCommands: Command[] = [
     },
   },
   {
+    name: "Post Title",
+    icon: <BlockPostHeaderSmall />,
+    type: "publication",
+    alternateNames: ["header", "metadata", "byline", "post header"],
+    publicationOnly: true,
+    hiddenOnPublicationPage: true,
+    canvasOnly: true,
+    onSelect: async (rep, props) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      await createBlockWithType(rep, props, "post-header");
+    },
+  },
+  {
     name: "Subscribe Form",
     icon: <BlockMailboxSmall />,
     type: "publication",
@@ -509,10 +566,10 @@ export const blockCommands: Command[] = [
     },
   },
   {
-    name: "Members Only Divider",
+    name: "Paywall",
     icon: <LockTiny />,
     type: "publication",
-    alternateNames: ["members", "membership", "paywall", "premium"],
+    alternateNames: ["members", "membership", "members only", "premium"],
     publicationOnly: true,
     hiddenOnPublicationPage: true,
     membersOnlyDelimiter: true,
@@ -530,7 +587,10 @@ export const blockCommands: Command[] = [
       await rep.mutate.assertFact({
         entity,
         attribute: "block/members-only-audience",
-        data: { type: "string", value: "paid" },
+        data: {
+          type: "string",
+          value: props.hasPaidTiers ? "paid" : "subscribers",
+        },
       });
       um.add({
         undo: () => {

@@ -261,7 +261,10 @@ export function SelectionManager() {
             let firstBlock = sortedBlocks[0];
 
             await rep?.mutate.removeBlock(
-              selectedBlocks.map((block) => ({ blockEntity: block.entityID })),
+              selectedBlocks.map((block) => ({
+                blockEntity: block.entityID,
+                parent: block.parent,
+              })),
             );
             useUIState.getState().closePage(selectedBlocks.map((b) => b.entityID));
 

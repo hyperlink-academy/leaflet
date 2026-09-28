@@ -7,8 +7,47 @@ import { useIdentityData } from "components/IdentityProvider";
 import { addDomain } from "actions/domains";
 import { DotLoader } from "components/utils/DotLoader";
 import { GoToArrow } from "components/Icons/GoToArrow";
+import { Modal } from "components/Modal";
+import { DomainVerification } from "./DomainVerification";
+import { useDomainStatus } from "./useDomainStatus";
 
-export function AddDomainForm(props: {}) {
+export function AddDomainModal(props: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  let [addedDomain, setAddedDomain] = useState<string | null>(null);
+  return (
+    <Modal
+      open={props.open}
+      onOpenChange={(open) => {
+        props.onOpenChange(open);
+        if (!open) setAddedDomain(null);
+      }}
+      title={addedDomain ? "Verify this Domain" : undefined}
+      className={addedDomain ? "max-w-md" : undefined}
+    >
+      {addedDomain ? (
+        <AddedDomainVerification domain={addedDomain} />
+      ) : (
+        <AddDomainForm onAdded={setAddedDomain} />
+      )}
+    </Modal>
+  );
+}
+
+function AddedDomainVerification(props: { domain: string }) {
+  let { data, pending } = useDomainStatus(props.domain);
+  if (!data) return <DotLoader />;
+  if (!pending)
+    return (
+      <div className="text-secondary">
+        <strong>{props.domain}</strong> is verified and ready to assign!
+      </div>
+    );
+  return <DomainVerification domain={props.domain} />;
+}
+
+function AddDomainForm(props: { onAdded: (domain: string) => void }) {
   let [value, setValue] = useState("");
   let [loading, setLoading] = useState(false);
   let { mutate } = useIdentityData();
@@ -30,10 +69,10 @@ export function AddDomainForm(props: {}) {
             error: true,
             text:
               error === "invalid_domain"
-                ? "Invalid domain! Use just the base domain"
+                ? "Invalid domain! Use just the domain, like www.example.com"
                 : error === "domain_already_in_use"
                   ? "That domain is already in use!"
-                  : "An unknown error occured",
+                  : "An unknown error occurred",
             position: {
               y: rect ? rect?.right - rect?.width / 2 : 0,
               x: rect ? rect?.bottom - rect?.height / 2 : 0,
@@ -41,14 +80,14 @@ export function AddDomainForm(props: {}) {
           });
           return;
         }
-        mutate();
+        await mutate();
+        props.onAdded(value);
       }}
     >
       <div className="flex justify-between">
         <h3>Add a Domain</h3>
       </div>
       <div className="text-sm text-secondary">
-        <div className="font-bold">Just include the base domain</div>
         Don't include the protocol{" "}
         <span className="text-tertiary">(like https://) </span>
         or path <span className="text-tertiary">(you can add that later)</span>

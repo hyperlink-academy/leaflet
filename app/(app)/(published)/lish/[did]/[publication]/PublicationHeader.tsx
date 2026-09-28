@@ -165,7 +165,7 @@ export function NewPublicationHeader(props: {
                 trigger={
                   <div
                     aria-label="Edit publication header"
-                    className="  p-1 rounded-full bg-accent-1 text-accent-2 border border-accet-2"
+                    className="  p-1 rounded-full bg-accent-1 text-accent-2 border border-accent-2"
                   >
                     <EditTiny />
                   </div>

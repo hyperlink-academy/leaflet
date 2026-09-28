@@ -7,6 +7,7 @@ import {
   getBlockStructureMirror,
 } from "src/replicache/blockMirror";
 import { scanIndexLocal } from "src/replicache/utils";
+import { canvasBlockOrder } from "src/utils/canvasBlockOrder";
 
 // Headings own the blocks that follow them in document order until the next
 // heading of equal-or-higher level (Obsidian-style sections). That ownership is
@@ -163,6 +164,30 @@ export const getBlocksWithTypeLocal = (
   initialFacts: Fact<any>[],
   entityID: string,
 ) => assembleBlocks(scanIndexLocal(initialFacts), entityID);
+
+// A page's blocks in reading order: its linear blocks, then its canvas
+// blocks top-to-bottom then left-to-right, with each group expanded into its
+// children in document order.
+export function getPageReadingOrder(scan: SyncScan, pageID: string): Block[] {
+  let canvasBlocks = scan
+    .eav(pageID, "canvas/block")
+    .toSorted((a, b) => canvasBlockOrder(a.data.position, b.data.position))
+    .flatMap((b): Block[] => {
+      let type = scan.eav(b.data.value, "block/type")[0]?.data.value;
+      if (!type) return [];
+      if (type === "group") return assembleBlocks(scan, b.data.value);
+      return [
+        {
+          entityID: b.data.value,
+          parent: pageID,
+          factID: b.id,
+          position: "",
+          type,
+        },
+      ];
+    });
+  return [...assembleBlocks(scan, pageID), ...canvasBlocks];
+}
 
 export const getBlocksFromMirror = (
   mirror: BlockStructureMirror,

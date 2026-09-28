@@ -31,6 +31,11 @@ export function PublishedImageGallery(props: {
           width: POST_BODY_IMAGE_WIDTH,
         }),
         fullSrc: blobRefToSrc(i.image.ref, did),
+        mimeType: i.image.mimeType,
+        videoSrc:
+          i.image.mimeType === "image/gif"
+            ? blobRefToSrc(i.image.ref, did, undefined, { format: "mp4" })
+            : undefined,
         alt: i.alt || "",
         width: i.aspectRatio.width,
         height: i.aspectRatio.height,

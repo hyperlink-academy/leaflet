@@ -401,7 +401,7 @@ export const BaseThemeProvider = ({
           "--highlight-3": colorToString(highlight3, "rgb"),
           "--page-width-setting": pageWidth || 624,
           "--page-width-unitless": pageWidth || 624,
-          "--page-width-units": `min(${pageWidth || 624}px, calc(100vw - 12px))`,
+          "--page-width-units": `min(${pageWidth || 624}px, calc(var(--leaflet-layout-width, 100vw) - 12px))`,
           "--theme-heading-font": headingFontValue,
           "--theme-font": bodyFontValue,
           "--theme-font-base-size": bodyFontBaseSize

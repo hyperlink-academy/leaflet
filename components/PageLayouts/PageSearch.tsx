@@ -269,7 +269,7 @@ const SearchInput = (props: {
           props.setSearchValue(e.currentTarget.value);
         }}
       />
-      <div className="absolute left-[6px] top-[4px] text-secondary">
+      <div className="absolute left-[6px] top-[4px] text-tertiary">
         <SearchTiny />
       </div>
     </div>

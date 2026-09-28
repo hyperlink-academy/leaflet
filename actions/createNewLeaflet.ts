@@ -14,6 +14,7 @@ export async function createNewLeaflet({
   addToHome,
   addToHomepage = true,
   analytics,
+  canvasPostHeader,
 }: {
   pageType: "canvas" | "doc";
   redirectUser: boolean;
@@ -22,12 +23,14 @@ export async function createNewLeaflet({
   addToHome?: boolean;
   addToHomepage?: boolean;
   analytics?: { kind: string; publication?: string };
+  canvasPostHeader?: boolean;
 }) {
   let auth_token = (await cookies()).get("auth_token")?.value;
   trackDocumentCreated(analytics ?? { kind: pageType });
 
   const { permTokenId } = await createLeaflet({
     pageType,
+    canvasPostHeader,
     firstBlocks: [firstBlockType === "text" ? "text" : "h1"],
     rootFacts: [
       {

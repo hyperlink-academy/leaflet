@@ -26,7 +26,7 @@ export function WelcomeModal() {
       title="Welcome to Leaflet!"
       className="text-center w-full sm:w-[1000px] sm:max-w-sm text-secondary"
     >
-      <div className="accent-container mt-1 p-2 py-4 flex flex-col gap-3 leadingleading-loose">
+      <div className="accent-container mt-1 p-2 py-4 flex flex-col gap-3">
         <p className="font-bold">
           Start writing right away,
           <br /> no account needed.

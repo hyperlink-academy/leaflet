@@ -10,7 +10,9 @@ import { BlobRef } from "@atproto/lexicon";
 // transformation pipeline (handled in /api/atproto_images). Use it for
 // thumbnails so we don't ship the full-resolution blob to render a small image.
 // `format: "email"` transcodes away formats mail clients can't display; pass it
-// for anything rendered into an outgoing email.
+// for anything rendered into an outgoing email. `format: "mp4"` is the video
+// rendition of an animated GIF (see src/utils/serverVideoEncoding.ts); only
+// meaningful for PDS blobs.
 // The CID inside a blob ref (or the raw storage URL for draft images): a
 // stable identity for an image, independent of which display transform its
 // src was built with.
@@ -21,14 +23,15 @@ export const blobRefToSrc = (
   b: BlobRef["ref"],
   did: string,
   baseUrl?: string,
-  transform?: { width?: number; height?: number; format?: "email" },
+  transform?: { width?: number; height?: number; format?: "email" | "mp4" },
 ) => {
   const link = blobRefCid(b);
   const prefix = baseUrl ? baseUrl.replace(/\/$/, "") : "";
   if (link.startsWith("http://") || link.startsWith("https://")) {
     // A draft image, still living in storage rather than on a PDS. It needs
     // the same transcode, which the storage-side proxy provides.
-    const path = transform?.format && storagePathFromPublicUrl(link);
+    const path =
+      transform?.format === "email" && storagePathFromPublicUrl(link);
     if (!path) return link;
     let src = `${prefix}/api/resized_images?path=${encodeURIComponent(path)}&format=${transform.format}`;
     if (transform.width) src += `&width=${transform.width}`;

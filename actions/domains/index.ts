@@ -46,6 +46,8 @@ async function clearAllAssignments(domain: string) {
 // ==============
 
 export async function addDomain(domain: string) {
+  // Middleware matches the request's Host header exactly, which is always lowercase.
+  domain = domain.trim().toLowerCase();
   let identity = await getAuthIdentity();
   if (!identity || (!identity.email && !identity.atp_did)) return {};
   if (

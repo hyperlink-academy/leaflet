@@ -24,7 +24,10 @@ import useSWR from "swr";
 import { getHomeDocs } from "src/utils/homeDocsStorage";
 import { useAddToHomeParam } from "./AddToHomeEffect";
 
-export function LeafletSidebar() {
+// Rendered inside the first bookend spacer, whose right edge is the first
+// page's left edge at any page width; `floating` keeps the old free-standing
+// box for layouts without spacers (full-page scroll, flow).
+export function LeafletSidebar(props: { floating?: boolean }) {
   let entity_set = useEntitySetContext();
   let { rootEntity } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
@@ -56,10 +59,17 @@ export function LeafletSidebar() {
   if (publicationPage) return null;
 
   return (
-    <Media mobile={false} className="leafletSidebar w-0 h-full relative">
+    <Media
+      mobile={false}
+      className={`leafletSidebar h-full ${props.floating ? "w-0 relative" : "shrink-0"}`}
+    >
       <div
-        className="absolute top-0 left-0  h-full flex justify-end "
-        style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
+        className={`h-full flex justify-end ${props.floating ? "absolute top-0 left-0" : ""}`}
+        style={
+          props.floating
+            ? { width: `calc(50vw - ((var(--page-width-units)/2))` }
+            : undefined
+        }
       >
         <div className="sidebarContainer flex flex-col justify-end h-full w-16 relative">
           {entity_set.permissions.write && (

@@ -50,7 +50,7 @@ export const get_publication_data = makeRoute({
         publication_subscriptions(*, identities(atp_did)),
         publication_email_subscribers(*, identities(atp_did)),
         publication_domains(*),
-        publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at),
+        publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at, embed_redirect_url),
         publication_membership_settings(enabled, subscriber_tier_name, subscriber_tier_description),
         publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, currency, active, sort_order, publication_memberships!publication_memberships_tier_publication_fkey(count)),
         leaflets_in_publications(*,

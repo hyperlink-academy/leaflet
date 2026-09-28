@@ -1,7 +1,7 @@
-import { useBlocks } from "./useBlocks";
+import { usePageReadingOrder } from "./useBlocks";
 
 export function usePageMetadata(entityID: string | null) {
-  let blocks = useBlocks(entityID);
+  let blocks = usePageReadingOrder(entityID);
 
   let textBlocks = blocks.filter(
     (block) => block.type === "text" || block.type === "heading",

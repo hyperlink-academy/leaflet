@@ -23,14 +23,8 @@ import { LinearDocumentPage } from "./LinearDocumentPage";
 import { CanvasPage } from "./CanvasPage";
 import { GlobalImageLightbox } from "./GlobalImageLightbox";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
-import {
-  type OpenPage,
-  getPageKey,
-  useOpenPages,
-  useInitializeOpenPages,
-  openPage as openPageAction,
-  closePage,
-} from "./postPageState";
+import { type OpenPage, getPageKey } from "./postPageState";
+import { usePostFrame } from "./postFrame";
 import { IframePageView } from "components/Pages/IframePageView";
 import { usePostResources } from "./PostDataProvider";
 import type { BylineProfile } from "./PostHeader/PostHeader";
@@ -81,6 +75,8 @@ function PageRenderer({
       <CanvasPage
         {...sharedProps}
         blocks={(page as PubLeafletPagesCanvas.Main).blocks || []}
+        mobileView={(page as PubLeafletPagesCanvas.Main).mobileView}
+        lockViewerZoom={(page as PubLeafletPagesCanvas.Main).lockViewerZoom}
         pages={sharedProps.allPages}
       />
     );
@@ -123,8 +119,8 @@ export function PostPages({
   commentsSlot: React.ReactNode;
 }) {
   let drawer = useInlineDrawer(document_uri);
-  useInitializeOpenPages();
-  let openPageIds = useOpenPages();
+  let frame = usePostFrame();
+  let openPageIds = frame.openPages;
   const { pages } = useLeafletContent();
   // Not props: a members-only unlock swaps the pages and these three channels
   // together, and only PostDataProvider knows when that happened.
@@ -175,9 +171,11 @@ export function PostPages({
       !firstPageIsCanvas,
   };
 
+  let loneCanvas = firstPageIsCanvas && openPageIds.length === 0 && !drawer;
+
   return (
     <GlobalImageLightbox did={did}>
-      {!sharedProps.fullPageScroll && <BookendSpacer />}
+      {!sharedProps.fullPageScroll && <BookendSpacer shrink={loneCanvas} />}
 
       <PageRenderer
         page={firstPage}
@@ -187,17 +185,21 @@ export function PostPages({
         }
       />
 
-      {/* Always mounted: the drawer reads its own open state and, on mobile,
-          needs to stay mounted while its close animation plays. */}
-      <InteractionDrawer
-        showPageBackground={pubRecord?.theme?.showPageBackground}
-        document_uri={document.uri}
-        commentsSlot={preferences.showComments === false ? null : commentsSlot}
-        quotesAndMentions={
-          preferences.showMentions === false ? [] : quotesAndMentions
-        }
-        did={did}
-      />
+      {/* Mounted even while closed: the drawer reads its own open state and,
+          on mobile, needs to stay mounted while its close animation plays. */}
+      {frame.drawer && (
+        <InteractionDrawer
+          showPageBackground={pubRecord?.theme?.showPageBackground}
+          document_uri={document.uri}
+          commentsSlot={
+            preferences.showComments === false ? null : commentsSlot
+          }
+          quotesAndMentions={
+            preferences.showMentions === false ? [] : quotesAndMentions
+          }
+          did={did}
+        />
+      )}
 
       {openPageIds.map((openPage, openPageIndex) => {
         const pageKey = getPageKey(openPage);
@@ -210,11 +212,11 @@ export function PostPages({
               <IframePageView
                 url={openPage.url}
                 onOpen={(url) => {
-                  openPageAction(openPage, { type: "iframe", url });
+                  frame.openPage(openPage, { type: "iframe", url });
                 }}
                 pageOptions={
                   <PageOptions
-                    onClick={() => closePage(openPage)}
+                    onClick={() => frame.closePage(openPage)}
                     hasPageBackground={hasPageBackground}
                   />
                 }
@@ -256,28 +258,30 @@ export function PostPages({
               }
               pageOptions={
                 <PageOptions
-                  onClick={() => closePage(openPage)}
+                  onClick={() => frame.closePage(openPage)}
                   hasPageBackground={hasPageBackground}
                 />
               }
             />
-            <InteractionDrawer
-              showPageBackground={pubRecord?.theme?.showPageBackground}
-              pageId={page.id}
-              document_uri={document.uri}
-              commentsSlot={
-                preferences.showComments === false ? null : commentsSlot
-              }
-              quotesAndMentions={
-                preferences.showMentions === false ? [] : quotesAndMentions
-              }
-              did={did}
-            />
+            {frame.drawer && (
+              <InteractionDrawer
+                showPageBackground={pubRecord?.theme?.showPageBackground}
+                pageId={page.id}
+                document_uri={document.uri}
+                commentsSlot={
+                  preferences.showComments === false ? null : commentsSlot
+                }
+                quotesAndMentions={
+                  preferences.showMentions === false ? [] : quotesAndMentions
+                }
+                did={did}
+              />
+            )}
           </Fragment>
         );
       })}
 
-      {!sharedProps.fullPageScroll && <BookendSpacer />}
+      {!sharedProps.fullPageScroll && <BookendSpacer shrink={loneCanvas} />}
     </GlobalImageLightbox>
   );
 }

@@ -68,7 +68,7 @@ export default async function PublishLeafletPage(props: Props) {
   if (!data || !rootEntity)
     return (
       <div>
-        missin something
+        missing something
         <pre>{JSON.stringify(data, undefined, 2)}</pre>
       </div>
     );

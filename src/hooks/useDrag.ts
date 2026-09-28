@@ -43,6 +43,9 @@ export const useDrag = (args: {
           timeout.current = null;
         }, 400);
       } else {
+        // The browser would otherwise start a text selection at the handle
+        // and extend it over whatever the pointer crosses.
+        e.preventDefault();
         setDragStart({ x: e.clientX, y: e.clientY });
         setDragDelta({ x: 0, y: 0 });
       }

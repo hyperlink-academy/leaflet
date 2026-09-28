@@ -13,8 +13,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { setInteractionState } from "./Interactions/Interactions";
 import { useDocument } from "contexts/DocumentContext";
-import { flushSync } from "react-dom";
-import { scrollIntoView } from "src/utils/scrollIntoView";
+import { usePostFrame } from "./postFrame";
 import { SelectionActionPopover } from "components/SelectionActionPopover";
 import { BskyShareModal } from "components/Interactions/InteractionShareButton";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
@@ -98,6 +97,7 @@ const QuoteOptionButtons = (props: {
   let smoker = useSmoker();
   let { identity } = useIdentityData();
   const { uri: document_uri, publication } = useDocument();
+  let frame = usePostFrame();
   let [url, position] = useMemo(() => {
     let postUrl = new URL(props.postUrl, window.location.origin);
     let pos = decodeQuotePosition(props.position);
@@ -159,15 +159,10 @@ const QuoteOptionButtons = (props: {
             className="flex gap-1 items-center hover:font-bold px-1"
             onClick={() => {
               if (!position) return;
-              flushSync(() =>
-                setInteractionState(document_uri, {
-                  drawer: "comments",
-                  drawerOpen: true,
-                  pageId: position.pageId,
-                  commentBox: { quote: position },
-                }),
-              );
-              scrollIntoView("interaction-drawer");
+              setInteractionState(document_uri, {
+                commentBox: { quote: position },
+              });
+              frame.openDiscussion("comments", position.pageId);
             }}
           >
             <CommentTiny /> Comment

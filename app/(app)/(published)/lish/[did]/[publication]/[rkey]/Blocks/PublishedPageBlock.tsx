@@ -3,7 +3,8 @@
 import { useEntity, useReplicache } from "src/replicache";
 import { CSSProperties, useRef } from "react";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
-import { PostContent, Block } from "../PostContent";
+import { PostContent } from "../PostContent";
+import { CanvasBlocks } from "../CanvasBlockContent";
 import {
   PubLeafletBlocksHeader,
   PubLeafletBlocksPage,
@@ -15,15 +16,9 @@ import { AppBskyFeedDefs } from "@atproto/api";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import { TextBlock } from "./TextBlock";
 import { useDocument } from "contexts/DocumentContext";
-import { openPage, useOpenPages } from "../postPageState";
-import { openInteractionDrawer } from "../Interactions/Interactions";
+import { usePostFrame } from "../postFrame";
 import { CommentTiny } from "components/Icons/CommentTiny";
-import { CanvasBackgroundPattern } from "components/Canvas";
 import { CompactPageLink } from "components/Blocks/CompactPageLink";
-import {
-  canvasBlockOrder,
-  canvasStackOrders,
-} from "src/utils/canvasBlockOrder";
 import {
   pageRecordTextBlocks,
   type PageRecordTextBlock,
@@ -44,8 +39,8 @@ export function PublishedPageLinkBlock(props: {
   pages?: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   display?: PubLeafletBlocksPage.Main["display"];
 }) {
-  let openPages = useOpenPages();
-  let isOpen = openPages.some((p) => p.type === "doc" && p.id === props.pageId);
+  let frame = usePostFrame();
+  let isOpen = frame.openPages.some((p) => p.type === "doc" && p.id === props.pageId);
   // The overlay anchor below needs real anchor text; mirror DocLinkBlock's
   // title derivation (first text-ish block of the page).
   let [titleBlock] = pageRecordTextBlocks(props.blocks, {
@@ -69,7 +64,7 @@ export function PublishedPageLinkBlock(props: {
         e.preventDefault();
         e.stopPropagation();
 
-        openPage(
+        frame.openPage(
           props.parentPageId
             ? { type: "doc", id: props.parentPageId }
             : undefined,
@@ -272,11 +267,8 @@ const Interactions = (props: {
   parentPageId?: string;
   inline?: boolean;
 }) => {
-  const {
-    uri: document_uri,
-    commentsCountByPage,
-    mentions,
-  } = useDocument();
+  const { commentsCountByPage, mentions } = useDocument();
+  let frame = usePostFrame();
   let comments = commentsCountByPage[props.pageId] ?? 0;
   let quotes = mentions.filter((q) => q.link.includes(props.pageId)).length;
 
@@ -293,13 +285,13 @@ const Interactions = (props: {
           e.stopPropagation();
           // Open the subpage itself, then open its interaction panel scoped to
           // comments — rather than popping a standalone discussion modal.
-          openPage(
+          frame.openPage(
             props.parentPageId
               ? { type: "doc", id: props.parentPageId }
               : undefined,
             { type: "doc", id: props.pageId },
           );
-          openInteractionDrawer("comments", document_uri, props.pageId);
+          frame.openDiscussion("comments", props.pageId);
         }}
       >
         <span className="sr-only">Page discussions</span>
@@ -318,11 +310,6 @@ const CanvasLinkBlock = (props: {
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) => {
   let pageWidth = `var(--page-width-unitless)`;
-  let height =
-    props.blocks.length > 0 ? Math.max(...props.blocks.map((b) => b.y), 0) : 0;
-  let sortedBlocks = [...props.blocks].sort(canvasBlockOrder);
-  let stackOrders = canvasStackOrders(sortedBlocks);
-
   return (
     <div
       style={{ contain: "size layout paint" }}
@@ -336,55 +323,7 @@ const CanvasLinkBlock = (props: {
           transform: `scale(calc(((${pageWidth} - 36) / 1272 )))`,
         }}
       >
-        <div
-          style={{
-            minHeight: height + 512,
-            contain: "size layout paint",
-          }}
-          className="relative h-full w-[1272px]"
-        >
-          <div className="w-full h-full pointer-events-none">
-            <CanvasBackgroundPattern pattern="grid" />
-          </div>
-          {sortedBlocks.map((canvasBlock, index) => {
-            let { x, y, width, rotation } = canvasBlock;
-            let transform = `translate(${x}px, ${y}px)${rotation ? ` rotate(${rotation}deg)` : ""}`;
-
-            // Wrap the block in a LinearDocument.Block structure for compatibility
-            let linearBlock: PubLeafletPagesLinearDocument.Block = {
-              $type: "pub.leaflet.pages.linearDocument#block",
-              block: canvasBlock.block,
-            };
-
-            return (
-              <div
-                key={index}
-                className="absolute rounded-lg flex items-stretch origin-center p-3"
-                style={{
-                  top: 0,
-                  left: 0,
-                  width,
-                  zIndex: stackOrders[index],
-                  transform,
-                }}
-              >
-                <div className="contents">
-                  <Block
-                    pollData={[]}
-                    pageId={props.pageId}
-                    pages={props.pages}
-                    bskyPostData={props.bskyPostData}
-                    standardSitePostData={props.standardSitePostData}
-                    block={linearBlock}
-                    did={props.did}
-                    index={[index]}
-                    preview={true}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <CanvasBlocks {...props} pollData={[]} preview />
       </div>
     </div>
   );

@@ -1,12 +1,10 @@
 "use client";
 import { useClientSearchParams } from "src/hooks/useClientSearchParams";
 import { useIsMobile } from "src/hooks/isMobile";
-import { InteractionState, useInteractionState } from "./Interactions";
+import { useInteractionState } from "./Interactions";
+import { parseDrawerParam } from "./drawerParam";
+import { usePostFrame } from "../postFrame";
 
-// The open drawer only sits inline next to the page on desktop; on mobile it
-// overlays the page as a bottom sheet. Layout that makes room for the drawer
-// (spacers, corner rounding, side columns) should key off this rather than
-// useDrawerOpen so the page doesn't shift behind the sheet.
 export const useInlineDrawer = (uri: string) => {
   let drawer = useDrawerOpen(uri);
   let isMobile = useIsMobile();
@@ -17,12 +15,21 @@ export const useDrawerOpen = (uri: string) => {
   let params = useClientSearchParams();
   let interactionDrawerSearchParam = params.get("interactionDrawer");
   let pageParam = params.get("page");
-  let { drawerOpen: open, drawer, pageId } = useInteractionState(uri);
+  let {
+    drawerOpen: open,
+    drawer,
+    pageId,
+    threadStack,
+  } = useInteractionState(uri);
+  // Interaction state outlives the surface that set it; a frame with no drawer
+  // must not make room for one a published page left open.
+  if (!usePostFrame().drawer) return null;
   if (open === false || (open === undefined && !interactionDrawerSearchParam))
     return null;
-  drawer =
-    drawer || (interactionDrawerSearchParam as InteractionState["drawer"]);
+  let param = parseDrawerParam(interactionDrawerSearchParam, uri);
+  drawer = drawer || param.tab;
+  const thread = threadStack[threadStack.length - 1] ?? param.thread;
   // Use pageId from state, or fall back to page search param
   const resolvedPageId = pageId ?? pageParam ?? undefined;
-  return { drawer, pageId: resolvedPageId };
+  return { drawer, thread, pageId: resolvedPageId };
 };

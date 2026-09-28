@@ -5,7 +5,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
 import { generateKeyBetween, generateNKeysBetween } from "fractional-indexing";
 import { canvasStackingOrder } from "src/utils/canvasBlockOrder";
-import { v5, v7 } from "uuid";
+import { v5 } from "uuid";
 import { localImages } from "src/utils/addImage";
 import { clearImageUploadStatus } from "src/utils/imageUploadStatus";
 import { enqueueBlobCleanup } from "src/utils/blobCleanup";
@@ -14,6 +14,22 @@ import {
   isPageLinkDisplay,
   type PageLinkDisplay,
 } from "src/utils/pageLinkDisplay";
+
+// Siblings can share a position (concurrent inserts into one gap generate the
+// same key), and a comparator that never returns 0 then orders them by input
+// order — the client's index order and the server's row order differ, so a
+// move could pick different neighbours on each side. Break ties by id.
+export const byPosition = (
+  a: { id: string; data: { position: string } },
+  b: { id: string; data: { position: string } },
+) =>
+  a.data.position === b.data.position
+    ? a.id > b.id
+      ? 1
+      : -1
+    : a.data.position > b.data.position
+      ? 1
+      : -1;
 
 export type MutationContext = {
   permission_token_id: string;
@@ -30,9 +46,7 @@ export type MutationContext = {
     ) => Promise<DeepReadonly<Fact<A>[]>>;
   };
   deleteEntity: (entity: string) => Promise<void>;
-  assertFact: <A extends Attribute>(
-    f: Omit<Fact<A>, "id"> & { id?: string },
-  ) => Promise<void>;
+  assertFact: <A extends Attribute>(f: AssertFactInput<A>) => Promise<void>;
   retractFact: (id: string) => Promise<void>;
   runOnServer(
     cb: (ctx: { supabase: SupabaseClient<Database> }) => Promise<void>,
@@ -80,6 +94,7 @@ const addCanvasBlock: Mutation<{
   type: Fact<"block/type">["data"]["value"];
   newEntityID: string;
   position: { x: number; y: number };
+  width?: number;
 }> = async (args, ctx) => {
   await ctx.createEntity({
     entityID: args.newEntityID,
@@ -100,6 +115,12 @@ const addCanvasBlock: Mutation<{
     data: { type: "block-type-union", value: args.type },
     attribute: "block/type",
   });
+  if (args.width !== undefined)
+    await ctx.assertFact({
+      entity: args.newEntityID,
+      attribute: "canvas/block/width",
+      data: { type: "number", value: args.width },
+    });
   // Every block placed on a canvas gets a layer, so stacking is explicit from
   // the moment it lands. Unlayered blocks sort first, so the last entry's
   // index is the highest in use, or null on a canvas that predates layering —
@@ -111,6 +132,85 @@ const addCanvasBlock: Mutation<{
     attribute: "canvas/block/stack-order",
     data: { type: "string", value: generateKeyBetween(top, null) },
   });
+};
+
+// Makes a lone canvas block the first child of a new group that takes over
+// its spot, size and layer on the canvas. The canvas/block fact is repointed
+// in place, so undo swaps the original block straight back.
+const groupCanvasBlock: Mutation<{
+  page: string;
+  blockEntity: string;
+  groupEntity: string;
+  childFactID: string;
+  permission_set: string;
+}> = async (args, ctx) => {
+  let canvasFact = (await ctx.scanIndex.eav(args.page, "canvas/block")).find(
+    (f) => f.data.value === args.blockEntity,
+  );
+  if (!canvasFact) return;
+  await ctx.createEntity({
+    entityID: args.groupEntity,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    entity: args.groupEntity,
+    attribute: "block/type",
+    data: { type: "block-type-union", value: "group" },
+  });
+  for (let attribute of [
+    "canvas/block/width",
+    "canvas/block/rotation",
+    "canvas/block/stack-order",
+  ] as const) {
+    let [fact] = await ctx.scanIndex.eav(args.blockEntity, attribute);
+    if (fact)
+      await ctx.assertFact({
+        entity: args.groupEntity,
+        attribute,
+        data: fact.data,
+      });
+  }
+  await ctx.assertFact({
+    id: args.childFactID,
+    entity: args.groupEntity,
+    attribute: "card/block",
+    data: {
+      type: "ordered-reference",
+      value: args.blockEntity,
+      position: generateKeyBetween(null, null),
+    },
+  });
+  await ctx.assertFact({
+    id: canvasFact.id,
+    entity: args.page,
+    attribute: "canvas/block",
+    data: { ...canvasFact.data, value: args.groupEntity },
+  });
+};
+
+// Reverses groupCanvasBlock: the block takes the group's place on the canvas
+// again and the group is deleted.
+const ungroupCanvasBlock: Mutation<{
+  page: string;
+  blockEntity: string;
+  groupEntity: string;
+}> = async (args, ctx) => {
+  let canvasFact = (await ctx.scanIndex.eav(args.page, "canvas/block")).find(
+    (f) => f.data.value === args.groupEntity,
+  );
+  if (!canvasFact) return;
+  // A collaborator may have added blocks to the group since it was made;
+  // deleting it would orphan them.
+  let children = await ctx.scanIndex.eav(args.groupEntity, "card/block");
+  if (children.length !== 1 || children[0].data.value !== args.blockEntity)
+    return;
+  await ctx.assertFact({
+    id: canvasFact.id,
+    entity: args.page,
+    attribute: "canvas/block",
+    data: { ...canvasFact.data, value: args.blockEntity },
+  });
+  await ctx.deleteEntity(args.groupEntity);
 };
 
 const moveCanvasBlockLayer: Mutation<{
@@ -196,9 +296,11 @@ const addBlock: Mutation<{
     data: { type: "block-type-union", value: args.type },
     attribute: "block/type",
   });
-  let parentIsBlock =
-    !args.list &&
-    (await ctx.scanIndex.eav(args.parent, "block/type")).length > 0;
+  // A group's children are a plain linear document, not list items.
+  let [parentType] = args.list
+    ? []
+    : await ctx.scanIndex.eav(args.parent, "block/type");
+  let parentIsBlock = !!parentType && parentType.data.value !== "group";
   if (args.list || parentIsBlock) {
     await ctx.assertFact({
       entity: args.newEntityID,
@@ -228,9 +330,7 @@ const addLastBlock: Mutation<{
   entity: string;
 }> = async (args, ctx) => {
   let children = await ctx.scanIndex.eav(args.parent, "card/block");
-  let lastChild = children.toSorted((a, b) =>
-    a.data.position > b.data.position ? 1 : -1,
-  )[children.length - 1];
+  let lastChild = children.toSorted(byPosition)[children.length - 1];
   await ctx.assertFact({
     entity: args.parent,
     id: args.factID,
@@ -255,10 +355,10 @@ const moveBlock: Mutation<{
 }> = async (args, ctx) => {
   let children = (
     await ctx.scanIndex.eav(args.oldParent, "card/block")
-  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  ).toSorted(byPosition);
   let newSiblings = (
     await ctx.scanIndex.eav(args.newParent, "card/block")
-  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  ).toSorted(byPosition);
   let block = children.find((f) => f.data.value === args.block);
   if (!block) return;
   // Move by overwriting the block's existing card/block fact in place (reusing
@@ -317,10 +417,10 @@ const moveChildren: Mutation<{
 }> = async (args, ctx) => {
   let children = (
     await ctx.scanIndex.eav(args.oldParent, "card/block")
-  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  ).toSorted(byPosition);
   let newSiblings = (
     await ctx.scanIndex.eav(args.newParent, "card/block")
-  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  ).toSorted(byPosition);
   let index = newSiblings.findIndex((f) => f.data.value === args.after);
   let newPosition = generateKeyBetween(
     newSiblings[index]?.data.position || null,
@@ -358,7 +458,7 @@ const moveBlocks: Mutation<{
   after: string | null;
 }> = async (args, ctx) => {
   let children = (await ctx.scanIndex.eav(args.parent, "card/block")).toSorted(
-    (a, b) => (a.data.position > b.data.position ? 1 : -1),
+    byPosition,
   );
   let movingIds = new Set(args.blocks);
   let moving = args.blocks
@@ -398,10 +498,10 @@ const outdentBlock: Mutation<{
   //we should be able to get normal siblings here as we care only about one level
   let newSiblings = (
     await ctx.scanIndex.eav(args.newParent, "card/block")
-  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  ).toSorted(byPosition);
   let currentSiblings = (
     await ctx.scanIndex.eav(args.oldParent, "card/block")
-  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  ).toSorted(byPosition);
 
   let currentFactIndex = currentSiblings.findIndex(
     (f) => f.data.value === args.block,
@@ -419,7 +519,7 @@ const outdentBlock: Mutation<{
     .filter((sib) => !excludeSet.has(sib.data.value));
   let currentChildren = (
     await ctx.scanIndex.eav(args.block, "card/block")
-  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  ).toSorted(byPosition);
   let lastPosition =
     currentChildren[currentChildren.length - 1]?.data.position || null;
   for (let sib of currentSiblingsAfter) {
@@ -456,6 +556,39 @@ const outdentBlock: Mutation<{
       position: newPosition,
       value: args.block,
     },
+  });
+};
+
+const addEmbeddedCanvasBlock: Mutation<{
+  permission_set: string;
+  blockEntity: string;
+  pageEntity: string;
+  width: number;
+  height: number;
+}> = async (args, ctx) => {
+  await ctx.createEntity({
+    entityID: args.pageEntity,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    entity: args.blockEntity,
+    attribute: "block/card",
+    data: { type: "reference", value: args.pageEntity },
+  });
+  await ctx.assertFact({
+    attribute: "page/type",
+    entity: args.pageEntity,
+    data: { type: "page-type-union", value: "canvas" },
+  });
+  await ctx.assertFact({
+    entity: args.pageEntity,
+    attribute: "canvas/fixed-width",
+    data: { type: "number", value: args.width },
+  });
+  await ctx.assertFact({
+    entity: args.pageEntity,
+    attribute: "canvas/fixed-height",
+    data: { type: "number", value: args.height },
   });
 };
 
@@ -505,8 +638,8 @@ const retractFact: Mutation<{ factID: string }> = async (args, ctx) => {
   await ctx.retractFact(args.factID);
 };
 
-// Add a content page to a publication draft leaflet's nav, seeded with a
-// single empty text block.
+// Add a content page to a publication draft leaflet's nav. A doc page is
+// seeded with a single empty text block; a canvas page starts empty.
 const addPublicationNavPage: Mutation<{
   rootEntity: string;
   pageEntity: string;
@@ -514,13 +647,13 @@ const addPublicationNavPage: Mutation<{
   navFactID: string;
   route: string;
   title: string;
+  pageType?: "doc" | "canvas";
   firstBlockEntity: string;
   firstBlockFactID: string;
 }> = async (args, ctx) => {
+  let pageType = args.pageType ?? "doc";
   let entries = await ctx.scanIndex.eav(args.rootEntity, "root/page");
-  let last = entries.toSorted((a, b) =>
-    a.data.position > b.data.position ? 1 : -1,
-  )[entries.length - 1];
+  let last = entries.toSorted(byPosition)[entries.length - 1];
   await ctx.createEntity({
     entityID: args.pageEntity,
     permission_set: args.permission_set,
@@ -538,7 +671,7 @@ const addPublicationNavPage: Mutation<{
   await ctx.assertFact({
     entity: args.pageEntity,
     attribute: "page/type",
-    data: { type: "page-type-union", value: "doc" },
+    data: { type: "page-type-union", value: pageType },
   });
   await ctx.assertFact({
     entity: args.pageEntity,
@@ -550,6 +683,7 @@ const addPublicationNavPage: Mutation<{
     attribute: "page/title",
     data: { type: "string", value: args.title },
   });
+  if (pageType === "canvas") return;
   await addBlock(
     {
       factID: args.firstBlockFactID,
@@ -574,9 +708,7 @@ const addPublicationNavLink: Mutation<{
   title: string;
 }> = async (args, ctx) => {
   let entries = await ctx.scanIndex.eav(args.rootEntity, "root/page");
-  let last = entries.toSorted((a, b) =>
-    a.data.position > b.data.position ? 1 : -1,
-  )[entries.length - 1];
+  let last = entries.toSorted(byPosition)[entries.length - 1];
   await ctx.createEntity({
     entityID: args.linkEntity,
     permission_set: args.permission_set,
@@ -613,10 +745,16 @@ const removePublicationNavEntry: Mutation<{
   await ctx.deleteEntity(args.entity);
 };
 
+// Pass `parent` when it may be a canvas group: a group with nothing left in it
+// is removed along with its last block.
 const removeBlock: Mutation<
-  { blockEntity: string } | { blockEntity: string }[]
+  | { blockEntity: string; parent?: string }
+  | { blockEntity: string; parent?: string }[]
 > = async (args, ctx) => {
   for (let block of [args].flat()) {
+    let [type] = await ctx.scanIndex.eav(block.blockEntity, "block/type");
+    if (type?.data.value === "group")
+      await removeDescendants(block.blockEntity, ctx);
     let [image] = await ctx.scanIndex.eav(block.blockEntity, "block/image");
     await ctx.runOnServer(async ({ supabase }) => {
       if (image) await enqueueBlobCleanup(supabase, image.data.src);
@@ -633,16 +771,36 @@ const removeBlock: Mutation<
       }
     });
     await ctx.deleteEntity(block.blockEntity);
+    if (!block.parent) continue;
+    let [parentType] = await ctx.scanIndex.eav(block.parent, "block/type");
+    if (
+      parentType?.data.value === "group" &&
+      (await ctx.scanIndex.eav(block.parent, "card/block")).length === 0
+    )
+      await removeBlock({ blockEntity: block.parent }, ctx);
   }
 };
+
+async function removeDescendants(entity: string, ctx: MutationContext) {
+  for (let child of await ctx.scanIndex.eav(entity, "card/block")) {
+    await removeDescendants(child.data.value, ctx);
+    await removeBlock({ blockEntity: child.data.value }, ctx);
+  }
+}
 
 const deleteEntity: Mutation<{ entity: string }> = async (args, ctx) => {
   await ctx.deleteEntity(args.entity);
 };
 
-export type FactInput = {
-  [k in Attribute]: Omit<Fact<k>, "id"> & { id?: string };
-}[Attribute];
+// A cardinality-many fact's id must come from the caller: the client and the
+// server run every mutation independently, so an id generated inside the
+// mutation diverges between them and any later write that reuses the client's
+// id lands as a second fact on the server.
+export type AssertFactInput<A extends Attribute> =
+  Attributes[A]["cardinality"] extends "many"
+    ? Fact<A>
+    : Omit<Fact<A>, "id"> & { id?: string };
+export type FactInput = { [k in Attribute]: AssertFactInput<k> }[Attribute];
 const assertFact: Mutation<FactInput | Array<FactInput>> = async (
   args,
   ctx,
@@ -687,7 +845,7 @@ const moveBlockUp: Mutation<{ entityID: string; parent: string }> = async (
   ctx,
 ) => {
   let children = (await ctx.scanIndex.eav(args.parent, "card/block")).toSorted(
-    (a, b) => (a.data.position > b.data.position ? 1 : -1),
+    byPosition,
   );
   let index = children.findIndex((f) => f.data.value === args.entityID);
   if (index === -1) return;
@@ -713,34 +871,32 @@ const moveBlockUp: Mutation<{ entityID: string; parent: string }> = async (
 const moveBlockDown: Mutation<{
   entityID: string;
   parent: string;
-  permission_set?: string;
+  // Used only when the block is already last: a new empty block is inserted
+  // above it. Generated by the caller so both sides create the same entity.
+  newBlock?: { permission_set: string; entityID: string; factID: string };
 }> = async (args, ctx) => {
   let children = (await ctx.scanIndex.eav(args.parent, "card/block")).toSorted(
-    (a, b) => (a.data.position > b.data.position ? 1 : -1),
+    byPosition,
   );
   let index = children.findIndex((f) => f.data.value === args.entityID);
   if (index === -1) return;
   let next = children[index + 1];
   if (!next) {
-    // If this is the last block, create a new empty block above it using the addBlock helper
-    if (!args.permission_set) return; // Can't create block without permission_set
-
-    let newEntityID = v7();
+    if (!args.newBlock) return;
     let previousBlock = children[index - 1];
     let position = generateKeyBetween(
       previousBlock?.data.position || null,
       children[index].data.position,
     );
 
-    // Call the addBlock mutation helper directly
     await addBlock(
       {
         parent: args.parent,
-        permission_set: args.permission_set,
-        factID: v7(),
+        permission_set: args.newBlock.permission_set,
+        factID: args.newBlock.factID,
         type: "text",
-        newEntityID: newEntityID,
-        position: position,
+        newEntityID: args.newBlock.entityID,
+        position,
       },
       ctx,
     );
@@ -810,6 +966,7 @@ const archiveDraft: Mutation<{
   mailboxEntity: string;
   archiveEntity: string;
   newBlockEntity: string;
+  newBlockFactID: string;
   entity_set: string;
 }> = async (args, ctx) => {
   let [existingDraft] = await ctx.scanIndex.eav(
@@ -837,9 +994,7 @@ const archiveDraft: Mutation<{
   }
 
   let archiveChildren = await ctx.scanIndex.eav(archiveEntity, "card/block");
-  let firstChild = archiveChildren.toSorted((a, b) =>
-    a.data.position > b.data.position ? 1 : -1,
-  )[0];
+  let firstChild = archiveChildren.toSorted(byPosition)[0];
 
   await ctx.createEntity({
     entityID: args.newBlockEntity,
@@ -858,6 +1013,7 @@ const archiveDraft: Mutation<{
   });
 
   await ctx.assertFact({
+    id: args.newBlockFactID,
     entity: archiveEntity,
     attribute: "card/block",
     data: {
@@ -920,9 +1076,7 @@ const addPollOption: Mutation<{
   });
 
   let children = await ctx.scanIndex.eav(args.pollEntity, "poll/options");
-  let lastChild = children.toSorted((a, b) =>
-    a.data.position > b.data.position ? 1 : -1,
-  )[children.length - 1];
+  let lastChild = children.toSorted(byPosition)[children.length - 1];
 
   await ctx.assertFact({
     entity: args.pollEntity,
@@ -954,9 +1108,7 @@ const addGalleryImage: Mutation<{
   });
 
   let children = await ctx.scanIndex.eav(args.galleryEntity, "gallery/image");
-  let lastChild = children.toSorted((a, b) =>
-    a.data.position > b.data.position ? 1 : -1,
-  )[children.length - 1];
+  let lastChild = children.toSorted(byPosition)[children.length - 1];
 
   await ctx.assertFact({
     entity: args.galleryEntity,
@@ -1362,12 +1514,15 @@ export const mutations = {
   retractAttribute,
   addBlock,
   addCanvasBlock,
+  groupCanvasBlock,
+  ungroupCanvasBlock,
   moveCanvasBlockLayer,
   addLastBlock,
   outdentBlock,
   moveBlockUp,
   moveBlockDown,
   addPageLinkBlock,
+  addEmbeddedCanvasBlock,
   addPublicationNavPage,
   addPublicationNavLink,
   removePublicationNavEntry,

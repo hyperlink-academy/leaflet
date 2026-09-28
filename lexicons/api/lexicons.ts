@@ -1346,6 +1346,99 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksDrawing: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.drawing',
+    defs: {
+      main: {
+        type: 'object',
+        description:
+          "Freehand ink strokes. The view box is the area of drawing space the block shows, scaled to the block's width; strokes may reach past it.",
+        required: ['viewBox', 'strokes'],
+        properties: {
+          viewBox: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.blocks.drawing#viewBox',
+          },
+          strokes: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.blocks.drawing#stroke',
+            },
+          },
+        },
+      },
+      viewBox: {
+        type: 'object',
+        required: ['x', 'y', 'width', 'height'],
+        properties: {
+          x: {
+            type: 'integer',
+          },
+          y: {
+            type: 'integer',
+          },
+          width: {
+            type: 'integer',
+            minimum: 1,
+          },
+          height: {
+            type: 'integer',
+            minimum: 1,
+          },
+        },
+      },
+      stroke: {
+        type: 'object',
+        description:
+          'One pen stroke, drawn in order, rendered as a variable-width outline of its input points (as perfect-freehand does).',
+        required: ['points', 'color', 'size'],
+        properties: {
+          points: {
+            type: 'array',
+            items: {
+              type: 'integer',
+            },
+            description:
+              'Flattened input points as x, y, pressure triples: x and y in drawing space, pressure from 0 to 1000.',
+          },
+          color: {
+            type: 'string',
+            description:
+              "A CSS hex color, or one of the document theme's colors: primary (text), accent, or tertiary (faded text).",
+          },
+          size: {
+            type: 'integer',
+            minimum: 1,
+            description: "The stroke's base diameter in drawing space.",
+          },
+          simulatePressure: {
+            type: 'boolean',
+            description:
+              "The input had no real pressure (a mouse or finger); derive it from the stroke's speed instead.",
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksEmbeddedCanvas: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.embeddedCanvas',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['id'],
+        description:
+          "A fixed-size canvas shown in full inline. id refers to a pub.leaflet.pages.canvas in the document's pages whose width and height bound it.",
+        properties: {
+          id: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksHeader: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.header',
@@ -1711,6 +1804,25 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksPostHeader: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.postHeader',
+    defs: {
+      main: {
+        type: 'object',
+        description:
+          "The post's header (publication, title, description, byline) placed as a block, so canvas posts can position it. Renders the document's own metadata; carries no content of its own.",
+        required: [],
+        properties: {
+          compact: {
+            type: 'boolean',
+            description:
+              'Show a condensed header: title and byline only, without the description.',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksPostsList: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.postsList',
@@ -1725,6 +1837,12 @@ export const schemaDict = {
           },
           highlightFirstPost: {
             type: 'boolean',
+          },
+          showPageCount: {
+            type: 'boolean',
+            default: true,
+            description:
+              'In the chapter view, show the number of pages under each chapter.',
           },
           filterByTags: {
             type: 'array',
@@ -2226,6 +2344,26 @@ export const schemaDict = {
               ref: 'lex:pub.leaflet.pages.canvas#block',
             },
           },
+          mobileView: {
+            type: 'string',
+            knownValues: ['unconstrained', 'left', 'center'],
+            description:
+              "How a narrow viewport frames the canvas: the whole canvas scaled to fit the width (unconstrained, the default), or a phone-width area anchored to the canvas's left edge or centered on it, shown at up to 1:1.",
+          },
+          width: {
+            type: 'integer',
+            description:
+              'Fixed canvas width in canvas px. With height, bounds the canvas: blocks are clipped to the area. Absent, the canvas is 1272px wide and grows with its content.',
+          },
+          height: {
+            type: 'integer',
+            description: 'Fixed canvas height in canvas px; see width.',
+          },
+          lockViewerZoom: {
+            type: 'boolean',
+            description:
+              'Viewers cannot zoom the canvas or scroll it sideways: no wheel, pinch, double-tap or zoom controls, and the initial framing (see mobileView) stays. Vertical scrolling is unaffected.',
+          },
         },
       },
       block: {
@@ -2252,13 +2390,19 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.standardSitePost',
               'lex:pub.leaflet.blocks.standardSitePublication',
               'lex:pub.leaflet.blocks.page',
+              'lex:pub.leaflet.blocks.embeddedCanvas',
               'lex:pub.leaflet.blocks.poll',
               'lex:pub.leaflet.blocks.button',
               'lex:pub.leaflet.blocks.postsList',
               'lex:pub.leaflet.blocks.signup',
               'lex:pub.leaflet.blocks.recommendedPubs',
               'lex:pub.leaflet.blocks.membersOnlyDelimiter',
+              'lex:pub.leaflet.blocks.postHeader',
+              'lex:pub.leaflet.blocks.drawing',
+              'lex:pub.leaflet.pages.linearDocument',
             ],
+            description:
+              'A single block, or a linear document: blocks grouped in reading order that are positioned, sized and rotated on the canvas as one.',
           },
           x: {
             type: 'integer',
@@ -2367,12 +2511,15 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.standardSitePost',
               'lex:pub.leaflet.blocks.standardSitePublication',
               'lex:pub.leaflet.blocks.page',
+              'lex:pub.leaflet.blocks.embeddedCanvas',
               'lex:pub.leaflet.blocks.poll',
               'lex:pub.leaflet.blocks.button',
               'lex:pub.leaflet.blocks.postsList',
               'lex:pub.leaflet.blocks.signup',
               'lex:pub.leaflet.blocks.recommendedPubs',
               'lex:pub.leaflet.blocks.membersOnlyDelimiter',
+              'lex:pub.leaflet.blocks.postHeader',
+              'lex:pub.leaflet.blocks.drawing',
             ],
           },
           alignment: {
@@ -3333,6 +3480,8 @@ export const ids = {
   PubLeafletBlocksBskyPost: 'pub.leaflet.blocks.bskyPost',
   PubLeafletBlocksButton: 'pub.leaflet.blocks.button',
   PubLeafletBlocksCode: 'pub.leaflet.blocks.code',
+  PubLeafletBlocksDrawing: 'pub.leaflet.blocks.drawing',
+  PubLeafletBlocksEmbeddedCanvas: 'pub.leaflet.blocks.embeddedCanvas',
   PubLeafletBlocksHeader: 'pub.leaflet.blocks.header',
   PubLeafletBlocksHorizontalRule: 'pub.leaflet.blocks.horizontalRule',
   PubLeafletBlocksHtml: 'pub.leaflet.blocks.html',
@@ -3345,6 +3494,7 @@ export const ids = {
   PubLeafletBlocksOrderedList: 'pub.leaflet.blocks.orderedList',
   PubLeafletBlocksPage: 'pub.leaflet.blocks.page',
   PubLeafletBlocksPoll: 'pub.leaflet.blocks.poll',
+  PubLeafletBlocksPostHeader: 'pub.leaflet.blocks.postHeader',
   PubLeafletBlocksPostsList: 'pub.leaflet.blocks.postsList',
   PubLeafletBlocksRecommendedPubs: 'pub.leaflet.blocks.recommendedPubs',
   PubLeafletBlocksSignup: 'pub.leaflet.blocks.signup',

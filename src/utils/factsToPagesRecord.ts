@@ -11,6 +11,8 @@ import {
   PubLeafletBlocksStandardSitePublication,
   PubLeafletBlocksButton,
   PubLeafletBlocksCode,
+  PubLeafletBlocksDrawing,
+  PubLeafletBlocksEmbeddedCanvas,
   PubLeafletBlocksHeader,
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksHtml,
@@ -25,6 +27,7 @@ import {
   PubLeafletBlocksPostsList,
   PubLeafletBlocksRecommendedPubs,
   PubLeafletBlocksSignup,
+  PubLeafletBlocksPostHeader,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksWebsite,
@@ -77,15 +80,11 @@ export type ProcessBlocksToPagesHooks = {
     | null;
 };
 
-type ProcessBlocksToPagesResult = {
-  pages: {
-    id: string;
-    blocks:
-      | PubLeafletPagesLinearDocument.Block[]
-      | PubLeafletPagesCanvas.Block[];
-    type: "doc" | "canvas";
-  }[];
-};
+export type PageRecord =
+  | $Typed<PubLeafletPagesLinearDocument.Main>
+  | $Typed<PubLeafletPagesCanvas.Main>;
+
+type ProcessBlocksToPagesResult = { pages: PageRecord[] };
 
 function resolveHighlightColors(
   scan: ReturnType<typeof scanIndexLocal>,
@@ -208,30 +207,13 @@ export async function processBlocksToPages(opts: {
   } = {
     datetime: async () => undefined,
     rsvp: async () => undefined,
+    // Serialized by canvasBlocksToRecord, the only place a group can sit.
+    group: async () => undefined,
     mailbox: async () => undefined,
     card: async (b, membersOnly) => {
       const [page] = scan.eav(b.entityID, "block/card");
       if (!page) return;
-      const [pageType] = scan.eav(page.data.value, "page/type");
-
-      if (pageType?.data.value === "canvas") {
-        const canvasBlocks = await canvasBlocksToRecord(
-          page.data.value,
-          membersOnly,
-        );
-        pages.push({
-          id: page.data.value,
-          blocks: canvasBlocks,
-          type: "canvas",
-        });
-      } else {
-        const blocks = getBlocksWithTypeLocal(facts, page.data.value);
-        pages.push({
-          id: page.data.value,
-          blocks: await blocksToRecord(blocks, membersOnly),
-          type: "doc",
-        });
-      }
+      pages.push(await pageToRecord(page.data.value, membersOnly));
 
       const [display] = scan.eav(b.entityID, "page-link/display");
       const block: $Typed<PubLeafletBlocksPage.Main> = {
@@ -240,6 +222,16 @@ export async function processBlocksToPages(opts: {
       };
       if (display && display.data.value !== DEFAULT_PAGE_LINK_DISPLAY)
         block.display = display.data.value;
+      return block;
+    },
+    "embedded-canvas": async (b, membersOnly) => {
+      const [page] = scan.eav(b.entityID, "block/card");
+      if (!page) return;
+      pages.push(await pageToRecord(page.data.value, membersOnly));
+      const block: $Typed<PubLeafletBlocksEmbeddedCanvas.Main> = {
+        $type: ids.PubLeafletBlocksEmbeddedCanvas,
+        id: page.data.value,
+      };
       return block;
     },
     "bluesky-post": async (b) => {
@@ -456,6 +448,30 @@ export async function processBlocksToPages(opts: {
       };
       return block;
     },
+    drawing: async (b) => {
+      const [viewBox] = scan.eav(b.entityID, "drawing/view-box");
+      const strokes = scan
+        .eav(b.entityID, "drawing/stroke")
+        .toSorted((x, y) => (x.id < y.id ? -1 : 1));
+      if (!viewBox || strokes.length === 0) return;
+      const box = viewBox.data.value;
+      const block: $Typed<PubLeafletBlocksDrawing.Main> = {
+        $type: "pub.leaflet.blocks.drawing",
+        viewBox: {
+          x: Math.round(box.x),
+          y: Math.round(box.y),
+          width: Math.max(1, Math.round(box.width)),
+          height: Math.max(1, Math.round(box.height)),
+        },
+        strokes: strokes.map(({ data: { value: stroke } }) => ({
+          points: stroke.points.map(Math.round),
+          color: stroke.color,
+          size: Math.max(1, Math.round(stroke.size)),
+          ...(stroke.simulatePressure && { simulatePressure: true }),
+        })),
+      };
+      return block;
+    },
     math: async (b) => {
       const [math] = scan.eav(b.entityID, "block/math");
       const block: $Typed<PubLeafletBlocksMath.Main> = {
@@ -513,6 +529,10 @@ export async function processBlocksToPages(opts: {
         b.entityID,
         "posts-list/highlight-first-post",
       );
+      const [showPageCountFact] = scan.eav(
+        b.entityID,
+        "posts-list/show-page-count",
+      );
       const filterTagFacts = scan.eav(b.entityID, "posts-list/filter-tag");
       const filterByTags = filterTagFacts.map((f) => f.data.value);
       const [limitFact] = scan.eav(b.entityID, "posts-list/limit");
@@ -535,6 +555,7 @@ export async function processBlocksToPages(opts: {
         $type: "pub.leaflet.blocks.postsList",
         ...(viewFact && { view: viewFact.data.value }),
         ...(highlightFact && { highlightFirstPost: highlightFact.data.value }),
+        ...(showPageCountFact && { showPageCount: showPageCountFact.data.value }),
         ...(filterByTags.length > 0 && { filterByTags }),
         ...(limit && limit > 0 && { limit }),
         // The sub-flags only mean anything under readerControls, and each
@@ -556,6 +577,14 @@ export async function processBlocksToPages(opts: {
       };
       return block;
     },
+    "post-header": async (b) => {
+      const [compactFact] = scan.eav(b.entityID, "post-header/compact");
+      const block: $Typed<PubLeafletBlocksPostHeader.Main> = {
+        $type: ids.PubLeafletBlocksPostHeader,
+        ...(compactFact?.data.value && { compact: true }),
+      };
+      return block;
+    },
     signup: async () => {
       const block: $Typed<PubLeafletBlocksSignup.Main> = {
         $type: ids.PubLeafletBlocksSignup,
@@ -568,26 +597,39 @@ export async function processBlocksToPages(opts: {
     opts.start_page ?? scan.eav(root_entity, "root/page")?.[0]?.data.value;
   if (!startPage) throw new Error("No root page");
 
-  const [pageType] = scan.eav(startPage, "page/type");
-
-  if (pageType?.data.value === "canvas") {
-    const canvasBlocks = await canvasBlocksToRecord(startPage, false);
-    pages.unshift({
-      id: startPage,
-      blocks: canvasBlocks,
-      type: "canvas",
-    });
-  } else {
-    const blocks = getBlocksWithTypeLocal(facts, startPage);
-    const b = await blocksToRecord(blocks, false);
-    pages.unshift({
-      id: startPage,
-      blocks: b,
-      type: "doc",
-    });
-  }
+  pages.unshift(await pageToRecord(startPage, false));
 
   return { pages };
+
+  async function pageToRecord(
+    pageID: string,
+    membersOnly: boolean,
+  ): Promise<PageRecord> {
+    if (scan.eav(pageID, "page/type")[0]?.data.value !== "canvas")
+      return {
+        $type: "pub.leaflet.pages.linearDocument",
+        id: pageID,
+        blocks: await blocksToRecord(
+          getBlocksWithTypeLocal(facts, pageID),
+          membersOnly,
+        ),
+      };
+    const mobileView = scan.eav(pageID, "canvas/mobile-view")[0]?.data.value;
+    const fixedWidth = scan.eav(pageID, "canvas/fixed-width")[0]?.data.value;
+    const fixedHeight = scan.eav(pageID, "canvas/fixed-height")[0]?.data.value;
+    return {
+      $type: "pub.leaflet.pages.canvas",
+      id: pageID,
+      blocks: await canvasBlocksToRecord(pageID, membersOnly),
+      ...(fixedWidth && fixedHeight
+        ? { width: Math.floor(fixedWidth), height: Math.floor(fixedHeight) }
+        : {}),
+      ...(mobileView && mobileView !== "unconstrained" ? { mobileView } : {}),
+      ...(scan.eav(pageID, "canvas/lock-viewer-zoom")[0]?.data.value
+        ? { lockViewerZoom: true }
+        : {}),
+    };
+  }
 
   async function blocksToRecord(
     blocks: Block[],
@@ -791,15 +833,24 @@ export async function processBlocksToPages(opts: {
           const blockType = scan.eav(blockEntity, "block/type")?.[0];
           if (!blockType) return null;
 
-          const block: Block = {
-            type: blockType.data.value,
-            entityID: blockEntity,
-            parent: pageID,
-            position: "",
-            factID: canvasBlock.id,
-          };
-
-          const content = await blockToRecord(block, membersOnly);
+          let content: PubLeafletPagesCanvas.Block["block"] | undefined;
+          if (blockType.data.value === "group") {
+            const blocks = await blocksToRecord(
+              getBlocksWithTypeLocal(facts, blockEntity),
+              membersOnly,
+            );
+            if (blocks.length === 0) return null;
+            content = { $type: "pub.leaflet.pages.linearDocument", blocks };
+          } else {
+            const block: Block = {
+              type: blockType.data.value,
+              entityID: blockEntity,
+              parent: pageID,
+              position: "",
+              factID: canvasBlock.id,
+            };
+            content = await blockToRecord(block, membersOnly);
+          }
           if (!content) return null;
 
           const width =
@@ -817,7 +868,7 @@ export async function processBlocksToPages(opts: {
             x: Math.floor(position.x),
             y: Math.floor(position.y),
             width: Math.floor(width),
-            ...(rotation !== undefined && { rotation: Math.floor(rotation) }),
+            ...(rotation !== undefined && { rotation: Math.round(rotation) }),
             ...(stackOrder !== undefined && { stackOrder }),
           };
 

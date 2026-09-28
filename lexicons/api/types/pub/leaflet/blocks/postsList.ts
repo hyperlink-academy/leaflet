@@ -18,6 +18,7 @@ export interface Main {
   $type?: 'pub.leaflet.blocks.postsList'
   view?: 'small' | 'medium' | 'chapter' | (string & {})
   highlightFirstPost?: boolean
+  showPageCount: boolean
   filterByTags?: string[]
   /** Show at most this many posts. */
   limit?: number

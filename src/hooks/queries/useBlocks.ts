@@ -4,8 +4,10 @@ import { scanIndexLocal } from "src/replicache/utils";
 import {
   getBlocksFromMirror,
   getBlocksWithTypeLocal,
+  getPageReadingOrder,
   SyncScan,
 } from "src/replicache/getBlocks";
+import { canvasBlockOrder } from "src/utils/canvasBlockOrder";
 import { blockListAttributes } from "src/replicache/blockMirror";
 import { useMirrorQuery } from "src/hooks/useMirrorQuery";
 
@@ -53,10 +55,28 @@ export const useCanvasBlocksWithType = (entityID: string | null) => {
     (mirror) => (entityID === null ? [] : assembleCanvasBlocks(mirror, entityID)),
     [entityID],
   );
-  return (blocks || initialValue).toSorted((a, b) => {
-    if (a.position.y === b.position.y) {
-      return a.position.x - b.position.x;
-    }
-    return a.position.y - b.position.y;
-  });
+  return (blocks || initialValue).toSorted((a, b) =>
+    canvasBlockOrder(a.position, b.position),
+  );
+};
+
+const readingOrderAttributes = [...blockListAttributes, "canvas/block"];
+
+// A page's blocks in reading order (see getPageReadingOrder), for the
+// surfaces that read a page's first blocks whatever kind of page it is.
+export const usePageReadingOrder = (pageID: string | null) => {
+  let rep = useReplicache();
+  let initialValue = useMemo(
+    () =>
+      pageID === null
+        ? []
+        : getPageReadingOrder(scanIndexLocal(rep.initialFacts), pageID),
+    [rep.initialFacts, pageID],
+  );
+  let blocks = useMirrorQuery(
+    readingOrderAttributes,
+    (mirror) => (pageID === null ? [] : getPageReadingOrder(mirror, pageID)),
+    [pageID],
+  );
+  return blocks || initialValue;
 };

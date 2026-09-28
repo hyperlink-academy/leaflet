@@ -1,4 +1,5 @@
 import { Fragment, useMemo, useState } from "react";
+import { v7 } from "uuid";
 import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps, BlockLayout } from "./Block";
@@ -112,6 +113,9 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
   );
   let highlightFirst = highlightFirstFact?.data.value ?? false;
 
+  let showPageCount =
+    useEntity(entityID, "posts-list/show-page-count")?.data.value ?? true;
+
   let filterTagFacts = useEntity(entityID, "posts-list/filter-tag");
   let filterTags = useMemo(
     () => filterTagFacts.map((f) => f.data.value),
@@ -175,6 +179,7 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
         cards={listData.chapterCards ?? []}
         latestPost={listData.latestPost}
         highlightLatest={highlightFirst}
+        showPageCount={showPageCount}
         disableLinks
       />
     );
@@ -342,6 +347,9 @@ function PostsListSettingsButton(props: { entityID: string }) {
   );
   let highlightFirst = highlightFirstFact?.data.value ?? false;
 
+  let showPageCount =
+    useEntity(props.entityID, "posts-list/show-page-count")?.data.value ?? true;
+
   let filterTagFacts = useEntity(props.entityID, "posts-list/filter-tag");
   let selectedTags = useMemo(
     () => filterTagFacts.map((f) => f.data.value),
@@ -472,6 +480,20 @@ function PostsListSettingsButton(props: { entityID: string }) {
           });
         }}
       />
+      {view === "chapter" && (
+        <ToggleWithLabel
+          label="Show Page Count"
+          toggle={showPageCount}
+          onToggle={() => {
+            if (!rep) return;
+            rep.mutate.assertFact({
+              entity: props.entityID,
+              attribute: "posts-list/show-page-count",
+              data: { type: "boolean", value: !showPageCount },
+            });
+          }}
+        />
+      )}
 
       {view !== "chapter" && (
         <div className="flex flex-col gap-1">
@@ -570,6 +592,7 @@ function PostsListSettingsButton(props: { entityID: string }) {
                             });
                           } else {
                             rep.mutate.assertFact({
+                              id: v7(),
                               entity: props.entityID,
                               attribute: "posts-list/filter-tag",
                               data: { type: "string", value: tag },

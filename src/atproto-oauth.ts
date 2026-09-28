@@ -17,6 +17,31 @@ import Client from "ioredis";
 import Redlock from "redlock";
 import { Result, Ok, Err } from "./result";
 
+// Flattens the library's nested error chain (TokenRefreshError → cause
+// OAuthResponseError → PDS payload) into one loggable object. The PDS's
+// error_description and the URL it came from are the only fields that tell a
+// PDS-side rejection apart from a missing row or a network fault.
+export function describeOAuthError(error: unknown): Record<string, unknown> {
+  if (!(error instanceof Error)) return { error };
+  const out: Record<string, unknown> = {
+    name: error.name,
+    message: error.message,
+  };
+  const e = error as Error & {
+    status?: number;
+    error?: string;
+    errorDescription?: string;
+    response?: { url?: string };
+    cause?: unknown;
+  };
+  if (e.status !== undefined) out.status = e.status;
+  if (e.error !== undefined) out.oauthError = e.error;
+  if (e.errorDescription !== undefined) out.errorDescription = e.errorDescription;
+  if (e.response?.url) out.url = e.response.url;
+  if (e.cause !== undefined) out.cause = describeOAuthError(e.cause);
+  return out;
+}
+
 // Module-scoped singleton: NodeOAuthClient, ioredis connection, and Redlock
 // have no per-request state — keys/stores live above the user — so building
 // them once per Node instance avoids reconnect + keyset re-import on every call.
@@ -81,52 +106,90 @@ async function buildOauthClient(): Promise<NodeOAuthClient> {
     requestLock,
 
     didCache: noDidCache,
+
+    // The only place every session deletion passes through — including
+    // refreshes that fail inside a session's fetch handler after a 401, which
+    // never reach restoreOAuthSession's logger.
+    onDelete: (sub, cause) => {
+      console.error("[oauth] session deleted", {
+        did: sub,
+        ...describeOAuthError(cause),
+      });
+    },
+    onUpdate: (sub, session) => {
+      console.log("[oauth] session refreshed", {
+        did: sub,
+        iss: session.tokenSet.iss,
+        expires_at: session.tokenSet.expires_at,
+      });
+    },
   });
 }
 
 const storeKey = (key: string) => oauth_store_key_prefix + key;
 
+// The library swallows store errors (a failed write is reported later as
+// "session deleted by another process"), so they have to be logged here.
+const logStoreError = (
+  op: string,
+  key: string,
+  error: { message: string; code?: string } | null,
+) => {
+  if (error)
+    console.error(`[oauth] store ${op} failed`, {
+      key,
+      code: error.code,
+      message: error.message,
+    });
+};
+
 let stateStore = {
   async set(key: string, state: NodeSavedState): Promise<void> {
-    await supabaseServerClient
+    const { error } = await supabaseServerClient
       .from("oauth_state_store")
       .upsert({ key: storeKey(key), state });
+    logStoreError("state.set", key, error);
   },
   async get(key: string): Promise<NodeSavedState | undefined> {
-    let { data } = await supabaseServerClient
+    let { data, error } = await supabaseServerClient
       .from("oauth_state_store")
       .select("state")
       .eq("key", storeKey(key))
-      .single();
+      .maybeSingle();
+    logStoreError("state.get", key, error);
     return (data?.state as NodeSavedState) || undefined;
   },
   async del(key: string): Promise<void> {
-    await supabaseServerClient
+    const { error } = await supabaseServerClient
       .from("oauth_state_store")
       .delete()
       .eq("key", storeKey(key));
+    logStoreError("state.del", key, error);
   },
 };
 
 let sessionStore = {
   async set(key: string, session: NodeSavedSession): Promise<void> {
-    await supabaseServerClient
+    const { error } = await supabaseServerClient
       .from("oauth_session_store")
       .upsert({ key: storeKey(key), session });
+    logStoreError("session.set", key, error);
   },
   async get(key: string): Promise<NodeSavedSession | undefined> {
-    let { data } = await supabaseServerClient
+    let { data, error } = await supabaseServerClient
       .from("oauth_session_store")
       .select("session")
       .eq("key", storeKey(key))
-      .single();
+      .maybeSingle();
+    logStoreError("session.get", key, error);
     return (data?.session as NodeSavedSession) || undefined;
   },
   async del(key: string): Promise<void> {
-    await supabaseServerClient
+    const { error } = await supabaseServerClient
       .from("oauth_session_store")
       .delete()
       .eq("key", storeKey(key));
+    logStoreError("session.del", key, error);
   },
 };
 
@@ -183,7 +246,7 @@ export async function restoreOAuthSession(
     // refresh rejected, token revoked) is only visible here.
     console.error("[oauth] restore session failed", {
       did,
-      error: error instanceof Error ? `${error.name}: ${error.message}` : error,
+      ...describeOAuthError(error),
     });
     return Err({
       type: "oauth_session_expired",

@@ -2,7 +2,6 @@ import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import { getPublicationURL } from "src/utils/getPublicationURL";
-import { deduplicateByUri } from "src/utils/deduplicateRecords";
 
 export type SearchPublicationNamesReturnType = Awaited<
   ReturnType<(typeof search_publication_names)["handler"]>
@@ -15,10 +14,13 @@ export const search_publication_names = makeRoute({
     limit: z.number().optional().default(10),
   }),
   handler: async ({ query, limit }, { supabase }: Pick<Env, "supabase">) => {
-    // Search publications by name in record (case-insensitive partial match)
-    const { data: rawPublications, error } = await supabase
+    // Migrated pubs still have a stale pub.leaflet twin in the table; without
+    // an ORDER BY it can make the limit while the current record does not, so
+    // only the standard-site namespace is searched.
+    const { data: publications, error } = await supabase
       .from("publications")
       .select("uri, record")
+      .like("uri", "at://%/site.standard.publication/%")
       .ilike("record->>name", `%${query}%`)
       .limit(limit);
 
@@ -26,10 +28,7 @@ export const search_publication_names = makeRoute({
       throw new Error(`Failed to search publications: ${error.message}`);
     }
 
-    // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
-    const publications = deduplicateByUri(rawPublications || []);
-
-    const result = publications.map((p) => {
+    const result = (publications || []).map((p) => {
       const record = p.record as { name?: string };
       return {
         uri: p.uri,
