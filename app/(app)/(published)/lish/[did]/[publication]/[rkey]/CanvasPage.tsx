@@ -14,6 +14,7 @@ import { CanvasOverlay } from "src/canvasZoom/CanvasPageScroll";
 import { mobileViewArea, type CanvasArea } from "src/canvasZoom/mobileView";
 import { CanvasZoomControls } from "components/CanvasZoomControls";
 import { CanvasBlocks } from "./CanvasBlockContent";
+import { CanvasBackgroundPattern } from "components/Canvas";
 import { canvasContentHeight } from "src/utils/canvasBlockOrder";
 import { getQuoteCount, Interactions } from "./Interactions/Interactions";
 import { Separator } from "components/Layout";
@@ -143,7 +144,10 @@ export function CanvasContent({
           contentHeight={canvasContentHeight(props.blocks)}
           mobileArea={mobileArea}
         >
-          <CanvasBlocks {...props} preview={false} />
+          <div className="canvasBackgroundFill">
+            <CanvasBackgroundPattern pattern="grid" />
+          </div>
+          <CanvasBlocks {...props} preview={false} background={false} />
         </CanvasZoomLayer>
       </div>
       <CanvasOverlay edge="bottom">

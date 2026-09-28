@@ -133,19 +133,31 @@ export function Canvas(props: {
         `}
       >
         <CanvasZoomLayer contentHeight={size.height} mobileArea={mobileArea}>
-          <CanvasContent {...props} />
+          {!size.fixed && (
+            <CanvasBackground
+              entityID={props.entityID}
+              defaultPattern="grid"
+              className="canvasBackgroundFill"
+            />
+          )}
+          <CanvasContent {...props} background={size.fixed} />
         </CanvasZoomLayer>
       </div>
 
       <CanvasOverlay edge="bottom">
         <AddCanvasBlockButton entityID={props.entityID} canvas={size} />
-        <CanvasZoomControls className="absolute left-2 bottom-16 sm:left-4 sm:bottom-[88px] z-10 bg-bg-page rounded-md px-1 py-0.5" />
+        <CanvasZoomControls className="absolute left-2 bottom-2 sm:left-4 sm:bottom-4 z-10 bg-bg-page rounded-md px-1 py-0.5" />
       </CanvasOverlay>
     </CanvasZoomProvider>
   );
 }
 
-export function CanvasContent(props: { entityID: string; preview?: boolean }) {
+export function CanvasContent(props: {
+  entityID: string;
+  preview?: boolean;
+  /** False when the zoom layer draws the background around the content. */
+  background?: boolean;
+}) {
   let blocks = useEntity(props.entityID, "canvas/block");
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
@@ -207,12 +219,14 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
       }}
       className={`relative ${size.fixed ? `bg-bg-page ${props.preview ? "" : "shadow-sm"}` : ""}`}
     >
-      <CanvasBackground
-        entityID={props.entityID}
-        // A drawing reads as a picture inline; the grid only helps placing
+      {props.background !== false && (
+        <CanvasBackground
+          entityID={props.entityID}
+          // A drawing reads as a picture inline; the grid only helps placing
         // blocks while editing it.
-        defaultPattern={size.fixed && props.preview ? "plain" : "grid"}
-      />
+          defaultPattern={size.fixed && props.preview ? "plain" : "grid"}
+        />
+      )}
       {!props.preview && entity_set.permissions.write && (
         <MobileViewGuides entityID={props.entityID} />
       )}
@@ -689,6 +703,7 @@ function CanvasBlock(props: {
 const CanvasBackground = (props: {
   entityID: string;
   defaultPattern: "grid" | "plain";
+  className?: string;
 }) => {
   let cardBackgroundImage = useEntity(
     props.entityID,
@@ -707,7 +722,7 @@ const CanvasBackground = (props: {
     props.defaultPattern;
   return (
     <div
-      className="w-full h-full pointer-events-none"
+      className={props.className ?? "w-full h-full pointer-events-none"}
       style={{
         backgroundImage: cardBackgroundImage
           ? `url(${cardBackgroundImage.data.src}), url(${cardBackgroundImage.data.fallback})`

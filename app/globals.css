@@ -1383,6 +1383,15 @@ body > iframe[src*="js.stripe.com"] {
   transform-origin: 0 0;
   transform: scale(var(--canvas-zoom));
 }
+/* The canvas background, outside the content's paint containment so it can
+   overhang the content by what a 2400px box shows around it at the 0.25
+   zoom floor (the spacer clips the rest). The overhang is whole tiles of
+   both patterns (32px grid, 24px dots) so they stay aligned to the content. */
+.canvasBackgroundFill {
+  position: absolute;
+  inset: -9600px;
+  pointer-events: none;
+}
 /* Locked (lockViewerZoom): nothing scrolls sideways, since the spacer is as
    wide as the box and clips the layer. The layer is shifted by the offset a
    scroll to the anchored mobile area (--canvas-mobile-left, canvas px) would
