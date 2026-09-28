@@ -34,6 +34,7 @@ export function DraftList(props: {
   showPageBackground: boolean;
 }) {
   let { data: pub_data } = usePublicationData();
+  let { identity } = useIdentityData();
   let visibleDrafts = useVisibleDrafts();
   const normalizedPubRecord = useNormalizedPublicationRecord();
   if (!pub_data?.publication) return null;
@@ -42,7 +43,16 @@ export function DraftList(props: {
   if (!normalizedPubRecord) return null;
 
   if (visibleDrafts.length === 0)
-    return <DraftsEmpty publication={publication.uri} />;
+    return pub_data.documents.length > 0 ? (
+      <NoDrafts publication={publication.uri} />
+    ) : (
+      <NewPublicationWelcome
+        publication={publication.uri}
+        isOwner={
+          !!identity?.atp_did && identity.atp_did === publication.identity_did
+        }
+      />
+    );
 
   return (
     <div className="flex flex-col">
@@ -80,7 +90,29 @@ export function DraftList(props: {
   );
 }
 
-const DraftsEmpty = (props: { publication: string }) => {
+const NoDrafts = (props: { publication: string }) => {
+  return (
+    <DashboardEmptyState>
+      <h3 className="text-primary">No drafts right now!</h3>
+      <div className="text-secondary flex flex-col gap-2">
+        <p>
+          Drafts will appear here. Things you&apos;ve already published are in
+          the Published tab!
+        </p>
+      </div>
+      <div className="flex flex-col items-center justify-center gap-1 pt-2">
+        <NewDraftButton publication={props.publication}>
+          <AddTiny /> New Draft
+        </NewDraftButton>
+      </div>
+    </DashboardEmptyState>
+  );
+};
+
+const NewPublicationWelcome = (props: {
+  publication: string;
+  isOwner: boolean;
+}) => {
   return (
     <DashboardEmptyState>
       <img
@@ -88,7 +120,11 @@ const DraftsEmpty = (props: { publication: string }) => {
         alt=""
         className="w-full max-w-md h-auto mx-auto mb-2"
       />
-      <h2 className="text-primary">Welcome to your new Publication!</h2>
+      <h2 className="text-primary">
+        {props.isOwner
+          ? "Welcome to your new Publication!"
+          : "Welcome to this publication!"}
+      </h2>
       <div className="text-secondary flex flex-col gap-2">
         <p className="font-bold">
           Now that you're all set up, <br />

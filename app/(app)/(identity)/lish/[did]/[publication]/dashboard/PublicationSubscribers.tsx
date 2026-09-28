@@ -63,6 +63,15 @@ export function PublicationSubscribers(props: {
   });
 
   let hasSubscribers = props.subscribers.length > 0;
+  let activeStatuses = (
+    Object.keys(subscriberStatus) as SubscriberStatus[]
+  ).filter((k) => subscriberStatus[k]);
+  let isDefaultStatusFilter =
+    activeStatuses.length === 1 &&
+    activeStatuses[0] === "subscribed" &&
+    !membersOnly &&
+    !freeSelected &&
+    selected.length === 0;
 
   let bgStyle = props.showPageBackground
     ? { backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha)) " }
@@ -110,7 +119,14 @@ export function PublicationSubscribers(props: {
           className={`italic text-tertiary flex flex-col gap-0 text-center justify-center py-4 border rounded-md ${bgBorder}`}
           style={bgStyle}
         >
-          <p className="font-bold">No subscribers match your filters!</p>
+          {isDefaultStatusFilter ? (
+            <>
+              <p className="font-bold">No confirmed subscribers yet</p>
+              <p>Change the filter to see unconfirmed or unsubscribed readers.</p>
+            </>
+          ) : (
+            <p className="font-bold">No subscribers match your filters!</p>
+          )}
         </div>
       ) : (
         <div className={`rounded-md ${bgBorder}`} style={bgStyle}>

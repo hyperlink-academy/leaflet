@@ -33,7 +33,7 @@ export const ButtonPrimary = forwardRef<
       {...buttonProps}
       ref={ref}
       className={`
-        min-w-0 h-max
+        m-0 h-max
         ${fullWidth ? "w-full" : fullWidthOnMobile ? "w-full sm:w-max" : "w-max"}
         ${compact ? "py-0 px-1" : "px-2 py-0.5 "}
         bg-accent-1 disabled:bg-border-light
@@ -72,7 +72,7 @@ export const ButtonSecondary = forwardRef<
       {...buttonProps}
       ref={ref}
       className={`
-        min-w-0 h-max
+        m-0 h-max
         ${fullWidth ? "w-full" : fullWidthOnMobile ? "w-full sm:w-max" : "w-max"}
         ${compact ? "py-0 px-1" : "px-2 py-0.5 "}
         bg-bg-page disabled:bg-border-light
@@ -111,7 +111,7 @@ export const ButtonTertiary = forwardRef<
       {...buttonProps}
       ref={ref}
       className={`
-        min-w-0 h-max
+        m-0 h-max
         ${fullWidth ? "w-full" : fullWidthOnMobile ? "w-full sm:w-max" : "w-max"}
         ${compact ? "py-0 px-1" : "px-2 py-0.5 "}
          bg-transparent hover:bg-[var(--accent-light)]

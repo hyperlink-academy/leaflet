@@ -9,6 +9,7 @@ import {
 import useSWR from "swr";
 import { create } from "zustand";
 import { getHomeDocs } from "src/utils/homeDocsStorage";
+import { useToaster } from "components/Toast";
 
 const LOCAL_DISMISSED_KEY = "tutorialDismissed";
 
@@ -18,6 +19,7 @@ const useTutorialReplay = create<{ replaying: boolean }>(() => ({
 
 export function useTutorial() {
   let { identity, mutate } = useIdentityData();
+  let toaster = useToaster();
   let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs());
   // Logged-out users have no identity row to store the flag on.
   let { data: localDismissed, mutate: mutateLocalDismissed } = useSWR(
@@ -53,7 +55,8 @@ export function useTutorial() {
       mutateIdentityData(mutate, (draft) => {
         draft.tutorial = false;
       });
-      await setTutorialState(false);
+      let result = await setTutorialState(false);
+      if (!result.ok) toaster({ content: result.error, type: "error" });
       refreshIdentityData();
     },
   };

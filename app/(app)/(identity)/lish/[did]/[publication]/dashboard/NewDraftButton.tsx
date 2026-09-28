@@ -1,4 +1,5 @@
 "use client";
+import { useRef, useState } from "react";
 import { createPublicationDraft } from "actions/createPublicationDraft";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import {
@@ -12,13 +13,27 @@ import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { Menu, MenuItem } from "components/Menu";
 import { useRouter } from "next/navigation";
 import { useIsMobile } from "src/hooks/isMobile";
+import { DotLoader } from "components/utils/DotLoader";
 
 function useCreateDraft(publication: string) {
   let router = useRouter();
-  return async () => {
-    let newLeaflet = await createPublicationDraft(publication);
-    router.push(`/${newLeaflet}`);
+
+  let inFlight = useRef(false);
+  let [creating, setCreating] = useState(false);
+  let createDraft = async (pageType?: "doc" | "canvas") => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setCreating(true);
+    try {
+      let newLeaflet = await createPublicationDraft(publication, pageType);
+      if (newLeaflet) return router.push(`/${newLeaflet}`);
+    } catch (e) {
+      console.error(e);
+    }
+    inFlight.current = false;
+    setCreating(false);
   };
+  return { createDraft, creating };
 }
 
 export function NewDraftButton(props: {
@@ -26,26 +41,25 @@ export function NewDraftButton(props: {
   type?: "primary" | "secondary" | "tertiary";
   children: React.ReactNode;
 }) {
-  let handleOnClick = useCreateDraft(props.publication);
+  let { createDraft, creating } = useCreateDraft(props.publication);
   let Button = {
     primary: ButtonPrimary,
     secondary: ButtonSecondary,
     tertiary: ButtonTertiary,
   }[props.type ?? "primary"];
-  return <Button onClick={handleOnClick}>{props.children}</Button>;
+  return (
+    <Button disabled={creating} onClick={() => createDraft()}>
+      {creating ? <DotLoader /> : props.children}
+    </Button>
+  );
 }
 
 export function NewDraftActionButton(props: {
   publication: string;
   compact?: boolean;
 }) {
-  let router = useRouter();
   let isMobile = useIsMobile();
-
-  async function createDraft(pageType: "doc" | "canvas") {
-    let newLeaflet = await createPublicationDraft(props.publication, pageType);
-    if (newLeaflet) router.push(`/${newLeaflet}`);
-  }
+  let { createDraft } = useCreateDraft(props.publication);
 
   return (
     <Menu

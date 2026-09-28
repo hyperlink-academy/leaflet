@@ -47,11 +47,13 @@ export function NavigationButton() {
 
 export const WriterButton = () => {
   let { identity } = useIdentityData();
-  let hasDocs =
+  let hasWritten =
     (identity?.permission_token_on_homepage.length ?? 0) > 0 ||
-    (identity?.contributor_leaflets?.length ?? 0) > 0;
+    (identity?.contributor_leaflets?.length ?? 0) > 0 ||
+    (identity?.publications.length ?? 0) > 0 ||
+    (identity?.contributor_publications?.length ?? 0) > 0;
 
-  if (identity && hasDocs)
+  if (identity && hasWritten)
     return (
       <SpeedyLink eager href={"/home"} className="hover:no-underline!">
         <ButtonPrimary fullWidth className="mx-auto">

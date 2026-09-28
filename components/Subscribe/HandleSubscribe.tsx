@@ -160,7 +160,7 @@ export const SubscribeWithHandle = (props: {
         compact={props.compact}
         className={`
           subscribeButton
-          text-sm grow shrink!
+          text-sm grow shrink! min-w-0
           ${
             props.compact
               ? "gap-1! min-w-0 flex items-center rounded-r-none! hover:outline-transparent! focus:outline-transparent!"

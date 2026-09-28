@@ -38,17 +38,14 @@ export function LeafletTutorial(props: { rootPage: string }) {
     ? true
     : !identityPending && localLeaflets !== undefined;
 
+  // New docs start with a single empty text block, which doesn't count.
   let blocks = useBlocks(firstPage);
-  let titleIndex = pub
-    ? -1
-    : blocks.findIndex((b) => b.type === "text" || b.type === "heading");
-  let body = blocks.filter((_, i) => i !== titleIndex);
-  let hasBodyContent = useEditorStates(
+  let hasDocContent = useEditorStates(
     (s) =>
-      body.length > 1 ||
-      body.some(
+      blocks.length > 1 ||
+      blocks.some(
         (b) =>
-          b.type !== "text" ||
+          (b.type !== "text" && b.type !== "heading") ||
           !!s.editorStates[b.entityID]?.editor.doc.textContent,
       ),
   );
@@ -59,7 +56,7 @@ export function LeafletTutorial(props: { rootPage: string }) {
       window.localStorage.getItem(TEXT_TOOLTIP_DONE_KEY) === "true",
   );
   let textClosed = useCustomizeTutorial((s) => s.dismissed.includes("text"));
-  let finishText = pageType === "doc" && (textClosed || hasBodyContent);
+  let finishText = pageType === "doc" && (textClosed || hasDocContent);
   useEffect(() => {
     if (!finishText || textDone) return;
     window.localStorage.setItem(TEXT_TOOLTIP_DONE_KEY, "true");
@@ -67,7 +64,9 @@ export function LeafletTutorial(props: { rootPage: string }) {
   }, [finishText, textDone]);
 
   useActivateCustomizeTutorial(
-    loaded && !hasOtherDocs && (pageType === "canvas" || !textDone),
+    loaded &&
+      !hasOtherDocs &&
+      (pageType === "canvas" || (!hasDocContent && !textDone)),
     pageType === "canvas" ? ["canvas-add"] : ["text"],
     pub
       ? {}
