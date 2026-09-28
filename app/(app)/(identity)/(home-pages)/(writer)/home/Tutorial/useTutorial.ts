@@ -7,9 +7,14 @@ import {
   useIdentityData,
 } from "components/IdentityProvider";
 import useSWR from "swr";
+import { create } from "zustand";
 import { getHomeDocs } from "src/utils/homeDocsStorage";
 
 const LOCAL_DISMISSED_KEY = "tutorialDismissed";
+
+const useTutorialReplay = create<{ replaying: boolean }>(() => ({
+  replaying: false,
+}));
 
 export function useTutorial() {
   let { identity, mutate } = useIdentityData();
@@ -27,12 +32,17 @@ export function useTutorial() {
       (identity.contributor_leaflets?.length ?? 0) > 0
     : !!localLeaflets?.some((d) => !d.hidden);
 
+  let replaying = useTutorialReplay((s) => s.replaying);
+
   return {
     tutorial: identity
       ? !!identity.tutorial
       : localLeaflets !== undefined && localDismissed === false && !hasContent,
     hasContent,
+    replaying,
+    startTutorial: () => useTutorialReplay.setState({ replaying: true }),
     removeTutorial: async () => {
+      useTutorialReplay.setState({ replaying: false });
       if (!identity) {
         window.localStorage.setItem(LOCAL_DISMISSED_KEY, "true");
         mutateLocalDismissed(true, { revalidate: false });

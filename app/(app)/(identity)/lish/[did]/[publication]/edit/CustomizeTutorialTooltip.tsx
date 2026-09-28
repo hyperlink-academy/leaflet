@@ -74,9 +74,6 @@ export const useCustomizeTutorial = create<{
     ),
 }));
 
-// TEMP: forces the tooltips on for testing. Remove before shipping.
-const FORCE_TUTORIAL = true;
-
 export function useActivateCustomizeTutorial(
   enabled: boolean,
   targets: CustomizeTutorialTarget[] = PUBLICATION_TARGETS,
@@ -84,11 +81,10 @@ export function useActivateCustomizeTutorial(
 ) {
   let setActive = useCustomizeTutorial((s) => s.setActive);
   let setContentFocused = useCustomizeTutorial((s) => s.setContentFocused);
-  let on = enabled || FORCE_TUTORIAL;
   let targetsKey = targets.join(",");
   let descriptionsKey = JSON.stringify(descriptions);
   useEffect(() => {
-    if (!on) return;
+    if (!enabled) return;
     setActive(
       true,
       targetsKey.split(",") as CustomizeTutorialTarget[],
@@ -118,7 +114,7 @@ export function useActivateCustomizeTutorial(
       window.removeEventListener("pointerdown", onPointerDown, true);
       setActive(false);
     };
-  }, [on, targetsKey, descriptionsKey, setActive, setContentFocused]);
+  }, [enabled, targetsKey, descriptionsKey, setActive, setContentFocused]);
 }
 
 type TooltipPlacement = {

@@ -83,7 +83,7 @@ export const HomeContent = (props: {
   );
 
   let { identity } = useIdentityData();
-  let { tutorial, hasContent } = useTutorial();
+  let { tutorial, hasContent, replaying } = useTutorial();
 
   let hasPubs =
     (identity?.publications.length ?? 0) > 0 ||
@@ -99,7 +99,7 @@ export const HomeContent = (props: {
 
   // The takeover owns the whole content area — no header, no search, no
   // create button — leaving only the surrounding shell's navigation.
-  if (tutorial && !hasContent)
+  if ((tutorial && !hasContent) || replaying)
     return (
       <DashboardPageLayout
         scrollKey="dashboard-home"

@@ -98,7 +98,7 @@ const Home = (props: StepProps) => {
           <h2>This is your Home!</h2>
           <div>
             Once you’ve started writing, all your drafts, documents, canvases,
-            and notes will end up here for easy acesss.
+            and notes will end up here for easy access.
           </div>
         </div>
         <div className="flex flex-col gap-2">
