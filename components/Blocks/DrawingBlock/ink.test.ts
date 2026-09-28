@@ -5,8 +5,10 @@ import {
   canvasToDrawing,
   drawingToCanvas,
   inkColor,
+  inkSamples,
   inkStrokePath,
   refitLayout,
+  simplifySamples,
   strokeBounds,
   strokeHit,
 } from "./ink";
@@ -70,6 +72,31 @@ describe("strokes", () => {
 
   it("renders a closed outline path", () => {
     expect(inkStrokePath(stroke)).toMatch(/^M.*Z$/);
+  });
+
+  it("resamples evenly and smooths pressure jitter", () => {
+    let points: number[] = [];
+    for (let i = 0; i <= 200; i++) points.push(i * 0.3, 0, i % 4 ? 0.2 : 0.8);
+    let samples = inkSamples(points, 8, true);
+    for (let i = 1; i < samples.length - 1; i++)
+      expect(samples[i][0] - samples[i - 1][0]).toBeCloseTo(2);
+    let middle = samples.slice(8, -8).map((s) => s[2]);
+    expect(Math.max(...middle) - Math.min(...middle)).toBeLessThan(0.05);
+  });
+
+  it("simplifies straight runs but keeps corners and pressure ramps", () => {
+    let line = inkSamples([0, 0, 0.5, 100, 0, 0.5], 4, true);
+    expect(simplifySamples(line, 0.5, 0.03)).toHaveLength(2);
+    let corner = inkSamples([0, 0, 0.5, 50, 0, 0.5, 50, 50, 0.5], 4, true);
+    expect(simplifySamples(corner, 0.5, 0.03).map((s) => [s[0], s[1]])).toEqual(
+      [
+        [0, 0],
+        [50, 0],
+        [50, 50],
+      ],
+    );
+    let ramp = inkSamples([0, 0, 0.1, 50, 0, 0.9, 100, 0, 0.1], 4, false);
+    expect(simplifySamples(ramp, 0.5, 0.03)).toHaveLength(3);
   });
 
   it("only passes through theme tokens and hex colors", () => {

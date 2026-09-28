@@ -8,6 +8,7 @@ import {
   isCanvasPinching,
   useCanvasZoom,
 } from "src/canvasZoom/CanvasZoomProvider";
+import { isIOS } from "src/utils/isDevice";
 import { CANVAS_DRAG_STACK_ORDER } from "src/utils/canvasBlockOrder";
 import {
   INK_PRESSURE_SCALE,
@@ -67,6 +68,26 @@ export function CanvasInkLayer(props: { pageID: string }) {
   );
   let pendingKey = useRef(0);
 
+  // Fingers pan once a stylus has been seen, so touch-action allows panning
+  // for every touch; iOS would then scroll under the pencil too. Cancelling
+  // the stylus's own touch events keeps it drawing.
+  useEffect(() => {
+    let el = ref.current;
+    if (!el) return;
+    let onTouch = (e: TouchEvent) => {
+      // touchType is WebKit-only and missing from the DOM types.
+      for (let t of Array.from(e.changedTouches))
+        if ((t as Touch & { touchType?: string }).touchType === "stylus")
+          return e.preventDefault();
+    };
+    el.addEventListener("touchstart", onTouch, { passive: false });
+    el.addEventListener("touchmove", onTouch, { passive: false });
+    return () => {
+      el.removeEventListener("touchstart", onTouch);
+      el.removeEventListener("touchmove", onTouch);
+    };
+  }, []);
+
   useEffect(() => {
     let onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") stopInk(rep, undoManager);
@@ -99,7 +120,9 @@ export function CanvasInkLayer(props: { pageID: string }) {
   };
 
   let addPoints = (g: Gesture, e: React.PointerEvent) => {
-    let events = e.nativeEvent.getCoalescedEvents?.() || [];
+    // iOS coalesced pen events carry unreliable pressure (tldraw skips them
+    // there too), which beads the line.
+    let events = isIOS() ? [] : e.nativeEvent.getCoalescedEvents?.() || [];
     if (events.length === 0) events = [e.nativeEvent];
     for (let ev of events) {
       let p = toCanvas(ev);
@@ -107,8 +130,14 @@ export function CanvasInkLayer(props: { pageID: string }) {
         eraseAt(g, p);
         continue;
       }
+      // A pen sample can report no pressure mid-stroke; reuse the last one
+      // rather than jumping to the default.
       let pressure =
-        ev.pointerType === "pen" && ev.pressure > 0 ? ev.pressure : 0.5;
+        ev.pointerType !== "pen"
+          ? 0.5
+          : ev.pressure > 0
+            ? ev.pressure
+            : g.points[g.points.length - 1] ?? 0.5;
       g.points.push(p.x, p.y, pressure);
     }
     if (!g.erase) setLive(liveStroke(g));

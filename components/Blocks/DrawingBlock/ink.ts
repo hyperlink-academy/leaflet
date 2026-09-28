@@ -40,11 +40,112 @@ export function inkColor(color: string) {
   return "currentColor";
 }
 
+type Sample = [x: number, y: number, pressure: number];
+
+// Samples per stroke diameter when resampling.
+const SAMPLES_PER_SIZE = 4;
+// Samples either side averaged into each sample's pressure.
+const PRESSURE_WINDOW = 8;
+
+// Resamples x, y, pressure (0-1) triples to even spacing along the stroke
+// and smooths their pressure. perfect-freehand's streamline and thinning are
+// per input point, so without this how a stroke renders depends on how
+// densely it was sampled: a pencil's pressure jitters between samples, which
+// thinning turns into beads along the line, and sparse stored points would
+// have their corners cut.
+export function inkSamples(
+  points: readonly number[],
+  size: number,
+  smoothPressure: boolean,
+): Sample[] {
+  let spacing = size / SAMPLES_PER_SIZE;
+  let out: Sample[] = [];
+  if (points.length < 3) return out;
+  out.push([points[0], points[1], points[2]]);
+  // Arc length walked past the last emitted sample.
+  let carry = 0;
+  for (let i = 3; i + 2 < points.length; i += 3) {
+    let ax = points[i - 3],
+      ay = points[i - 2],
+      ap = points[i - 1];
+    let bx = points[i],
+      by = points[i + 1],
+      bp = points[i + 2];
+    let len = Math.hypot(bx - ax, by - ay);
+    let d = spacing - carry;
+    for (; d <= len; d += spacing) {
+      let t = d / len;
+      out.push([ax + (bx - ax) * t, ay + (by - ay) * t, ap + (bp - ap) * t]);
+    }
+    carry = len - (d - spacing);
+  }
+  let n = points.length;
+  let end: Sample = [points[n - 3], points[n - 2], points[n - 1]];
+  let tail = out[out.length - 1];
+  if (tail[0] !== end[0] || tail[1] !== end[1]) out.push(end);
+  if (!smoothPressure) return out;
+  let sums = [0];
+  for (let s of out) sums.push(sums[sums.length - 1] + s[2]);
+  return out.map(([x, y], i) => {
+    let lo = Math.max(0, i - PRESSURE_WINDOW),
+      hi = Math.min(out.length, i + PRESSURE_WINDOW + 1);
+    return [x, y, (sums[hi] - sums[lo]) / (hi - lo)];
+  });
+}
+
+// Drops samples the stroke still passes within `tolerance` of, and whose
+// pressure a straight ramp between the kept neighbours matches within
+// `pressureTolerance` (Ramer-Douglas-Peucker over both). inkSamples puts the
+// density back when rendering.
+export function simplifySamples(
+  samples: Sample[],
+  tolerance: number,
+  pressureTolerance: number,
+): Sample[] {
+  if (samples.length < 3) return samples;
+  let keep = new Uint8Array(samples.length);
+  keep[0] = keep[samples.length - 1] = 1;
+  let stack: [number, number][] = [[0, samples.length - 1]];
+  while (stack.length) {
+    let [first, last] = stack.pop()!;
+    let [ax, ay, ap] = samples[first];
+    let [bx, by, bp] = samples[last];
+    let dx = bx - ax,
+      dy = by - ay;
+    let lengthSq = dx * dx + dy * dy;
+    let worst = 1,
+      index = -1;
+    for (let i = first + 1; i < last; i++) {
+      let [x, y, p] = samples[i];
+      let t =
+        lengthSq === 0
+          ? 0
+          : Math.max(
+              0,
+              Math.min(1, ((x - ax) * dx + (y - ay) * dy) / lengthSq),
+            );
+      let error = Math.max(
+        Math.hypot(x - (ax + t * dx), y - (ay + t * dy)) / tolerance,
+        Math.abs(p - (ap + t * (bp - ap))) / pressureTolerance,
+      );
+      if (error > worst) {
+        worst = error;
+        index = i;
+      }
+    }
+    if (index < 0) continue;
+    keep[index] = 1;
+    stack.push([first, index], [index, last]);
+  }
+  return samples.filter((_, i) => keep[i]);
+}
+
 export function inkStrokePath(stroke: InkStroke, last = true) {
-  let input: [number, number, number][] = [];
   let p = stroke.points;
+  let raw: number[] = [];
   for (let i = 0; i + 2 < p.length; i += 3)
-    input.push([p[i], p[i + 1], p[i + 2] / INK_PRESSURE_SCALE]);
+    raw.push(p[i], p[i + 1], p[i + 2] / INK_PRESSURE_SCALE);
+  let input = inkSamples(raw, stroke.size, !stroke.simulatePressure);
   let outline = getStroke(input, {
     size: stroke.size,
     thinning: 0.6,

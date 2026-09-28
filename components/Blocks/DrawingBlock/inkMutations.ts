@@ -12,8 +12,10 @@ import {
   InkStroke,
   canvasToDrawing,
   drawingScale,
+  inkSamples,
   refitLayout,
   sameBox,
+  simplifySamples,
   strokeBounds,
   unionBounds,
 } from "./ink";
@@ -55,21 +57,39 @@ export async function readDrawing(
   });
 }
 
+// Canvas px the stored points may stray from the drawn stroke.
+const SIMPLIFY_TOLERANCE_PX = 0.25;
+const SIMPLIFY_PRESSURE_TOLERANCE = 0.03;
+
 // Canvas px points (x, y, pressure 0-1 triples) in, drawing-space stroke out.
 function toStroke(
   canvasPoints: number[],
   toDrawing: (p: { x: number; y: number }) => { x: number; y: number },
-  args: { color: string; size: number; simulatePressure: boolean },
+  args: {
+    color: string;
+    // Drawing units.
+    size: number;
+    unitsPerPx: number;
+    simulatePressure: boolean;
+  },
 ): InkStroke & { points: number[] } {
-  let points: number[] = [];
+  let drawn: number[] = [];
   for (let i = 0; i + 2 < canvasPoints.length; i += 3) {
     let d = toDrawing({ x: canvasPoints[i], y: canvasPoints[i + 1] });
-    let x = Math.round(d.x),
-      y = Math.round(d.y);
+    drawn.push(d.x, d.y, canvasPoints[i + 2]);
+  }
+  let samples = simplifySamples(
+    inkSamples(drawn, args.size, !args.simulatePressure),
+    SIMPLIFY_TOLERANCE_PX * args.unitsPerPx,
+    SIMPLIFY_PRESSURE_TOLERANCE,
+  );
+  let points: number[] = [];
+  for (let [dx, dy, pressure] of samples) {
+    let x = Math.round(dx),
+      y = Math.round(dy);
     let n = points.length;
-    // Rounding folds near points together; repeats only bloat the record.
     if (n >= 3 && points[n - 3] === x && points[n - 2] === y) continue;
-    points.push(x, y, Math.round(canvasPoints[i + 2] * INK_PRESSURE_SCALE));
+    points.push(x, y, Math.round(pressure * INK_PRESSURE_SCALE));
   }
   return {
     points,
@@ -130,7 +150,11 @@ export async function commitStroke(
       let stroke = toStroke(
         args.canvasPoints,
         (p) => ({ x: p.x * INK_UNITS_PER_PX, y: p.y * INK_UNITS_PER_PX }),
-        { ...args, size: args.size * INK_UNITS_PER_PX },
+        {
+          ...args,
+          size: args.size * INK_UNITS_PER_PX,
+          unitsPerPx: INK_UNITS_PER_PX,
+        },
       );
       let viewBox = strokeBounds(stroke);
       if (!viewBox) return;
@@ -167,7 +191,11 @@ export async function commitStroke(
     let stroke = toStroke(
       args.canvasPoints,
       (p) => canvasToDrawing(layout, p),
-      { ...args, size: args.size / drawingScale(layout) },
+      {
+        ...args,
+        size: args.size / drawingScale(layout),
+        unitsPerPx: 1 / drawingScale(layout),
+      },
     );
     let bounds = strokeBounds(stroke);
     if (!bounds) return;
