@@ -1,11 +1,19 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { useIdentityData } from "components/IdentityProvider";
 import { useEntity, useReplicache } from "src/replicache";
 import { getHomeDocs } from "src/utils/homeDocsStorage";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
-import { useActivateCustomizeTutorial } from "app/(app)/(identity)/lish/[did]/[publication]/edit/CustomizeTutorialTooltip";
+import { useBlocks } from "src/hooks/queries/useBlocks";
+import { useEditorStates } from "src/state/useEditorState";
+import {
+  useActivateCustomizeTutorial,
+  useCustomizeTutorial,
+} from "app/(app)/(identity)/lish/[did]/[publication]/edit/CustomizeTutorialTooltip";
+
+const TEXT_TOOLTIP_DONE_KEY = "leafletTextTutorialDone";
 
 export function LeafletTutorial(props: { rootPage: string }) {
   let { permission_token } = useReplicache();
@@ -30,8 +38,36 @@ export function LeafletTutorial(props: { rootPage: string }) {
     ? true
     : !identityPending && localLeaflets !== undefined;
 
+  let blocks = useBlocks(firstPage);
+  let titleIndex = pub
+    ? -1
+    : blocks.findIndex((b) => b.type === "text" || b.type === "heading");
+  let body = blocks.filter((_, i) => i !== titleIndex);
+  let hasBodyContent = useEditorStates(
+    (s) =>
+      body.length > 1 ||
+      body.some(
+        (b) =>
+          b.type !== "text" ||
+          !!s.editorStates[b.entityID]?.editor.doc.textContent,
+      ),
+  );
+
+  let [textDone, setTextDone] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.localStorage.getItem(TEXT_TOOLTIP_DONE_KEY) === "true",
+  );
+  let textClosed = useCustomizeTutorial((s) => s.dismissed.includes("text"));
+  let finishText = pageType === "doc" && (textClosed || hasBodyContent);
+  useEffect(() => {
+    if (!finishText || textDone) return;
+    window.localStorage.setItem(TEXT_TOOLTIP_DONE_KEY, "true");
+    setTextDone(true);
+  }, [finishText, textDone]);
+
   useActivateCustomizeTutorial(
-    loaded && !hasOtherDocs,
+    loaded && !hasOtherDocs && (pageType === "canvas" || !textDone),
     pageType === "canvas" ? ["canvas-add"] : ["text"],
     pub
       ? {}
