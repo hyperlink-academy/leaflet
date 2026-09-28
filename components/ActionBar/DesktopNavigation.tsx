@@ -2,9 +2,8 @@
 import { usePathname } from "next/navigation";
 import { useIdentityData } from "components/IdentityProvider";
 import {
+  NavigationButton,
   NotificationButton,
-  ReaderButton,
-  WriterButton,
   useIsOnWriterPage,
 } from "./NavigationButtons";
 import { PublicationButtons } from "./Publications";
@@ -25,6 +24,7 @@ import { BlueskySmall } from "components/Icons/BlueskySmall";
 import { Separator } from "components/Layout";
 import { LeafletTiny } from "components/Icons/LeafletTiny";
 import { ButtonPrimary } from "components/Buttons";
+import { useTutorialNavTour } from "app/(app)/(identity)/(home-pages)/(writer)/home/Tutorial/TutorialNavTooltip";
 
 type NavigationProps = {
   pageTitle: React.ReactNode;
@@ -106,41 +106,28 @@ export const NavigationContent = (props: NavigationProps) => {
       )}
       {onWriterPage && <PublicationButtons />}
       <div className="flex-1" />
-      <WriterButton />
-      <ReaderButton
-        subs={
-          identity?.publication_subscriptions?.length !== 0 &&
-          identity?.publication_subscriptions?.length !== undefined
-        }
-      />
       {identity?.atp_did && <NotificationButton />}
       <div className="flex gap-1 items-center">
-        {identity ? (
-          <>
-            <div className="grow min-w-0">
-              <ProfileButton />
-            </div>
-          </>
-        ) : (
-          <div className="grow min-w-0">
+        <div className="grow min-w-0">
+          {identity ? (
+            <ProfileButton />
+          ) : (
             <LoginModal
               asChild
               trigger={
                 <ActionButton
-                  onClick={() => {
-                    console.log("hello");
-                  }}
                   className="w-full! grow"
-                  secondary
                   icon={<AccountSmall />}
                   label="Log In/Sign Up"
                 />
               }
             />
-          </div>
-        )}
+          )}
+        </div>
         <HelpPopover />
       </div>
+      <hr className="my-2" />
+      <NavigationButton />
     </>
   );
 };
@@ -246,8 +233,14 @@ export const PageTitle = (props: {
 };
 
 export const DesktopNavigation = (props: NavigationProps) => {
+  let blurred = useTutorialNavTour((s) => s.blurred);
   return (
-    <Sidebar alwaysOpen>
+    <Sidebar
+      alwaysOpen
+      className={`transition-[filter] duration-300 ${
+        blurred ? "blur-[8px] pointer-events-none" : ""
+      }`}
+    >
       <NavigationContent {...props} />
     </Sidebar>
   );

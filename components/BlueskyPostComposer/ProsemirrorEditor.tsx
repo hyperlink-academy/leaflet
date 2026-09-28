@@ -109,6 +109,7 @@ export function ProsemirrorEditor(props: {
   // (scoped to the document/publication being published) and restored on reload.
   persistKey?: string;
   onCharCountChange?: (count: number) => void;
+  autoFocus?: boolean;
 }) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -288,6 +289,7 @@ export function ProsemirrorEditor(props: {
     );
 
     viewRef.current = view;
+    if (props.autoFocus) view.focus();
 
     return () => {
       view.destroy();
@@ -307,7 +309,7 @@ export function ProsemirrorEditor(props: {
       />
       {editorState?.doc.textContent.length === 0 && (
         <div className="italic text-tertiary absolute top-0 left-0 pointer-events-none">
-          post something...
+          write a post…
         </div>
       )}
       <div

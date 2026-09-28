@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { v7 } from "uuid";
-import { useIsBlockSelected } from "src/useUIState";
+import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps, BlockLayout } from "./Block";
 import {
@@ -8,7 +8,10 @@ import {
   useNormalizedPublicationRecord,
 } from "app/(app)/(identity)/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { PaginatedPublicationPostsList } from "app/(app)/(published)/lish/[did]/[publication]/PaginatedPublicationPostsList";
-import { ChapterShelf } from "app/(app)/(published)/lish/[did]/[publication]/PublicationPostsChapterList";
+import {
+  ChapterGrid,
+  ChapterShelf,
+} from "app/(app)/(published)/lish/[did]/[publication]/PublicationPostsChapterList";
 import { buildChapterCards } from "src/utils/chapterGrouping";
 import {
   buildPostsListIndex,
@@ -27,9 +30,13 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 import { EmptyState } from "components/EmptyState";
 import { ShortcutKey } from "components/Layout";
 import { HelpSmall } from "components/Icons/HelpSmall";
+import { CustomizeTutorialTooltip } from "app/(app)/(identity)/lish/[did]/[publication]/edit/CustomizeTutorialTooltip";
 
 export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
   let isSelected = useIsBlockSelected(props.entityID);
+  let isFocused = useUIState(
+    (s) => s.focusedEntity?.entityID === props.entityID,
+  );
 
   if (props.preview) {
     return (
@@ -49,7 +56,15 @@ export const PostsListBlock = (props: BlockProps & { preview?: boolean }) => {
       // covers hover an outline that sits outside their border box — clipping
       // here would shave it off the grid's outer cards.
       className="border-none! p-0! rounded-none! overflow-visible!"
-      extraOptions={<PostsListSettingsButton entityID={props.entityID} />}
+      extraOptions={
+        <CustomizeTutorialTooltip
+          target="posts-list"
+          className="flex"
+          blockFocused={isFocused}
+        >
+          <PostsListSettingsButton entityID={props.entityID} />
+        </CustomizeTutorialTooltip>
+      }
     >
       <PostsListBlockContent entityID={props.entityID} />
     </BlockLayout>
@@ -140,9 +155,17 @@ function PostsListBlockContent({ entityID }: { entityID: string }) {
 
   if (!listData || listData.posts.length === 0)
     return (
-      <EmptyState container="none">
-        You haven't published any posts yet! When you do, they'll show here.
-      </EmptyState>
+      <div className="flex flex-col gap-2">
+        <EmptyState container="light" className="px-2 py-1! mb-1">
+          You haven't published any posts yet! When you do, they'll show here.
+        </EmptyState>
+        <PostsListEmptyPlaceholder
+          view={view}
+          highlightFirst={highlightFirst}
+          count={Math.min(3, limit && limit > 0 ? limit : 3)}
+          pageWidth={pageWidth ?? publicationRecord?.theme?.pageWidth}
+        />
+      </div>
     );
 
   // The editor lays the list out rather than reading it, so both branches
@@ -198,6 +221,119 @@ function PostsListPlaceholder() {
   );
 }
 
+const placeholderBar = "bg-border-light rounded-[2px]";
+const placeholderImage = "bg-border bg-cover bg-center rounded-md";
+const placeholderImageStyle = {
+  backgroundImage: "url(/imagePlaceholder.png)",
+  backgroundBlendMode: "hard-light",
+};
+
+function PostsListEmptyPlaceholder(props: {
+  view: PostsListView;
+  highlightFirst: boolean;
+  count: number;
+  pageWidth?: number;
+}) {
+  if (props.view === "chapter") {
+    return (
+      <div className="w-full" aria-hidden>
+        {props.highlightFirst && (
+          <>
+            <div className="text-sm uppercase font-bold text-tertiary pb-1">
+              Latest
+            </div>
+            <div className="block-border px-3">
+              <PlaceholderPostMedium />
+            </div>
+            <hr className="border-border-light my-4" />
+          </>
+        )}
+        <ChapterGrid pageWidth={props.pageWidth}>
+          {Array.from({ length: 3 }, (_, i) => (
+            <PlaceholderPostChapter key={i} />
+          ))}
+        </ChapterGrid>
+      </div>
+    );
+  }
+
+  let widePage = (props.pageWidth ?? 0) >= 768;
+  return (
+    <div className="w-full flex flex-col gap-2 py-2" aria-hidden>
+      {Array.from({ length: props.count }, (_, i) => (
+        <Fragment key={i}>
+          {props.highlightFirst && i === 0 ? (
+            <PlaceholderPostLarge widePage={widePage} />
+          ) : props.view === "small" ? (
+            <PlaceholderPostSmall />
+          ) : (
+            <PlaceholderPostMedium />
+          )}
+          <hr className="last:hidden border-border-light" />
+        </Fragment>
+      ))}
+    </div>
+  );
+}
+
+function PlaceholderPostSmall() {
+  return (
+    <div className="flex flex-col gap-2 py-2">
+      <div className={`h-5 w-2/3 ${placeholderBar}`} />
+      <div className={`h-3 w-24 ${placeholderBar}`} />
+    </div>
+  );
+}
+
+function PlaceholderPostLarge(props: { widePage: boolean }) {
+  return (
+    <div
+      className={`flex flex-col w-full ${props.widePage ? "sm:flex-row sm:gap-4" : ""}`}
+    >
+      <div
+        style={placeholderImageStyle}
+        className={`shrink-0 ${placeholderImage} ${props.widePage ? "sm:h-[254px] aspect-[3/2]" : "w-full aspect-[1.91/1]"}`}
+      />
+      <div className="flex flex-col gap-2 grow py-2">
+        <div className={`h-6 w-3/4 ${placeholderBar}`} />
+        <div className={`h-4 w-full ${placeholderBar}`} />
+        <div className={`h-4 w-5/6 ${placeholderBar}`} />
+        <div className={`h-3 w-24 mt-2 ${placeholderBar}`} />
+      </div>
+    </div>
+  );
+}
+
+function PlaceholderPostChapter() {
+  return (
+    <div className="flex flex-col gap-2 min-w-0">
+      <div
+        className={`w-full aspect-2/3 ${placeholderImage}`}
+        style={placeholderImageStyle}
+      />
+      <div className={`h-4 w-3/4 ${placeholderBar}`} />
+      <div className={`h-3 w-12 ${placeholderBar}`} />
+    </div>
+  );
+}
+
+function PlaceholderPostMedium() {
+  return (
+    <div className="flex w-full items-start">
+      <div className="flex flex-col gap-2 grow min-w-0 py-2 pr-3">
+        <div className={`h-5 w-2/3 ${placeholderBar}`} />
+        <div className={`h-4 w-full ${placeholderBar}`} />
+        <div className={`h-4 w-4/5 ${placeholderBar}`} />
+        <div className={`h-3 w-24 mt-2 ${placeholderBar}`} />
+      </div>
+      <div
+        className={`shrink-0 w-24 sm:w-36 aspect-square my-2 ${placeholderImage}`}
+        style={placeholderImageStyle}
+      />
+    </div>
+  );
+}
+
 function PostsListSettingsButton(props: { entityID: string }) {
   let { rep, undoManager } = useReplicache();
   let { data } = usePublicationData();
@@ -212,8 +348,7 @@ function PostsListSettingsButton(props: { entityID: string }) {
   let highlightFirst = highlightFirstFact?.data.value ?? false;
 
   let showPageCount =
-    useEntity(props.entityID, "posts-list/show-page-count")?.data.value ??
-    true;
+    useEntity(props.entityID, "posts-list/show-page-count")?.data.value ?? true;
 
   let filterTagFacts = useEntity(props.entityID, "posts-list/filter-tag");
   let selectedTags = useMemo(
@@ -285,6 +420,7 @@ function PostsListSettingsButton(props: { entityID: string }) {
             { value: "chapter", Icon: ChapterIcon },
           ]}
           value={view}
+          halfWidthOnMobile
           onSelect={(value) => {
             if (!rep) return;
             rep.mutate.assertFact({
@@ -295,12 +431,13 @@ function PostsListSettingsButton(props: { entityID: string }) {
           }}
         >
           {/* A sibling of the layout options rather than a child: the chapter
-                option is itself a button, and the row's last column is the
-                chapter icon, so its bottom right corner is this row's. */}
+                option is itself a button. On desktop it's the row's last
+                column, so its bottom right corner is the row's; on mobile it
+                wraps to the first column of the second row. */}
           {view === "chapter" && (
             <button
               type="button"
-              className="absolute -bottom-3 right-1 bg-accent-1 text-accent-2 rounded-full  "
+              className="absolute -bottom-3 right-[calc(50%+0.5rem)] sm:right-1 bg-accent-1 text-accent-2 rounded-full  "
               aria-expanded={chapterHelpOpen}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => setChapterHelpOpen(!chapterHelpOpen)}
@@ -546,7 +683,7 @@ const SmallIcon = ({ selected }: { selected: boolean }) => {
       className={`flex flex-col w-full overflow-hidden opaque-container border-tertiary! divide-y divide-border-light ${selected && "border-accent-contrast!"}`}
     >
       {[0, 1, 2].map((i) => (
-        <div key={i} className="flex flex-col gap-1 p-2">
+        <div key={i} className="flex flex-col gap-1 p-1.5 sm:p-2">
           {PlaceholderText("lg")}
           <div className="flex justify-between mt-1 w-full">
             {PlaceholderText("sm", "60%")}
@@ -560,7 +697,7 @@ const SmallIcon = ({ selected }: { selected: boolean }) => {
 const ChapterIcon = ({ selected }: { selected: boolean }) => {
   return (
     <div
-      className={`grid grid-cols-2 gap-1.5 w-full overflow-hidden opaque-container border-tertiary! p-2 ${selected && "border-accent-contrast!"}`}
+      className={`grid grid-cols-2 gap-1.5 w-full overflow-hidden opaque-container border-tertiary! py-2 px-4 sm:px-2 ${selected && "border-accent-contrast!"}`}
     >
       {[0, 1].map((i) => (
         <div key={i} className="flex flex-col gap-1">
@@ -585,16 +722,16 @@ const MedIcon = ({ selected }: { selected: boolean }) => {
     >
       {[0, 1].map((i) => (
         <div key={i} className="flex w-full">
-          <div className="flex flex-col gap-1 p-2 grow min-w-0">
+          <div className="flex flex-col gap-1 p-1.5 sm:p-2 grow min-w-0">
             {PlaceholderText("lg")}
             {PlaceholderText("md")}
             {PlaceholderText("md", "80%")}
-            <div className="flex justify-between mt-2 w-full">
+            <div className="flex justify-between mt-1 sm:mt-2 w-full">
               {PlaceholderText("sm", "60%")}
             </div>
           </div>
           <div
-            className="aspect-square h-[68px] bg-border border-l border-border shrink-0 bg-cover bg-center"
+            className="aspect-square h-[44px] sm:h-[68px] bg-border border-l border-border shrink-0 bg-cover bg-center"
             style={{
               backgroundImage: "url(/imagePlaceholder.png)",
               backgroundBlendMode: "hard-light",

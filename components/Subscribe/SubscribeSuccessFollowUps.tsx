@@ -28,16 +28,12 @@ import { viewerPostLangs } from "src/utils/bskyPostLangs";
 import { CheckTiny } from "components/Icons/CheckTiny";
 
 export function SharePublicationComposer(props: {
-  publication: StandardSitePublicationData;
+  publication: Pick<StandardSitePublicationData, "uri" | "record">;
   onPosted: () => void;
 }) {
   let { identity } = useIdentityData();
   let { editorStateRef, charCount, setCharCount, posting, post } =
     useBskyPostSubmit({ onPosted: props.onPosted });
-
-  // The record's url is the publication's canonical public address (custom
-  // domain included), which is what a shared post should point at even when
-  // the viewer subscribed from a dev host or a mirrored page.
   let url = props.publication.record.url;
   let screenshot = usePrefetchedScreenshot(url, true);
 
@@ -65,6 +61,8 @@ export function SharePublicationComposer(props: {
         editorStateRef={editorStateRef}
         charCount={charCount}
         onCharCountChange={setCharCount}
+        autoFocus
+        hideCharacterCounter
         embed={bskyPostEmbed({
           url,
           title: props.publication.record.name,

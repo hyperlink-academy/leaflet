@@ -716,6 +716,7 @@ export type Database = {
           id: string
           interface_state: Json | null
           metadata: Json | null
+          tutorial: boolean
         }
         Insert: {
           atp_did?: string | null
@@ -725,6 +726,7 @@ export type Database = {
           id?: string
           interface_state?: Json | null
           metadata?: Json | null
+          tutorial?: boolean
         }
         Update: {
           atp_did?: string | null
@@ -734,6 +736,7 @@ export type Database = {
           id?: string
           interface_state?: Json | null
           metadata?: Json | null
+          tutorial?: boolean
         }
         Relationships: [
           {

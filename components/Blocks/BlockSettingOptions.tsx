@@ -12,10 +12,14 @@ export function BlockSettingOptions<T extends string>(props: {
   options: BlockSettingOption<T>[];
   value: T;
   onSelect: (value: T) => void;
+  // Lay the options out two to a row on mobile instead of stacking them.
+  halfWidthOnMobile?: boolean;
   children?: ReactNode;
 }) {
   return (
-    <div className="relative flex sm:flex-row flex-col sm:gap-1 gap-2 w-full items-stretch">
+    <div
+      className={`relative w-full items-stretch sm:flex sm:flex-row sm:gap-1 ${props.halfWidthOnMobile ? "grid grid-cols-2 gap-2" : "flex flex-col gap-2"}`}
+    >
       {props.options.map((option) => {
         let selected = props.value === option.value;
         return (

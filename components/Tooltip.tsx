@@ -14,6 +14,7 @@ export const Tooltip = (props: {
   background?: string;
   border?: string;
   className?: string;
+  style?: React.CSSProperties;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   asChild?: boolean;
@@ -24,7 +25,7 @@ export const Tooltip = (props: {
       delayDuration={props.delayDuration ?? 600}
       skipDelayDuration={props.skipDelayDuration ?? 300}
     >
-      <RadixTooltip.Root onOpenChange={props.onOpenChange}>
+      <RadixTooltip.Root open={props.open} onOpenChange={props.onOpenChange}>
         <RadixTooltip.Trigger disabled={props.disabled} asChild={props.asChild}>
           {props.trigger}
         </RadixTooltip.Trigger>
@@ -42,6 +43,7 @@ export const Tooltip = (props: {
           overflow-y-scroll no-scrollbar
           ${props.className}
         `}
+              style={props.style}
               side={props.side}
               align={props.align ? props.align : "center"}
               sideOffset={4}

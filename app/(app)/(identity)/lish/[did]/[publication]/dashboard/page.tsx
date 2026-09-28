@@ -10,7 +10,7 @@ export default async function DashboardIndex(props: {
     const params = await props.params;
     const base = `/lish/${params.did}/${params.publication}/dashboard`;
     if (tab === "Posts") redirect(`${base}/posts`);
-    if (tab === "Subs") redirect(`${base}/subs`);
+    if (tab === "Subs" || tab === "Subscribers") redirect(`${base}/subs`);
     if (tab === "Analytics") redirect(`${base}/analytics`);
     if (tab === "Settings") redirect(`${base}/settings`);
   }

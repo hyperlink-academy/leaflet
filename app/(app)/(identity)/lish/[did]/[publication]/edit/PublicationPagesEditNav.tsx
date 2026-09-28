@@ -27,6 +27,7 @@ import { v7 } from "uuid";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { InputWithLabel } from "components/Input";
 import { Popover } from "components/Popover";
+import { CustomizeTutorialTooltip } from "./CustomizeTutorialTooltip";
 import { EditTiny } from "components/Icons/EditTiny";
 import { useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
@@ -147,7 +148,7 @@ export function PublicationPagesEditNav(props: {
   return (
     <nav
       ref={navRef}
-      className={`publicationPagesNav editorScrollStickyHeader  z-10 shrink-0 sticky  mx-1 sm:mx-2 ${cardBorderHidden ? "pt-3 -top-6 bg-bg-page" : "top-2 rounded-md"}`}
+      className={`publicationPagesNav editorScrollStickyHeader  z-10 shrink-0 sticky  mx-1 sm:mx-2 ${cardBorderHidden ? "pt-3 -top-3 bg-bg-page" : "top-2 rounded-md"}`}
     >
       {!cardBorderHidden && (
         <div
@@ -188,13 +189,15 @@ export function PublicationPagesEditNav(props: {
               ))}
             </SortableContext>
           </DndContext>
-          <AddPageButton
-            entries={entries}
-            publicationUrl={props.publicationUrl}
-            onCreated={(entity, external) => {
-              if (!external) props.onSelectPage(entity);
-            }}
-          />
+          <CustomizeTutorialTooltip target="new-page" className="shrink-0">
+            <AddPageButton
+              entries={entries}
+              publicationUrl={props.publicationUrl}
+              onCreated={(entity, external) => {
+                if (!external) props.onSelectPage(entity);
+              }}
+            />
+          </CustomizeTutorialTooltip>
         </div>
         {props.hideSubscribeInHeader && (
           <div className="pointer-events-none">
@@ -345,7 +348,7 @@ function AddPageButton(props: {
               onChange={(e) => handlePathChange(e.currentTarget.value)}
             />
             <div className="text-sm text-tertiary -mt-1">
-              {props.publicationUrl?.replace(/^https?:\/\//, "")}
+              Page URL: {props.publicationUrl?.replace(/^https?:\/\//, "")}
               {cleanPath(path)}
             </div>
             <ToggleGroup

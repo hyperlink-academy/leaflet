@@ -92,7 +92,7 @@ export const CreatePubForm = () => {
           setFormState("normal");
           if (result.publication)
             router.push(
-              `${getBasePublicationURL(result.publication)}/dashboard`,
+              `${getBasePublicationURL(result.publication)}/edit?create=true`,
             );
         }, 500);
       }}
@@ -194,7 +194,7 @@ export const CreatePubForm = () => {
               !nameValue || !domainValue || domainState.status !== "valid"
             }
           >
-            {formState === "loading" ? <DotLoader /> : "Create Publication!"}
+            {formState === "loading" ? <DotLoader /> : "Next: Customize"}
           </ButtonPrimary>
         </div>
         {oauthError && (
@@ -231,7 +231,7 @@ function DomainInput(props: {
             reason === "too_small"
               ? "Must be at least 3 characters long"
               : reason === "invalid_string"
-                ? "Must contain only lowercase a-z, 0-9, and -"
+                ? "Only lowercase a-z, 0-9, and -"
                 : "",
         });
         return;
@@ -259,30 +259,59 @@ function DomainInput(props: {
     [props.domain],
   );
 
+  let violatesRules = props.domainState.status === "error";
+
   return (
     <div className="flex flex-col gap-1">
-      <label className=" input-with-border flex flex-col text-sm text-tertiary font-bold italic leading-tight py-1! px-[6px]!">
+      <label
+        className=" input-with-border flex flex-col text-sm text-tertiary font-bold italic leading-tight py-1! px-[6px]!"
+        style={
+          violatesRules
+            ? { borderColor: ERROR_COLOR, outlineColor: ERROR_COLOR }
+            : undefined
+        }
+      >
         <div>Choose your domain</div>
-        <div className="flex flex-row  items-center">
-          <Input
-            minLength={3}
-            maxLength={63}
-            placeholder="domain"
-            className="appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 outline-hidden"
-            value={props.domain}
-            onChange={(e) => props.setDomain(e.currentTarget.value)}
-          />
-          .leaflet.pub
+        <div className="flex flex-row items-center text-base font-normal min-w-0">
+          {/* The hidden mirror sizes the input to its text so the suffix
+              trails the typed domain rather than the end of the box. size=1
+              drops the input's default ~20ch intrinsic width, which would
+              otherwise hold the grid column open. */}
+          <span className="inline-grid min-w-0">
+            <span
+              aria-hidden
+              className="invisible whitespace-pre col-start-1 row-start-1 overflow-hidden"
+            >
+              {props.domain || "domain"}
+            </span>
+            <Input
+              size={1}
+              minLength={3}
+              maxLength={63}
+              placeholder="domain"
+              className="appearance-none col-start-1 row-start-1 w-full min-w-0 font-normal bg-transparent text-base text-primary focus:outline-0 outline-hidden"
+              value={props.domain}
+              onChange={(e) => props.setDomain(e.currentTarget.value)}
+            />
+          </span>
+          <span className="text-tertiary font-normal select-none shrink-0">
+            .leaflet.pub
+          </span>
         </div>
       </label>
       <div
         className={"text-sm italic "}
         style={{
-          fontWeight: props.domainState.status === "valid" ? "bold" : "normal",
+          fontWeight:
+            props.domainState.status === "valid" || violatesRules
+              ? "bold"
+              : "normal",
           color:
             props.domainState.status === "valid"
               ? theme.colors["accent-contrast"]
-              : theme.colors.tertiary,
+              : violatesRules
+                ? ERROR_COLOR
+                : theme.colors.tertiary,
         }}
       >
         {props.domainState.status === "valid"
@@ -298,3 +327,5 @@ function DomainInput(props: {
     </div>
   );
 }
+
+const ERROR_COLOR = "#DC2626";

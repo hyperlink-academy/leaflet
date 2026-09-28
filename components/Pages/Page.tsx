@@ -210,7 +210,7 @@ export const PageWrapper = (props: {
       >
         <div
           className={`postPageContent static
-          ${props.fullPageScroll && !canvasPageScroll ? "h-full sm:max-w-[var(--page-width-units)] mx-auto" : ` contents w-full ${props.flow ? "" : "h-full"}`}
+          ${props.fullPageScroll && !canvasPageScroll ? `${props.pageType === "doc" ? "min-h-full" : "h-full"} sm:max-w-[var(--page-width-units)] mx-auto` : ` contents w-full ${props.flow ? "" : "h-full"}`}
         `}
         >
           {props.children}

@@ -40,6 +40,10 @@ import {
 import { Replicache } from "replicache";
 import { UndoManager } from "src/undoManager";
 import { useCanvasStackOrders } from "src/hooks/queries/useCanvasStacking";
+import {
+  CustomizeTutorialTooltip,
+  useTutorialOpen,
+} from "app/(app)/(identity)/lish/[did]/[publication]/edit/CustomizeTutorialTooltip";
 import { useCanvasBlocksWithType } from "src/hooks/queries/useBlocks";
 import {
   CanvasZoomProvider,
@@ -420,53 +424,61 @@ const AddCanvasBlockButton = (props: {
   let { permissions } = entity_set;
   let engine = useCanvasZoomEngine();
   let blocks = useEntity(props.entityID, "canvas/block");
+  let tutorialOpen = useTutorialOpen("canvas-add");
 
   if (!permissions.write) return null;
   return (
     <div className="absolute right-2 sm:bottom-4 sm:right-4 bottom-2 sm:top-auto z-10 flex flex-col gap-1 justify-center">
-      <TooltipButton
-        side="left"
-        open={blocks.length === 0 ? true : undefined}
-        tooltipContent={
-          <div className="flex flex-col justify-end text-center px-1 leading-snug ">
-            <div>Add a Block!</div>
-            <div className="font-normal">or double click anywhere</div>
-          </div>
-        }
-        className="w-fit p-2 rounded-full bg-accent-1 border-2 outline-solid outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-2"
-        onMouseDown={() => {
-          let box = engine.boxRef.current;
-          if (!box || !rep) return;
-          // Just inside the top right corner of what is on screen, below
-          // a nav stuck over a page-scrolled canvas.
-          let navBottom =
-            parseFloat(
-              getComputedStyle(box).getPropertyValue("--canvas-nav-bottom"),
-            ) || 0;
-          let corner = engine.canvasPointAt({
-            x: engine.viewportRect().width,
-            y: navBottom,
-          });
-          addCanvasTextBlock(rep, undoManager, {
-            parent: props.entityID,
-            canvas: props.canvas,
-            position: {
-              x: corner.x - 468,
-              y: Math.max(0, corner.y + 32),
-            },
-            permission_set: entity_set.set,
-          }).then((newEntityID) =>
-            setTimeout(() => {
-              focusBlock(
-                { type: "text", entityID: newEntityID, parent: props.entityID },
-                { type: "start" },
-              );
-            }, 20),
-          );
-        }}
-      >
-        <AddSmall />
-      </TooltipButton>
+      <CustomizeTutorialTooltip target="canvas-add" className="flex">
+        <TooltipButton
+          side="left"
+          open={blocks.length === 0 ? true : undefined}
+          hideTooltip={tutorialOpen}
+          tooltipContent={
+            <div className="flex flex-col justify-end text-center px-1 leading-snug ">
+              <div>Add a Block!</div>
+              <div className="font-normal">or double click anywhere</div>
+            </div>
+          }
+          className="w-fit p-2 rounded-full bg-accent-1 border-2 outline-solid outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-2"
+          onMouseDown={() => {
+            let box = engine.boxRef.current;
+            if (!box || !rep) return;
+            // Just inside the top right corner of what is on screen, below
+            // a nav stuck over a page-scrolled canvas.
+            let navBottom =
+              parseFloat(
+                getComputedStyle(box).getPropertyValue("--canvas-nav-bottom"),
+              ) || 0;
+            let corner = engine.canvasPointAt({
+              x: engine.viewportRect().width,
+              y: navBottom,
+            });
+            addCanvasTextBlock(rep, undoManager, {
+              parent: props.entityID,
+              canvas: props.canvas,
+              position: {
+                x: corner.x - 468,
+                y: Math.max(0, corner.y + 32),
+              },
+              permission_set: entity_set.set,
+            }).then((newEntityID) =>
+              setTimeout(() => {
+                focusBlock(
+                  {
+                    type: "text",
+                    entityID: newEntityID,
+                    parent: props.entityID,
+                  },
+                  { type: "start" },
+                );
+              }, 20),
+            );
+          }}
+        >
+          <AddSmall />
+        </TooltipButton>
+      </CustomizeTutorialTooltip>
       <TooltipButton
         side="left"
         tooltipContent={<div className="px-1">Draw</div>}
