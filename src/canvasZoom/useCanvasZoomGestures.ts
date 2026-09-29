@@ -13,6 +13,8 @@ const PINCH_PAN_TO_ZOOM_THRESHOLD = 48;
 const DOUBLE_TAP_MS = 300;
 const DOUBLE_TAP_SLOP = 30;
 const TAP_MOVE_SLOP = 10;
+// How long after a touch's release its mouse events and click can trail it.
+const TRAILING_CLICK_MS = 250;
 
 // Content a double tap is meant for rather than the canvas behind it.
 const INTERACTIVE =
@@ -62,6 +64,12 @@ export function useCanvasZoomGestures(
     let safariGestureActive = false;
     let safariGestureStartZoom = 1;
     let pinch: Pinch | null = null;
+    // A pinch's fingers are not taps. Browsers differ on whether a finger
+    // that stayed put through one still clicks on release (iOS does), which
+    // would focus the text under it: the releases are cancelled, and mouse
+    // events that trail them anyway are swallowed.
+    let pinched = false;
+    let swallowClicksUntil = 0;
     let down: { id: number; x: number; y: number; t: number } | null = null;
     let lastTap: { x: number; y: number; t: number } | null = null;
 
@@ -129,6 +137,9 @@ export function useCanvasZoomGestures(
       (e) => {
         if (e.touches.length < 2) return;
         e.preventDefault();
+        pinched = true;
+        down = null;
+        lastTap = null;
         if (pinch) return;
         let { dist, mid } = touchPoints(e.touches);
         pinch = {
@@ -182,15 +193,27 @@ export function useCanvasZoomGestures(
 
     let onTouchEnd = (e: TouchEvent) => {
       if (e.touches.length < 2) endPinch();
+      if (!pinched) return;
+      if (e.cancelable) e.preventDefault();
+      if (e.touches.length > 0) return;
+      pinched = false;
+      swallowClicksUntil = Date.now() + TRAILING_CLICK_MS;
     };
-    scroller.addEventListener("touchend", onTouchEnd, { signal });
+    scroller.addEventListener("touchend", onTouchEnd, {
+      passive: false,
+      signal,
+    });
     scroller.addEventListener("touchcancel", onTouchEnd, { signal });
 
     // While pinching, block drags and selections from seeing the fingers.
     let blockWhilePinching = (e: Event) => {
-      if (pinch) e.stopImmediatePropagation();
+      if (pinch) return e.stopImmediatePropagation();
+      if (e.type === "pointermove" || e.type === "pointerdown") return;
+      if (!pinched && Date.now() > swallowClicksUntil) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
     };
-    for (let type of ["pointermove", "pointerdown", "mousedown"]) {
+    for (let type of ["pointermove", "pointerdown", "mousedown", "click"]) {
       window.addEventListener(type, blockWhilePinching, {
         capture: true,
         signal,
