@@ -218,6 +218,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       >
         <button
           type="button"
+          data-block-body
           className={`block ${isFullBleed ? "w-full" : "w-fit"} ${canOpenLightbox ? "cursor-zoom-in" : ""}`}
           onClick={() => {
             if (clickOpensLightbox()) openLightbox();

@@ -25,6 +25,7 @@ export function GalleryImageItem(
     <div className={`relative group/image ${props.className ?? ""}`}>
       <button
         type="button"
+        data-block-body
         onClick={props.onClick}
         className={props.buttonClassName}
         style={
