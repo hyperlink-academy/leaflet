@@ -3,55 +3,21 @@ import { useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { v7 } from "uuid";
 import { supabaseBrowserClient } from "supabase/browserClient";
-import { localImages, uploadImageAndFinalize } from "src/utils/addImage";
+import {
+  computeThumbHashFromBitmap,
+  localImages,
+  uploadImageAndFinalize,
+} from "src/utils/addImage";
 import { setImageUploadStatus } from "src/utils/imageUploadStatus";
-import { rgbaToThumbHash, thumbHashToDataURL } from "thumbhash";
-import { getCanvasZoom } from "src/canvasZoom/session";
+import { clientToCanvas } from "src/canvasZoom/session";
 import { useUIState } from "src/useUIState";
 import { elementId } from "src/utils/elementId";
 import { type CanvasBounds, clampToCanvas } from "src/utils/embeddedCanvasSize";
 
-const processImage = async (
-  file: File,
-): Promise<{
-  width: number;
-  height: number;
-  thumbhash: string;
-}> => {
-  const imageBitmap = await createImageBitmap(file);
-
-  const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d") as CanvasRenderingContext2D;
-  const maxDimension = 100;
-  let width = imageBitmap.width;
-  let height = imageBitmap.height;
-
-  if (width > height) {
-    if (width > maxDimension) {
-      height *= maxDimension / width;
-      width = maxDimension;
-    }
-  } else {
-    if (height > maxDimension) {
-      width *= maxDimension / height;
-      height = maxDimension;
-    }
-  }
-
-  canvas.width = width;
-  canvas.height = height;
-  context.drawImage(imageBitmap, 0, 0, width, height);
-
-  const imageData = context.getImageData(0, 0, width, height);
-  const thumbhash = thumbHashToDataURL(
-    rgbaToThumbHash(imageData.width, imageData.height, imageData.data),
-  );
-
-  return {
-    width: imageBitmap.width,
-    height: imageBitmap.height,
-    thumbhash,
-  };
+const processImage = async (file: File) => {
+  const bitmap = await createImageBitmap(file);
+  const { width, height } = bitmap;
+  return { width, height, thumbhash: computeThumbHashFromBitmap(bitmap) };
 };
 
 const imageFilesOf = (data: DataTransfer | null) =>
@@ -177,12 +143,8 @@ export const useHandleCanvasDrop = (entityID: string) => {
       const imageFiles = imageFilesOf(e.dataTransfer);
       if (imageFiles.length === 0) return;
 
-      const parentRect = e.currentTarget.getBoundingClientRect();
-      const zoom = getCanvasZoom(entityID);
-      const drop = {
-        x: Math.max((e.clientX - parentRect.left) / zoom, 0),
-        y: Math.max((e.clientY - parentRect.top) / zoom, 0),
-      };
+      const p = clientToCanvas(e.currentTarget, entityID, e);
+      const drop = { x: Math.max(p.x, 0), y: Math.max(p.y, 0) };
 
       await addImages(imageFiles, () => drop);
     },
@@ -222,23 +184,21 @@ export const useHandleCanvasPaste = (
       e.preventDefault();
 
       let visible = scrollArea.getBoundingClientRect();
-      let origin = content.current.getBoundingClientRect();
-      let zoom = getCanvasZoom(entityID);
-      let center = {
-        x:
+      let center = clientToCanvas(content.current, entityID, {
+        clientX:
           (Math.max(visible.left, 0) +
             Math.min(visible.right, window.innerWidth)) /
           2,
-        y:
+        clientY:
           (Math.max(visible.top, 0) +
             Math.min(visible.bottom, window.innerHeight)) /
           2,
-      };
+      });
       addImages(imageFiles, (grid) => {
         let position = clampToCanvas(
           {
-            x: (center.x - origin.left) / zoom - grid.width / 2,
-            y: (center.y - origin.top) / zoom - grid.height / 2,
+            x: center.x - grid.width / 2,
+            y: center.y - grid.height / 2,
           },
           grid,
           canvas,

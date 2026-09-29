@@ -48,6 +48,7 @@ import {
   getCanvasZoom,
   useCanvasZoomEngine,
 } from "src/canvasZoom/CanvasZoomProvider";
+import { clientToCanvas } from "src/canvasZoom/session";
 import { CanvasZoomLayer } from "src/canvasZoom/CanvasZoomLayer";
 import { CanvasFocusZoom } from "src/canvasZoom/CanvasFocusZoom";
 import { CanvasOverlay } from "src/canvasZoom/CanvasPageScroll";
@@ -172,15 +173,11 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
           });
         if (!editable) return;
         if ((e.detail === 2 || e.ctrlKey || e.metaKey) && rep) {
-          let parentRect = e.currentTarget.getBoundingClientRect();
-          let zoom = getCanvasZoom(props.entityID);
+          let p = clientToCanvas(e.currentTarget, props.entityID, e);
           let newEntityID = await addCanvasTextBlock(rep, undoManager, {
             parent: props.entityID,
             canvas: size,
-            position: {
-              x: Math.max((e.clientX - parentRect.left) / zoom, 0),
-              y: Math.max((e.clientY - parentRect.top) / zoom - 12, 0),
-            },
+            position: { x: Math.max(p.x, 0), y: Math.max(p.y - 12, 0) },
             permission_set: entity_set.set,
           });
           focusBlock(

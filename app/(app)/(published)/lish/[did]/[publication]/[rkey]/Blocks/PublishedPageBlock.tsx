@@ -5,6 +5,7 @@ import { CSSProperties, useRef } from "react";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { PostContent } from "../PostContent";
 import { CanvasBlocks } from "../CanvasBlockContent";
+import { CanvasLinkPreview } from "components/Blocks/ScaledCanvas";
 import {
   PubLeafletBlocksHeader,
   PubLeafletBlocksPage,
@@ -92,14 +93,18 @@ export function PublishedPageLinkBlock(props: {
           parentPageId={props.parentPageId}
         />
       ) : props.isCanvas ? (
-        <CanvasLinkBlock
-          blocks={props.blocks as PubLeafletPagesCanvas.Block[]}
-          did={props.did}
-          pageId={props.pageId}
-          bskyPostData={props.bskyPostData}
-          standardSitePostData={props.standardSitePostData}
-          pages={props.pages || []}
-        />
+        <CanvasLinkPreview>
+          <CanvasBlocks
+            blocks={props.blocks as PubLeafletPagesCanvas.Block[]}
+            did={props.did}
+            pageId={props.pageId}
+            bskyPostData={props.bskyPostData}
+            standardSitePostData={props.standardSitePostData}
+            pages={props.pages || []}
+            pollData={[]}
+            preview
+          />
+        </CanvasLinkPreview>
       ) : (
         <DocLinkBlock
           {...props}
@@ -297,34 +302,6 @@ const Interactions = (props: {
         <span className="sr-only">Page discussions</span>
         <CommentTiny aria-hidden /> {comments + quotes}{" "}
       </button>
-    </div>
-  );
-};
-
-const CanvasLinkBlock = (props: {
-  blocks: PubLeafletPagesCanvas.Block[];
-  did: string;
-  pageId: string;
-  bskyPostData: AppBskyFeedDefs.PostView[];
-  standardSitePostData: StandardSitePostData[];
-  pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
-}) => {
-  let pageWidth = `var(--page-width-unitless)`;
-  return (
-    <div
-      style={{ contain: "size layout paint" }}
-      className={`pageLinkBlockPreview shrink-0 h-[200px] w-full overflow-clip relative`}
-    >
-      <div
-        className={`absolute top-0 left-0 origin-top-left pointer-events-none w-full`}
-        style={{
-          width: `calc(1px * ${pageWidth})`,
-          height: "calc(1150px * 2)",
-          transform: `scale(calc(((${pageWidth} - 36) / 1272 )))`,
-        }}
-      >
-        <CanvasBlocks {...props} pollData={[]} preview />
-      </div>
     </div>
   );
 };

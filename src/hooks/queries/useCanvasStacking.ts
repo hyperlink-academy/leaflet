@@ -2,28 +2,17 @@
 import { useReplicache } from "src/replicache";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { scanIndex } from "src/replicache/utils";
-import { canvasStackingOrder } from "src/utils/canvasBlockOrder";
+import { canvasLayers } from "src/replicache/mutations";
 
 // The block entity IDs of a canvas in paint order, lowest first.
 export function useCanvasPaintOrder(page: string): string[] {
   let { rep } = useReplicache();
   return useSubscribe(
     rep,
-    async (tx) => {
-      let blocks = await scanIndex(tx).eav(page, "canvas/block");
-      let layers = await Promise.all(
-        blocks.map(async (f) => ({
-          entityID: f.data.value,
-          x: f.data.position.x,
-          y: f.data.position.y,
-          stackOrder:
-            (
-              await scanIndex(tx).eav(f.data.value, "canvas/block/stack-order")
-            )[0]?.data.value ?? null,
-        })),
-      );
-      return layers.sort(canvasStackingOrder).map((l) => l.entityID);
-    },
+    async (tx) =>
+      (await canvasLayers({ scanIndex: scanIndex(tx) }, page)).map(
+        (l) => l.entityID,
+      ),
     {
       default: [] as string[],
       dependencies: [page],

@@ -3,10 +3,10 @@ import { useEntity, useReplicache } from "src/replicache";
 import { CheckTiny } from "components/Icons/CheckTiny";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import {
-  getCanvasZoom,
   isCanvasPinching,
   useCanvasZoom,
 } from "src/canvasZoom/CanvasZoomProvider";
+import { clientToCanvas } from "src/canvasZoom/session";
 import { isIOS } from "src/utils/isDevice";
 import { CANVAS_DRAG_STACK_ORDER } from "src/utils/canvasBlockOrder";
 import {
@@ -97,15 +97,6 @@ export function CanvasInkLayer(props: { pageID: string }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [rep, undoManager]);
 
-  let toCanvas = (e: { clientX: number; clientY: number }) => {
-    let rect = ref.current!.getBoundingClientRect();
-    let zoom = getCanvasZoom(props.pageID);
-    return {
-      x: (e.clientX - rect.left) / zoom,
-      y: (e.clientY - rect.top) / zoom,
-    };
-  };
-
   let eraseAt = async (g: Gesture, p: { x: number; y: number }) => {
     let drawing = await g.drawing;
     if (!drawing || gesture.current !== g) return;
@@ -126,7 +117,7 @@ export function CanvasInkLayer(props: { pageID: string }) {
     let events = isIOS() ? [] : e.nativeEvent.getCoalescedEvents?.() || [];
     if (events.length === 0) events = [e.nativeEvent];
     for (let ev of events) {
-      let p = toCanvas(ev);
+      let p = clientToCanvas(ref.current!, props.pageID, ev);
       if (g.fill && g.points.length > 0) break;
       if (g.erase) {
         eraseAt(g, p);

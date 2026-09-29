@@ -29,3 +29,24 @@ export function ScaledCanvas(props: {
     </div>
   );
 }
+
+export function CanvasLinkPreview(props: { children: ReactNode }) {
+  let pageWidth = `var(--page-width-unitless)`;
+  return (
+    <div
+      style={{ contain: "size layout paint" }}
+      className={`pageLinkBlockPreview shrink-0 h-[200px] w-full overflow-clip relative`}
+    >
+      <div
+        className={`absolute top-0 left-0 origin-top-left pointer-events-none w-full`}
+        style={{
+          width: `calc(1px * ${pageWidth})`,
+          height: "calc(1150px * 2)",
+          transform: `scale(calc(((${pageWidth} - 36) / 1272 )))`,
+        }}
+      >
+        {props.children}
+      </div>
+    </div>
+  );
+}

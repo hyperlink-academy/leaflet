@@ -64,7 +64,10 @@ type Mutation<T> = (
   ctx: MutationContext,
 ) => Promise<void>;
 
-async function canvasLayers(ctx: MutationContext, page: string) {
+export async function canvasLayers(
+  ctx: Pick<MutationContext, "scanIndex">,
+  page: string,
+) {
   let blocks = await ctx.scanIndex.eav(page, "canvas/block");
   // Read one at a time: on the server these reads share a single database
   // transaction, which can only have one query in flight.

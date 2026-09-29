@@ -15,6 +15,7 @@ import {
   usePageLinkDisplay,
 } from "./PageLinkBlockSettings";
 import { CanvasContent } from "components/Canvas";
+import { CanvasLinkPreview } from "./ScaledCanvas";
 import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
@@ -66,7 +67,9 @@ export function PageLinkBlock(
           {display === "compact" ? (
             <CompactLinkBlock pageEntity={page.data.value} />
           ) : type === "canvas" ? (
-            <CanvasLinkBlock entityID={page.data.value} />
+            <CanvasLinkPreview>
+              <CanvasContent entityID={page.data.value} preview />
+            </CanvasLinkPreview>
           ) : (
             <DocLinkBlock {...props} />
           )}
@@ -266,27 +269,6 @@ function PagePreview(props: { entityID: string }) {
     </div>
   );
 }
-
-const CanvasLinkBlock = (props: { entityID: string }) => {
-  let pageWidth = `var(--page-width-unitless)`;
-  return (
-    <div
-      style={{ contain: "size layout paint" }}
-      className={`pageLinkBlockPreview shrink-0 h-[200px] w-full overflow-clip relative`}
-    >
-      <div
-        className={`absolute top-0 left-0 origin-top-left pointer-events-none w-full`}
-        style={{
-          width: `calc(1px * ${pageWidth})`,
-          height: "calc(1150px * 2)",
-          transform: `scale(calc(((${pageWidth} - 36) / 1272 )))`,
-        }}
-      >
-        <CanvasContent entityID={props.entityID} preview />
-      </div>
-    </div>
-  );
-};
 
 export function BlockPreview(
   b: BlockProps & {

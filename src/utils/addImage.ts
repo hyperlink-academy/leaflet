@@ -263,7 +263,7 @@ export async function addImage(
   await finishUpload();
 }
 
-function computeThumbHashFromBitmap(bitmap: ImageBitmap): string {
+export function computeThumbHashFromBitmap(bitmap: ImageBitmap): string {
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d") as CanvasRenderingContext2D;
   const maxDimension = 100;

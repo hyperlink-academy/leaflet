@@ -8,6 +8,18 @@ export function getCanvasZoom(pageKey: string) {
   return zoomByPage.get(pageKey) ?? 1;
 }
 
+type ClientPoint = { clientX: number; clientY: number };
+
+// `el` is the canvas content element, which the live zoom scales.
+export function clientToCanvas(el: Element, pageKey: string, p: ClientPoint) {
+  let rect = el.getBoundingClientRect();
+  let zoom = getCanvasZoom(pageKey);
+  return {
+    x: (p.clientX - rect.left) / zoom,
+    y: (p.clientY - rect.top) / zoom,
+  };
+}
+
 export function hasCanvasZoom(pageKey: string) {
   return zoomByPage.has(pageKey);
 }
