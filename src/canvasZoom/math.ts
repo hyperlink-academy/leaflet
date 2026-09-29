@@ -20,6 +20,11 @@ export function minZoom(clientWidth: number, contentWidth: number) {
   return Math.min(MIN_ZOOM_FLOOR, clientWidth / contentWidth || 1);
 }
 
+// The zoom a canvas opens at, as the stylesheet computes it.
+export function fitZoom(clientWidth: number, width: number) {
+  return Math.min(1, clientWidth / width || 1);
+}
+
 export function clampZoom(z: number, min: number) {
   if (!Number.isFinite(z)) return min;
   return Math.min(MAX_ZOOM, Math.max(min, z));

@@ -24,6 +24,7 @@ import {
   anchorToCanvas,
   approachZoom,
   clampZoom,
+  fitZoom,
   minZoom,
   nextStep,
   padsForScroll,
@@ -60,6 +61,12 @@ type Gesture = {
 };
 
 type Scrollers = { x: HTMLElement; y: HTMLElement };
+
+// How far the stylesheet's fit to the box's width may be from the script's,
+// which divides the box's whole px. Past it the engine has the stylesheet's
+// math wrong, and the fit is written by script: at mount, and when the box
+// resizes for as long as the stylesheet's would have applied.
+const FIT_TOLERANCE = 0.02;
 
 type Rect = { left: number; top: number; width: number; height: number };
 
@@ -154,6 +161,8 @@ export function CanvasZoomProvider(props: {
   let writtenScroll = useRef<Scroll | null>(null);
   // Engine-written only, so not read back from style on hot paths.
   let pads = useRef<Pads>(NO_PADS);
+  let stylesheetMisfits = useRef(false);
+  let fitByScript = useRef(false);
   let lastFrame = useRef(0);
   let raf = useRef(0);
   let idleTimer = useRef(0);
@@ -245,6 +254,7 @@ export function CanvasZoomProvider(props: {
       let layer = layerRef.current;
       let spacer = spacerRef.current;
       if (g && s && layer && spacer) {
+        fitByScript.current = false;
         unwatchNativeScroll(s);
         // Read before the spacer resizes, which can clamp or anchor the
         // offset; the difference is a native scroll made mid-gesture.
@@ -433,9 +443,19 @@ export function CanvasZoomProvider(props: {
     setMin(minRef.current);
     let applied = appliedScale(layer);
     let restored = !locked && hasCanvasZoom(pageKey);
+    let area = initialArea.current;
+    let fit = fitZoom(box.clientWidth, area?.width ?? contentWidth);
+    // With nothing written inline, the applied scale is the stylesheet's.
+    if (box.clientWidth && !layer.style.getPropertyValue("--canvas-zoom"))
+      stylesheetMisfits.current =
+        Math.abs(applied - fit) > FIT_TOLERANCE * fit;
     let z = restored
       ? clampZoom(getCanvasZoom(pageKey), minRef.current)
-      : applied;
+      : stylesheetMisfits.current
+        ? fit
+        : applied;
+    fitByScript.current =
+      stylesheetMisfits.current && Math.abs(z - fit) < 1e-6;
     // A fresh load adopts the stylesheet's scale unwritten: JS's value from
     // the integer clientWidth differs slightly, and a rewrite makes Chrome
     // re-raster the whole layer (images blink).
@@ -443,7 +463,6 @@ export function CanvasZoomProvider(props: {
       spacer.style.setProperty("--canvas-zoom", String(z));
       layer.style.setProperty("--canvas-zoom", String(z));
     }
-    let area = initialArea.current;
     if (!locked && !restored && area && area.left > 0)
       box.scrollLeft = area.left * z;
     if (centered) {
@@ -465,6 +484,16 @@ export function CanvasZoomProvider(props: {
     let signal = abort.signal;
 
     let boxObserver = new ResizeObserver(() => {
+      if (fitByScript.current && !gesture.current) {
+        let z = fitZoom(
+          box.clientWidth,
+          initialArea.current?.width ?? contentWidth,
+        );
+        spacerRef.current?.style.setProperty("--canvas-zoom", String(z));
+        layerRef.current?.style.setProperty("--canvas-zoom", String(z));
+        setCanvasZoom(pageKey, z);
+        setZoomState(z);
+      }
       let m = minZoom(box.clientWidth, contentWidth);
       if (m === minRef.current) return;
       minRef.current = m;
@@ -502,7 +531,7 @@ export function CanvasZoomProvider(props: {
       pending.current = null;
       gesture.current = null;
     };
-  }, [engine, contentWidth]);
+  }, [engine, contentWidth, pageKey]);
 
   useCanvasZoomGestures(engine, !locked, props.doubleTapZoom ?? true);
 

@@ -1428,23 +1428,46 @@ body > iframe[src*="js.stripe.com"] {
     )
     scale(var(--canvas-zoom));
 }
+/* The box's size as lengths already computed to px: Firefox divides two
+   lengths only when neither is relative, and a registered property is
+   substituted as its computed value. */
+@property --canvas-box-width {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --canvas-box-height {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
 @supports (opacity: tan(atan2(1px, 1px))) {
   .canvasZoomSpacer,
   .canvasZoomLayer {
+    --canvas-box-width: 100cqw;
     --canvas-zoom: min(
       1,
       tan(
         atan2(
-          100cqw,
+          var(--canvas-box-width),
           calc(var(--canvas-mobile-area, var(--canvas-content-width)) * 1px)
         )
       )
     );
   }
   .canvasZoomLayer {
+    --canvas-box-height: 100cqh;
     min-height: calc(
-      100cqh /
-        min(0.25, tan(atan2(100cqw, calc(var(--canvas-content-width) * 1px))))
+      var(--canvas-box-height) /
+        min(
+          0.25,
+          tan(
+            atan2(
+              var(--canvas-box-width),
+              calc(var(--canvas-content-width) * 1px)
+            )
+          )
+        )
     );
   }
 }
