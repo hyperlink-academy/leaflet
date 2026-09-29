@@ -464,17 +464,41 @@ const BlockTypeComponents: {
 // Only rendered on canvases. The Blocks list pads each block for a page; pull
 // it back out so a block keeps its place on the canvas when it becomes the
 // first block of a group.
-function GroupBlock(props: BlockProps & { preview?: boolean }) {
-  let focused = useUIState(
-    (s) =>
-      s.focusedEntity?.entityID === props.entityID ||
-      (s.focusedEntity?.entityType === "block" &&
-        s.focusedEntity.parent === props.entityID),
+function GroupBlock(
+  props: BlockProps & {
+    preview?: boolean;
+    areYouSure?: boolean;
+    setAreYouSure?: (value: boolean) => void;
+  },
+) {
+  let focusedBlock = useUIState((s) =>
+    s.focusedEntity?.entityType === "block" &&
+    (s.focusedEntity.entityID === props.entityID ||
+      s.focusedEntity.parent === props.entityID)
+      ? s.focusedEntity.entityID
+      : null,
   );
+  let focusedType = useEntity(focusedBlock, "block/type")?.data.value;
+  // Any other child brings an options bar of its own.
+  let showOptions =
+    focusedBlock === props.entityID ||
+    (!!focusedType && isTextBlock[focusedType]);
   return (
-    <div
-      className={`canvasBlockGroup -mx-3 sm:-mx-4 ${focused ? "bg-bg-page rounded-md" : ""}`}
-    >
+    <div className="canvasBlockGroup relative -mx-3 sm:-mx-4">
+      {focusedBlock && (
+        // Drawn around the children's text box, where a selected lone canvas
+        // block draws its border.
+        <div className="canvasBlockGroupFrame absolute -inset-y-px inset-x-[11px] sm:inset-x-[15px] pointer-events-none bg-bg-page block-border-selected">
+          {showOptions && !props.preview && (
+            <NonTextBlockOptions
+              block={props}
+              optionsClassName="pointer-events-auto"
+              areYouSure={props.areYouSure}
+              setAreYouSure={props.setAreYouSure}
+            />
+          )}
+        </div>
+      )}
       <Blocks entityID={props.entityID} group preview={props.preview} />
     </div>
   );
@@ -596,37 +620,34 @@ const NonTextBlockOptions = (props: {
   setAreYouSure?: (value: boolean) => void;
   optionsClassName?: string;
   extraOptions?: React.ReactNode;
+  // The block the bar acts on, when that isn't the focused one: a canvas
+  // group shows the bar while one of its children has focus.
+  block?: { entityID: string; parent: string };
 }) => {
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
   let focusedEntity = useUIState((s) => s.focusedEntity);
-  let focusedEntityType = useEntity(
-    focusedEntity?.entityType === "page"
-      ? focusedEntity.entityID
-      : focusedEntity?.parent || null,
-    "page/type",
-  );
+  let block =
+    props.block ??
+    (focusedEntity?.entityType === "block" ? focusedEntity : undefined);
+  let pageType = useEntity(block?.parent || null, "page/type");
 
   let isMultiselected = useUIState((s) => s.selectedBlocks.length > 1);
-  if (focusedEntity?.entityType === "page") return;
+  if (!block) return;
 
   if (isMultiselected) return;
   if (!entity_set.permissions.write) return null;
+  let { entityID, parent } = block;
 
   return (
     <div
       className={`flex gap-1 absolute -top-[25px] right-2 pb-0.5 pt-1 px-1 rounded-t-md bg-border text-bg-page ${props.optionsClassName}`}
     >
-      {focusedEntityType?.data.value === "canvas" ? (
-        focusedEntity?.parent && (
-          <>
-            <CanvasLayerControls
-              parent={focusedEntity.parent}
-              entityID={focusedEntity.entityID}
-            />
-            <Separator classname="border-bg-page! h-4! mx-0.5" />
-          </>
-        )
+      {pageType?.data.value === "canvas" ? (
+        <>
+          <CanvasLayerControls parent={parent} entityID={entityID} />
+          <Separator classname="border-bg-page! h-4! mx-0.5" />
+        </>
       ) : (
         <>
           <button
@@ -661,7 +682,9 @@ const NonTextBlockOptions = (props: {
       <button
         onClick={async (e) => {
           e.stopPropagation();
-          if (!rep || !focusedEntity) return;
+          if (!rep) return;
+          // deleteBlock works out what to focus next from the focused block.
+          useUIState.getState().focusAndSelectBlock({ entityID, parent });
 
           if (props.areYouSure !== undefined && props.setAreYouSure) {
             if (!props.areYouSure) {
@@ -680,10 +703,10 @@ const NonTextBlockOptions = (props: {
                 }, 300);
                 return;
               }
-              await deleteBlock([focusedEntity.entityID], rep, undoManager);
+              await deleteBlock([entityID], rep, undoManager);
             }
           } else {
-            await deleteBlock([focusedEntity.entityID], rep, undoManager);
+            await deleteBlock([entityID], rep, undoManager);
           }
         }}
       >
