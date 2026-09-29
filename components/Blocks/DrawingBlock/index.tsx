@@ -3,7 +3,7 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useIsBlockSelected } from "src/useUIState";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { EditTiny } from "components/Icons/EditTiny";
-import type { BlockProps } from "../Block";
+import { BlockLayout, type BlockProps } from "../Block";
 import { InkSvg } from "./InkSvg";
 import { useInkSession } from "./useInkSession";
 import { startInk } from "./inkMutations";
@@ -18,7 +18,10 @@ export function DrawingBlock(props: BlockProps & { preview?: boolean }) {
   let isSelected = useIsBlockSelected(props.entityID);
   let { permissions } = useEntitySetContext();
   let { rep } = useReplicache();
-  let canEdit = permissions.write && !props.preview;
+  // Ink is drawn in canvas coordinates against the drawing's own canvas
+  // block, which a drawing inside a group doesn't have.
+  let canEdit =
+    permissions.write && !props.preview && props.pageType === "canvas";
 
   // Fact ids are v7 uuids, so sorting them paints strokes in drawing order.
   let strokes = useMemo(
@@ -34,22 +37,33 @@ export function DrawingBlock(props: BlockProps & { preview?: boolean }) {
   let edit = () => startInk(rep, props.parent, props.entityID);
 
   return (
-    <div
-      className={`drawingBlock relative w-full rounded-md outline-2 outline-offset-4 ${isSelected && !editing ? "outline-accent-contrast" : editing ? "outline-dashed outline-border" : "outline-transparent"}`}
-      onDoubleClick={canEdit ? edit : undefined}
+    <BlockLayout
+      isSelected={!!isSelected && !editing && !props.preview}
+      // The ink is placed and scaled by the block's width, so the layout
+      // adds no border or padding around it.
+      className="p-0! border-0! overflow-visible!"
+      extraOptions={
+        canEdit && (
+          <button
+            aria-label="Edit drawing"
+            title="Edit drawing"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              edit();
+            }}
+          >
+            <EditTiny />
+          </button>
+        )
+      }
     >
-      <InkSvg viewBox={viewBox} strokes={strokes} />
-      {canEdit && isSelected && !editing && (
-        <button
-          aria-label="Edit drawing"
-          title="Edit drawing"
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={edit}
-          className="absolute -top-3 -right-3 p-1 rounded-full bg-bg-page border border-border text-secondary hover:text-accent-contrast"
-        >
-          <EditTiny />
-        </button>
-      )}
-    </div>
+      <div
+        className={`drawingBlock w-full rounded-md outline-2 outline-offset-4 ${editing ? "outline-dashed outline-border" : "outline-transparent"}`}
+        onDoubleClick={canEdit ? edit : undefined}
+      >
+        <InkSvg viewBox={viewBox} strokes={strokes} />
+      </div>
+    </BlockLayout>
   );
 }
