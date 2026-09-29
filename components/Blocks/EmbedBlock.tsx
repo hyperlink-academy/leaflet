@@ -63,7 +63,7 @@ const useEmbedSizing = (props: BlockProps & { preview?: boolean }) => {
     !props.preview && permissions.write && !aspectRatio ? (
       <div
         data-draggable
-        className={`resizeHandle
+        className={`resizeHandle touch-none
           cursor-ns-resize shrink-0 z-10 w-6 h-[5px]
           absolute bottom-[3px] right-1/2 translate-x-1/2
           rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,inset_0_0_0_1px_white]

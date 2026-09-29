@@ -623,7 +623,7 @@ function CanvasBlock(props: {
         transform,
       }}
     >
-      {editable && <Gripper isFocused={isFocused} {...dragHandlers} />}
+      {editable && <Gripper isFocused={isFocused} handlers={dragHandlers} />}
 
       <div
         {...(bodyDraggable ? bodyHandlers : {})}
@@ -645,7 +645,7 @@ function CanvasBlock(props: {
 
       {editable && (
         <div
-          className={`resizeHandle
+          className={`resizeHandle touch-none
           cursor-e-resize shrink-0 z-10
          group-hover/canvas-block:block
           sm:w-[5px] w-3 sm:h-6  h-8
@@ -660,7 +660,7 @@ function CanvasBlock(props: {
 
       {editable && (
         <div
-          className={`rotateHandle
+          className={`rotateHandle touch-none
             cursor-grab shrink-0 z-10
             group-hover/canvas-block:block
             sm:w-[8px] sm:h-[8px] w-4 h-4
@@ -773,17 +773,12 @@ const TEXT_CONTROLS = "a, .mention, .footnote-ref, .comment-anchor";
 const GROUP_CONTROLS = ".nonTextBlockAndControls, [data-drag-handle]";
 
 const Gripper = (props: {
-  onMouseDown: (e: React.MouseEvent) => void;
+  handlers: ReturnType<typeof useDrag>["handlers"];
   isFocused: boolean;
 }) => {
   return (
     <div
-      onMouseDown={props.onMouseDown}
-      // A cancelled pointerdown suppresses the mousedown the wrapper selects
-      // the block on, so a mouse starts its drag from mousedown instead.
-      onPointerDown={(e) => {
-        if (e.pointerType !== "mouse") props.onMouseDown(e);
-      }}
+      {...props.handlers}
       className="gripper absolute z-10 left-0 top-3 bottom-3 w-[9px] py-1 cursor-grab touch-none"
     >
       <div className="h-full grid grid-cols-1 grid-rows-1 ">

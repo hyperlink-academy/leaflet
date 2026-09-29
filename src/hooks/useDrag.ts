@@ -11,7 +11,8 @@ export const didBodyDragJustEnd = () => Date.now() - lastBodyDropAt < 250;
 type Point = { x: number; y: number };
 type BodyPress = Point & { target: Element };
 
-// `handlers` go on a dedicated handle and start the drag on contact.
+// `handlers` go on a dedicated handle, which needs `touch-action: none`, and
+// start the drag on contact.
 // `bodyHandlers` go on the dragged thing itself, where presses are also
 // clicks, scrolls and pinches: a mouse lifts it after BODY_DRAG_DISTANCE of
 // travel, a finger after a still hold.
@@ -74,17 +75,19 @@ export const useDrag = (args: {
       window.addEventListener(type, end, { signal: current.signal });
   };
 
-  let onTouchStart = (e: React.TouchEvent) => {
-    if (e.defaultPrevented) return;
-    start({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-  };
-
   let onMouseDown = (e: React.MouseEvent) => {
     if (e.defaultPrevented) return;
     // The browser would otherwise start a text selection at the handle
     // and extend it over whatever the pointer crosses.
     e.preventDefault();
     start({ x: e.clientX, y: e.clientY });
+  };
+  // A finger or pen starts from pointerdown: cancelling it suppresses the
+  // mouse events that trail a touch, which would start a second drag. A
+  // mouse's mousedown has other listeners, which a cancelled pointerdown
+  // would silence.
+  let onPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType !== "mouse") onMouseDown(e);
   };
 
   let onBodyPointerDown = (e: React.PointerEvent) => {
@@ -210,7 +213,7 @@ export const useDrag = (args: {
     e.stopPropagation();
   };
 
-  let handlers = { onMouseDown, onTouchStart };
+  let handlers = { onMouseDown, onPointerDown };
   let bodyHandlers = {
     onPointerDown: onBodyPointerDown,
     onMouseDownCapture: onBodyMouseDownCapture,
