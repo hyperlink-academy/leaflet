@@ -159,12 +159,3 @@ export function approachZoom(current: number, target: number, dtMs: number) {
   if (Math.abs(gap) < ZOOM_SNAP_RATIO) return target;
   return current * Math.exp(gap * (1 - Math.exp(-dtMs / ZOOM_SMOOTHING_MS)));
 }
-
-// Empty space the spacer keeps around the content on each side, besides
-// the engine's padding (--canvas-margin-x/y in globals.css). A centered
-// canvas keeps half a viewport, so any point of it can be scrolled to the
-// viewport's center at any zoom.
-export function contentMargin(centered: boolean, client: Size): Scroll {
-  if (!centered) return { left: 0, top: 0 };
-  return { left: client.width / 2, top: client.height / 2 };
-}

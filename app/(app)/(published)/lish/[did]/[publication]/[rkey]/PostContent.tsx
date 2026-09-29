@@ -37,7 +37,7 @@ import { snapToImageWidth } from "supabase/imageSizes";
 import { srcDocSandbox } from "src/utils/srcDocSandbox";
 import { TextBlock } from "./Blocks/TextBlock";
 import { StaticMathBlock } from "./Blocks/StaticMathBlock";
-import { StaticDrawingBlock } from "./Blocks/StaticDrawingBlock";
+import { InkSvg } from "components/Blocks/DrawingBlock/InkSvg";
 import { PubCodeBlock } from "./Blocks/PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { PubBlueskyPostBlock } from "./Blocks/PublishBskyPostBlock";
@@ -54,7 +54,8 @@ import {
 } from "components/ThemeManager/PublicationThemeProvider";
 import { useStandardSitePublication } from "components/StandardSitePublicationDataProvider";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
-import { PublishedEmbeddedCanvasBlock } from "./Blocks/PublishedEmbeddedCanvasBlock";
+import { CanvasBlocks } from "./CanvasBlockContent";
+import { ScaledCanvas } from "components/Blocks/ScaledCanvas";
 import { PublishedImageGallery } from "./Blocks/PublishedImageGallery";
 import { PublishedImageBlock } from "./Blocks/PublishedImageBlock";
 import { useOpenImageLightbox } from "./GlobalImageLightbox";
@@ -304,16 +305,23 @@ export let Block = ({
       let page = pages.find((p) => p.id === block.id);
       if (!PubLeafletPagesCanvas.isMain(page) || !page.width || !page.height)
         return;
+      let size = { width: page.width, height: page.height };
       return (
         <div className={className} {...blockProps}>
-          <PublishedEmbeddedCanvasBlock
-            page={{ ...page, width: page.width, height: page.height }}
-            did={did}
-            bskyPostData={bskyPostData}
-            standardSitePostData={standardSitePostData}
-            pollData={pollData}
-            pages={pages}
-          />
+          <div className="w-full block-border overflow-clip bg-bg-page">
+            <ScaledCanvas size={size}>
+              <CanvasBlocks
+                blocks={page.blocks}
+                size={size}
+                did={did}
+                bskyPostData={bskyPostData}
+                standardSitePostData={standardSitePostData}
+                pollData={pollData}
+                pages={pages}
+                preview
+              />
+            </ScaledCanvas>
+          </div>
         </div>
       );
     },
@@ -562,9 +570,18 @@ export let Block = ({
         </ol>
       );
     },
-    "pub.leaflet.blocks.drawing": (block) => {
-      return <StaticDrawingBlock block={block} />;
-    },
+    "pub.leaflet.blocks.drawing": (block) => (
+      <div className="w-full">
+        <InkSvg
+          viewBox={block.viewBox}
+          strokes={block.strokes.map((stroke, i) => ({
+            id: String(i),
+            stroke,
+          }))}
+          fills={block.fills?.map((fill, i) => ({ id: String(i), fill }))}
+        />
+      </div>
+    ),
     "pub.leaflet.blocks.math": (block) => {
       return <StaticMathBlock block={block} />;
     },

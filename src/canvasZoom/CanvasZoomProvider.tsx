@@ -24,7 +24,6 @@ import {
   anchorToCanvas,
   approachZoom,
   clampZoom,
-  contentMargin,
   minZoom,
   nextStep,
   padsForScroll,
@@ -178,12 +177,6 @@ export function CanvasZoomProvider(props: {
       scrollWidth: s.x.scrollWidth,
       scrollHeight: s.y.scrollHeight,
     });
-    // The stylesheet's margin (cq units) is relative to the box.
-    let margin = (s: Scrollers) =>
-      contentMargin(centered, {
-        width: s.x.clientWidth,
-        height: s.x.clientHeight,
-      });
     // Where the spacer's box starts in the scrollers' extent.
     let spacerOrigin = (s: Scrollers, spacer: HTMLElement): Scroll => {
       let r = spacer.getBoundingClientRect();
@@ -194,13 +187,14 @@ export function CanvasZoomProvider(props: {
         top: r.top - yr.top - s.y.clientTop + s.y.scrollTop,
       };
     };
-    // Where the content starts, behind the spacer's padding and margin.
+    // Where the content starts, behind the spacer's padding and margin (the
+    // stylesheet's half-box margin on a centered canvas; cq units, so the box).
     let contentOrigin = (s: Scrollers, spacer: HTMLElement): Scroll => {
       let o = spacerOrigin(s, spacer);
-      let m = margin(s);
+      let m = centered ? 0.5 : 0;
       return {
-        left: o.left + pads.current.left + m.left,
-        top: o.top + pads.current.top + m.top,
+        left: o.left + pads.current.left + m * s.x.clientWidth,
+        top: o.top + pads.current.top + m * s.x.clientHeight,
       };
     };
 

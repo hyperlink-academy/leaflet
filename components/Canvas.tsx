@@ -3,13 +3,7 @@ import { useEntitySetContext } from "./EntitySetProvider";
 import { v7 } from "uuid";
 import { BaseBlock } from "./Blocks/Block";
 import { registerBlockGroup } from "src/utils/blockGroups";
-import {
-  type CSSProperties,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useDrag } from "src/hooks/useDrag";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { focusBlock } from "src/utils/focusBlock";
@@ -132,22 +126,14 @@ export function Canvas(props: {
       </CanvasOverlay>
       {permissions.write && <CanvasFocusZoom pageEntityID={props.entityID} />}
 
-      <div
+      <CanvasZoomLayer
         id={elementId.page(props.entityID).canvasScrollArea}
-        // Not an inline width: the engine rewrites that to fit a scrollbar gutter.
-        style={{ "--canvas-width": `${size.width}px` } as CSSProperties}
-        className={`
-          canvasWrapper
-          w-(--canvas-width) max-w-full
-          ${props.pageScroll ? "canvasPageScroll" : "h-full overflow-y-scroll"}
-          ${size.fixed ? "bg-border-light" : ""}
-          touch-pan-x touch-pan-y
-        `}
+        className={size.fixed ? "bg-border-light" : ""}
+        contentHeight={size.height}
+        mobileArea={mobileArea}
       >
-        <CanvasZoomLayer contentHeight={size.height} mobileArea={mobileArea}>
-          <CanvasContent {...props} />
-        </CanvasZoomLayer>
-      </div>
+        <CanvasContent {...props} />
+      </CanvasZoomLayer>
 
       <CanvasOverlay edge="bottom">
         <AddCanvasBlockButton entityID={props.entityID} canvas={size} />

@@ -11,7 +11,6 @@ import {
   minZoom,
   nextStep,
   wheelToZoomFactor,
-  contentMargin,
 } from "./math";
 
 const DOM_DELTA_PIXEL = 0;
@@ -226,13 +225,5 @@ describe("approachZoom", () => {
   });
   it("does not move without elapsed time", () => {
     expect(approachZoom(1, 2, 0)).toBe(1);
-  });
-});
-
-describe("contentMargin", () => {
-  it("is half a viewport on a centered canvas and none otherwise", () => {
-    let client = { width: 800, height: 600 };
-    expect(contentMargin(true, client)).toEqual({ left: 400, top: 300 });
-    expect(contentMargin(false, client)).toEqual({ left: 0, top: 0 });
   });
 });

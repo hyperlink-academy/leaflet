@@ -42,7 +42,6 @@ import { publishedNavPages } from "src/utils/publishedPageMetadata";
 import { collectAndFetchBlockResources } from "./collectAndFetchBlockResources";
 import { PostContent } from "./PostContent";
 import { CanvasContent } from "./CanvasPage";
-import { mobileViewArea } from "src/canvasZoom/mobileView";
 import { publicationCanvasWidth } from "src/utils/publicationCanvasWidth";
 import { getProfiles } from "src/identity";
 import { attachBylineProfiles, bylineDidsForPosts } from "src/utils/byline";
@@ -293,7 +292,7 @@ export async function PublicationPageRenderer({
               {canvasPage ? (
                 <CanvasContent
                   pageScroll
-                  blocks={canvasPage.blocks}
+                  page={canvasPage}
                   did={did}
                   prerenderedCodeBlocks={prerenderedCodeBlocks}
                   bskyPostData={JSON.parse(JSON.stringify(bskyPostData))}
@@ -309,11 +308,6 @@ export async function PublicationPageRenderer({
                   }
                   zoomKey={`${publication.uri}${page.path}`}
                   contentWidth={canvasWidth}
-                  mobileArea={mobileViewArea(
-                    canvasPage.mobileView,
-                    canvasWidth,
-                  )}
-                  lockViewerZoom={!!canvasPage.lockViewerZoom}
                 />
               ) : (
                 <div

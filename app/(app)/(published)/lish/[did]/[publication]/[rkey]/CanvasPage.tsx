@@ -6,12 +6,12 @@ import {
 } from "lexicons/api";
 import { PostPageData } from "src/utils/getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { useMemo, type ComponentProps, type CSSProperties } from "react";
+import { useMemo, type ComponentProps } from "react";
 import { PageWrapper } from "components/Pages/Page";
 import { CanvasZoomProvider } from "src/canvasZoom/CanvasZoomProvider";
 import { CanvasZoomLayer } from "src/canvasZoom/CanvasZoomLayer";
 import { CanvasOverlay } from "src/canvasZoom/CanvasPageScroll";
-import { mobileViewArea, type CanvasArea } from "src/canvasZoom/mobileView";
+import { mobileViewArea } from "src/canvasZoom/mobileView";
 import { CONTENT_WIDTH } from "src/canvasZoom/math";
 import { CanvasZoomControls } from "components/CanvasZoomControls";
 import { CanvasBlocks } from "./CanvasBlockContent";
@@ -29,15 +29,11 @@ import { PubLeafletBlocksPostHeader } from "lexicons/api";
 import { PostHeaderBlockProvider } from "./PostHeader/postHeaderBlockContext";
 
 export function CanvasPage({
-  blocks,
+  page,
   pages,
-  mobileView,
-  lockViewerZoom,
   ...props
 }: Omit<SharedPageProps, "allPages"> & {
-  blocks: PubLeafletPagesCanvas.Block[];
-  mobileView?: PubLeafletPagesCanvas.Main["mobileView"];
-  lockViewerZoom?: boolean;
+  page: PubLeafletPagesCanvas.Main;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) {
   const {
@@ -65,7 +61,7 @@ export function CanvasPage({
   let drawer = useInlineDrawer(document_uri);
   // A header block on the canvas carries the metadata and interactions the
   // corner overlay would otherwise show.
-  let hasHeaderBlock = blocks.some((b) =>
+  let hasHeaderBlock = page.blocks?.some((b) =>
     PubLeafletBlocksPostHeader.isMain(b.block),
   );
 
@@ -95,7 +91,7 @@ export function CanvasPage({
       <DrawerThreadPageProvider pageId={pageId}>
         <PostHeaderBlockProvider value={headerData}>
           <CanvasContent
-            blocks={blocks}
+            page={page}
             did={did}
             prerenderedCodeBlocks={prerenderedCodeBlocks}
             bskyPostData={bskyPostData}
@@ -104,8 +100,6 @@ export function CanvasPage({
             pageId={pageId}
             pages={pages}
             zoomKey={pageId ? `${document_uri}#${pageId}` : document_uri}
-            mobileArea={mobileViewArea(mobileView)}
-            lockViewerZoom={!!lockViewerZoom}
           />
         </PostHeaderBlockProvider>
       </DrawerThreadPageProvider>
@@ -114,42 +108,38 @@ export function CanvasPage({
 }
 
 export function CanvasContent({
+  page,
   zoomKey,
-  mobileArea,
-  lockViewerZoom,
   pageScroll,
   contentWidth = CONTENT_WIDTH,
   ...props
-}: Omit<ComponentProps<typeof CanvasBlocks>, "preview" | "size"> & {
+}: Omit<ComponentProps<typeof CanvasBlocks>, "preview" | "size" | "blocks"> & {
+  page: PubLeafletPagesCanvas.Main;
   zoomKey: string;
-  mobileArea: CanvasArea | null;
-  lockViewerZoom: boolean;
   pageScroll?: boolean;
 }) {
+  let blocks = page.blocks ?? [];
+  let mobileArea = mobileViewArea(page.mobileView, contentWidth);
   return (
     <CanvasZoomProvider
       pageKey={zoomKey}
       pageScroll={pageScroll}
       contentWidth={contentWidth}
       initialArea={mobileArea}
-      lockViewerZoom={lockViewerZoom}
+      lockViewerZoom={!!page.lockViewerZoom}
     >
-      {/* A class rather than an inline width: the zoom engine owns the box's inline width. */}
-      <div
-        style={{ "--canvas-width": `${contentWidth}px` } as CSSProperties}
-        className={`canvasWrapper w-(--canvas-width) max-w-full ${pageScroll ? "canvasPageScroll" : "h-full overflow-y-scroll"} touch-pan-x touch-pan-y postContent`}
+      <CanvasZoomLayer
+        className="postContent"
+        contentHeight={canvasContentHeight(blocks)}
+        mobileArea={mobileArea}
       >
-        <CanvasZoomLayer
-          contentHeight={canvasContentHeight(props.blocks)}
-          mobileArea={mobileArea}
-        >
-          <CanvasBlocks
-            {...props}
-            contentWidth={contentWidth}
-            preview={false}
-          />
-        </CanvasZoomLayer>
-      </div>
+        <CanvasBlocks
+          {...props}
+          blocks={blocks}
+          contentWidth={contentWidth}
+          preview={false}
+        />
+      </CanvasZoomLayer>
       <CanvasOverlay edge="bottom">
         <CanvasZoomControls className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-20 bg-bg-page border border-border-light rounded-md px-1 py-0.5" />
       </CanvasOverlay>

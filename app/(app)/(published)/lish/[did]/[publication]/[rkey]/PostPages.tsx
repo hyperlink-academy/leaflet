@@ -72,13 +72,7 @@ function PageRenderer({
 
   if (isCanvas) {
     return (
-      <CanvasPage
-        {...sharedProps}
-        blocks={(page as PubLeafletPagesCanvas.Main).blocks || []}
-        mobileView={(page as PubLeafletPagesCanvas.Main).mobileView}
-        lockViewerZoom={(page as PubLeafletPagesCanvas.Main).lockViewerZoom}
-        pages={sharedProps.allPages}
-      />
+      <CanvasPage {...sharedProps} page={page} pages={sharedProps.allPages} />
     );
   }
 
