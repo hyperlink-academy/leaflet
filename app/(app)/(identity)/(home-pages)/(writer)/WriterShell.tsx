@@ -18,24 +18,25 @@ const PAGE_META = [
     prefix: "/looseleafs",
     id: "looseleafs",
     title: "Looseleafs",
-    showBackButton: true,
+    showHomeButton: true,
   },
   {
     prefix: "/notifications",
     id: "notifications",
     title: "Notifications",
+    showHomeButton: true,
   },
   {
     prefix: "/subscriptions",
     id: "subscriptions",
     title: "Your Subscriptions",
-    showBackButton: true,
+    showHomeButton: true,
   },
   {
     prefix: "/settings",
     id: "settings",
     title: "Settings",
-    showBackButton: true,
+    showHomeButton: true,
   },
 ];
 
@@ -50,7 +51,7 @@ export function WriterShell(props: { children: React.ReactNode }) {
         meta && (
           <PageTitle
             pageTitle={meta.title}
-            showBackButton={meta.showBackButton}
+            showHomeButton={meta.showHomeButton}
           />
         )
       }

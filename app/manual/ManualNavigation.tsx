@@ -15,7 +15,7 @@ export const ManualNavigation = (props: { onNavigate?: () => void }) => {
 
   return (
     <>
-      <PageTitle pageTitle="Manual" />
+      <PageTitle pageTitle="Manual" showHomeButton />
       <hr className="border-border-light mb-2" />
       <div className="flex flex-col gap-0.5 grow min-h-0 overflow-y-auto">
         <SpeedyLink

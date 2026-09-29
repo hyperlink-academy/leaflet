@@ -115,7 +115,7 @@ export default async function PublicationDashboardLayout(props: {
         <DashboardShell
           id={publication.uri}
           publication={publication.uri}
-          pageTitle={<PageTitle pageTitle={record.name} showBackButton />}
+          pageTitle={<PageTitle pageTitle={record.name} showHomeButton />}
           actions={
             <>
               <Actions publication={publication.uri} />

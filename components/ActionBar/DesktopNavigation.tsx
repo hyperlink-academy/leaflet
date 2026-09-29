@@ -15,7 +15,7 @@ import { AccountSmall } from "components/Icons/AccountSmall";
 import { TabsSmall } from "components/Icons/TabsSmall";
 import { SpeedyLink } from "components/SpeedyLink";
 import { GoToArrow } from "components/Icons/GoToArrow";
-import { GoToArrowLined } from "components/Icons/GoToArrowLined";
+import { HomeTiny } from "components/Icons/HomeTiny";
 import { HelpSmall } from "components/Icons/HelpSmall";
 import { Popover } from "components/Popover";
 import { useIsMobile } from "src/hooks/isMobile";
@@ -211,18 +211,18 @@ export const HelpContent = () => {
 
 export const PageTitle = (props: {
   pageTitle: string;
-  showBackButton?: boolean;
+  showHomeButton?: boolean;
 }) => {
   return (
     <div className="flex gap-2 w-full px-1 py-0.5 items-center ">
-      {props.showBackButton && (
-        <SpeedyLink eager href={"/home"} className="flex items-center">
-          <button>
-            <GoToArrowLined
-              className="accent-accent-contrast rotate-180 shrink-0"
-              aria-label="Go Back"
-            />
-          </button>
+      {props.showHomeButton && (
+        <SpeedyLink
+          eager
+          href={"/home"}
+          aria-label="Home"
+          className="flex items-center shrink-0 text-tertiary hover:text-accent-contrast"
+        >
+          <HomeTiny />
         </SpeedyLink>
       )}
       <div className="truncate min-w-0 text-tertiary uppercase text-sm font-bold">
