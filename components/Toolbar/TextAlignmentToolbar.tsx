@@ -63,6 +63,7 @@ export function TextAlignmentToolbar() {
 export function TextAlignmentButton(props: {
   setToolbarState: (s: "text-alignment") => void;
   className?: string;
+  hiddenOnCanvas?: boolean;
 }) {
   let focusedBlock = useUIState((s) => s.focusedEntity);
   let alignment =
@@ -70,7 +71,7 @@ export function TextAlignmentButton(props: {
       .value || "left";
   return (
     <ToolbarButton
-      hiddenOnCanvas
+      hiddenOnCanvas={props.hiddenOnCanvas}
       tooltipContent={<div>Align</div>}
       className={`${props.className}`}
       onClick={() => {

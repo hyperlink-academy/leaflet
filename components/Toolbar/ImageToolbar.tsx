@@ -18,7 +18,10 @@ export const ImageToolbar = (props: {
   return (
     <div className="flex items-center gap-2 justify-between w-full">
       <div className="flex items-center gap-2">
-        <TextAlignmentButton setToolbarState={props.setToolbarState} />
+        <TextAlignmentButton
+          hiddenOnCanvas
+          setToolbarState={props.setToolbarState}
+        />
         {focusedEntityType?.data.value !== "canvas" && (
           <Separator classname="h-6!" />
         )}
