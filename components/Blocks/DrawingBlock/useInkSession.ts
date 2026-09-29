@@ -18,6 +18,7 @@ export const useInkSession = create(
       size: INK_SIZES[1] as number,
       // The color picker's last pick, kept while a built-in color is in use.
       customColor: "#0090FF",
+      colorPickerOpen: false,
       // Strokes an eraser gesture has swept, hidden until it lifts and they
       // are retracted together.
       erasing: [] as string[],
@@ -29,7 +30,14 @@ export const useInkSession = create(
       start: (page: string, target: string | null = null) => {
         useUIState.setState({ selectedBlocks: [], focusedEntity: null });
         (document.activeElement as HTMLElement | null)?.blur?.();
-        set({ page, target, tool: "pen", erasing: [], snapshot: null });
+        set({
+          page,
+          target,
+          tool: "pen",
+          erasing: [],
+          snapshot: null,
+          colorPickerOpen: false,
+        });
       },
       setTarget: (target: string) => set({ target }),
       setSnapshot: (snapshot: DrawingState) => set({ snapshot }),
@@ -38,6 +46,8 @@ export const useInkSession = create(
       setCustomColor: (customColor: string) =>
         set({ customColor, color: customColor, tool: "pen" }),
       setSize: (size: number) => set({ size, tool: "pen" }),
+      setColorPickerOpen: (colorPickerOpen: boolean) =>
+        set({ colorPickerOpen }),
       setErasing: (erasing: string[]) => set({ erasing }),
     }),
   ),

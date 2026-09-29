@@ -201,8 +201,12 @@ export function CanvasInkLayer(props: { pageID: string }) {
           touches.current.add(e.pointerId);
           // A second finger is a pinch, not a stroke.
           if (touches.current.size > 1) return cancel();
-          if (penSeen) return;
         }
+        // Radix only dismisses on a touch once its click lands, which a
+        // dragged stroke never produces.
+        let session = useInkSession.getState();
+        if (session.colorPickerOpen) return session.setColorPickerOpen(false);
+        if (e.pointerType === "touch" && penSeen) return;
         if (e.pointerType === "pen" && !penSeen) setPenSeen(true);
         if (e.pointerType === "mouse" && e.button !== 0) return;
         if (isCanvasPinching()) return;

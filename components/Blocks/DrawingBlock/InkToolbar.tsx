@@ -27,13 +27,17 @@ export function InkToolbar(props: { pageID: string }) {
   let size = useInkSession((s) => s.size);
   let customColor = useInkSession((s) => s.customColor);
   let hasTarget = useInkSession((s) => !!s.target);
-  let { setColor, setCustomColor, setSize, setTool } = useInkSession.getState();
+  let colorPickerOpen = useInkSession((s) => s.colorPickerOpen);
+  let { setColor, setCustomColor, setSize, setTool, setColorPickerOpen } =
+    useInkSession.getState();
   if (!active) return null;
 
   return (
     <div className="inkToolbar absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 bg-bg-page border border-border rounded-full shadow-sm px-1 py-1">
       <Popover
         asChild
+        open={colorPickerOpen}
+        onOpenChange={setColorPickerOpen}
         side="bottom"
         className="w-[172px]"
         trigger={
