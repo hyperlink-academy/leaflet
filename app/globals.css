@@ -145,6 +145,19 @@
     --safe-padding-bottom: calc(env(safe-area-inset-bottom) - 8px);
   }
 
+  /* The leaflet's own theme, resolved where it is set. A page overrides the
+     variables above for its subtree (CardThemeProvider), which includes the
+     previews of the pages linked from it; those fall back to these. */
+  :root,
+  .leafletWrapper {
+    --leaflet-bg-page: var(--bg-page);
+    --leaflet-bg-page-alpha: var(--bg-page-alpha);
+    --leaflet-primary: var(--primary);
+    --leaflet-accent-1: var(--accent-1);
+    --leaflet-accent-2: var(--accent-2);
+    --leaflet-accent-contrast: var(--accent-contrast);
+  }
+
   @media (min-width: 640px) {
     :root {
       /*picks between max width and screen width with 64px of padding*/

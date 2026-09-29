@@ -417,6 +417,7 @@ export const BaseThemeProvider = ({
 };
 
 let CardThemeProviderContext = createContext<null | string>(null);
+export const useCardThemeEntity = () => useContext(CardThemeProviderContext);
 export function NestedCardThemeProvider(props: { children: React.ReactNode }) {
   let card = useContext(CardThemeProviderContext);
   if (!card) return props.children;
@@ -425,6 +426,10 @@ export function NestedCardThemeProvider(props: { children: React.ReactNode }) {
   );
 }
 
+// A page's theme is its own colors over the leaflet's. What it doesn't set is
+// reset to the leaflet's (--leaflet-*, globals.css) rather than left to
+// inherit: a page's preview renders inside the page that links to it, whose
+// colors it would take instead.
 export function CardThemeProvider(props: {
   entityID: string;
   children: React.ReactNode;
@@ -456,16 +461,24 @@ export function CardThemeProvider(props: {
         className="contents text-primary"
         style={
           {
-            "--accent-1": accent1 ? colorToString(accent1, "rgb") : undefined,
-            "--accent-2": accent2 ? colorToString(accent2, "rgb") : undefined,
+            "--accent-1": accent1
+              ? colorToString(accent1, "rgb")
+              : "var(--leaflet-accent-1)",
+            "--accent-2": accent2
+              ? colorToString(accent2, "rgb")
+              : "var(--leaflet-accent-2)",
             "--accent-contrast": accentContrast
               ? colorToString(accentContrast, "rgb")
-              : undefined,
-            "--bg-page": bgPage ? colorToString(bgPage, "rgb") : undefined,
+              : "var(--leaflet-accent-contrast)",
+            "--bg-page": bgPage
+              ? colorToString(bgPage, "rgb")
+              : "var(--leaflet-bg-page)",
             "--bg-page-alpha": bgPage
               ? bgPage.getChannelValue("alpha")
-              : undefined,
-            "--primary": primary ? colorToString(primary, "rgb") : undefined,
+              : "var(--leaflet-bg-page-alpha)",
+            "--primary": primary
+              ? colorToString(primary, "rgb")
+              : "var(--leaflet-primary)",
           } as CSSProperties
         }
       >

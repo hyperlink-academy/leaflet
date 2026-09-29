@@ -16,7 +16,10 @@ import {
 } from "./PageLinkBlockSettings";
 import { CanvasContent } from "components/Canvas";
 import { CanvasLinkPreview } from "./ScaledCanvas";
-import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
+import {
+  CardThemeProvider,
+  useCardThemeEntity,
+} from "components/ThemeManager/ThemeProvider";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
 export function PageLinkBlock(
@@ -35,6 +38,11 @@ export function PageLinkBlock(
   let display = usePageLinkDisplay(props.entityID);
 
   let isOpen = useUIState((s) => s.openPages.includes(page?.data.value || ""));
+  // Painted only where it differs from the page around the block, so a
+  // translucent page background isn't laid over itself.
+  let hasOwnBackground =
+    !!useEntity(page?.data.value || null, "theme/card-background") ||
+    !!useEntity(useCardThemeEntity(), "theme/card-background");
   if (!page)
     return <div>An error occurred, there should be a page linked here!</div>;
 
@@ -49,6 +57,7 @@ export function PageLinkBlock(
         className={`cursor-pointer
         pageLinkBlockWrapper relative group/pageLinkBlock
         flex overflow-clip p-0!
+        ${hasOwnBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))]" : ""}
         ${isOpen && "border-accent-contrast! outline-accent-contrast!"}
         `}
       >
