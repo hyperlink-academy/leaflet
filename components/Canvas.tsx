@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import { useDrag } from "src/hooks/useDrag";
+import { isTextBlock } from "src/utils/isTextBlock";
 import { useLongPress } from "src/hooks/useLongPress";
 import { focusBlock } from "src/utils/focusBlock";
 import { elementId } from "src/utils/elementId";
@@ -539,8 +540,14 @@ function CanvasBlock(props: {
     },
     [props, rep, permissions, width, rect.height],
   );
-  let { dragDelta, handlers: dragHandlers } = useDrag({
+  let {
+    dragDelta,
+    handlers: dragHandlers,
+    bodyHandlers,
+  } = useDrag({
     onDragEnd,
+    bodyIgnore:
+      "button, input, textarea, select, iframe, [contenteditable], [data-draggable]",
   });
 
   let widthOnDragEnd = useCallback(
@@ -630,6 +637,14 @@ function CanvasBlock(props: {
     : blockMouseHandlers;
 
   let isList = useEntity(props.entityID, "block/is-list");
+  // Text is selected and edited by pressing on it, so text blocks (and the
+  // groups holding them) only move by the gripper.
+  let bodyDraggable =
+    !props.preview &&
+    permissions.write &&
+    !!type &&
+    !isGroup &&
+    !isTextBlock[type.data.value];
   // Editing inside a group keeps the group's handles up.
   let isFocused = useUIState(
     (s) =>
@@ -661,7 +676,8 @@ function CanvasBlock(props: {
       )}
 
       <div
-        className={` w-full ${dragDelta || widthHandle.dragDelta || rotateHandle.dragDelta ? "pointer-events-none" : ""} `}
+        {...(bodyDraggable ? bodyHandlers : {})}
+        className={` w-full ${bodyDraggable ? "[-webkit-touch-callout:none]" : ""} ${dragDelta || widthHandle.dragDelta || rotateHandle.dragDelta ? "pointer-events-none" : ""} `}
       >
         {type && (
           <BaseBlock
