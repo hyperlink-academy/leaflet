@@ -22,6 +22,7 @@ export async function createPublicationDraftLeaflet(args: {
     args.postsListView
       ? { type: "posts-list" as const, view: args.postsListView }
       : ("posts-list" as const),
+    "text",
     "signup",
   ];
 

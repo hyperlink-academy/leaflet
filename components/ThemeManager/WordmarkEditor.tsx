@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import * as Slider from "@radix-ui/react-slider";
 import { useEntity, useReplicache } from "src/replicache";
@@ -66,9 +66,8 @@ export function WordmarkEditor() {
   let { src, width, pageWidth, setImage, setWidth, remove } =
     useDraftWordmark();
   let params = useParams<{ did: string; publication: string }>();
-  let [mode, setMode] = useState<"logo" | "wordmark">(
-    src ? "wordmark" : "logo",
-  );
+  let mode: "logo" | "wordmark" = src ? "wordmark" : "logo";
+  let fileInputRef = useRef<HTMLInputElement>(null);
 
   let sliderWidth = width ?? DEFAULT_WORDMARK_WIDTH;
   // Interim value keeps the number input and slider in sync while editing;
@@ -84,11 +83,6 @@ export function WordmarkEditor() {
     setWidth(clamped);
   };
 
-  let onRemove = async () => {
-    setMode("logo");
-    await remove();
-  };
-
   return (
     <div className="wordmarkEditor flex flex-col gap-3 w-xs text-primary">
       <h3 className="font-bold text-primary">Header Options</h3>
@@ -102,8 +96,7 @@ export function WordmarkEditor() {
           checked={mode === "logo"}
           onChange={(e) => {
             if (!e.currentTarget.checked) return;
-            setMode("logo");
-            if (src) onRemove();
+            remove();
           }}
         >
           <div className="flex flex-col leading-snug">
@@ -142,7 +135,7 @@ export function WordmarkEditor() {
             checked={mode === "wordmark"}
             onChange={(e) => {
               if (!e.currentTarget.checked) return;
-              setMode("wordmark");
+              fileInputRef.current?.click();
             }}
           >
             <div className="font-bold text-primary flex flex-col w-full">
@@ -152,104 +145,103 @@ export function WordmarkEditor() {
               </div>
             </div>
           </Radio>
-          {mode === "wordmark" && src && (
+          {src && (
             <button
               type="button"
               className="shrink-0 text-accent-contrast"
-              onClick={onRemove}
+              onClick={remove}
             >
               Remove
             </button>
           )}
         </div>
 
-        {mode === "wordmark" && (
-          <div className="flex flex-col gap-2 pl-5">
-            {src ? (
-              <>
-                <div className="flex items-center justify-center rounded-md border border-border-light bg-bg-page p-2">
-                  <img
-                    src={src}
-                    alt="Wordmark preview"
-                    className="h-auto object-contain"
-                    style={{ width: `${interimWidth}px`, maxWidth: "100%" }}
-                  />
-                </div>
-
-                <div className="flex flex-col ">
-                  <div className="flex justify-between items-center  text-secondary">
-                    Max width
-                    <div className="flex font-normal text-tertiary">
-                      <Input
-                        type="number"
-                        className="w-10 text-right appearance-none bg-transparent"
-                        max={pageWidth}
-                        min={MIN_WORDMARK_WIDTH}
-                        value={interimWidth}
-                        onChange={(e) =>
-                          setInterimWidth(parseInt(e.currentTarget.value))
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === "Escape") {
-                            e.preventDefault();
-                            commitWidth(interimWidth);
-                          }
-                        }}
-                        onBlur={() => commitWidth(interimWidth)}
-                      />
-                      px
-                    </div>
-                  </div>
-                  <Slider.Root
-                    className="relative flex items-center select-none touch-none w-full h-fit px-1"
-                    value={[interimWidth]}
-                    max={pageWidth}
-                    min={MIN_WORDMARK_WIDTH}
-                    step={5}
-                    onValueChange={(v) => setInterimWidth(v[0])}
-                    onValueCommit={(v) => setWidth(v[0])}
-                  >
-                    <Slider.Track className="bg-border relative grow rounded-full h-[3px] my-2">
-                      <Slider.Range className="absolute bg-accent-contrast rounded-full h-full" />
-                    </Slider.Track>
-                    <Slider.Thumb
-                      className="flex w-4 h-4 rounded-full border-2 border-white bg-accent-contrast shadow-[0_0_0_1px_rgb(var(--border))] cursor-pointer"
-                      aria-label="Wordmark max width"
-                    />
-                  </Slider.Root>
-                </div>
-              </>
-            ) : (
-              <label
-                className="group/wordmark-upload flex items-center justify-center gap-2 h-[104px] w-full rounded-lg border border-dashed border-border bg-[var(--accent-light)] cursor-pointer text-tertiary hover:font-bold hover:text-accent-contrast hover:border-accent-contrast"
-                onMouseDown={(e) => e.preventDefault()}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const file = e.dataTransfer.files?.[0];
-                  if (file?.type.startsWith("image/")) setImage(file);
-                }}
-              >
-                <BlockImageSmall className="shrink-0 text-border group-hover/wordmark-upload:text-accent-contrast" />
-                Upload Wordmark
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setImage(file);
-                    e.currentTarget.value = "";
-                  }}
+        <div className="flex flex-col gap-2 pl-5">
+          {src ? (
+            <>
+              <div className="flex items-center justify-center rounded-md border border-border-light bg-bg-page p-2">
+                <img
+                  src={src}
+                  alt="Wordmark preview"
+                  className="h-auto object-contain"
+                  style={{ width: `${interimWidth}px`, maxWidth: "100%" }}
                 />
-              </label>
-            )}
-          </div>
-        )}
+              </div>
+
+              <div className="flex flex-col ">
+                <div className="flex justify-between items-center  text-secondary">
+                  Max width
+                  <div className="flex font-normal text-tertiary">
+                    <Input
+                      type="number"
+                      className="w-10 text-right appearance-none bg-transparent"
+                      max={pageWidth}
+                      min={MIN_WORDMARK_WIDTH}
+                      value={interimWidth}
+                      onChange={(e) =>
+                        setInterimWidth(parseInt(e.currentTarget.value))
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === "Escape") {
+                          e.preventDefault();
+                          commitWidth(interimWidth);
+                        }
+                      }}
+                      onBlur={() => commitWidth(interimWidth)}
+                    />
+                    px
+                  </div>
+                </div>
+                <Slider.Root
+                  className="relative flex items-center select-none touch-none w-full h-fit px-1"
+                  value={[interimWidth]}
+                  max={pageWidth}
+                  min={MIN_WORDMARK_WIDTH}
+                  step={5}
+                  onValueChange={(v) => setInterimWidth(v[0])}
+                  onValueCommit={(v) => setWidth(v[0])}
+                >
+                  <Slider.Track className="bg-border relative grow rounded-full h-[3px] my-2">
+                    <Slider.Range className="absolute bg-accent-contrast rounded-full h-full" />
+                  </Slider.Track>
+                  <Slider.Thumb
+                    className="flex w-4 h-4 rounded-full border-2 border-white bg-accent-contrast shadow-[0_0_0_1px_rgb(var(--border))] cursor-pointer"
+                    aria-label="Wordmark max width"
+                  />
+                </Slider.Root>
+              </div>
+            </>
+          ) : (
+            <label
+              className="group/wordmark-upload flex items-center justify-center gap-2 h-[104px] w-full rounded-lg border border-dashed border-border bg-[var(--accent-light)] cursor-pointer text-tertiary hover:font-bold hover:text-accent-contrast hover:border-accent-contrast"
+              onMouseDown={(e) => e.preventDefault()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const file = e.dataTransfer.files?.[0];
+                if (file?.type.startsWith("image/")) setImage(file);
+              }}
+            >
+              <BlockImageSmall className="shrink-0 text-border group-hover/wordmark-upload:text-accent-contrast" />
+              Upload Wordmark
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) setImage(file);
+                  e.currentTarget.value = "";
+                }}
+              />
+            </label>
+          )}
+        </div>
       </div>
     </div>
   );
