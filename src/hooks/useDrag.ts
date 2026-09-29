@@ -123,14 +123,17 @@ export const useDrag = (args: {
         { signal },
       );
       // Registered with the press rather than on lift: once the browser
-      // starts a scroll its touchmoves can no longer be cancelled.
-      window.addEventListener(
-        "touchmove",
-        (move) => {
-          if (lifted) move.preventDefault();
-        },
-        { signal, passive: false },
-      );
+      // starts a scroll its touchmoves can no longer be cancelled. A touch
+      // stays with the element it started on, and stops bubbling to the
+      // window if a re-render takes that element out of the document.
+      for (let on of [window, target])
+        on.addEventListener(
+          "touchmove",
+          (move) => {
+            if (lifted && move.cancelable) move.preventDefault();
+          },
+          { signal, passive: false },
+        );
       // The press itself wasn't cancelled (it still has to focus and click),
       // so the browser goes on selecting text under the moving pointer.
       document.addEventListener(

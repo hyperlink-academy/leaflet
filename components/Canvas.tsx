@@ -617,12 +617,15 @@ function CanvasBlock(props: {
 
   let { isLongPress, longPressHandlers: longPressHandlers } = useLongPress(
     () => {
-      // A hold on text that can be dragged lifts the block instead.
+      // A hold on a body that can be dragged lifts the block instead.
+      // Focusing it as well would zoom and scroll the canvas under the
+      // finger, and swap the pressed element out of blocks that render
+      // differently while edited.
       if (
         isLongPress.current &&
         permissions.write &&
         !isGroup &&
-        !(holdsText && bodyDraggable)
+        !bodyDraggable
       ) {
         focusBlock(
           {
