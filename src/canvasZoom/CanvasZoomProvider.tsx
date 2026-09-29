@@ -427,7 +427,6 @@ export function CanvasZoomProvider(props: {
     boxRef.current = box;
     scrollerRef.current = scroller;
     if (!box || !scroller || !layer || !spacer) return;
-    if (!pageScroll) fitScrollerToGutter(box, contentWidth);
     pads.current = NO_PADS;
     spacer.style.padding = "";
     minRef.current = minZoom(box.clientWidth, contentWidth);
@@ -466,7 +465,6 @@ export function CanvasZoomProvider(props: {
     let signal = abort.signal;
 
     let boxObserver = new ResizeObserver(() => {
-      if (!pageScroll) fitScrollerToGutter(box, contentWidth);
       let m = minZoom(box.clientWidth, contentWidth);
       if (m === minRef.current) return;
       minRef.current = m;
@@ -504,7 +502,7 @@ export function CanvasZoomProvider(props: {
       pending.current = null;
       gesture.current = null;
     };
-  }, [engine, contentWidth, pageScroll]);
+  }, [engine, contentWidth]);
 
   useCanvasZoomGestures(engine, !locked, props.doubleTapZoom ?? true);
 
@@ -529,14 +527,6 @@ export function CanvasZoomProvider(props: {
       </CanvasZoomContext.Provider>
     </CanvasZoomEngineContext.Provider>
   );
-}
-
-// A classic scrollbar's gutter would eat into the canvas width and make it
-// scroll sideways, so the scroller is widened by it (idempotently).
-function fitScrollerToGutter(scroller: HTMLElement, contentWidth: number) {
-  let gutter = scroller.offsetWidth - scroller.clientWidth;
-  let width = gutter > 0 ? `${contentWidth + gutter}px` : "";
-  if (scroller.style.width !== width) scroller.style.width = width;
 }
 
 function appliedScale(layer: HTMLElement) {

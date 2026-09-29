@@ -19,9 +19,9 @@ export function CanvasZoomLayer(props: {
   return (
     <div
       id={props.id}
-      // Not an inline width: the engine rewrites that to fit a scrollbar gutter.
-      style={{ "--canvas-width": `${contentWidth}px` } as CSSProperties}
-      className={`canvasWrapper w-(--canvas-width) max-w-full ${pageScroll ? "canvasPageScroll" : "h-full overflow-y-scroll"} touch-pan-x touch-pan-y ${props.className ?? ""}`}
+      style={{ width: contentWidth }}
+      // A classic scrollbar would take its width out of the canvas.
+      className={`canvasWrapper max-w-full ${pageScroll ? "canvasPageScroll" : "h-full overflow-y-scroll no-scrollbar"} touch-pan-x touch-pan-y ${props.className ?? ""}`}
     >
       <div
         ref={spacerRef}
