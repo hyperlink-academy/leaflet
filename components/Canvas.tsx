@@ -540,14 +540,49 @@ function CanvasBlock(props: {
     },
     [props, rep, permissions, width, rect.height],
   );
+  // Editing inside a group keeps the group's handles up.
+  let isFocused = useUIState(
+    (s) =>
+      s.focusedEntity?.entityID === props.entityID ||
+      (isGroup &&
+        s.focusedEntity?.entityType === "block" &&
+        s.focusedEntity.parent === props.entityID),
+  );
+  let holdsText = isGroup || (!!type && !!isTextBlock[type.data.value]);
+  // Text is selected and edited by pressing on it, so a block of it only
+  // moves by its body until it is focused; from then on, by the gripper.
+  let bodyDraggable =
+    !props.preview && permissions.write && !!type && !(holdsText && isFocused);
   let {
     dragDelta,
     handlers: dragHandlers,
     bodyHandlers,
   } = useDrag({
     onDragEnd,
-    bodyIgnore:
-      "button, input, textarea, select, iframe, [contenteditable], [data-draggable]",
+    bodyIgnore: !holdsText
+      ? `${BODY_CONTROLS}, [contenteditable]`
+      : isGroup
+        ? `${BODY_CONTROLS}, ${TEXT_CONTROLS}, ${GROUP_CONTROLS}`
+        : `${BODY_CONTROLS}, ${TEXT_CONTROLS}`,
+    bodyText: holdsText
+      ? {
+          selector: "[contenteditable]",
+          onClick: ({ target, x, y }) => {
+            let entityID = target
+              .closest("[data-entityid]")
+              ?.getAttribute("data-entityid");
+            if (!entityID) return;
+            focusBlock(
+              {
+                type: "text",
+                entityID,
+                parent: isGroup ? props.entityID : props.parent,
+              },
+              { type: "coord", left: x, top: y },
+            );
+          },
+        }
+      : undefined,
   });
 
   let widthOnDragEnd = useCallback(
@@ -582,7 +617,13 @@ function CanvasBlock(props: {
 
   let { isLongPress, longPressHandlers: longPressHandlers } = useLongPress(
     () => {
-      if (isLongPress.current && permissions.write && !isGroup) {
+      // A hold on text that can be dragged lifts the block instead.
+      if (
+        isLongPress.current &&
+        permissions.write &&
+        !isGroup &&
+        !(holdsText && bodyDraggable)
+      ) {
         focusBlock(
           {
             type: type?.data.value || "text",
@@ -637,22 +678,6 @@ function CanvasBlock(props: {
     : blockMouseHandlers;
 
   let isList = useEntity(props.entityID, "block/is-list");
-  // Text is selected and edited by pressing on it, so text blocks (and the
-  // groups holding them) only move by the gripper.
-  let bodyDraggable =
-    !props.preview &&
-    permissions.write &&
-    !!type &&
-    !isGroup &&
-    !isTextBlock[type.data.value];
-  // Editing inside a group keeps the group's handles up.
-  let isFocused = useUIState(
-    (s) =>
-      s.focusedEntity?.entityID === props.entityID ||
-      (isGroup &&
-        s.focusedEntity?.entityType === "block" &&
-        s.focusedEntity.parent === props.entityID),
-  );
 
   return (
     <div
@@ -841,6 +866,14 @@ export const CanvasBackgroundPattern = (props: {
     );
   }
 };
+
+// Parts of a block's body that keep presses for themselves.
+const BODY_CONTROLS =
+  "button, input, textarea, select, iframe, [data-draggable]";
+// Inline nodes that act on a click.
+const TEXT_CONTROLS = "a, .mention, .footnote-ref, .comment-anchor";
+// A group's other blocks and list markers are picked up to reorder them.
+const GROUP_CONTROLS = ".nonTextBlockAndControls, [data-drag-handle]";
 
 const Gripper = (props: {
   onMouseDown: (e: React.MouseEvent) => void;

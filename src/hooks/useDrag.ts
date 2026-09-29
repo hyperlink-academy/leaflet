@@ -3,6 +3,13 @@ import { LONG_PRESS_DELAY, LONG_PRESS_TOLERANCE } from "./useLongPress";
 
 const BODY_DRAG_DISTANCE = 8;
 
+// The pointerup, compatibility mouse events and click that trail a drop are
+// indistinguishable from a tap to anything that acts on those.
+let lastBodyDropAt = 0;
+export const didBodyDragJustEnd = () => Date.now() - lastBodyDropAt < 250;
+
+type BodyPress = { target: Element; x: number; y: number };
+
 // `handlers` go on a dedicated handle and start the drag on contact.
 // `bodyHandlers` go on the dragged thing itself, where presses are also
 // clicks, scrolls and pinches: a mouse lifts it after BODY_DRAG_DISTANCE of
@@ -12,7 +19,14 @@ export const useDrag = (args: {
   onDragEnd: (d: { x: number; y: number }) => void;
   // Descendants of the body that keep presses for themselves.
   bodyIgnore?: string;
+  // Text in the body, which a mouse would focus and start selecting from the
+  // moment it goes down. The press is kept from it, and one that ends
+  // without lifting the body is handed to `onClick` to focus instead.
+  bodyText?: { selector: string; onClick: (press: BodyPress) => void };
 }) => {
+  let latest = useRef(args);
+  latest.current = args;
+  let withheld = useRef(false);
   let [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(
     null,
   );
@@ -56,16 +70,30 @@ export const useDrag = (args: {
       let target = e.target as Element;
       // Presses inside a portaled popover bubble here through the React tree.
       if (!e.currentTarget.contains(target)) return;
-      if (args.bodyIgnore && target.closest(args.bodyIgnore)) return;
+      let { bodyIgnore, bodyText } = latest.current;
+      if (bodyIgnore && target.closest(bodyIgnore)) return;
+      let text =
+        bodyText && target.closest(bodyText.selector) ? bodyText : null;
+      // Modified clicks on text extend a selection or open a link.
+      if (text && (e.shiftKey || e.metaKey || e.ctrlKey || e.altKey)) return;
 
       let from = { x: e.clientX, y: e.clientY };
       let { pointerId, pointerType } = e;
+      // A finger only reaches the text with the mouse events that follow
+      // its release.
+      let withhold = !!text && pointerType !== "touch";
+      withheld.current = withhold;
       let press = new AbortController();
       let { signal } = press;
       let lifted = false;
+      // Clearing the selection would take the caret from an editor the
+      // press never touched.
+      let clearSelection = () => {
+        if (!withhold) window.getSelection()?.removeAllRanges();
+      };
       let lift = (to: { x: number; y: number }) => {
         lifted = true;
-        window.getSelection()?.removeAllRanges();
+        clearSelection();
         start(from, to);
       };
       let hold =
@@ -108,7 +136,7 @@ export const useDrag = (args: {
       document.addEventListener(
         "selectionchange",
         () => {
-          if (lifted) window.getSelection()?.removeAllRanges();
+          if (lifted) clearSelection();
         },
         { signal },
       );
@@ -123,25 +151,44 @@ export const useDrag = (args: {
       let release = (up: PointerEvent) => {
         if (up.pointerId !== pointerId) return;
         press.abort();
-        if (!lifted) return;
-        // The click that follows the drop would otherwise act on whatever
-        // the body was dropped with the pointer over.
+        withheld.current = false;
+        if (!lifted) {
+          if (withhold && up.type === "pointerup")
+            text?.onClick({ target, x: up.clientX, y: up.clientY });
+          return;
+        }
+        lastBodyDropAt = Date.now();
+        // What follows the drop would otherwise act on whatever the body was
+        // dropped with the pointer over. A finger's mouse events trail its
+        // release by a moment; a mouse's click comes in the same breath.
         let swallow = new AbortController();
-        window.addEventListener(
-          "click",
-          (click) => {
-            click.preventDefault();
-            click.stopPropagation();
-          },
-          { capture: true, signal: swallow.signal },
+        for (let type of ["mousedown", "click"])
+          window.addEventListener(
+            type,
+            (after) => {
+              after.preventDefault();
+              after.stopPropagation();
+            },
+            { capture: true, signal: swallow.signal },
+          );
+        window.setTimeout(
+          () => swallow.abort(),
+          pointerType === "touch" ? 250 : 0,
         );
-        window.setTimeout(() => swallow.abort());
       };
-      window.addEventListener("pointerup", release, { signal });
-      window.addEventListener("pointercancel", release, { signal });
+      // Captured, so the drop is on record before any handler of the release
+      // asks didBodyDragJustEnd.
+      for (let type of ["pointerup", "pointercancel"] as const)
+        window.addEventListener(type, release, { signal, capture: true });
     },
-    [args.bodyIgnore, start],
+    [start],
   );
+
+  let onBodyMouseDownCapture = useCallback((e: React.MouseEvent) => {
+    if (!withheld.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
 
   let end = useCallback(() => {
     args.onDragEnd({ ...currentDragDelta.current });
@@ -190,6 +237,7 @@ export const useDrag = (args: {
   let handlers = { onMouseDown, onTouchEnd: end, onTouchStart };
   let bodyHandlers = {
     onPointerDown: onBodyPointerDown,
+    onMouseDownCapture: onBodyMouseDownCapture,
     // A native drag of an image or link inside the body would take the
     // pointer away mid-press.
     onDragStart: preventDefault,

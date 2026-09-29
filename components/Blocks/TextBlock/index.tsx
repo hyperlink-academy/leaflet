@@ -26,6 +26,7 @@ import { AddTiny } from "components/Icons/AddTiny";
 import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { isIOS } from "src/utils/isDevice";
+import { didBodyDragJustEnd } from "src/hooks/useDrag";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useMountProsemirror } from "./mountProsemirror";
@@ -115,6 +116,7 @@ function IOSBS(props: BlockProps) {
     <div
       className="h-full w-full absolute z-[1] cursor-text group-focus-within:hidden py-[18px]"
       onPointerUp={(e) => {
+        if (didBodyDragJustEnd()) return;
         e.preventDefault();
         focusBlock(props, {
           type: "coord",
