@@ -5,10 +5,8 @@ import type { Fact, ReplicacheMutators } from "src/replicache";
 import type { UndoManager } from "src/undoManager";
 import { flushPendingTextWrites } from "components/Blocks/TextBlock/useCollabText";
 
-// Makes a lone canvas block the first block of a group, so blocks can follow
-// it as in a linear document. Grouping is one undo entry that ungroups in a
-// single mutation: undoing it fact by fact would render the states in
-// between, like the canvas pointing at a group whose type is already gone.
+// One undo entry that ungroups in a single mutation: undoing fact by fact
+// would render in-between states, like the canvas pointing at a typeless group.
 export async function groupCanvasBlock(
   rep: Replicache<ReplicacheMutators>,
   undoManager: UndoManager,
@@ -37,8 +35,6 @@ export async function groupCanvasBlock(
   });
 }
 
-// Groups a lone canvas block and adds a new block after it in the group.
-// Returns the group entity.
 export async function groupCanvasBlockAndAddBelow(
   rep: Replicache<ReplicacheMutators>,
   undoManager: UndoManager,

@@ -495,6 +495,10 @@ export const blockCommands: Command[] = [
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       let newPage = v7();
+      let open = () => {
+        useUIState.getState().openPage(props.parent, newPage);
+        focusPage(newPage, rep);
+      };
       // Opened straight away to draw in; undo closes it with the block.
       await um.withUndoGroup(async () => {
         let entity = await createBlockWithType(rep, props, "embedded-canvas");
@@ -505,17 +509,11 @@ export const blockCommands: Command[] = [
           ...EMBEDDED_CANVAS_SIZES[DEFAULT_EMBEDDED_CANVAS_SIZE],
         });
         um.add({
-          undo: () => {
-            useUIState.getState().closePage(newPage);
-          },
-          redo: () => {
-            useUIState.getState().openPage(props.parent, newPage);
-            focusPage(newPage, rep);
-          },
+          undo: () => useUIState.getState().closePage(newPage),
+          redo: open,
         });
       });
-      useUIState.getState().openPage(props.parent, newPage);
-      focusPage(newPage, rep);
+      open();
     },
   },
   {

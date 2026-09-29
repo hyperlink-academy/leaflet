@@ -18,6 +18,5 @@ export function isBlockGroup(entity: string) {
 export function pageOfParent(parent: string): string;
 export function pageOfParent(parent: string | undefined): string | undefined;
 export function pageOfParent(parent: string | undefined) {
-  if (!parent) return parent;
-  return groupPages.get(parent) ?? parent;
+  return parent && (groupPages.get(parent) ?? parent);
 }

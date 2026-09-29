@@ -227,8 +227,6 @@ async function Enter({ e, props, rep, entity_set, undoManager }: Args) {
     return;
   }
   if (props.pageType === "canvas") {
-    // Like a text block, a lone canvas block becomes the first block of a
-    // group and the new block follows it there.
     if (props.type === "group") return;
     await groupCanvasBlockAndAddBelow(rep, undoManager, {
       page: props.parent,
