@@ -10,6 +10,7 @@ import {
   clampZoom,
   minZoom,
   nextStep,
+  scrollToCenterArea,
   wheelToZoomFactor,
 } from "./math";
 
@@ -117,6 +118,22 @@ describe("clampZoom / minZoom", () => {
     expect(minZoom(0, 1272)).toBe(0.25);
     expect(minZoom(390, 640)).toBe(0.25);
     expect(minZoom(120, 640)).toBeCloseTo(120 / 640);
+  });
+});
+
+describe("scrollToCenterArea", () => {
+  let center = { left: 376, width: 520 };
+
+  it("is the area's left edge when the zoom fits the area to the box", () => {
+    expect(scrollToCenterArea(center, 390 / 520, 390)).toBeCloseTo(282);
+  });
+
+  it("centers the area in a box wider than it", () => {
+    expect(scrollToCenterArea(center, 1, 768)).toBe(252);
+  });
+
+  it("keeps a left-anchored area at the canvas's left edge", () => {
+    expect(scrollToCenterArea({ left: 0, width: 520 }, 1, 768)).toBe(0);
   });
 });
 

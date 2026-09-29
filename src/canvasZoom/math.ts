@@ -25,6 +25,17 @@ export function fitZoom(clientWidth: number, width: number) {
   return Math.min(1, clientWidth / width || 1);
 }
 
+// Sideways offset that centers a canvas area in the box, which equals the
+// area's left edge once the zoom fits the area to the box. Mirrored by the
+// .canvasZoomLocked rule in globals.css.
+export function scrollToCenterArea(
+  area: { left: number; width: number },
+  zoom: number,
+  clientWidth: number,
+) {
+  return Math.max(0, (area.left + area.width / 2) * zoom - clientWidth / 2);
+}
+
 export function clampZoom(z: number, min: number) {
   if (!Number.isFinite(z)) return min;
   return Math.min(MAX_ZOOM, Math.max(min, z));

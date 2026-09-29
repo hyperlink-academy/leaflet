@@ -1408,7 +1408,7 @@ body > iframe[src*="js.stripe.com"] {
     0 0 0 9600px var(--color-primary);
 }
 /* Locked: the spacer is as wide as the box, so nothing scrolls sideways; the
-   layer is shifted to where a scroll to --canvas-mobile-left would land. */
+   layer is shifted to where a scroll centering the mobile area would land. */
 .canvasZoomSpacer.canvasZoomLocked {
   width: 100%;
 }
@@ -1417,7 +1417,14 @@ body > iframe[src*="js.stripe.com"] {
       calc(
         -1 *
           min(
-            var(--canvas-mobile-left, 0) * var(--canvas-zoom) * 1px,
+            max(
+              0px,
+              (
+                  var(--canvas-mobile-left, 0) +
+                    var(--canvas-mobile-area, 0) / 2
+                ) *
+                var(--canvas-zoom) * 1px - 50cqw
+            ),
             max(
               0px,
               var(--canvas-content-width) * var(--canvas-zoom) * 1px -

@@ -29,6 +29,7 @@ import {
   nextStep,
   padsForScroll,
   scrollForAnchor,
+  scrollToCenterArea,
   trimPads,
 } from "./math";
 import { getCanvasZoom, hasCanvasZoom, setCanvasZoom } from "./session";
@@ -134,7 +135,7 @@ export function CanvasZoomProvider(props: {
   centered?: boolean;
   /**
    * Area a fresh mount frames: the stylesheet fits its width, the box is
-   * scrolled to its left edge here. A zoom kept from an earlier mount wins.
+   * scrolled to center it here. A zoom kept from an earlier mount wins.
    */
   initialArea?: CanvasArea | null;
   children: ReactNode;
@@ -463,8 +464,8 @@ export function CanvasZoomProvider(props: {
       spacer.style.setProperty("--canvas-zoom", String(z));
       layer.style.setProperty("--canvas-zoom", String(z));
     }
-    if (!locked && !restored && area && area.left > 0)
-      box.scrollLeft = area.left * z;
+    if (!locked && !restored && area)
+      box.scrollLeft = scrollToCenterArea(area, z, box.clientWidth);
     if (centered) {
       let contentHeight =
         Number(spacer.style.getPropertyValue("--canvas-content-height")) || 0;
