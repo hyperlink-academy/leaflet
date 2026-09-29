@@ -98,6 +98,8 @@ export function Canvas(props: {
 
   return (
     <CanvasZoomProvider
+      // Only a reader's lock toggles while mounted; it gets a fresh canvas.
+      key={String(lockViewerZoom)}
       pageKey={props.entityID}
       pageScroll={props.pageScroll}
       contentWidth={size.width}
@@ -174,16 +176,12 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
         if (!editable) return;
         if ((e.detail === 2 || e.ctrlKey || e.metaKey) && rep) {
           let p = clientToCanvas(e.currentTarget, props.entityID, e);
-          let newEntityID = await addCanvasTextBlock(rep, undoManager, {
+          await addCanvasTextBlock(rep, undoManager, {
             parent: props.entityID,
             canvas: size,
             position: { x: Math.max(p.x, 0), y: Math.max(p.y - 12, 0) },
             permission_set: entity_set.set,
           });
-          focusBlock(
-            { type: "text", parent: props.entityID, entityID: newEntityID },
-            { type: "start" },
-          );
         }
       }}
       onDragOver={
@@ -434,18 +432,7 @@ const AddCanvasBlockButton = (props: {
                 y: Math.max(0, corner.y + 32),
               },
               permission_set: entity_set.set,
-            }).then((newEntityID) =>
-              setTimeout(() => {
-                focusBlock(
-                  {
-                    type: "text",
-                    entityID: newEntityID,
-                    parent: props.entityID,
-                  },
-                  { type: "start" },
-                );
-              }, 20),
-            );
+            });
           }}
         >
           <AddSmall />
@@ -839,7 +826,14 @@ async function addCanvasTextBlock(
       type: "text",
     }),
   );
-  return newEntityID;
+  setTimeout(
+    () =>
+      focusBlock(
+        { type: "text", entityID: newEntityID, parent: args.parent },
+        { type: "start" },
+      ),
+    20,
+  );
 }
 
 // A new text block's footprint, for keeping it inside a drawing.

@@ -68,7 +68,6 @@ export type CanvasZoomEngine = {
   boxRef: RefObject<HTMLElement | null>;
   layerRef: RefObject<HTMLDivElement | null>;
   spacerRef: RefObject<HTMLDivElement | null>;
-  zoomRef: RefObject<number>;
   minRef: RefObject<number>;
   contentWidth: number;
   centered: boolean;
@@ -143,9 +142,8 @@ export function CanvasZoomProvider(props: {
   let scrollerRef = useRef<HTMLElement>(null);
   let layerRef = useRef<HTMLDivElement>(null);
   let spacerRef = useRef<HTMLDivElement>(null);
-  let zoomRef = useRef(getCanvasZoom(pageKey));
   let minRef = useRef(0.25);
-  let [zoom, setZoomState] = useState(zoomRef.current);
+  let [zoom, setZoomState] = useState(getCanvasZoom(pageKey));
   let [min, setMin] = useState(minRef.current);
   let [ready, setReady] = useState(false);
 
@@ -156,7 +154,6 @@ export function CanvasZoomProvider(props: {
   let writtenScroll = useRef<Scroll | null>(null);
   // Engine-written only, so not read back from style on hot paths.
   let pads = useRef<Pads>(NO_PADS);
-  let wasLocked = useRef(locked);
   let lastFrame = useRef(0);
   let raf = useRef(0);
   let idleTimer = useRef(0);
@@ -177,24 +174,15 @@ export function CanvasZoomProvider(props: {
       scrollWidth: s.x.scrollWidth,
       scrollHeight: s.y.scrollHeight,
     });
-    // Where the spacer's box starts in the scrollers' extent.
-    let spacerOrigin = (s: Scrollers, spacer: HTMLElement): Scroll => {
-      let r = spacer.getBoundingClientRect();
+    // Where an element's box starts in the scrollers' extent. The layer's
+    // scale has a 0 0 origin, so its top-left is unscaled.
+    let originOf = (s: Scrollers, el: HTMLElement): Scroll => {
+      let r = el.getBoundingClientRect();
       let xr = s.x.getBoundingClientRect();
       let yr = s.y.getBoundingClientRect();
       return {
         left: r.left - xr.left - s.x.clientLeft + s.x.scrollLeft,
         top: r.top - yr.top - s.y.clientTop + s.y.scrollTop,
-      };
-    };
-    // Where the content starts, behind the spacer's padding and margin (the
-    // stylesheet's half-box margin on a centered canvas; cq units, so the box).
-    let contentOrigin = (s: Scrollers, spacer: HTMLElement): Scroll => {
-      let o = spacerOrigin(s, spacer);
-      let m = centered ? 0.5 : 0;
-      return {
-        left: o.left + pads.current.left + m * s.x.clientWidth,
-        top: o.top + pads.current.top + m * s.x.clientHeight,
       };
     };
 
@@ -220,13 +208,9 @@ export function CanvasZoomProvider(props: {
       for (let el of each(s)) el.removeEventListener("scroll", onNativeScroll);
     };
 
-    let beginGesture = (
-      s: Scrollers,
-      layer: HTMLElement,
-      spacer: HTMLElement,
-    ) => {
+    let beginGesture = (s: Scrollers, layer: HTMLElement) => {
       let scroll0 = readScroll(s);
-      let origin0 = contentOrigin(s, spacer);
+      let origin0 = originOf(s, layer);
       let g: Gesture = {
         scroll0,
         origin0,
@@ -276,7 +260,7 @@ export function CanvasZoomProvider(props: {
             Math.round(g.virtual.top) + now.top - g.scroll0.top + g.base0.top,
           ),
         };
-        let z = zoomRef.current;
+        let z = getCanvasZoom(pageKey);
         // Out-of-range offsets are padded for, not clamped (which would slide
         // the content). The spacer is sized unpadded first, to see how far
         // the scrollers reach around it.
@@ -298,7 +282,7 @@ export function CanvasZoomProvider(props: {
             for (let media of paused) media.play().catch(() => {});
           });
       }
-      setZoomState(zoomRef.current);
+      setZoomState(getCanvasZoom(pageKey));
     };
 
     // The offset the engine wrote is kept until a scroll moves off it (two
@@ -324,18 +308,16 @@ export function CanvasZoomProvider(props: {
       let target = pending.current;
       let s = scrollers();
       let layer = layerRef.current;
-      let spacer = spacerRef.current;
-      if (!target || !s || !layer || !spacer) return;
-      let g = gesture.current ?? beginGesture(s, layer, spacer);
+      if (!target || !s || !layer) return;
+      let g = gesture.current ?? beginGesture(s, layer);
       let dt = lastFrame.current ? now - lastFrame.current : 0;
       lastFrame.current = now;
       let zoom =
         snap || target.immediate
           ? target.zoom
-          : approachZoom(zoomRef.current, target.zoom, dt);
+          : approachZoom(getCanvasZoom(pageKey), target.zoom, dt);
       if (zoom === target.zoom) pending.current = null;
       else raf.current = window.requestAnimationFrame(tick);
-      zoomRef.current = zoom;
       setCanvasZoom(pageKey, zoom);
       let next = scrollForAnchor({ ...target, zoom });
       // Kept exact: each wheel event re-derives its anchor from this, and a
@@ -354,13 +336,12 @@ export function CanvasZoomProvider(props: {
       boxRef,
       layerRef,
       spacerRef,
-      zoomRef,
       minRef,
       contentWidth,
       centered,
       pageScroll,
       locked,
-      targetZoom: () => pending.current?.zoom ?? zoomRef.current,
+      targetZoom: () => pending.current?.zoom ?? getCanvasZoom(pageKey),
       viewportRect: () => {
         let s = scrollers();
         if (!s) return { left: 0, top: 0, width: 0, height: 0 };
@@ -382,14 +363,14 @@ export function CanvasZoomProvider(props: {
       canvasPointAt: (anchorViewport) => {
         let g = gesture.current;
         let s = scrollers();
-        let spacer = spacerRef.current;
+        let layer = layerRef.current;
         let scroll = s ? readScroll(s) : { left: 0, top: 0 };
-        let origin = s && spacer ? contentOrigin(s, spacer) : pads.current;
+        let origin = s && layer ? originOf(s, layer) : pads.current;
         return anchorToCanvas({
           anchorViewport,
           scrollLeft: g ? g.virtual.left : scroll.left - origin.left,
           scrollTop: g ? g.virtual.top : scroll.top - origin.top,
-          zoom: zoomRef.current,
+          zoom: getCanvasZoom(pageKey),
         });
       },
       clamp: (z) => clampZoom(z, minRef.current),
@@ -420,7 +401,7 @@ export function CanvasZoomProvider(props: {
         let trimmed = trimPads(
           pads.current,
           scroll,
-          spacerOrigin(s, spacer),
+          originOf(s, spacer),
           range(s),
         );
         if (!trimmed) return;
@@ -434,7 +415,9 @@ export function CanvasZoomProvider(props: {
     return engine;
   }, [pageKey, contentWidth, centered, pageScroll, locked]);
 
-  // Runs before paint so a restored zoom never flashes.
+  let areaWidth = props.initialArea?.width ?? null;
+  // Runs before paint so a restored zoom never flashes. A mounted canvas
+  // keeps its zoom when the mobile area (the stylesheet's default) changes.
   useLayoutEffect(() => {
     let layer = layerRef.current;
     let spacer = spacerRef.current;
@@ -449,14 +432,6 @@ export function CanvasZoomProvider(props: {
     spacer.style.padding = "";
     minRef.current = minZoom(box.clientWidth, contentWidth);
     setMin(minRef.current);
-    // A locked canvas is framed by the stylesheet alone (.canvasZoomLocked);
-    // one locked while mounted drops what the engine had put on it.
-    if (locked) {
-      spacer.style.removeProperty("--canvas-zoom");
-      layer.style.removeProperty("--canvas-zoom");
-      if (layer.style.transform) layer.style.transform = "";
-      if (box.scrollLeft) box.scrollLeft = 0;
-    }
     let applied = appliedScale(layer);
     let restored = !locked && hasCanvasZoom(pageKey);
     let z = restored
@@ -469,11 +444,8 @@ export function CanvasZoomProvider(props: {
       spacer.style.setProperty("--canvas-zoom", String(z));
       layer.style.setProperty("--canvas-zoom", String(z));
     }
-    // A canvas unlocked while mounted stays on the area it was locked to.
-    let unlocked = wasLocked.current && !locked;
-    wasLocked.current = locked;
     let area = initialArea.current;
-    if (!locked && (!restored || unlocked) && area && area.left > 0)
+    if (!locked && !restored && area && area.left > 0)
       box.scrollLeft = area.left * z;
     if (centered) {
       let contentHeight =
@@ -481,40 +453,20 @@ export function CanvasZoomProvider(props: {
       box.scrollLeft = (contentWidth * z) / 2;
       scroller.scrollTop = (contentHeight * z) / 2;
     }
-    zoomRef.current = z;
     setCanvasZoom(pageKey, z);
     setZoomState(z);
     setReady(true);
-  }, [pageKey, contentWidth, centered, pageScroll, locked]);
-
-  // The stylesheet's default zoom follows the mobile area, but a mounted canvas
-  // keeps the zoom the engine already holds; the area only frames fresh loads.
-  let areaWidth = props.initialArea?.width ?? null;
-  let mountedArea = useRef(areaWidth);
-  useLayoutEffect(() => {
-    if (mountedArea.current === areaWidth) return;
-    mountedArea.current = areaWidth;
-    if (locked) return;
-    let z = String(zoomRef.current);
-    spacerRef.current?.style.setProperty("--canvas-zoom", z);
-    layerRef.current?.style.setProperty("--canvas-zoom", z);
-  }, [areaWidth, locked]);
+  }, [pageKey, contentWidth, centered, pageScroll, locked, areaWidth]);
 
   useEffect(() => {
     let box = boxRef.current;
     let scroller = scrollerRef.current;
-    let layer = layerRef.current;
-    if (!box || !scroller || !layer || !spacerRef.current) return;
+    if (!box || !scroller || !layerRef.current || !spacerRef.current) return;
     let abort = new AbortController();
     let signal = abort.signal;
 
     let boxObserver = new ResizeObserver(() => {
       if (!pageScroll) fitScrollerToGutter(box, contentWidth);
-      // The stylesheet's zoom follows the box's width.
-      if (locked) {
-        zoomRef.current = appliedScale(layer);
-        setCanvasZoom(pageKey, zoomRef.current);
-      }
       let m = minZoom(box.clientWidth, contentWidth);
       if (m === minRef.current) return;
       minRef.current = m;
@@ -552,7 +504,7 @@ export function CanvasZoomProvider(props: {
       pending.current = null;
       gesture.current = null;
     };
-  }, [engine, pageKey, contentWidth, pageScroll, locked]);
+  }, [engine, contentWidth, pageScroll]);
 
   useCanvasZoomGestures(engine, !locked, props.doubleTapZoom ?? true);
 

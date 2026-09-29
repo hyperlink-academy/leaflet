@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { pageOfParent } from "src/utils/blockGroups";
 import { useUIState } from "src/useUIState";
 import { elementId } from "src/utils/elementId";
-import { useCanvasZoomEngine } from "./CanvasZoomProvider";
+import { getCanvasZoom, useCanvasZoomEngine } from "./CanvasZoomProvider";
 
 const EDGE_MARGIN = 24;
 
@@ -23,7 +23,7 @@ export function CanvasFocusZoom(props: { pageEntityID: string }) {
   useEffect(() => {
     if (!focused) return;
     if (!window.matchMedia("(pointer: coarse)").matches) return;
-    if (engine.zoomRef.current >= 1 - 1e-6) return;
+    if (getCanvasZoom(props.pageEntityID) >= 1 - 1e-6) return;
     let box = engine.boxRef.current;
     let el = document.getElementById(elementId.block(focused).container);
     if (!box || !el || !box.contains(el)) return;

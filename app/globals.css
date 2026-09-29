@@ -1357,7 +1357,7 @@ body > iframe[src*="js.stripe.com"] {
   );
 }
 /* Empty space around the content on each side, besides the engine's
-   padding; the engine mirrors it. A centered canvas keeps half the box. */
+   padding. A centered canvas keeps half the box. */
 .canvasZoomCentered {
   --canvas-margin-x: 50cqw;
   --canvas-margin-y: 50cqh;
