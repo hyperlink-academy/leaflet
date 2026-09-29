@@ -23,6 +23,7 @@ import {
   DrawingState,
   commitStroke,
   eraseStrokes,
+  fillAt,
   readDrawing,
   stopInk,
 } from "./inkMutations";
@@ -39,6 +40,9 @@ const ERASER_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
 type Gesture = {
   pointerId: number;
   erase: boolean;
+  // Fills where the pointer went down once it lifts, so a pinch's first
+  // finger can still cancel it.
+  fill: boolean;
   // Canvas px, flattened x, y, pressure (0-1) triples.
   points: number[];
   simulatePressure: boolean;
@@ -124,6 +128,7 @@ export function CanvasInkLayer(props: { pageID: string }) {
     if (events.length === 0) events = [e.nativeEvent];
     for (let ev of events) {
       let p = toCanvas(ev);
+      if (g.fill && g.points.length > 0) break;
       if (g.erase) {
         eraseAt(g, p);
         continue;
@@ -138,7 +143,7 @@ export function CanvasInkLayer(props: { pageID: string }) {
             : g.points[g.points.length - 1] ?? 0.5;
       g.points.push(p.x, p.y, pressure);
     }
-    if (!g.erase) setLive(liveStroke(g));
+    if (!g.erase && !g.fill) setLive(liveStroke(g));
   };
 
   let liveStroke = (g: Gesture): InkStroke => ({
@@ -166,6 +171,14 @@ export function CanvasInkLayer(props: { pageID: string }) {
         target,
         strokeIDs: [...g.erased],
       }).then(() => useInkSession.getState().setErasing([]));
+      return;
+    }
+    if (g.fill) {
+      fillAt(rep, undoManager, {
+        page: props.pageID,
+        point: { x: g.points[0], y: g.points[1] },
+        color,
+      });
       return;
     }
     let key = pendingKey.current++;
@@ -217,6 +230,7 @@ export function CanvasInkLayer(props: { pageID: string }) {
         gesture.current = {
           pointerId: e.pointerId,
           erase,
+          fill: tool === "fill" && !erase,
           points: [],
           simulatePressure: e.pointerType !== "pen",
           drawing:

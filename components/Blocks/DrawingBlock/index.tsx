@@ -5,6 +5,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { EditTiny } from "components/Icons/EditTiny";
 import { BlockLayout, type BlockProps } from "../Block";
 import { InkSvg } from "./InkSvg";
+import { drawingFills } from "./ink";
 import { useInkSession } from "./useInkSession";
 
 export function DrawingBlock(props: BlockProps & { preview?: boolean }) {
@@ -30,6 +31,7 @@ export function DrawingBlock(props: BlockProps & { preview?: boolean }) {
         .map((f) => ({ id: f.id, stroke: f.data.value })),
     [strokeFacts, erasing],
   );
+  let fills = useMemo(() => drawingFills(strokes), [strokes]);
   if (!viewBox) return null;
 
   let edit = () => useInkSession.getState().start(props.parent, props.entityID);
@@ -60,7 +62,7 @@ export function DrawingBlock(props: BlockProps & { preview?: boolean }) {
         className={`drawingBlock w-full rounded-md outline-2 outline-offset-4 ${editing ? "outline-dashed outline-border" : "outline-transparent"}`}
         onDoubleClick={canEdit ? edit : undefined}
       >
-        <InkSvg viewBox={viewBox} strokes={strokes} />
+        <InkSvg viewBox={viewBox} strokes={strokes} fills={fills} />
       </div>
     </BlockLayout>
   );

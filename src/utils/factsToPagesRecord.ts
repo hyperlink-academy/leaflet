@@ -37,6 +37,7 @@ import {
   PubLeafletRichtextFacet,
 } from "lexicons/api";
 import { ids } from "lexicons/api/lexicons";
+import { drawingFills } from "components/Blocks/DrawingBlock/ink";
 
 import { Block } from "components/Blocks/Block";
 import type { Fact } from "src/replicache";
@@ -471,6 +472,14 @@ export async function processBlocksToPages(opts: {
           ...(stroke.simulatePressure && { simulatePressure: true }),
         })),
       };
+      const fills = drawingFills(
+        strokes.map((s) => ({ id: s.id, stroke: s.data.value })),
+      );
+      if (fills.length > 0)
+        block.fills = fills.map(({ fill }) => ({
+          points: fill.points.map(Math.round),
+          color: fill.color,
+        }));
       return block;
     },
     math: async (b) => {

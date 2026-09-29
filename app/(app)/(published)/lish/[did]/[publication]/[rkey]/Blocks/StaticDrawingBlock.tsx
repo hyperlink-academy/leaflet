@@ -11,6 +11,7 @@ export const StaticDrawingBlock = ({
       <InkSvg
         viewBox={block.viewBox}
         strokes={block.strokes.map((stroke, i) => ({ id: String(i), stroke }))}
+        fills={block.fills?.map((fill, i) => ({ id: String(i), fill }))}
       />
     </div>
   );

@@ -13,6 +13,7 @@ import { thumbStyle } from "components/ThemeManager/Pickers/ColorPicker";
 import { Popover } from "components/Popover";
 import { Separator } from "components/Layout";
 import { EraserSmall } from "components/Icons/EraserSmall";
+import { PaintBucketSmall } from "components/Icons/PaintBucketSmall";
 import { PaintSmall } from "components/Icons/PaintSmall";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { INK_COLORS, INK_SIZES, inkColor } from "./ink";
@@ -120,6 +121,15 @@ export function InkToolbar(props: { pageID: string }) {
           </button>
         );
       })}
+
+      <button
+        aria-label="Fill"
+        title="Fill a closed shape"
+        onClick={() => setTool(tool === "fill" ? "pen" : "fill")}
+        className={`w-7 h-7 flex items-center justify-center rounded-full ${tool === "fill" ? "bg-border-light text-primary" : "text-tertiary hover:bg-border-light"}`}
+      >
+        <PaintBucketSmall width={18} height={18} />
+      </button>
 
       <button
         aria-label="Eraser"

@@ -660,6 +660,8 @@ export type Data<A extends keyof typeof Attributes> = {
       color: string;
       size: number;
       simulatePressure?: boolean;
+      // Flattened x, y pairs.
+      fill?: { points: number[]; color: string };
     };
   };
   "view-box": {

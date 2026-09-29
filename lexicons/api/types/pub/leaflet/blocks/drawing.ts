@@ -19,6 +19,8 @@ export interface Main {
   $type?: 'pub.leaflet.blocks.drawing'
   viewBox: ViewBox
   strokes: Stroke[]
+  /** Painted in order, beneath the strokes. */
+  fills?: Fill[]
 }
 
 const hashMain = 'main'
@@ -29,6 +31,25 @@ export function isMain<V>(v: V) {
 
 export function validateMain<V>(v: V) {
   return validate<Main & V>(v, id, hashMain)
+}
+
+/** A filled polygon, painted with the nonzero rule: the region a stroke encloses. */
+export interface Fill {
+  $type?: 'pub.leaflet.blocks.drawing#fill'
+  /** Flattened vertices as x, y pairs in drawing space. The last joins back to the first. */
+  points: number[]
+  /** A CSS hex color, or one of the document theme's colors: primary (text), accent, or tertiary (faded text). */
+  color: string
+}
+
+const hashFill = 'fill'
+
+export function isFill<V>(v: V) {
+  return is$typed(v, id, hashFill)
+}
+
+export function validateFill<V>(v: V) {
+  return validate<Fill & V>(v, id, hashFill)
 }
 
 export interface ViewBox {

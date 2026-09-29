@@ -3,11 +3,16 @@ import { lexicons } from "lexicons/api/lexicons";
 import {
   DrawingLayout,
   canvasToDrawing,
+  drawingFills,
   drawingToCanvas,
   inkColor,
+  inkFillPath,
   inkSamples,
   inkStrokePath,
+  loopAt,
+  polygonContains,
   refitLayout,
+  strokeLoop,
   simplifySamples,
   strokeBounds,
   strokeHit,
@@ -108,6 +113,102 @@ describe("strokes", () => {
   });
 });
 
+// An arc of a circle, from `from` to `to` turns.
+const arc = (
+  center: { x: number; y: number },
+  radius: number,
+  from: number,
+  to: number,
+) => {
+  let points: number[] = [];
+  let steps = Math.ceil(Math.abs(to - from) * 60);
+  for (let i = 0; i <= steps; i++) {
+    let angle = 2 * Math.PI * (from + ((to - from) * i) / steps);
+    points.push(
+      Math.round(center.x + radius * Math.cos(angle)),
+      Math.round(center.y + radius * Math.sin(angle)),
+      500,
+    );
+  }
+  return points;
+};
+const pen = (points: number[]) => ({ points, color: "primary", size: 16 });
+const center = { x: 500, y: 500 };
+
+describe("closed strokes", () => {
+  it("closes a stroke whose ends meet", () => {
+    let loop = strokeLoop(pen(arc(center, 400, 0, 1)))!;
+    expect(polygonContains(loop, center)).toBe(true);
+    expect(polygonContains(loop, { x: 500, y: 50 })).toBe(false);
+    expect(polygonContains(loop, { x: 1000, y: 1000 })).toBe(false);
+  });
+
+  it("closes across a small gap but not a wide one", () => {
+    expect(strokeLoop(pen(arc(center, 400, 0, 0.97)))).not.toBeNull();
+    expect(strokeLoop(pen(arc(center, 400, 0, 0.8)))).toBeNull();
+    expect(strokeLoop(pen(arc(center, 400, 0, 0.5)))).toBeNull();
+  });
+
+  it("leaves lines and hooks open", () => {
+    expect(strokeLoop(pen([0, 0, 500, 900, 0, 500]))).toBeNull();
+    expect(strokeLoop(pen([0, 0, 500, 900, 0, 500, 900, 900, 500]))).toBeNull();
+    let hook = [
+      0,
+      0,
+      500,
+      900,
+      0,
+      500,
+      ...arc({ x: 900, y: 30 }, 30, -0.25, 0.4),
+    ];
+    expect(strokeLoop(pen(hook))).toBeNull();
+  });
+
+  it("closes a stroke that runs on past its start", () => {
+    let loop = strokeLoop(pen(arc(center, 400, 0, 1.2)))!;
+    expect(polygonContains(loop, center)).toBe(true);
+  });
+
+  it("closes the loop of a stroke with a tail", () => {
+    let tail: number[] = [];
+    for (let y = -600; y < 100; y += 50) tail.push(900, y, 500);
+    let loop = strokeLoop(pen([...tail, ...arc(center, 400, 0.02, 0.98)]))!;
+    expect(polygonContains(loop, center)).toBe(true);
+    expect(polygonContains(loop, { x: 880, y: -300 })).toBe(false);
+  });
+
+  it("fills the innermost shape around a point", () => {
+    let strokes = [
+      { id: "inner", stroke: pen(arc(center, 100, 0, 1)) },
+      { id: "outer", stroke: pen(arc(center, 400, 0, 1)) },
+      { id: "open", stroke: pen(arc(center, 250, 0, 0.5)) },
+    ];
+    expect(loopAt(strokes, center)?.stroke.id).toBe("inner");
+    expect(loopAt(strokes, { x: 500, y: 300 })?.stroke.id).toBe("outer");
+    expect(loopAt(strokes, { x: 500, y: 950 })).toBeNull();
+  });
+
+  it("paints an inner fill over the one around it", () => {
+    let filled = (id: string, radius: number) => {
+      let stroke = pen(arc(center, radius, 0, 1));
+      return {
+        id,
+        stroke: {
+          ...stroke,
+          fill: { points: strokeLoop(stroke)!, color: "accent" },
+        },
+      };
+    };
+    let fills = drawingFills([
+      filled("inner", 100),
+      filled("outer", 400),
+      { id: "unfilled", stroke: pen(arc(center, 250, 0, 1)) },
+    ]);
+    expect(fills.map((f) => f.id)).toEqual(["outer", "inner"]);
+    expect(inkFillPath(fills[0].fill)).toMatch(/^M\d+,\d+(L-?\d+,-?\d+)+Z$/);
+  });
+});
+
 describe("drawing lexicon", () => {
   it("accepts a serialized drawing and rejects fractional coordinates", () => {
     let valid = lexicons.validate("pub.leaflet.blocks.drawing", {
@@ -116,6 +217,7 @@ describe("drawing lexicon", () => {
       strokes: [
         { points: [0, 0, 500, 100, 0, 500], color: "primary", size: 10 },
       ],
+      fills: [{ points: [0, 0, 100, 0, 100, 100], color: "accent" }],
     });
     expect(valid.success).toBe(true);
     let invalid = lexicons.validate("pub.leaflet.blocks.drawing", {

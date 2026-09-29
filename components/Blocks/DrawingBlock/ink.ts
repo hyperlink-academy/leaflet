@@ -1,10 +1,15 @@
-import { getStroke } from "perfect-freehand";
+import { getStroke, getStrokePoints } from "perfect-freehand";
 
+// A polygon as flattened x, y pairs in drawing space, painted with the
+// nonzero rule.
+export type InkFill = { points: readonly number[]; color: string };
 export type InkStroke = {
   points: readonly number[];
   color: string;
   size: number;
   simulatePressure?: boolean;
+  // The loop this stroke closes, filled in.
+  fill?: InkFill;
 };
 export type ViewBox = { x: number; y: number; width: number; height: number };
 type Point = { x: number; y: number };
@@ -140,20 +145,27 @@ export function simplifySamples(
   return samples.filter((_, i) => keep[i]);
 }
 
-export function inkStrokePath(stroke: InkStroke, last = true) {
+function freehandInput(stroke: InkStroke) {
   let p = stroke.points;
   let raw: number[] = [];
   for (let i = 0; i + 2 < p.length; i += 3)
     raw.push(p[i], p[i + 1], p[i + 2] / INK_PRESSURE_SCALE);
-  let input = inkSamples(raw, stroke.size, !stroke.simulatePressure);
-  let outline = getStroke(input, {
+  return inkSamples(raw, stroke.size, !stroke.simulatePressure);
+}
+
+function freehandOptions(stroke: InkStroke, last: boolean) {
+  return {
     size: stroke.size,
     thinning: 0.6,
     smoothing: 0.5,
     streamline: 0.5,
     simulatePressure: !!stroke.simulatePressure,
     last,
-  });
+  };
+}
+
+export function inkStrokePath(stroke: InkStroke, last = true) {
+  let outline = getStroke(freehandInput(stroke), freehandOptions(stroke, last));
   return svgPathFromOutline(outline);
 }
 
@@ -325,4 +337,211 @@ export function strokeHit(stroke: InkStroke, p: Point, radius: number) {
     if (distanceToSegment(p, a, b) <= reach) return true;
   }
   return false;
+}
+
+// Fraction of a stroke's diameter the simplified centerline may stray from
+// the rendered one.
+const CENTERLINE_TOLERANCE = 0.1;
+// A stroke's ends count as meeting across a visible gap of up to this
+// fraction of the stroke's larger dimension.
+const LOOP_GAP = 0.1;
+// Shortest loop, in gap tolerances, that counts as enclosing anything. A
+// hook that curls back on itself within the tolerance is shorter.
+const MIN_LOOP_SPAN = 3;
+
+// The line the rendered stroke is centered on. Streamlining rounds corners
+// and trails the input, so the stored points stray outside the rendered
+// stroke where this doesn't.
+function strokeCenterline(stroke: InkStroke): Point[] {
+  let points = getStrokePoints(
+    freehandInput(stroke),
+    freehandOptions(stroke, true),
+  ).map((p): Sample => [p.point[0], p.point[1], 0]);
+  return simplifySamples(points, stroke.size * CENTERLINE_TOLERANCE, 1).map(
+    ([x, y]) => ({ x, y }),
+  );
+}
+
+// Where segment a-b crosses c-d, as the fraction along each.
+function crossing(a: Point, b: Point, c: Point, d: Point) {
+  let rx = b.x - a.x,
+    ry = b.y - a.y;
+  let sx = d.x - c.x,
+    sy = d.y - c.y;
+  let denominator = rx * sy - ry * sx;
+  if (denominator === 0) return null;
+  let t = ((c.x - a.x) * sy - (c.y - a.y) * sx) / denominator;
+  let u = ((c.x - a.x) * ry - (c.y - a.y) * rx) / denominator;
+  if (t < 0 || t > 1 || u < 0 || u > 1) return null;
+  return { t, u };
+}
+
+function nearestOnSegment(p: Point, a: Point, b: Point) {
+  let dx = b.x - a.x,
+    dy = b.y - a.y;
+  let lengthSq = dx * dx + dy * dy;
+  let t =
+    lengthSq === 0
+      ? 0
+      : Math.max(
+          0,
+          Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSq),
+        );
+  return {
+    t,
+    distance: Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy)),
+  };
+}
+
+// The longest loop the stroke closes, as a polygon of flattened x, y pairs:
+// between two points where it crosses itself, or where one of its ends
+// comes back within reach of the rest. Null for an open stroke.
+export function strokeLoop(stroke: InkStroke): number[] | null {
+  let line = strokeCenterline(stroke);
+  if (line.length < 3) return null;
+  let lengths = [0];
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  for (let i = 0; i < line.length; i++) {
+    let p = line[i];
+    minX = Math.min(minX, p.x);
+    maxX = Math.max(maxX, p.x);
+    minY = Math.min(minY, p.y);
+    maxY = Math.max(maxY, p.y);
+    if (i > 0)
+      lengths.push(
+        lengths[i - 1] + Math.hypot(p.x - line[i - 1].x, p.y - line[i - 1].y),
+      );
+  }
+  // Centers this far apart leave the visible gap between two stroke edges.
+  let reach = stroke.size + LOOP_GAP * Math.max(maxX - minX, maxY - minY);
+
+  // A position along the stroke: `t` of the way down the segment from
+  // line[index].
+  type Along = { index: number; t: number };
+  let at = ({ index, t }: Along) =>
+    lengths[index] + t * (lengths[index + 1] - lengths[index]);
+  let best: { from: Along; to: Along; span: number } | null = null;
+  let consider = (from: Along, to: Along) => {
+    let span = at(to) - at(from);
+    if (span >= MIN_LOOP_SPAN * reach && (!best || span > best.span))
+      best = { from, to, span };
+  };
+
+  let last = line.length - 2;
+  for (let i = 0; i <= last; i++) {
+    for (let j = i + 2; j <= last; j++) {
+      let hit = crossing(line[i], line[i + 1], line[j], line[j + 1]);
+      if (hit) consider({ index: i, t: hit.t }, { index: j, t: hit.u });
+    }
+    let fromStart = nearestOnSegment(line[0], line[i], line[i + 1]);
+    if (fromStart.distance <= reach)
+      consider({ index: 0, t: 0 }, { index: i, t: fromStart.t });
+    let fromEnd = nearestOnSegment(line[last + 1], line[i], line[i + 1]);
+    if (fromEnd.distance <= reach)
+      consider({ index: i, t: fromEnd.t }, { index: last, t: 1 });
+  }
+  if (!best) return null;
+
+  let { from, to } = best as { from: Along; to: Along };
+  let point = ({ index, t }: Along): Point => ({
+    x: line[index].x + t * (line[index + 1].x - line[index].x),
+    y: line[index].y + t * (line[index + 1].y - line[index].y),
+  });
+  let loop = [
+    point(from),
+    ...line.slice(from.index + 1, to.index + 1),
+    point(to),
+  ];
+  let points: number[] = [];
+  for (let p of loop) {
+    let x = Math.round(p.x),
+      y = Math.round(p.y);
+    let n = points.length;
+    if (n >= 2 && points[n - 2] === x && points[n - 1] === y) continue;
+    points.push(x, y);
+  }
+  if (points.length < 6 || polygonArea(points) === 0) return null;
+  return points;
+}
+
+export function polygonArea(points: readonly number[]) {
+  let sum = 0;
+  for (let i = 0; i + 1 < points.length; i += 2) {
+    let j = (i + 2) % points.length;
+    sum += points[i] * points[j + 1] - points[j] * points[i + 1];
+  }
+  return Math.abs(sum) / 2;
+}
+
+// By the nonzero rule, as the fill is painted.
+export function polygonContains(points: readonly number[], p: Point) {
+  let winding = 0;
+  for (let i = 0; i + 1 < points.length; i += 2) {
+    let j = (i + 2) % points.length;
+    let ax = points[i],
+      ay = points[i + 1];
+    let bx = points[j],
+      by = points[j + 1];
+    let side = (bx - ax) * (p.y - ay) - (p.x - ax) * (by - ay);
+    if (ay <= p.y && by > p.y && side > 0) winding++;
+    else if (ay > p.y && by <= p.y && side < 0) winding--;
+  }
+  return winding !== 0;
+}
+
+// The stroke whose loop most tightly encloses p, so a shape drawn inside
+// another fills on its own.
+export function loopAt<S extends { stroke: InkStroke }>(
+  strokes: S[],
+  p: Point,
+) {
+  let found: { stroke: S; loop: number[]; area: number } | null = null;
+  for (let s of strokes) {
+    let bounds = strokeBounds(s.stroke);
+    if (
+      !bounds ||
+      p.x < bounds.x ||
+      p.y < bounds.y ||
+      p.x > bounds.x + bounds.width ||
+      p.y > bounds.y + bounds.height
+    )
+      continue;
+    let loop = s.stroke.fill ? [...s.stroke.fill.points] : strokeLoop(s.stroke);
+    if (!loop || !polygonContains(loop, p)) continue;
+    let area = polygonArea(loop);
+    if (!found || area < found.area) found = { stroke: s, loop, area };
+  }
+  return found;
+}
+
+// A drawing's fills in the order they are painted, beneath its strokes:
+// largest first, so a fill inside another shows on top of it.
+export function drawingFills<S extends { id: string; stroke: InkStroke }>(
+  strokes: S[],
+) {
+  return strokes
+    .flatMap((s) =>
+      s.stroke.fill
+        ? [
+            {
+              id: s.id,
+              fill: s.stroke.fill,
+              area: polygonArea(s.stroke.fill.points),
+            },
+          ]
+        : [],
+    )
+    .sort((a, b) => b.area - a.area)
+    .map(({ id, fill }) => ({ id, fill }));
+}
+
+export function inkFillPath(fill: InkFill) {
+  let p = fill.points;
+  let d = "";
+  for (let i = 0; i + 1 < p.length; i += 2)
+    d += `${i === 0 ? "M" : "L"}${p[i]},${p[i + 1]}`;
+  return d && d + "Z";
 }

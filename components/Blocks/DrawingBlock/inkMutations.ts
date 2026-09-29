@@ -13,6 +13,7 @@ import {
   canvasToDrawing,
   drawingScale,
   inkSamples,
+  loopAt,
   refitLayout,
   sameBox,
   simplifySamples,
@@ -57,6 +58,60 @@ export async function readDrawing(
   });
 }
 
+// Drawings placed directly on the page, the session's target first.
+async function readDrawings(rep: Rep, page: string) {
+  let target = useInkSession.getState().target;
+  let entities = await rep.query(async (tx) => {
+    let scan = scanIndex(tx);
+    let drawings: string[] = [];
+    for (let placed of await scan.eav(page, "canvas/block")) {
+      let [type] = await scan.eav(placed.data.value, "block/type");
+      if (type?.data.value === "drawing") drawings.push(placed.data.value);
+    }
+    return drawings;
+  });
+  entities.sort((a, b) => Number(b === target) - Number(a === target));
+  let drawings: (DrawingState & { entity: string })[] = [];
+  for (let entity of entities) {
+    let drawing = await readDrawing(rep, page, entity);
+    if (drawing) drawings.push({ ...drawing, entity });
+  }
+  return drawings;
+}
+
+// Fills the closed stroke around a canvas point, if there is one.
+export async function fillAt(
+  rep: Rep,
+  undoManager: UndoManager,
+  args: { page: string; point: { x: number; y: number }; color: string },
+) {
+  for (let drawing of await readDrawings(rep, args.page)) {
+    let hit = loopAt(
+      drawing.strokes,
+      canvasToDrawing(drawing.layout, args.point),
+    );
+    if (!hit) continue;
+    let { id, stroke } = hit.stroke;
+    if (stroke.fill?.color === args.color) return;
+    await undoManager.withUndoGroup(() =>
+      rep.mutate.assertFact({
+        id,
+        entity: drawing.entity,
+        attribute: "drawing/stroke",
+        data: {
+          type: "ink-stroke",
+          value: {
+            ...stroke,
+            points: [...stroke.points],
+            fill: { points: hit.loop, color: args.color },
+          },
+        },
+      }),
+    );
+    return;
+  }
+}
+
 // Canvas px the stored points may stray from the drawn stroke.
 const SIMPLIFY_TOLERANCE_PX = 0.25;
 const SIMPLIFY_PRESSURE_TOLERANCE = 0.03;
@@ -72,7 +127,7 @@ function toStroke(
     unitsPerPx: number;
     simulatePressure: boolean;
   },
-): InkStroke & { points: number[] } {
+): Omit<InkStroke, "fill"> & { points: number[] } {
   let drawn: number[] = [];
   for (let i = 0; i + 2 < canvasPoints.length; i += 3) {
     let d = toDrawing({ x: canvasPoints[i], y: canvasPoints[i + 1] });

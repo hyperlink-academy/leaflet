@@ -1,5 +1,12 @@
 import { memo } from "react";
-import { InkStroke, ViewBox, inkColor, inkStrokePath } from "./ink";
+import {
+  InkFill,
+  InkStroke,
+  ViewBox,
+  inkColor,
+  inkFillPath,
+  inkStrokePath,
+} from "./ink";
 
 // Fills its container's width at the view box's aspect ratio. Strokes past
 // the view box still show: a collaborator's stroke can land before the view
@@ -7,6 +14,8 @@ import { InkStroke, ViewBox, inkColor, inkStrokePath } from "./ink";
 export function InkSvg(props: {
   viewBox: ViewBox;
   strokes: { id: string; stroke: InkStroke }[];
+  // In paint order, beneath the strokes.
+  fills?: { id: string; fill: InkFill }[];
   className?: string;
 }) {
   let { x, y, width, height } = props.viewBox;
@@ -17,6 +26,13 @@ export function InkSvg(props: {
       className={`block w-full h-auto ${props.className || ""}`}
       style={{ aspectRatio: `${width} / ${height}` }}
     >
+      {props.fills?.map((f) => (
+        <path
+          key={`fill-${f.id}`}
+          d={inkFillPath(f.fill)}
+          fill={inkColor(f.fill.color)}
+        />
+      ))}
       {props.strokes.map((s) => (
         <InkPath key={s.id} stroke={s.stroke} />
       ))}

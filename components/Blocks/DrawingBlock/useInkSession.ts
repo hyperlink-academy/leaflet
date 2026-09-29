@@ -3,7 +3,10 @@ import { combine } from "zustand/middleware";
 import { useUIState } from "src/useUIState";
 import { INK_COLORS, INK_SIZES } from "./ink";
 
-export type InkTool = "pen" | "eraser";
+export type InkTool = "pen" | "eraser" | "fill";
+
+// A color pick keeps the fill tool, and otherwise goes back to the pen.
+const inking = (tool: InkTool): InkTool => (tool === "fill" ? "fill" : "pen");
 
 // While a page is in draw mode, every stroke joins `target`, one drawing
 // block; the first stroke of a fresh session creates it.
@@ -36,9 +39,14 @@ export const useInkSession = create(
       },
       setTarget: (target: string) => set({ target }),
       setTool: (tool: InkTool) => set({ tool }),
-      setColor: (color: string) => set({ color, tool: "pen" }),
+      setColor: (color: string) =>
+        set((s) => ({ color, tool: inking(s.tool) })),
       setCustomColor: (customColor: string) =>
-        set({ customColor, color: customColor, tool: "pen" }),
+        set((s) => ({
+          customColor,
+          color: customColor,
+          tool: inking(s.tool),
+        })),
       setSize: (size: number) => set({ size, tool: "pen" }),
       setColorPickerOpen: (colorPickerOpen: boolean) =>
         set({ colorPickerOpen }),

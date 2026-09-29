@@ -20,6 +20,35 @@
             "type": "ref",
             "ref": "#stroke"
           }
+        },
+        "fills": {
+          "type": "array",
+          "items": {
+            "type": "ref",
+            "ref": "#fill"
+          },
+          "description": "Painted in order, beneath the strokes."
+        }
+      }
+    },
+    "fill": {
+      "type": "object",
+      "description": "A filled polygon, painted with the nonzero rule: the region a stroke encloses.",
+      "required": [
+        "points",
+        "color"
+      ],
+      "properties": {
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "Flattened vertices as x, y pairs in drawing space. The last joins back to the first."
+        },
+        "color": {
+          "type": "string",
+          "description": "A CSS hex color, or one of the document theme's colors: primary (text), accent, or tertiary (faded text)."
         }
       }
     },
