@@ -104,6 +104,13 @@ export interface Block {
   rotation?: number
   /** Fractional index ordering this block against its siblings on the z axis. Blocks without one stack below every block with one, ordered by position. */
   stackOrder?: string
+  /** Alignment of a single block's content. A linear document's blocks carry their own. */
+  alignment?:
+    | 'lex:pub.leaflet.pages.linearDocument#textAlignLeft'
+    | 'lex:pub.leaflet.pages.linearDocument#textAlignCenter'
+    | 'lex:pub.leaflet.pages.linearDocument#textAlignRight'
+    | 'lex:pub.leaflet.pages.linearDocument#textAlignJustify'
+    | (string & {})
 }
 
 const hashBlock = 'block'

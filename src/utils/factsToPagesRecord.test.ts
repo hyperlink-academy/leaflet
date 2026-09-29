@@ -139,4 +139,49 @@ describe("processBlocksToPages", () => {
       },
     ]);
   });
+
+  it("publishes the alignment of a lone canvas text block", async () => {
+    let canvasBlock = (value: string, x: number) =>
+      fact({
+        entity: "page",
+        attribute: "canvas/block",
+        data: { type: "spatial-reference", value, position: { x, y: 0 } },
+      });
+    let aligned = (entity: string) =>
+      fact({
+        entity,
+        attribute: "block/text-alignment",
+        data: { type: "text-alignment-type-union", value: "center" },
+      });
+    let facts = [
+      fact({
+        entity: "root",
+        attribute: "root/page",
+        data: { type: "ordered-reference", value: "page", position: "a0" },
+      }),
+      fact({
+        entity: "page",
+        attribute: "page/type",
+        data: { type: "page-type-union", value: "canvas" },
+      }),
+      canvasBlock("heading", 0),
+      block("heading", "heading"),
+      aligned("heading"),
+      canvasBlock("rule", 100),
+      block("rule", "horizontal-rule"),
+      aligned("rule"),
+    ];
+    let { pages } = await processBlocksToPages({
+      facts,
+      root_entity: "root",
+      hooks: { uploadImage: async () => undefined, uploadPoll: null },
+    });
+    expect(pages[0].blocks).toEqual([
+      expect.objectContaining({
+        block: expect.objectContaining({ $type: "pub.leaflet.blocks.header" }),
+        alignment: "lex:pub.leaflet.pages.linearDocument#textAlignCenter",
+      }),
+      expect.not.objectContaining({ alignment: expect.anything() }),
+    ]);
+  });
 });

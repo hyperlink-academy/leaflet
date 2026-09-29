@@ -43,6 +43,7 @@ import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { scanIndexLocal } from "src/replicache/utils";
 import { getBlocksWithTypeLocal } from "src/replicache/getBlocks";
+import { isTextBlock } from "src/utils/isTextBlock";
 import { List, parseBlocksToList } from "src/utils/parseBlocksToList";
 import { Delta, YJSFragmentToString } from "src/utils/yjsFragmentToString";
 import { ColorToRGB } from "components/ThemeManager/colorToLexicons";
@@ -631,6 +632,21 @@ export async function processBlocksToPages(opts: {
     };
   }
 
+  function blockAlignment(
+    entityID: string,
+  ): ExcludeString<PubLeafletPagesLinearDocument.Block["alignment"]> {
+    const value = scan.eav(entityID, "block/text-alignment")[0]?.data.value;
+    return value === "center"
+      ? "lex:pub.leaflet.pages.linearDocument#textAlignCenter"
+      : value === "right"
+        ? "lex:pub.leaflet.pages.linearDocument#textAlignRight"
+        : value === "justify"
+          ? "lex:pub.leaflet.pages.linearDocument#textAlignJustify"
+          : value === "left"
+            ? "lex:pub.leaflet.pages.linearDocument#textAlignLeft"
+            : undefined;
+  }
+
   async function blocksToRecord(
     blocks: Block[],
     membersOnly: boolean,
@@ -649,22 +665,7 @@ export async function processBlocksToPages(opts: {
             membersOnly ||
             (delimiterIndex !== -1 && blockIndex > delimiterIndex);
           if (blockOrList.type === "block") {
-            const alignmentValue = scan.eav(
-              blockOrList.block.entityID,
-              "block/text-alignment",
-            )[0]?.data.value;
-            const alignment: ExcludeString<
-              PubLeafletPagesLinearDocument.Block["alignment"]
-            > =
-              alignmentValue === "center"
-                ? "lex:pub.leaflet.pages.linearDocument#textAlignCenter"
-                : alignmentValue === "right"
-                  ? "lex:pub.leaflet.pages.linearDocument#textAlignRight"
-                  : alignmentValue === "justify"
-                    ? "lex:pub.leaflet.pages.linearDocument#textAlignJustify"
-                    : alignmentValue === "left"
-                      ? "lex:pub.leaflet.pages.linearDocument#textAlignLeft"
-                      : undefined;
+            const alignment = blockAlignment(blockOrList.block.entityID);
             const b = await blockToRecord(blockOrList.block, blockMembersOnly);
             if (!b) return [];
             const block: PubLeafletPagesLinearDocument.Block = {
@@ -862,6 +863,11 @@ export async function processBlocksToPages(opts: {
             "canvas/block/stack-order",
           )?.[0]?.data.value;
 
+          // The editor only aligns the text of a lone canvas block.
+          const alignment = isTextBlock[blockType.data.value]
+            ? blockAlignment(blockEntity)
+            : undefined;
+
           const canvasBlockRecord: PubLeafletPagesCanvas.Block = {
             $type: "pub.leaflet.pages.canvas#block",
             block: content,
@@ -870,6 +876,7 @@ export async function processBlocksToPages(opts: {
             width: Math.floor(width),
             ...(rotation !== undefined && { rotation: Math.round(rotation) }),
             ...(stackOrder !== undefined && { stackOrder }),
+            ...(alignment && { alignment }),
           };
 
           return canvasBlockRecord;

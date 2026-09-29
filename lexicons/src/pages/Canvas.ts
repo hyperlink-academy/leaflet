@@ -56,6 +56,17 @@ export const PubLeafletPagesCanvasDocument: LexiconDoc = {
           description:
             "Fractional index ordering this block against its siblings on the z axis. Blocks without one stack below every block with one, ordered by position.",
         },
+        alignment: {
+          type: "string",
+          description:
+            "Alignment of a single block's content. A linear document's blocks carry their own.",
+          knownValues: [
+            "lex:pub.leaflet.pages.linearDocument#textAlignLeft",
+            "lex:pub.leaflet.pages.linearDocument#textAlignCenter",
+            "lex:pub.leaflet.pages.linearDocument#textAlignRight",
+            "lex:pub.leaflet.pages.linearDocument#textAlignJustify",
+          ],
+        },
       },
     },
     textAlignLeft: { type: "token" },

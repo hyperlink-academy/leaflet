@@ -27,6 +27,7 @@ export function canvasBlockBlocks(
       block: {
         $type: "pub.leaflet.pages.linearDocument#block" as const,
         block: canvasBlock.block,
+        alignment: canvasBlock.alignment,
       },
       index: [i],
     },
