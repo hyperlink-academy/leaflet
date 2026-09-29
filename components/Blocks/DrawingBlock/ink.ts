@@ -1,17 +1,10 @@
 import { getStroke, getStrokePoints } from "perfect-freehand";
+import type { DeepReadonlyObject } from "replicache";
+import type { Data } from "src/replicache/attributes";
 
-// A polygon as flattened x, y pairs in drawing space, painted with the
-// nonzero rule.
-export type InkFill = { points: readonly number[]; color: string };
-export type InkStroke = {
-  points: readonly number[];
-  color: string;
-  size: number;
-  simulatePressure?: boolean;
-  // The loop this stroke closes, filled in.
-  fill?: InkFill;
-};
-export type ViewBox = { x: number; y: number; width: number; height: number };
+export type InkStroke = DeepReadonlyObject<Data<"drawing/stroke">["value"]>;
+export type InkFill = NonNullable<InkStroke["fill"]>;
+export type ViewBox = Data<"drawing/view-box">["value"];
 type Point = { x: number; y: number };
 
 // Drawing space is stored as integers (records have no floats), so a new
@@ -50,15 +43,11 @@ const SAMPLES_PER_SIZE = 4;
 // Samples either side averaged into each sample's pressure.
 const PRESSURE_WINDOW = 8;
 
-// Resamples x, y, pressure (0-1) triples to even spacing and smooths their
-// pressure, so a stroke renders the same however densely it was sampled:
-// perfect-freehand's thinning turns pencil pressure jitter into beads, and its
-// streamline cuts the corners of sparse points.
-export function inkSamples(
-  points: readonly number[],
-  size: number,
-  smoothPressure: boolean,
-): Sample[] {
+// Resamples x, y, pressure (0 to INK_PRESSURE_SCALE) triples to even spacing
+// with smoothed 0-1 pressure, so a stroke renders the same however densely it
+// was sampled: perfect-freehand's thinning turns pencil pressure jitter into
+// beads, and its streamline cuts the corners of sparse points.
+export function inkSamples(points: readonly number[], size: number): Sample[] {
   let spacing = size / SAMPLES_PER_SIZE;
   let out: Sample[] = [];
   if (points.length < 3) return out;
@@ -84,13 +73,12 @@ export function inkSamples(
   let end: Sample = [points[n - 3], points[n - 2], points[n - 1]];
   let tail = out[out.length - 1];
   if (tail[0] !== end[0] || tail[1] !== end[1]) out.push(end);
-  if (!smoothPressure) return out;
   let sums = [0];
   for (let s of out) sums.push(sums[sums.length - 1] + s[2]);
   return out.map(([x, y], i) => {
     let lo = Math.max(0, i - PRESSURE_WINDOW),
       hi = Math.min(out.length, i + PRESSURE_WINDOW + 1);
-    return [x, y, (sums[hi] - sums[lo]) / (hi - lo)];
+    return [x, y, (sums[hi] - sums[lo]) / (hi - lo) / INK_PRESSURE_SCALE];
   });
 }
 
@@ -137,12 +125,8 @@ export function simplifySamples(
 }
 
 function freehandArgs(stroke: InkStroke, last: boolean) {
-  let p = stroke.points;
-  let raw: number[] = [];
-  for (let i = 0; i + 2 < p.length; i += 3)
-    raw.push(p[i], p[i + 1], p[i + 2] / INK_PRESSURE_SCALE);
   return [
-    inkSamples(raw, stroke.size, !stroke.simulatePressure),
+    inkSamples(stroke.points, stroke.size),
     {
       size: stroke.size,
       thinning: 0.6,
@@ -207,12 +191,6 @@ export function unionBounds(boxes: (ViewBox | null)[]): ViewBox | null {
   };
 }
 
-export function sameBox(a: ViewBox, b: ViewBox) {
-  return (
-    a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height
-  );
-}
-
 // Where a drawing sits on its canvas: the canvas block's frame (position,
 // width, rotation about its center) and the view box fitted inside its
 // padding.
@@ -228,10 +206,6 @@ export function drawingScale(l: DrawingLayout) {
   return (l.width - 2 * DRAWING_PADDING) / l.viewBox.width;
 }
 
-function frameHeight(l: DrawingLayout) {
-  return drawingScale(l) * l.viewBox.height + 2 * DRAWING_PADDING;
-}
-
 function rotate(p: Point, degrees: number): Point {
   let r = (degrees * Math.PI) / 180;
   let cos = Math.cos(r),
@@ -239,38 +213,37 @@ function rotate(p: Point, degrees: number): Point {
   return { x: p.x * cos - p.y * sin, y: p.x * sin + p.y * cos };
 }
 
-// A point in the unrotated frame, from its top-left corner, on the canvas.
-function frameToCanvas(l: DrawingLayout, f: Point): Point {
-  let w = l.width,
-    h = frameHeight(l);
-  let r = rotate({ x: f.x - w / 2, y: f.y - h / 2 }, l.rotation);
-  return { x: l.position.x + w / 2 + r.x, y: l.position.y + h / 2 + r.y };
+// The view box's center sits on the frame's center, which the frame rotates
+// about.
+function centers(l: DrawingLayout) {
+  let { x, y, width, height } = l.viewBox;
+  let s = drawingScale(l);
+  return {
+    s,
+    view: { x: x + width / 2, y: y + height / 2 },
+    frame: {
+      x: l.position.x + l.width / 2,
+      y: l.position.y + DRAWING_PADDING + (s * height) / 2,
+    },
+  };
 }
 
 export function drawingToCanvas(l: DrawingLayout, d: Point): Point {
-  let s = drawingScale(l);
-  return frameToCanvas(l, {
-    x: DRAWING_PADDING + s * (d.x - l.viewBox.x),
-    y: DRAWING_PADDING + s * (d.y - l.viewBox.y),
-  });
-}
-
-export function frameTopRight(l: DrawingLayout): Point {
-  return frameToCanvas(l, { x: l.width, y: 0 });
+  let { s, view, frame } = centers(l);
+  let r = rotate({ x: s * (d.x - view.x), y: s * (d.y - view.y) }, l.rotation);
+  return { x: frame.x + r.x, y: frame.y + r.y };
 }
 
 export function canvasToDrawing(l: DrawingLayout, c: Point): Point {
-  let s = drawingScale(l);
-  let w = l.width,
-    h = frameHeight(l);
-  let r = rotate(
-    { x: c.x - l.position.x - w / 2, y: c.y - l.position.y - h / 2 },
-    -l.rotation,
-  );
-  return {
-    x: l.viewBox.x + (r.x + w / 2 - DRAWING_PADDING) / s,
-    y: l.viewBox.y + (r.y + h / 2 - DRAWING_PADDING) / s,
-  };
+  let { s, view, frame } = centers(l);
+  let r = rotate({ x: c.x - frame.x, y: c.y - frame.y }, -l.rotation);
+  return { x: view.x + r.x / s, y: view.y + r.y / s };
+}
+
+export function frameTopRight(l: DrawingLayout): Point {
+  let { x, y, width } = l.viewBox;
+  let pad = DRAWING_PADDING / drawingScale(l);
+  return drawingToCanvas(l, { x: x + width + pad, y: y - pad });
 }
 
 // Grows or shrinks the frame to a new view box at the same scale and
@@ -283,9 +256,8 @@ export function refitLayout(l: DrawingLayout, viewBox: ViewBox): DrawingLayout {
     width: drawingScale(l) * viewBox.width + 2 * DRAWING_PADDING,
     position: { x: 0, y: 0 },
   };
-  let anchor = { x: l.viewBox.x, y: l.viewBox.y };
-  let want = drawingToCanvas(l, anchor);
-  let got = drawingToCanvas(next, anchor);
+  let want = drawingToCanvas(l, viewBox);
+  let got = drawingToCanvas(next, viewBox);
   next.position = { x: want.x - got.x, y: want.y - got.y };
   return next;
 }

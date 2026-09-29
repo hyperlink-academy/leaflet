@@ -10,12 +10,12 @@ import {
   INK_PRESSURE_SCALE,
   INK_UNITS_PER_PX,
   InkStroke,
+  ViewBox,
   canvasToDrawing,
   drawingScale,
   inkSamples,
   loopAt,
   refitLayout,
-  sameBox,
   simplifySamples,
   strokeBounds,
   unionBounds,
@@ -116,31 +116,22 @@ export async function fillAt(
 const SIMPLIFY_TOLERANCE_PX = 0.25;
 const SIMPLIFY_PRESSURE_TOLERANCE = 0.03;
 
-// Canvas px points (x, y, pressure 0-1 triples) in, drawing-space stroke out.
+// Canvas px points in, drawing-space stroke out.
 function toStroke(
   canvasPoints: number[],
   layout: DrawingLayout,
   args: { color: string; size: number; simulatePressure: boolean },
-): Omit<InkStroke, "fill"> & { points: number[] } {
-  let scale = drawingScale(layout);
-  let size = args.size / scale;
-  let drawn: number[] = [];
-  for (let i = 0; i + 2 < canvasPoints.length; i += 3) {
-    let d = canvasToDrawing(layout, {
-      x: canvasPoints[i],
-      y: canvasPoints[i + 1],
-    });
-    drawn.push(d.x, d.y, canvasPoints[i + 2]);
-  }
+) {
   let samples = simplifySamples(
-    inkSamples(drawn, size, !args.simulatePressure),
-    SIMPLIFY_TOLERANCE_PX / scale,
+    inkSamples(canvasPoints, args.size),
+    SIMPLIFY_TOLERANCE_PX,
     SIMPLIFY_PRESSURE_TOLERANCE,
   );
   let points: number[] = [];
-  for (let [dx, dy, pressure] of samples) {
-    let x = Math.round(dx),
-      y = Math.round(dy);
+  for (let [cx, cy, pressure] of samples) {
+    let d = canvasToDrawing(layout, { x: cx, y: cy });
+    let x = Math.round(d.x),
+      y = Math.round(d.y);
     let n = points.length;
     if (n >= 3 && points[n - 3] === x && points[n - 2] === y) continue;
     points.push(x, y, Math.round(pressure * INK_PRESSURE_SCALE));
@@ -148,27 +139,36 @@ function toStroke(
   return {
     points,
     color: args.color,
-    size: Math.max(1, Math.round(size)),
+    size: Math.max(1, Math.round(args.size / drawingScale(layout))),
     ...(args.simulatePressure && { simulatePressure: true }),
   };
 }
 
 // A new drawing's frame: drawing units are INK_UNITS_PER_PX per canvas px, with
-// the origin at canvas (0, 0).
+// the origin at canvas (0, 0). Its view box is empty, so the first stroke
+// always refits it.
 const NEW_DRAWING: DrawingLayout = {
   position: { x: -DRAWING_PADDING, y: -DRAWING_PADDING },
   width: 2 * DRAWING_PADDING + 1,
   rotation: 0,
-  viewBox: { x: 0, y: 0, width: INK_UNITS_PER_PX, height: INK_UNITS_PER_PX },
+  viewBox: { x: 0, y: 0, width: INK_UNITS_PER_PX, height: 0 },
 };
 
-async function writeLayout(
+// Refits the drawing's frame to a new view box, if it changed.
+async function fitViewBox(
   rep: Rep,
   page: string,
   entity: string,
-  positionFactID: string,
-  layout: DrawingLayout,
+  drawing: Omit<DrawingState, "strokes">,
+  viewBox: ViewBox | null,
 ) {
+  let old = drawing.layout.viewBox;
+  if (
+    !viewBox ||
+    (["x", "y", "width", "height"] as const).every((k) => viewBox[k] === old[k])
+  )
+    return;
+  let layout = refitLayout(drawing.layout, viewBox);
   await rep.mutate.assertFact([
     {
       entity,
@@ -181,7 +181,7 @@ async function writeLayout(
       data: { type: "number", value: layout.width },
     },
     {
-      id: positionFactID,
+      id: drawing.positionFactID,
       entity: page,
       attribute: "canvas/block",
       data: {
@@ -208,54 +208,36 @@ export async function commitStroke(
 ) {
   let target = useInkSession.getState().target;
   let existing = target ? await readDrawing(rep, args.page, target) : null;
-  let layout = existing?.layout ?? NEW_DRAWING;
-  let stroke = toStroke(args.canvasPoints, layout, args);
+  let drawing = existing ?? { layout: NEW_DRAWING, positionFactID: v7() };
+  let stroke = toStroke(args.canvasPoints, drawing.layout, args);
   let bounds = strokeBounds(stroke);
   if (!bounds) return;
   await undoManager.withUndoGroup(async () => {
-    if (target && existing) {
-      await rep.mutate.assertFact({
-        id: v7(),
-        entity: target,
-        attribute: "drawing/stroke",
-        data: { type: "ink-stroke", value: stroke },
+    let entity = (existing && target) || v7();
+    if (!existing) {
+      await rep.mutate.addCanvasBlock({
+        parent: args.page,
+        permission_set: args.permission_set,
+        factID: drawing.positionFactID,
+        newEntityID: entity,
+        type: "drawing",
+        position: drawing.layout.position,
       });
-      let viewBox = unionBounds([layout.viewBox, bounds])!;
-      if (!sameBox(viewBox, layout.viewBox))
-        await writeLayout(
-          rep,
-          args.page,
-          target,
-          existing.positionFactID,
-          refitLayout(layout, viewBox),
-        );
-      return;
+      useInkSession.setState({ target: entity });
     }
-    let entity = v7();
-    let { position, width } = refitLayout(layout, bounds);
-    await rep.mutate.addCanvasBlock({
-      parent: args.page,
-      permission_set: args.permission_set,
-      factID: v7(),
-      newEntityID: entity,
-      type: "drawing",
-      position,
-      width,
+    await rep.mutate.assertFact({
+      id: v7(),
+      entity,
+      attribute: "drawing/stroke",
+      data: { type: "ink-stroke", value: stroke },
     });
-    await rep.mutate.assertFact([
-      {
-        entity,
-        attribute: "drawing/view-box",
-        data: { type: "view-box", value: bounds },
-      },
-      {
-        id: v7(),
-        entity,
-        attribute: "drawing/stroke",
-        data: { type: "ink-stroke", value: stroke },
-      },
-    ]);
-    useInkSession.setState({ target: entity });
+    await fitViewBox(
+      rep,
+      args.page,
+      entity,
+      drawing,
+      unionBounds([existing?.layout.viewBox ?? null, bounds]),
+    );
   });
 }
 
@@ -271,15 +253,13 @@ export async function eraseStrokes(
   );
   await undoManager.withUndoGroup(async () => {
     for (let factID of args.strokeIDs) await rep.mutate.retractFact({ factID });
-    let viewBox = unionBounds(remaining.map((s) => strokeBounds(s.stroke)));
-    if (viewBox && !sameBox(viewBox, existing.layout.viewBox))
-      await writeLayout(
-        rep,
-        args.page,
-        args.target,
-        existing.positionFactID,
-        refitLayout(existing.layout, viewBox),
-      );
+    await fitViewBox(
+      rep,
+      args.page,
+      args.target,
+      existing,
+      unionBounds(remaining.map((s) => strokeBounds(s.stroke))),
+    );
   });
 }
 

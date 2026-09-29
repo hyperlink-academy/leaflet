@@ -18,7 +18,7 @@ import {
   strokeHit,
 } from "./ink";
 import { InkPath } from "./InkSvg";
-import { useInkSession } from "./useInkSession";
+import { InkTool, useInkSession } from "./useInkSession";
 import {
   DrawingState,
   commitStroke,
@@ -39,11 +39,10 @@ const ERASER_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
 
 type Gesture = {
   pointerId: number;
-  erase: boolean;
-  // Fills where the pointer went down once it lifts, so a pinch's first
-  // finger can still cancel it.
-  fill: boolean;
-  // Canvas px, flattened x, y, pressure (0-1) triples.
+  // A fill lands where the pointer went down once it lifts, so a pinch's
+  // first finger can still cancel it.
+  tool: InkTool;
+  // Canvas px, flattened x, y, pressure (0 to INK_PRESSURE_SCALE) triples.
   points: number[];
   simulatePressure: boolean;
   drawing: Promise<DrawingState | null> | null;
@@ -56,9 +55,7 @@ type Gesture = {
 export function CanvasInkLayer(props: { pageID: string }) {
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
-  let tool = useInkSession((s) => s.tool);
-  let color = useInkSession((s) => s.color);
-  let size = useInkSession((s) => s.size);
+  let { tool, color, size } = useInkSession();
   let ref = useRef<HTMLDivElement>(null);
   let gesture = useRef<Gesture | null>(null);
   let touches = useRef(new Set<number>());
@@ -102,13 +99,11 @@ export function CanvasInkLayer(props: { pageID: string }) {
     if (!drawing || gesture.current !== g) return;
     let d = canvasToDrawing(drawing.layout, p);
     let radius = ERASER_RADIUS / drawingScale(drawing.layout);
-    let hit = false;
-    for (let s of drawing.strokes) {
-      if (g.erased.has(s.id) || !strokeHit(s.stroke, d, radius)) continue;
-      g.erased.add(s.id);
-      hit = true;
-    }
-    if (hit) useInkSession.setState({ erasing: [...g.erased] });
+    let before = g.erased.size;
+    for (let s of drawing.strokes)
+      if (strokeHit(s.stroke, d, radius)) g.erased.add(s.id);
+    if (g.erased.size > before)
+      useInkSession.setState({ erasing: [...g.erased] });
   };
 
   let addPoints = (g: Gesture, e: React.PointerEvent) => {
@@ -118,8 +113,8 @@ export function CanvasInkLayer(props: { pageID: string }) {
     if (events.length === 0) events = [e.nativeEvent];
     for (let ev of events) {
       let p = clientToCanvas(ref.current!, props.pageID, ev);
-      if (g.fill && g.points.length > 0) break;
-      if (g.erase) {
+      if (g.tool === "fill" && g.points.length > 0) break;
+      if (g.tool === "eraser") {
         eraseAt(g, p);
         continue;
       }
@@ -130,14 +125,14 @@ export function CanvasInkLayer(props: { pageID: string }) {
           ? 0.5
           : ev.pressure > 0
             ? ev.pressure
-            : g.points[g.points.length - 1] ?? 0.5;
-      g.points.push(p.x, p.y, pressure);
+            : g.points[g.points.length - 1] / INK_PRESSURE_SCALE || 0.5;
+      g.points.push(p.x, p.y, pressure * INK_PRESSURE_SCALE);
     }
-    if (!g.erase && !g.fill) setLive(liveStroke(g));
+    if (g.tool === "pen") setLive(liveStroke(g));
   };
 
   let liveStroke = (g: Gesture): InkStroke => ({
-    points: g.points.map((v, i) => (i % 3 === 2 ? v * INK_PRESSURE_SCALE : v)),
+    points: g.points,
     color,
     size,
     simulatePressure: g.simulatePressure,
@@ -153,7 +148,7 @@ export function CanvasInkLayer(props: { pageID: string }) {
     let g = gesture.current;
     if (!g || g.pointerId !== e.pointerId || !rep) return;
     gesture.current = null;
-    if (g.erase) {
+    if (g.tool === "eraser") {
       let target = useInkSession.getState().target;
       if (!target || g.erased.size === 0) return;
       eraseStrokes(rep, undoManager, {
@@ -163,7 +158,7 @@ export function CanvasInkLayer(props: { pageID: string }) {
       }).then(() => useInkSession.setState({ erasing: [] }));
       return;
     }
-    if (g.fill) {
+    if (g.tool === "fill") {
       fillAt(rep, undoManager, {
         page: props.pageID,
         point: { x: g.points[0], y: g.points[1] },
@@ -218,8 +213,7 @@ export function CanvasInkLayer(props: { pageID: string }) {
           (e.pointerType === "pen" && !!(e.buttons & PEN_ERASER_BUTTONS));
         gesture.current = {
           pointerId: e.pointerId,
-          erase,
-          fill: tool === "fill" && !erase,
+          tool: erase ? "eraser" : tool,
           points: [],
           simulatePressure: e.pointerType !== "pen",
           drawing:

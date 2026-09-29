@@ -3,7 +3,7 @@ import { combine } from "zustand/middleware";
 import { useUIState } from "src/useUIState";
 import { INK_COLORS, INK_SIZES } from "./ink";
 
-type InkTool = "pen" | "eraser" | "fill";
+export type InkTool = "pen" | "eraser" | "fill";
 
 // A color pick keeps the fill tool, and otherwise goes back to the pen.
 const inking = (tool: InkTool): InkTool => (tool === "fill" ? "fill" : "pen");

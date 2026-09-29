@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import {
   ColorArea,
   ColorField,
@@ -22,23 +23,15 @@ import { stopInk } from "./inkMutations";
 
 export function InkToolbar(props: { pageID: string }) {
   let { rep, undoManager } = useReplicache();
-  let active = useInkSession((s) => s.page === props.pageID);
-  let tool = useInkSession((s) => s.tool);
-  let color = useInkSession((s) => s.color);
-  let size = useInkSession((s) => s.size);
-  let customColor = useInkSession((s) => s.customColor);
-  let hasTarget = useInkSession((s) => !!s.target);
-  let colorPickerOpen = useInkSession((s) => s.colorPickerOpen);
-  let { setColor, setCustomColor, setSize, setTool, setColorPickerOpen } =
-    useInkSession.getState();
-  if (!active) return null;
+  let ink = useInkSession();
+  if (ink.page !== props.pageID) return null;
 
   return (
     <div className="inkToolbar absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 bg-bg-page border border-border rounded-full shadow-sm px-1 py-1">
       <Popover
         asChild
-        open={colorPickerOpen}
-        onOpenChange={setColorPickerOpen}
+        open={ink.colorPickerOpen}
+        onOpenChange={ink.setColorPickerOpen}
         side="bottom"
         className="w-[172px]"
         trigger={
@@ -46,7 +39,7 @@ export function InkToolbar(props: { pageID: string }) {
             aria-label="Ink color"
             title="Ink color"
             className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full hover:bg-border-light"
-            style={{ color: inkColor(color) }}
+            style={{ color: inkColor(ink.color) }}
           >
             <PaintSmall />
           </button>
@@ -54,26 +47,27 @@ export function InkToolbar(props: { pageID: string }) {
       >
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-1.5">
-            {INK_COLORS.map((c) => (
-              <Swatch
-                key={c.value}
-                label={c.label}
-                color={c.value}
-                selected={color === c.value}
-                onSelect={() => setColor(c.value)}
-              />
+            {[
+              ...INK_COLORS,
+              { value: ink.customColor, label: "Custom color" },
+            ].map((c, i) => (
+              <Fragment key={c.label}>
+                {i === INK_COLORS.length && (
+                  <Separator classname="h-5! mx-0.5" />
+                )}
+                <button
+                  aria-label={c.label}
+                  title={c.label}
+                  onClick={() => ink.setColor(c.value)}
+                  className={`w-6 h-6 shrink-0 rounded-full border border-border outline-2 outline-offset-1 ${ink.color === c.value ? "outline-accent-contrast" : "outline-transparent hover:outline-border"}`}
+                  style={{ backgroundColor: inkColor(c.value) }}
+                />
+              </Fragment>
             ))}
-            <Separator classname="h-5! mx-0.5" />
-            <Swatch
-              label="Custom color"
-              color={customColor}
-              selected={color === customColor}
-              onSelect={() => setColor(customColor)}
-            />
           </div>
           <ColorPicker
-            value={parseColor(customColor)}
-            onChange={(c) => setCustomColor(c.toString("hex"))}
+            value={parseColor(ink.customColor)}
+            onChange={(c) => ink.setCustomColor(c.toString("hex"))}
           >
             <ColorArea
               className="w-full h-[128px] rounded-md"
@@ -100,33 +94,30 @@ export function InkToolbar(props: { pageID: string }) {
         </div>
       </Popover>
 
-      {INK_SIZES.map((s) => {
-        let selected = tool === "pen" && size === s;
-        return (
-          <button
-            key={s}
-            aria-label={`Pen size ${s}`}
-            title="Pen size"
-            onClick={() => setSize(s)}
-            className={`w-7 h-7 flex items-center justify-center rounded-full ${selected ? "bg-border-light" : "hover:bg-border-light"}`}
-          >
-            <span
-              className="rounded-full"
-              style={{
-                width: s + 2,
-                height: s + 2,
-                backgroundColor: inkColor(color),
-              }}
-            />
-          </button>
-        );
-      })}
+      {INK_SIZES.map((s) => (
+        <button
+          key={s}
+          aria-label={`Pen size ${s}`}
+          title="Pen size"
+          onClick={() => ink.setSize(s)}
+          className={`w-7 h-7 flex items-center justify-center rounded-full ${ink.tool === "pen" && ink.size === s ? "bg-border-light" : "hover:bg-border-light"}`}
+        >
+          <span
+            className="rounded-full"
+            style={{
+              width: s + 2,
+              height: s + 2,
+              backgroundColor: inkColor(ink.color),
+            }}
+          />
+        </button>
+      ))}
 
       <button
         aria-label="Fill"
         title="Fill a closed shape"
-        onClick={() => setTool(tool === "fill" ? "pen" : "fill")}
-        className={`w-7 h-7 flex items-center justify-center rounded-full ${tool === "fill" ? "bg-border-light text-primary" : "text-tertiary hover:bg-border-light"}`}
+        onClick={() => ink.setTool(ink.tool === "fill" ? "pen" : "fill")}
+        className={`w-7 h-7 flex items-center justify-center rounded-full ${ink.tool === "fill" ? "bg-border-light text-primary" : "text-tertiary hover:bg-border-light"}`}
       >
         <PaintBucketSmall width={18} height={18} />
       </button>
@@ -134,14 +125,14 @@ export function InkToolbar(props: { pageID: string }) {
       <button
         aria-label="Eraser"
         title="Eraser"
-        onClick={() => setTool(tool === "eraser" ? "pen" : "eraser")}
-        className={`w-7 h-7 flex items-center justify-center rounded-full ${tool === "eraser" ? "bg-border-light text-primary" : "text-tertiary hover:bg-border-light"}`}
+        onClick={() => ink.setTool(ink.tool === "eraser" ? "pen" : "eraser")}
+        className={`w-7 h-7 flex items-center justify-center rounded-full ${ink.tool === "eraser" ? "bg-border-light text-primary" : "text-tertiary hover:bg-border-light"}`}
       >
         <EraserSmall width={18} height={18} />
       </button>
 
       {/* Once there is a drawing, done sits on its frame. */}
-      {!hasTarget && (
+      {!ink.target && (
         <button
           aria-label="Stop drawing"
           title="Stop drawing"
@@ -152,22 +143,5 @@ export function InkToolbar(props: { pageID: string }) {
         </button>
       )}
     </div>
-  );
-}
-
-function Swatch(props: {
-  label: string;
-  color: string;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      aria-label={props.label}
-      title={props.label}
-      onClick={props.onSelect}
-      className={`w-6 h-6 shrink-0 rounded-full border border-border outline-2 outline-offset-1 ${props.selected ? "outline-accent-contrast" : "outline-transparent hover:outline-border"}`}
-      style={{ backgroundColor: inkColor(props.color) }}
-    />
   );
 }
