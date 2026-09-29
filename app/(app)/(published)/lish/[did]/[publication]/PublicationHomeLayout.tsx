@@ -24,8 +24,6 @@ export function PublicationHomeLayout(props: {
   subscribe: SubscribeData;
   children: React.ReactNode;
   pageWidth?: number;
-  // The page is a canvas: it scrolls with the page below the nav, and is as
-  // wide as the inside of the page (publicationCanvasWidth).
   canvasPage?: boolean;
 }) {
   let { ref } = usePreserveScroll<HTMLDivElement>(
@@ -113,8 +111,7 @@ export function PublicationHomeLayout(props: {
       <div className="pubWrapper flex flex-col sm:py-6 h-full max-w-(--page-width-units) mx-auto px-0 py-2">
         <div
           ref={ref}
-          // A classic scrollbar would take its width out of the canvas's,
-          // zooming the canvas out to fit what is left.
+          // A classic scrollbar would narrow the canvas and zoom it out.
           className={`pubContentScroll publicationScrollContainer overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] border border-border rounded-lg flex flex-col max-w-full w-[10000px] ${props.canvasPage ? "no-scrollbar" : ""}`}
         >
           {inner}

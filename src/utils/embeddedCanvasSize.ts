@@ -3,7 +3,7 @@ export type CanvasSize = { width: number; height: number };
 export type CanvasBounds = CanvasSize & { fixed: boolean };
 
 // The default page width, so a drawing's text reads at body size inline.
-export const EMBEDDED_CANVAS_WIDTH = 624;
+const EMBEDDED_CANVAS_WIDTH = 624;
 
 export const EMBEDDED_CANVAS_SIZES = {
   short: { width: EMBEDDED_CANVAS_WIDTH, height: 240 },
@@ -13,17 +13,6 @@ export const EMBEDDED_CANVAS_SIZES = {
 } as const satisfies Record<string, CanvasSize>;
 
 export type EmbeddedCanvasSizeName = keyof typeof EMBEDDED_CANVAS_SIZES;
-
-export const DEFAULT_EMBEDDED_CANVAS_SIZE: EmbeddedCanvasSizeName = "medium";
-
-export function embeddedCanvasSizeName(
-  size: CanvasSize,
-): EmbeddedCanvasSizeName | null {
-  for (let [name, s] of Object.entries(EMBEDDED_CANVAS_SIZES))
-    if (s.width === size.width && s.height === size.height)
-      return name as EmbeddedCanvasSizeName;
-  return null;
-}
 
 // How much of a block must stay inside the canvas's width, and inside a
 // drawing's height, so an edge can't lose it where nothing can reach it.

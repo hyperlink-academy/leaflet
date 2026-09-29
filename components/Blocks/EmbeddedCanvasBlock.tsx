@@ -15,7 +15,6 @@ import {
   type CanvasSize,
   EMBEDDED_CANVAS_SIZES,
   type EmbeddedCanvasSizeName,
-  embeddedCanvasSizeName,
 } from "src/utils/embeddedCanvasSize";
 
 export function EmbeddedCanvasBlock(
@@ -74,14 +73,17 @@ function EditEmbeddedCanvasButton(props: { parent: string; page: string }) {
 
 function EmbeddedCanvasSizeSettings(props: { page: string; size: CanvasSize }) {
   let { rep, undoManager } = useReplicache();
-  let current = embeddedCanvasSizeName(props.size);
+  let names = Object.keys(EMBEDDED_CANVAS_SIZES) as EmbeddedCanvasSizeName[];
+  let current = names.find(
+    (n) =>
+      EMBEDDED_CANVAS_SIZES[n].width === props.size.width &&
+      EMBEDDED_CANVAS_SIZES[n].height === props.size.height,
+  );
   return (
     <BlockSettings label="Drawing" className="w-md">
       <h4>Drawing Size</h4>
       <BlockSettingOptions<EmbeddedCanvasSizeName>
-        options={(
-          Object.keys(EMBEDDED_CANVAS_SIZES) as EmbeddedCanvasSizeName[]
-        ).map((value) => ({
+        options={names.map((value) => ({
           value,
           Icon: ({ selected }) => (
             <SizeIcon size={EMBEDDED_CANVAS_SIZES[value]} selected={selected} />

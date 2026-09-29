@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 import type { CanvasSize } from "src/utils/embeddedCanvasSize";
 
-// A drawing's canvas shown whole, scaled to the available width. Shared by
-// the editor's block and the published post so both frame it identically.
+// A drawing's canvas shown whole, scaled to the available width.
 export function ScaledCanvas(props: {
   size: CanvasSize;
   inert?: boolean;

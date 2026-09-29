@@ -12,7 +12,6 @@ import {
   PubLeafletBlocksButton,
   PubLeafletBlocksCode,
   PubLeafletBlocksDrawing,
-  PubLeafletBlocksEmbeddedCanvas,
   PubLeafletBlocksHeader,
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksHtml,
@@ -230,11 +229,7 @@ export async function processBlocksToPages(opts: {
       const [page] = scan.eav(b.entityID, "block/card");
       if (!page) return;
       pages.push(await pageToRecord(page.data.value, membersOnly));
-      const block: $Typed<PubLeafletBlocksEmbeddedCanvas.Main> = {
-        $type: ids.PubLeafletBlocksEmbeddedCanvas,
-        id: page.data.value,
-      };
-      return block;
+      return { $type: ids.PubLeafletBlocksEmbeddedCanvas, id: page.data.value };
     },
     "bluesky-post": async (b) => {
       const [post] = scan.eav(b.entityID, "block/bluesky-post");
@@ -634,10 +629,10 @@ export async function processBlocksToPages(opts: {
       ...(fixedWidth && fixedHeight
         ? { width: Math.floor(fixedWidth), height: Math.floor(fixedHeight) }
         : {}),
-      ...(mobileView && mobileView !== "unconstrained" ? { mobileView } : {}),
-      ...(scan.eav(pageID, "canvas/lock-viewer-zoom")[0]?.data.value
-        ? { lockViewerZoom: true }
-        : {}),
+      ...(mobileView && mobileView !== "unconstrained" && { mobileView }),
+      ...(scan.eav(pageID, "canvas/lock-viewer-zoom")[0]?.data.value && {
+        lockViewerZoom: true,
+      }),
     };
   }
 
@@ -833,14 +828,11 @@ export async function processBlocksToPages(opts: {
     pageID: string,
     membersOnly: boolean,
   ): Promise<PubLeafletPagesCanvas.Block[]> {
-    const canvasBlocks = scan.eav(pageID, "canvas/block");
     return (
       await Promise.all(
-        canvasBlocks.map(async (canvasBlock) => {
+        scan.eav(pageID, "canvas/block").map(async (canvasBlock) => {
           const blockEntity = canvasBlock.data.value;
-          const position = canvasBlock.data.position;
-
-          const blockType = scan.eav(blockEntity, "block/type")?.[0];
+          const [blockType] = scan.eav(blockEntity, "block/type");
           if (!blockType) return null;
 
           let content: PubLeafletPagesCanvas.Block["block"] | undefined;
@@ -849,49 +841,45 @@ export async function processBlocksToPages(opts: {
               getBlocksWithTypeLocal(facts, blockEntity),
               membersOnly,
             );
-            if (blocks.length === 0) return null;
-            content = { $type: "pub.leaflet.pages.linearDocument", blocks };
-          } else {
-            const block: Block = {
-              type: blockType.data.value,
-              entityID: blockEntity,
-              parent: pageID,
-              position: "",
-              factID: canvasBlock.id,
-            };
-            content = await blockToRecord(block, membersOnly);
-          }
+            if (blocks.length > 0)
+              content = { $type: "pub.leaflet.pages.linearDocument", blocks };
+          } else
+            content = await blockToRecord(
+              {
+                type: blockType.data.value,
+                entityID: blockEntity,
+                parent: pageID,
+                position: "",
+                factID: canvasBlock.id,
+              },
+              membersOnly,
+            );
           if (!content) return null;
 
-          const width =
-            scan.eav(blockEntity, "canvas/block/width")?.[0]?.data.value || 360;
-          const rotation = scan.eav(blockEntity, "canvas/block/rotation")?.[0]
-            ?.data.value;
-          const stackOrder = scan.eav(
+          const [width] = scan.eav(blockEntity, "canvas/block/width");
+          const [rotation] = scan.eav(blockEntity, "canvas/block/rotation");
+          const [stackOrder] = scan.eav(
             blockEntity,
             "canvas/block/stack-order",
-          )?.[0]?.data.value;
-
+          );
           // The editor only aligns the text of a lone canvas block.
           const alignment = isTextBlock[blockType.data.value]
             ? blockAlignment(blockEntity)
             : undefined;
 
-          const canvasBlockRecord: PubLeafletPagesCanvas.Block = {
+          return {
             $type: "pub.leaflet.pages.canvas#block",
             block: content,
-            x: Math.floor(position.x),
-            y: Math.floor(position.y),
-            width: Math.floor(width),
-            ...(rotation !== undefined && { rotation: Math.round(rotation) }),
-            ...(stackOrder !== undefined && { stackOrder }),
+            x: Math.floor(canvasBlock.data.position.x),
+            y: Math.floor(canvasBlock.data.position.y),
+            width: Math.floor(width?.data.value || 360),
+            ...(rotation && { rotation: Math.round(rotation.data.value) }),
+            ...(stackOrder && { stackOrder: stackOrder.data.value }),
             ...(alignment && { alignment }),
-          };
-
-          return canvasBlockRecord;
+          } satisfies PubLeafletPagesCanvas.Block;
         }),
       )
-    ).filter((b): b is PubLeafletPagesCanvas.Block => b !== null);
+    ).filter((b) => b !== null);
   }
 }
 

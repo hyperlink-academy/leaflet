@@ -17,10 +17,7 @@ import { BlockCalendarSmall } from "components/Icons/BlockCalendarSmall";
 import { BlockCanvasPageSmall } from "components/Icons/BlockCanvasPageSmall";
 import { BlockPostHeaderSmall } from "components/Icons/BlockPostHeaderSmall";
 import { BlockEmbeddedCanvasSmall } from "components/Icons/BlockEmbeddedCanvasSmall";
-import {
-  DEFAULT_EMBEDDED_CANVAS_SIZE,
-  EMBEDDED_CANVAS_SIZES,
-} from "src/utils/embeddedCanvasSize";
+import { EMBEDDED_CANVAS_SIZES } from "src/utils/embeddedCanvasSize";
 import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { BlockEmbedSmall } from "components/Icons/BlockEmbedSmall";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
@@ -506,7 +503,7 @@ export const blockCommands: Command[] = [
           blockEntity: entity,
           pageEntity: newPage,
           permission_set: props.entity_set,
-          ...EMBEDDED_CANVAS_SIZES[DEFAULT_EMBEDDED_CANVAS_SIZE],
+          ...EMBEDDED_CANVAS_SIZES.medium,
         });
         um.add({
           undo: () => useUIState.getState().closePage(newPage),

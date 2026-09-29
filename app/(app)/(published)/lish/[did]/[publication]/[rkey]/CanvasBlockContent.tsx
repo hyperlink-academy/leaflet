@@ -1,11 +1,9 @@
-"use client";
 import {
   PubLeafletPagesCanvas,
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
 import { AppBskyFeedDefs } from "@atproto/api";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
-import { useMemo } from "react";
 import { canvasBlockBlocks } from "src/utils/pageBlocksInOrder";
 import {
   canvasBlockOrder,
@@ -30,11 +28,9 @@ type BlockDataProps = {
   preview: boolean;
 };
 
-// A published canvas laid out at full size: the grid and the blocks, placed
-// and stacked, in reading order (which block indexes are counted against).
-// The canvas page scrolls and zooms this; a page link scales it down. A
-// drawing passes its size, which clips it and drops the grid; a
-// publication's page passes its width.
+// A published canvas at full size, blocks in reading order (which block
+// indexes count against). A drawing passes its size, which clips it and drops
+// the grid; a publication's page passes its width.
 export function CanvasBlocks({
   blocks,
   size,
@@ -49,14 +45,8 @@ export function CanvasBlocks({
     width: contentWidth,
     height: canvasContentHeight(blocks),
   };
-  let sortedBlocks = useMemo(
-    () => [...blocks].sort(canvasBlockOrder),
-    [blocks],
-  );
-  let stackOrders = useMemo(
-    () => canvasStackOrders(sortedBlocks),
-    [sortedBlocks],
-  );
+  let sortedBlocks = [...blocks].sort(canvasBlockOrder);
+  let stackOrders = canvasStackOrders(sortedBlocks);
   return (
     <div
       style={{

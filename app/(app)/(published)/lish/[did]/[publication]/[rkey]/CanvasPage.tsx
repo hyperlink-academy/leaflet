@@ -113,9 +113,6 @@ export function CanvasPage({
   );
 }
 
-// A publication's canvas page (`pageScroll`) sits below the publication
-// header inside a CanvasPageArea and scrolls with the page; it is as wide
-// as the publication's page (`contentWidth`).
 export function CanvasContent({
   zoomKey,
   mobileArea,
@@ -137,9 +134,7 @@ export function CanvasContent({
       initialArea={mobileArea}
       lockViewerZoom={lockViewerZoom}
     >
-      {/* The canvas's width, max-w-full: the page keeps its full-canvas width
-          while the zoomed-out spacer shrinks, and the box (not the page card
-          around it) carries the horizontal overflow when zoomed in. */}
+      {/* A class rather than an inline width: the zoom engine owns the box's inline width. */}
       <div
         style={{ "--canvas-width": `${contentWidth}px` } as CSSProperties}
         className={`canvasWrapper w-(--canvas-width) max-w-full ${pageScroll ? "canvasPageScroll" : "h-full overflow-y-scroll"} touch-pan-x touch-pan-y postContent`}
@@ -176,8 +171,8 @@ const CanvasMetadata = (props: {
     showFirstLast?: boolean;
     prevNextDirection?: string;
   };
-  quotesCount: number | undefined;
-  commentsCount: number | undefined;
+  quotesCount: number;
+  commentsCount: number;
   recommendsCount: number;
 }) => {
   let isMobile = useIsMobile();
@@ -187,8 +182,8 @@ const CanvasMetadata = (props: {
     <div className="flex flex-row gap-1 items-center absolute top-3 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
       {!hideInteractions && (
         <Interactions
-          quotesCount={props.quotesCount || 0}
-          commentsCount={props.commentsCount || 0}
+          quotesCount={props.quotesCount}
+          commentsCount={props.commentsCount}
           recommendsCount={props.recommendsCount}
           showComments={props.preferences.showComments !== false}
           showMentions={props.preferences.showMentions !== false}
@@ -202,7 +197,7 @@ const CanvasMetadata = (props: {
           <Popover
             side="bottom"
             align="end"
-            className={`flex flex-col gap-2 p-0! text-primary ${isMobile ? "w-full" : "max-w-sm w-[1000px] t"}`}
+            className={`flex flex-col gap-2 p-0! text-primary ${isMobile ? "w-full" : "max-w-sm w-[1000px]"}`}
             trigger={<InfoSmall />}
           >
             <PostHeader
