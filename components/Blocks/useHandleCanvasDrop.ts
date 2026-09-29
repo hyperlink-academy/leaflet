@@ -2,28 +2,25 @@ import { type RefObject, useCallback, useEffect } from "react";
 import { useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { v7 } from "uuid";
-import { supabaseBrowserClient } from "supabase/browserClient";
-import {
-  computeThumbHashFromBitmap,
-  localImages,
-  uploadImageAndFinalize,
-} from "src/utils/addImage";
-import { setImageUploadStatus } from "src/utils/imageUploadStatus";
+import { addImage } from "src/utils/addImage";
 import { clientToCanvas } from "src/canvasZoom/session";
 import { useUIState } from "src/useUIState";
 import { elementId } from "src/utils/elementId";
 import { type CanvasBounds, clampToCanvas } from "src/utils/embeddedCanvasSize";
 
-const processImage = async (file: File) => {
-  const bitmap = await createImageBitmap(file);
-  const { width, height } = bitmap;
-  return { width, height, thumbhash: computeThumbHashFromBitmap(bitmap) };
-};
+const IMAGE_WIDTH = 360;
 
 const imageFilesOf = (data: DataTransfer | null) =>
   Array.from(data?.files ?? []).filter((file) =>
     file.type.startsWith("image/"),
   );
+
+const heightAtImageWidth = async (file: File) => {
+  let bitmap = await createImageBitmap(file);
+  let height = bitmap.height * (IMAGE_WIDTH / bitmap.width);
+  bitmap.close();
+  return height;
+};
 
 // Adds the images to the canvas as a grid. `place` gets the grid's footprint
 // in canvas px and returns where its top-left corner goes.
@@ -41,88 +38,38 @@ const useAddCanvasImages = (entityID: string) => {
     ) => {
       if (!rep || imageFiles.length === 0) return;
 
-      const DEFAULT_WIDTH = 360;
-      const processedImages = await Promise.all(
-        imageFiles.map((file) => processImage(file)),
-      );
+      const heights = await Promise.all(imageFiles.map(heightAtImageWidth));
       const COLUMNS = Math.ceil(Math.sqrt(imageFiles.length));
       const rowHeights: number[] = [];
-      processedImages.forEach((dims, i) => {
+      heights.forEach((height, i) => {
         const row = Math.floor(i / COLUMNS);
-        const height = dims.height * (DEFAULT_WIDTH / dims.width);
         rowHeights[row] = Math.max(rowHeights[row] || 0, height);
       });
-
       const origin = place({
-        width: COLUMNS * DEFAULT_WIDTH,
+        width: COLUMNS * IMAGE_WIDTH,
         height: rowHeights.reduce((total, size) => total + size, 0),
       });
 
-      const client = supabaseBrowserClient();
-
-      const imageBlocks = imageFiles.map((file, index) => {
-        const entity = v7();
-        const fileID = v7();
-        const row = Math.floor(index / COLUMNS);
-        const x = origin.x + (index % COLUMNS) * DEFAULT_WIDTH;
-        let y = origin.y;
-        for (let r = 0; r < row; r++) y += rowHeights[r];
-
-        const url = client.storage
-          .from("minilink-user-assets")
-          .getPublicUrl(fileID).data.publicUrl;
-
-        return {
-          file,
-          entity,
-          fileID,
-          url,
-          position: { x, y },
-          dimensions: processedImages[index],
-        };
-      });
-
       await undoManager.withUndoGroup(async () => {
-        for (const block of imageBlocks) {
-          localImages.set(block.url, URL.createObjectURL(block.file));
-          setImageUploadStatus(block.url, { state: "uploading" });
-
+        const entities = imageFiles.map(() => v7());
+        for (const [index, entity] of entities.entries()) {
+          let y = origin.y;
+          for (let r = 0; r < Math.floor(index / COLUMNS); r++)
+            y += rowHeights[r];
           await rep.mutate.addCanvasBlock({
-            newEntityID: block.entity,
+            newEntityID: entity,
             parent: entityID,
-            position: block.position,
+            position: { x: origin.x + (index % COLUMNS) * IMAGE_WIDTH, y },
             factID: v7(),
             type: "image",
             permission_set: entity_set.set,
           });
-
-          await rep.mutate.assertFact({
-            entity: block.entity,
-            attribute: "block/image",
-            data: {
-              fallback: block.dimensions.thumbhash,
-              type: "image",
-              local: rep.clientID,
-              src: block.url,
-              height: block.dimensions.height,
-              width: block.dimensions.width,
-            },
-          });
         }
-
         await Promise.all(
-          imageBlocks.map((block) =>
-            uploadImageAndFinalize({
-              rep,
-              fileID: block.fileID,
-              url: block.url,
-              blob: block.file,
-              file: block.file,
-              entityID: block.entity,
+          imageFiles.map((file, index) =>
+            addImage(file, rep, {
+              entityID: entities[index],
               attribute: "block/image",
-              thumbhash: block.dimensions.thumbhash,
-              width: block.dimensions.width,
-              height: block.dimensions.height,
             }),
           ),
         );
