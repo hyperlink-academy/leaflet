@@ -515,10 +515,17 @@ export let Block = ({
       );
     },
     "pub.leaflet.blocks.button": (block) => {
+      let fullWidth =
+        b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignJustify";
       return (
         <div className={`flex ${alignment} ${className}`} {...blockProps}>
-          <a href={block.url} target="_blank" rel="noopener noreferrer">
-            <ButtonPrimary role="link" type="submit">
+          <a
+            href={block.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={fullWidth ? "w-full" : undefined}
+          >
+            <ButtonPrimary role="link" type="submit" fullWidth={fullWidth}>
               {block.text}
             </ButtonPrimary>
           </a>

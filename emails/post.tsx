@@ -1358,6 +1358,9 @@ const BlockRenderer = ({
         text={block.text}
         url={block.url}
         align={resolveBlockAlignment(alignment)}
+        fullWidth={
+          alignment === "lex:pub.leaflet.pages.linearDocument#textAlignJustify"
+        }
         theme={theme}
       />
     ),
@@ -2637,11 +2640,13 @@ const ButtonBlock = ({
   text,
   url,
   align = "center",
+  fullWidth = false,
   theme = defaultEmailTheme,
 }: {
   text: string;
   url: string;
   align?: "left" | "center" | "right";
+  fullWidth?: boolean;
   theme?: EmailTheme;
 }) => {
   // Bulletproof button: table-based so Outlook (which ignores padding on
@@ -2658,6 +2663,7 @@ const ButtonBlock = ({
         cellPadding={0}
         cellSpacing={0}
         border={0}
+        width={fullWidth ? "100%" : undefined}
         style={{ borderCollapse: "separate" }}
       >
         <tbody>

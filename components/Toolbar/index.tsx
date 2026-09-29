@@ -93,7 +93,7 @@ export const Toolbar = (props: {
     if (props.blockType === "image") {
       setToolbarState("image");
     }
-    if (props.blockType === "button" || props.blockType === "datetime") {
+    if (props.blockType === "datetime") {
       setToolbarState("text-alignment");
     }
   }, [props.blockType, isMultiselect, selectionKey]);
