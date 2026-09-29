@@ -2,9 +2,9 @@ import { CONTENT_WIDTH } from "./math";
 
 export type CanvasMobileView = "unconstrained" | "left" | "center";
 
-// Width of the phone-sized area an anchored mobile view frames, in canvas px:
-// a common phone width, so a phone shows that area at 1:1.
-export const MOBILE_VIEW_WIDTH = 390;
+// Width of the area an anchored mobile view frames, in canvas px: a third
+// wider than a common phone (390), which opens zoomed out to fit it.
+export const MOBILE_VIEW_WIDTH = 520;
 
 export type CanvasArea = { left: number; width: number };
 
