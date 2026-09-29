@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { CanvasSize } from "src/utils/embeddedCanvasSize";
 
 // A drawing's canvas shown whole, scaled to the available width.
@@ -18,11 +18,17 @@ export function ScaledCanvas(props: {
     >
       <div
         className="absolute top-0 left-0 origin-top-left"
-        style={{
-          width: props.size.width,
-          height: props.size.height,
-          transform: `scale(tan(atan2(100cqw, ${props.size.width}px)))`,
-        }}
+        style={
+          {
+            width: props.size.width,
+            height: props.size.height,
+            // Registered as a <length> (app/globals.css), so it reaches
+            // atan2 computed to px: Safari before 27 and Firefox before 152
+            // mis-divide a container unit.
+            "--canvas-box-width": "100cqw",
+            transform: `scale(tan(atan2(var(--canvas-box-width), ${props.size.width}px)))`,
+          } as CSSProperties
+        }
       >
         {props.children}
       </div>
