@@ -5,7 +5,6 @@ import { BaseBlock } from "./Blocks/Block";
 import { registerBlockGroup } from "src/utils/blockGroups";
 import {
   type CSSProperties,
-  useCallback,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -13,7 +12,6 @@ import {
 } from "react";
 import { useDrag } from "src/hooks/useDrag";
 import { isTextBlock } from "src/utils/isTextBlock";
-import { useLongPress } from "src/hooks/useLongPress";
 import { focusBlock } from "src/utils/focusBlock";
 import { elementId } from "src/utils/elementId";
 import { useUIState } from "src/useUIState";
@@ -45,7 +43,7 @@ import {
 } from "src/utils/canvasBlockOrder";
 import { Replicache } from "replicache";
 import { UndoManager } from "src/undoManager";
-import { useCanvasStackOrders } from "src/hooks/queries/useCanvasStacking";
+import { useCanvasPaintOrder } from "src/hooks/queries/useCanvasStacking";
 import {
   CustomizeTutorialTooltip,
   useTutorialOpen,
@@ -85,16 +83,15 @@ import {
 
 export function Canvas(props: {
   entityID: string;
-  preview?: boolean;
   first?: boolean;
   /** Below a publication header: the page scrolls it (CanvasPageScroll). */
   pageScroll?: boolean;
 }) {
-  let entity_set = useEntitySetContext();
+  let { permissions } = useEntitySetContext();
   // Readers on a view-only link get the same lock as published viewers.
   let lockViewerZoom =
     !!useEntity(props.entityID, "canvas/lock-viewer-zoom")?.data.value &&
-    !entity_set.permissions.write;
+    !permissions.write;
   let size = useCanvasSize(props.entityID);
   let mobileArea = mobileViewArea(
     useEntity(props.entityID, "canvas/mobile-view")?.data.value,
@@ -113,7 +110,7 @@ export function Canvas(props: {
       initialArea={mobileArea}
       lockViewerZoom={lockViewerZoom}
       // Writers double tap empty canvas to add a block.
-      doubleTapZoom={!!props.preview || !entity_set.permissions.write}
+      doubleTapZoom={!permissions.write}
     >
       <CanvasOverlay edge="top">
         {/* A drawing is a picture in its parent page, with no phone framing
@@ -122,7 +119,7 @@ export function Canvas(props: {
           <div
             className={`absolute ${clearPageOptions ? "top-9" : "top-6"} right-3 sm:top-4 sm:right-4 z-20 flex flex-row gap-2 items-start`}
           >
-            {!props.preview && entity_set.permissions.write && (
+            {permissions.write && (
               <MobileViewToggle entityID={props.entityID} />
             )}
             <CanvasMetadata
@@ -131,18 +128,13 @@ export function Canvas(props: {
             />
           </div>
         )}
-        {!props.preview && entity_set.permissions.write && (
-          <InkToolbar pageID={props.entityID} />
-        )}
+        {permissions.write && <InkToolbar pageID={props.entityID} />}
       </CanvasOverlay>
-      {!props.preview && entity_set.permissions.write && (
-        <CanvasFocusZoom pageEntityID={props.entityID} />
-      )}
+      {permissions.write && <CanvasFocusZoom pageEntityID={props.entityID} />}
 
       <div
         id={elementId.page(props.entityID).canvasScrollArea}
-        // A class rather than an inline width: the zoom engine owns the
-        // box's inline width, which it rewrites to fit a scrollbar gutter.
+        // Not an inline width: the engine rewrites that to fit a scrollbar gutter.
         style={{ "--canvas-width": `${size.width}px` } as CSSProperties}
         className={`
           canvasWrapper
@@ -172,13 +164,9 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   let size = useCanvasSize(props.entityID);
   let handleDrop = useHandleCanvasDrop(props.entityID);
   let contentRef = useRef<HTMLDivElement>(null);
-  useHandleCanvasPaste(
-    props.entityID,
-    contentRef,
-    size,
-    !props.preview && entity_set.permissions.write,
-  );
-  let stackOrders = useCanvasStackOrders(props.entityID);
+  let editable = !props.preview && entity_set.permissions.write;
+  useHandleCanvasPaste(props.entityID, contentRef, size, editable);
+  let paintOrder = useCanvasPaintOrder(props.entityID);
   let inking = useInkSession((s) => s.page === props.entityID);
 
   return (
@@ -196,7 +184,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
             behavior: "smooth",
             inline: "nearest",
           });
-        if (props.preview || !entity_set.permissions.write) return;
+        if (!editable) return;
         if ((e.detail === 2 || e.ctrlKey || e.metaKey) && rep) {
           let parentRect = e.currentTarget.getBoundingClientRect();
           let zoom = getCanvasZoom(props.entityID);
@@ -216,16 +204,14 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
         }
       }}
       onDragOver={
-        !props.preview && entity_set.permissions.write
+        editable
           ? (e) => {
               e.preventDefault();
               e.stopPropagation();
             }
           : undefined
       }
-      onDrop={
-        !props.preview && entity_set.permissions.write ? handleDrop : undefined
-      }
+      onDrop={editable ? handleDrop : undefined}
       style={{
         width: size.width,
         minHeight: size.height,
@@ -241,31 +227,25 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
         // blocks while editing it.
         defaultPattern={size.fixed && props.preview ? "plain" : "grid"}
       />
-      {!props.preview && entity_set.permissions.write && (
-        <MobileViewGuides entityID={props.entityID} />
-      )}
-      {!props.preview && entity_set.permissions.write && inking && (
-        <CanvasInkLayer pageID={props.entityID} />
-      )}
+      {editable && <MobileViewGuides entityID={props.entityID} />}
+      {editable && inking && <CanvasInkLayer pageID={props.entityID} />}
       {[...blocks]
         .sort((a, b) => canvasBlockOrder(a.data.position, b.data.position))
-        .map((b) => {
-          return (
-            <CanvasBlock
-              preview={props.preview}
-              parent={props.entityID}
-              entityID={b.data.value}
-              position={{
-                ...b.data.position,
-                x: visibleCanvasX(b.data.position.x, size.width),
-              }}
-              factID={b.id}
-              stackOrder={stackOrders.get(b.data.value)}
-              canvas={size}
-              key={b.data.value}
-            />
-          );
-        })}
+        .map((b) => (
+          <CanvasBlock
+            preview={props.preview}
+            parent={props.entityID}
+            entityID={b.data.value}
+            position={{
+              ...b.data.position,
+              x: visibleCanvasX(b.data.position.x, size.width),
+            }}
+            factID={b.id}
+            stackOrder={paintOrder.indexOf(b.data.value) + 1 || undefined}
+            canvas={size}
+            key={b.data.value}
+          />
+        ))}
     </div>
   );
 }
@@ -380,9 +360,7 @@ const CanvasMetadata = (props: {
       showRecommends?: boolean;
     } | null>("post_preferences"),
   );
-  if (!pub || !pub.publications) return null;
-
-  if (!normalizedPublication) return null;
+  if (!pub?.publications || !normalizedPublication) return null;
   if (hasHeaderBlock || isPublicationPage) return null;
   let merged = mergePreferences(
     postPreferences || undefined,
@@ -405,11 +383,9 @@ const CanvasMetadata = (props: {
         </div>
       )}
 
-      {showMentions !== false ||
-      showComments !== false ||
-      showRecommends === false ? (
+      {(showMentions || showComments || !showRecommends) && (
         <Separator classname="h-4!" />
-      ) : null}
+      )}
       <AddTags />
 
       {!props.isSubpage && (
@@ -435,12 +411,11 @@ const AddCanvasBlockButton = (props: {
 }) => {
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
-  let { permissions } = entity_set;
   let engine = useCanvasZoomEngine();
   let blocks = useEntity(props.entityID, "canvas/block");
   let tutorialOpen = useTutorialOpen("canvas-add");
 
-  if (!permissions.write) return null;
+  if (!entity_set.permissions.write) return null;
   return (
     <div className="absolute right-2 sm:bottom-4 sm:right-4 bottom-2 sm:top-auto z-10 flex flex-col gap-1 justify-center">
       <CustomizeTutorialTooltip target="canvas-add" className="flex">
@@ -531,30 +506,26 @@ function CanvasBlock(props: {
 
   let { permissions } = useEntitySetContext();
   // Drag deltas arrive in screen px; block positions and widths are canvas px.
-  let onDragEnd = useCallback(
-    (dragPosition: { x: number; y: number }) => {
-      if (!permissions.write) return;
-      let zoom = getCanvasZoom(props.parent);
-      rep?.mutate.assertFact({
-        id: props.factID,
-        entity: props.parent,
-        attribute: "canvas/block",
-        data: {
-          type: "spatial-reference",
-          value: props.entityID,
-          position: clampToCanvas(
-            {
-              x: props.position.x + dragPosition.x / zoom,
-              y: props.position.y + dragPosition.y / zoom,
-            },
-            { width, height: rect.height / zoom },
-            props.canvas,
-          ),
-        },
-      });
-    },
-    [props, rep, permissions, width, rect.height],
-  );
+  let onDragEnd = (dragPosition: { x: number; y: number }) => {
+    let zoom = getCanvasZoom(props.parent);
+    rep?.mutate.assertFact({
+      id: props.factID,
+      entity: props.parent,
+      attribute: "canvas/block",
+      data: {
+        type: "spatial-reference",
+        value: props.entityID,
+        position: clampToCanvas(
+          {
+            x: props.position.x + dragPosition.x / zoom,
+            y: props.position.y + dragPosition.y / zoom,
+          },
+          { width, height: rect.height / zoom },
+          props.canvas,
+        ),
+      },
+    });
+  };
   // Editing inside a group keeps the group's handles up.
   let isFocused = useUIState(
     (s) =>
@@ -566,8 +537,8 @@ function CanvasBlock(props: {
   let holdsText = isGroup || (!!type && !!isTextBlock[type.data.value]);
   // Text is selected and edited by pressing on it, so a block of it only
   // moves by its body until it is focused; from then on, by the gripper.
-  let bodyDraggable =
-    !props.preview && permissions.write && !!type && !(holdsText && isFocused);
+  let editable = !props.preview && permissions.write;
+  let bodyDraggable = editable && !!type && !(holdsText && isFocused);
   let {
     dragDelta,
     handlers: dragHandlers,
@@ -600,8 +571,8 @@ function CanvasBlock(props: {
       : undefined,
   });
 
-  let widthOnDragEnd = useCallback(
-    (dragPosition: { x: number; y: number }) => {
+  let widthHandle = useDrag({
+    onDragEnd: (dragPosition) =>
       rep?.mutate.assertFact({
         entity: props.entityID,
         attribute: "canvas/block/width",
@@ -609,14 +580,10 @@ function CanvasBlock(props: {
           type: "number",
           value: width + dragPosition.x / getCanvasZoom(props.parent),
         },
-      });
-    },
-    [props, rep, width],
-  );
-  let widthHandle = useDrag({ onDragEnd: widthOnDragEnd });
-
-  let RotateOnDragEnd = useCallback(
-    (dragDelta: { x: number; y: number }) => {
+      }),
+  });
+  let rotateHandle = useDrag({
+    onDragEnd: (dragDelta) =>
       rep?.mutate.assertFact({
         entity: props.entityID,
         attribute: "canvas/block/rotation",
@@ -624,35 +591,8 @@ function CanvasBlock(props: {
           type: "number",
           value: Math.round(rotation + rotationDelta(rect, dragDelta)) % 360,
         },
-      });
-    },
-    [props, rep, rect, rotation],
-  );
-  let rotateHandle = useDrag({ onDragEnd: RotateOnDragEnd });
-
-  let { isLongPress, longPressHandlers: longPressHandlers } = useLongPress(
-    () => {
-      // A hold on a body that can be dragged lifts the block instead.
-      // Focusing it as well would zoom and scroll the canvas under the
-      // finger, and swap the pressed element out of blocks that render
-      // differently while edited.
-      if (
-        isLongPress.current &&
-        permissions.write &&
-        !isGroup &&
-        !bodyDraggable
-      ) {
-        focusBlock(
-          {
-            type: type?.data.value || "text",
-            entityID: props.entityID,
-            parent: props.parent,
-          },
-          { type: "start" },
-        );
-      }
-    },
-  );
+      }),
+  });
   let angle = rotateHandle.dragDelta
     ? rotationDelta(rect, rotateHandle.dragDelta)
     : 0;
@@ -700,23 +640,21 @@ function CanvasBlock(props: {
   return (
     <div
       ref={ref}
-      {...(!props.preview ? { ...longPressHandlers, ...mouseHandlers } : {})}
+      {...(!props.preview ? mouseHandlers : {})}
+      // A shift-click selects the block; the page must not take focus for it.
+      onClickCapture={(e) => e.shiftKey && e.preventDefault()}
       id={props.preview ? undefined : elementId.block(props.entityID).container}
       className={`canvasBlockWrapper absolute group/canvas-block rounded-lg flex items-stretch origin-center p-3`}
       style={{
         top: 0,
         left: 0,
-        // Only the block being dragged lifts out of its layer. Lifting on
-        // focus too would hide the effect of the layering buttons, which act
-        // on the block that is focused.
+        // Only the dragged block lifts: the layering buttons act on the focused one.
         zIndex: dragDelta ? CANVAS_DRAG_STACK_ORDER : props.stackOrder,
         width: width + (widthHandle.dragDelta?.x || 0) / liveZoom,
         transform,
       }}
     >
-      {!props.preview && permissions.write && (
-        <Gripper isFocused={isFocused} {...dragHandlers} />
-      )}
+      {editable && <Gripper isFocused={isFocused} {...dragHandlers} />}
 
       <div
         {...(bodyDraggable ? bodyHandlers : {})}
@@ -736,7 +674,7 @@ function CanvasBlock(props: {
         )}
       </div>
 
-      {!props.preview && permissions.write && (
+      {editable && (
         <div
           className={`resizeHandle
           cursor-e-resize shrink-0 z-10
@@ -751,7 +689,7 @@ function CanvasBlock(props: {
         />
       )}
 
-      {!props.preview && permissions.write && (
+      {editable && (
         <div
           className={`rotateHandle
             cursor-grab shrink-0 z-10
@@ -812,77 +750,47 @@ export const CanvasBackgroundPattern = (props: {
 }) => {
   if (props.pattern === "plain") return null;
   let patternID = `canvasPattern-${props.pattern}-${props.scale}`;
-  if (props.pattern === "grid")
-    return (
-      <svg
-        width="100%"
-        height="100%"
-        xmlns="http://www.w3.org/2000/svg"
-        className="pointer-events-none text-border-light"
-      >
-        <defs>
-          <pattern
-            id={patternID}
-            x="0"
-            y="0"
-            width={props.scale ? 32 * props.scale : 32}
-            height={props.scale ? 32 * props.scale : 32}
-            viewBox={`${props.scale ? 16 * props.scale : 0} ${props.scale ? 16 * props.scale : 0} ${props.scale ? 32 * props.scale : 32} ${props.scale ? 32 * props.scale : 32}`}
-            patternUnits="userSpaceOnUse"
-          >
+  let grid = props.pattern === "grid";
+  let size = (grid ? 32 : 24) * (props.scale || 1);
+  let offset = props.scale ? 16 * props.scale : 0;
+  return (
+    <svg
+      width="100%"
+      height="100%"
+      xmlns="http://www.w3.org/2000/svg"
+      className={`pointer-events-none ${grid ? "text-border-light" : "text-border"}`}
+    >
+      <defs>
+        <pattern
+          id={patternID}
+          x="0"
+          y="0"
+          width={size}
+          height={size}
+          viewBox={grid ? `${offset} ${offset} ${size} ${size}` : undefined}
+          patternUnits="userSpaceOnUse"
+        >
+          {grid ? (
             <path
               fillRule="evenodd"
               clipRule="evenodd"
               d="M16.5 0H15.5L15.5 2.06061C15.5 2.33675 15.7239 2.56061 16 2.56061C16.2761 2.56061 16.5 2.33675 16.5 2.06061V0ZM0 16.5V15.5L2.06061 15.5C2.33675 15.5 2.56061 15.7239 2.56061 16C2.56061 16.2761 2.33675 16.5 2.06061 16.5L0 16.5ZM16.5 32H15.5V29.9394C15.5 29.6633 15.7239 29.4394 16 29.4394C16.2761 29.4394 16.5 29.6633 16.5 29.9394V32ZM32 15.5V16.5L29.9394 16.5C29.6633 16.5 29.4394 16.2761 29.4394 16C29.4394 15.7239 29.6633 15.5 29.9394 15.5H32ZM5.4394 16C5.4394 15.7239 5.66325 15.5 5.93939 15.5H10.0606C10.3367 15.5 10.5606 15.7239 10.5606 16C10.5606 16.2761 10.3368 16.5 10.0606 16.5H5.9394C5.66325 16.5 5.4394 16.2761 5.4394 16ZM13.4394 16C13.4394 15.7239 13.6633 15.5 13.9394 15.5H15.5V13.9394C15.5 13.6633 15.7239 13.4394 16 13.4394C16.2761 13.4394 16.5 13.6633 16.5 13.9394V15.5H18.0606C18.3367 15.5 18.5606 15.7239 18.5606 16C18.5606 16.2761 18.3367 16.5 18.0606 16.5H16.5V18.0606C16.5 18.3367 16.2761 18.5606 16 18.5606C15.7239 18.5606 15.5 18.3367 15.5 18.0606V16.5H13.9394C13.6633 16.5 13.4394 16.2761 13.4394 16ZM21.4394 16C21.4394 15.7239 21.6633 15.5 21.9394 15.5H26.0606C26.3367 15.5 26.5606 15.7239 26.5606 16C26.5606 16.2761 26.3367 16.5 26.0606 16.5H21.9394C21.6633 16.5 21.4394 16.2761 21.4394 16ZM16 5.4394C16.2761 5.4394 16.5 5.66325 16.5 5.93939V10.0606C16.5 10.3367 16.2761 10.5606 16 10.5606C15.7239 10.5606 15.5 10.3368 15.5 10.0606V5.9394C15.5 5.66325 15.7239 5.4394 16 5.4394ZM16 21.4394C16.2761 21.4394 16.5 21.6633 16.5 21.9394V26.0606C16.5 26.3367 16.2761 26.5606 16 26.5606C15.7239 26.5606 15.5 26.3367 15.5 26.0606V21.9394C15.5 21.6633 15.7239 21.4394 16 21.4394Z"
               fill="currentColor"
             />
-          </pattern>
-        </defs>
-        <rect
-          width="100%"
-          height="100%"
-          x="0"
-          y="0"
-          fill={`url(#${patternID})`}
-        />
-      </svg>
-    );
-
-  if (props.pattern === "dot") {
-    return (
-      <svg
+          ) : (
+            <circle cx={size / 2} cy={size / 2} r="1" fill="currentColor" />
+          )}
+        </pattern>
+      </defs>
+      <rect
         width="100%"
         height="100%"
-        xmlns="http://www.w3.org/2000/svg"
-        className={`pointer-events-none text-border`}
-      >
-        <defs>
-          <pattern
-            id={patternID}
-            x="0"
-            y="0"
-            width={props.scale ? 24 * props.scale : 24}
-            height={props.scale ? 24 * props.scale : 24}
-            patternUnits="userSpaceOnUse"
-          >
-            <circle
-              cx={props.scale ? 12 * props.scale : 12}
-              cy={props.scale ? 12 * props.scale : 12}
-              r="1"
-              fill="currentColor"
-            />
-          </pattern>
-        </defs>
-        <rect
-          width="100%"
-          height="100%"
-          x="0"
-          y="0"
-          fill={`url(#${patternID})`}
-        />
-      </svg>
-    );
-  }
+        x="0"
+        y="0"
+        fill={`url(#${patternID})`}
+      />
+    </svg>
+  );
 };
 
 // Parts of a block's body that keep presses for themselves. A button that
@@ -925,9 +833,7 @@ const Gripper = (props: {
   );
 };
 
-// addCanvasBlock writes a fact per attribute; the group keeps placing a block
-// a single Cmd-Z rather than one per fact, held open until the mutation
-// settles.
+// One Cmd-Z for addCanvasBlock's fact per attribute.
 async function addCanvasTextBlock(
   rep: Replicache<ReplicacheMutators>,
   undoManager: UndoManager,
@@ -960,16 +866,13 @@ const NEW_BLOCK_SIZE = { width: 360, height: 48 };
 // Degrees the rotate handle has swept around the block's center, from its
 // resting spot at the block's bottom-right corner.
 function rotationDelta(
-  rect: { x: number; y: number; width: number; height: number },
+  rect: { width: number; height: number },
   dragDelta: { x: number; y: number },
 ) {
-  let corner = { x: rect.x + rect.width, y: rect.y + rect.height };
-  let origin = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
-  let dragged = { x: corner.x + dragDelta.x, y: corner.y + dragDelta.y };
-  if (origin.x === dragged.x && origin.y === dragged.y) return 0;
+  let x = rect.width / 2 + dragDelta.x;
+  let y = rect.height / 2 + dragDelta.y;
+  if (!x && !y) return 0;
   return (
-    (Math.atan2(dragged.y - origin.y, dragged.x - origin.x) -
-      Math.atan2(corner.y - origin.y, corner.x - origin.x)) *
-    (180 / Math.PI)
+    (Math.atan2(y, x) - Math.atan2(rect.height, rect.width)) * (180 / Math.PI)
   );
 }

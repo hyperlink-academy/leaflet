@@ -7,9 +7,7 @@ import { publicationCanvasWidth } from "src/utils/publicationCanvasWidth";
 import { useLeafletPublicationPage } from "components/PageSWRDataProvider";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
-// A drawing's canvas is its set size. Any other canvas is as tall as its
-// blocks reach, and the full canvas width, or the publication's page width
-// when it is one of a publication's pages.
+// A drawing's canvas is its set size.
 export function useCanvasSize(pageID: string | null): CanvasBounds {
   let blocks = useEntity(pageID, "canvas/block");
   let fixedWidth = useEntity(pageID, "canvas/fixed-width")?.data.value;

@@ -1,13 +1,10 @@
 "use client";
-import { useMemo } from "react";
 import { useReplicache } from "src/replicache";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { scanIndex } from "src/replicache/utils";
 import { canvasStackingOrder } from "src/utils/canvasBlockOrder";
 
-// The block entity IDs of a canvas in paint order, lowest first. Stacking is
-// global to the canvas, so it can't be derived per-block the way width and
-// rotation are.
+// The block entity IDs of a canvas in paint order, lowest first.
 export function useCanvasPaintOrder(page: string): string[] {
   let { rep } = useReplicache();
   return useSubscribe(
@@ -32,14 +29,5 @@ export function useCanvasPaintOrder(page: string): string[] {
       dependencies: [page],
       isEqual: (a, b) => a.length === b.length && a.every((e, i) => e === b[i]),
     },
-  );
-}
-
-// The same thing keyed by block, for rendering.
-export function useCanvasStackOrders(page: string) {
-  let order = useCanvasPaintOrder(page);
-  return useMemo(
-    () => new Map(order.map((entityID, index) => [entityID, index + 1])),
-    [order],
   );
 }
