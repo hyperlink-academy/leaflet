@@ -40,6 +40,8 @@ type Props = {
   publishedAt?: string;
   // localStorage key under which the in-progress Bluesky post is persisted
   bskyDraftKey?: string;
+  // What the Bluesky post starts as when nothing is persisted under the key.
+  bskyInitialContent?: string;
   coverImageSrc?: string;
 };
 
@@ -152,6 +154,7 @@ export function ShareOptions(props: Props) {
             charCount={props.charCount}
             onCharCountChange={props.setCharCount}
             persistKey={props.bskyDraftKey}
+            initialContent={props.bskyInitialContent}
             embed={bskyEmbed}
           />
         </div>

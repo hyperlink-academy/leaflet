@@ -9,9 +9,9 @@ export const PRO_ENTITLEMENT_KEY = "publication_analytics";
 // can be rolled out to specific users while it's still being built.
 const PAYMENTS_ENTITLEMENT_KEY = "payments";
 
-// Grants access to email-only posts ("Send as email") while the feature is
-// rolled out. Checked on the publication's owner, like Pro, so contributors
-// follow the owner's flag.
+// Grants access to email-only posts ("Send as email") and scheduled
+// publishing while they're rolled out. Checked on the publication's owner,
+// like Pro, so contributors follow the owner's flag.
 const EMAIL_POSTS_ENTITLEMENT_KEY = "email_posts";
 
 // Keys the app currently checks, surfaced as suggestions in the admin UI.
@@ -44,6 +44,12 @@ export function canSeePayments(
 }
 
 export function canSendEmailPosts(
+  entitlements: Record<string, unknown> | null | undefined,
+): boolean {
+  return hasEntitlement(entitlements, EMAIL_POSTS_ENTITLEMENT_KEY);
+}
+
+export function canSchedulePosts(
   entitlements: Record<string, unknown> | null | undefined,
 ): boolean {
   return hasEntitlement(entitlements, EMAIL_POSTS_ENTITLEMENT_KEY);

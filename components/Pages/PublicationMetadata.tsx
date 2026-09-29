@@ -1,6 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
-import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import {
+  useLeafletPublicationData,
+  useLeafletScheduledPublishAt,
+} from "components/PageSWRDataProvider";
 import { useRef, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { localImages } from "src/utils/addImage";
@@ -25,6 +28,7 @@ import { PostHeaderLayout } from "app/(app)/(published)/lish/[did]/[publication]
 import { Backdater } from "./Backdater";
 import { RecommendEmptyTiny } from "components/Icons/RecommendTiny";
 import { mergePreferences } from "src/utils/mergePreferences";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { DraftContributorSelector } from "./DraftContributorSelector";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 
@@ -56,6 +60,7 @@ export const PublicationMetadata = (props: {
     normalizedPublication?.preferences,
   );
   let publishedAt = normalizedDocument?.publishedAt;
+  let scheduledPublishAt = useLeafletScheduledPublishAt();
 
   if (!pub) return null;
 
@@ -146,6 +151,8 @@ export const PublicationMetadata = (props: {
                   View
                 </Link>
               </div>
+            ) : scheduledPublishAt ? (
+              <ScheduledLabel publishAt={scheduledPublishAt} />
             ) : (
               <p>Draft</p>
             )}
@@ -183,6 +190,17 @@ export const PublicationMetadata = (props: {
       }
     />
   );
+};
+
+// Date-only: this renders on the server too, where the viewer's clock time
+// isn't known.
+const ScheduledLabel = (props: { publishAt: string }) => {
+  let date = useLocalizedDate(props.publishAt, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return <p>Scheduled for {date}</p>;
 };
 
 const TextField = ({

@@ -44,6 +44,17 @@ export function latestSendAt() {
   return d;
 }
 
+// A schedule a few seconds in the past is a slow form submit, not a mistake.
+const SEND_AT_GRACE_MS = 60_000;
+
+export function isValidSendAt(at: Date) {
+  return (
+    !isNaN(at.getTime()) &&
+    at.getTime() >= Date.now() - SEND_AT_GRACE_MS &&
+    at <= latestSendAt()
+  );
+}
+
 // Statuses whose send options can still change; anything else (sending, sent,
 // failed) is history.
 export const UNSENT_EMAIL_POST_STATUSES: EmailPostStatus[] = [
@@ -54,6 +65,20 @@ export const UNSENT_EMAIL_POST_STATUSES: EmailPostStatus[] = [
 
 export function isEmailPostFinal(status: EmailPostStatus) {
   return !UNSENT_EMAIL_POST_STATUSES.includes(status);
+}
+
+// A one-off email whose send time has come is on its way out, even in the
+// moments before the send job claims it and its status still reads scheduled.
+export function isEmailPostSending(
+  email: Pick<EmailPostSummary, "status" | "send_at">,
+  now: number,
+) {
+  if (email.status === "sending") return true;
+  return (
+    email.status === "scheduled" &&
+    !!email.send_at &&
+    new Date(email.send_at).getTime() <= now
+  );
 }
 
 // When an on-subscribe email goes out, for the audience it's aimed at.

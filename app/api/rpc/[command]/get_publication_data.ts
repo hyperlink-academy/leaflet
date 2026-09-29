@@ -59,7 +59,8 @@ export const get_publication_data = makeRoute({
           permission_tokens(*,
             permission_token_rights(*),
             custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*),
-            leaflet_contributors(contributor_did, created_at)
+            leaflet_contributors(contributor_did, created_at),
+            publication_scheduled_posts(id, publish_at, status, error)
          )
         ),
         publication_contributors(contributor_did, confirmed, created_at),
@@ -133,10 +134,15 @@ export const get_publication_data = makeRoute({
     const emailLeaflets = new Set(emailPosts.map((e) => e.leaflet));
 
     // Pre-filter drafts (leaflets without published documents or an email-only
-    // send, not archived)
+    // send, not archived). A scheduled draft stays listed even when archived,
+    // since it's still going to publish.
     const drafts = (publication?.leaflets_in_publications || [])
       .filter((l) => !l.documents && !emailLeaflets.has(l.leaflet))
-      .filter((l) => !(l as { archived?: boolean }).archived)
+      .filter(
+        (l) =>
+          !(l as { archived?: boolean }).archived ||
+          !!l.permission_tokens?.publication_scheduled_posts,
+      )
       .map((l) => ({
         leaflet: l.leaflet,
         title: l.title,

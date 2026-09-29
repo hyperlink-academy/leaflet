@@ -89,6 +89,13 @@ const METRIC_GROUPS: { title: string; metrics: ActivityMetricDef[] }[] = [
         groupBy: "publication",
       },
       {
+        key: "posts_scheduled",
+        title: "Posts scheduled",
+        unit: "posts",
+        trackedSince: "2026-09-28",
+        groupBy: "publication",
+      },
+      {
         key: "publications_created",
         title: "Publications created",
         unit: "publications",

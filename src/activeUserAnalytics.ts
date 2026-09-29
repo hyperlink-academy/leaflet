@@ -16,8 +16,9 @@ export type UserEvent =
   // source_placement, source_publication, source_url.
   | "subscribe"
   | "unsubscribe"
-  | "publish" // published a document; props publication, document, first_publish, blocks
+  | "publish" // published a document; props publication, document, first_publish, blocks, scheduled ("true" when a scheduled publish went out)
   | "send_email_post" // saved an email-only post; props publication, send_mode (now | scheduled | on_subscribe), audience
+  | "schedule_post" // scheduled a post to publish later; props publication, publish_at, first_schedule ("false" for a reschedule)
   | "create_publication" // props publication
   | "signup" // identity row created; props method (email | bluesky), source
   | "create_document" // props kind (doc | canvas | template | duplicate | publication_draft), publication
@@ -64,6 +65,17 @@ export function trackUserEvent(
 ) {
   if (!process.env.TINYBIRD_TOKEN) return;
   after(() => ingestUserEvent(identity, event, properties));
+}
+
+// For background jobs, which have no request to keep fast and may run
+// outside the request context `after()` needs.
+export async function recordUserEvent(
+  identity: TrackedIdentity,
+  event: UserEvent,
+  properties: Record<string, string> = {},
+) {
+  if (!process.env.TINYBIRD_TOKEN) return;
+  await ingestUserEvent(identity, event, properties);
 }
 
 async function ingestUserEvent(

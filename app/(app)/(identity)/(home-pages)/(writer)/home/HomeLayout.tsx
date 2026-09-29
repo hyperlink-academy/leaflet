@@ -233,6 +233,7 @@ export function LeafletList(props: {
               leaflets_in_publications: leaflet.leaflets_in_publications || [],
               leaflets_to_documents: leaflet.leaflets_to_documents || [],
               publications: [],
+              publication_scheduled_posts: null,
               blocked_by_admin: null,
               custom_domain_routes: [],
             }}

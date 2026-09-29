@@ -1828,6 +1828,69 @@ export type Database = {
           },
         ]
       }
+      publication_scheduled_posts: {
+        Row: {
+          bsky_post: Json | null
+          created_at: string
+          created_by: string
+          error: string | null
+          id: string
+          leaflet: string
+          publication: string
+          publish_at: string
+          revision: number
+          send_email: boolean
+          show_in_discover: boolean
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          bsky_post?: Json | null
+          created_at?: string
+          created_by: string
+          error?: string | null
+          id?: string
+          leaflet: string
+          publication: string
+          publish_at: string
+          revision?: number
+          send_email?: boolean
+          show_in_discover?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          bsky_post?: Json | null
+          created_at?: string
+          created_by?: string
+          error?: string | null
+          id?: string
+          leaflet?: string
+          publication?: string
+          publish_at?: string
+          revision?: number
+          send_email?: boolean
+          show_in_discover?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_scheduled_posts_leaflet_fkey"
+            columns: ["leaflet"]
+            isOneToOne: true
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_scheduled_posts_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       publication_subscriptions: {
         Row: {
           created_at: string

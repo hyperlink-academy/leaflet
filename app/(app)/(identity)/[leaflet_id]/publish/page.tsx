@@ -11,6 +11,8 @@ import {
   EMAIL_POST_SUMMARY_COLUMNS,
   type EmailPostSummary,
 } from "src/emailPosts/types";
+import { scheduledPostIneligibleReason } from "src/scheduledPosts/eligibility";
+import type { ScheduledPost } from "src/scheduledPosts/types";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -141,14 +143,22 @@ export default async function PublishLeafletPage(props: Props) {
     data.leaflets_in_publications.length > 0 ||
     data.leaflets_to_documents.length > 0;
 
-  let emailOnly = await loadEmailOnlyOptions({
-    leaflet_id,
-    publication_uri: publication?.uri,
-    newsletterEnabled,
-    published: !!data.leaflets_in_publications[0]?.doc,
-    membershipsEnabled:
-      !!publication?.publication_membership_settings?.enabled,
-  });
+  let published = !!data.leaflets_in_publications[0]?.doc;
+  let [emailOnly, scheduling] = await Promise.all([
+    loadEmailOnlyOptions({
+      leaflet_id,
+      publication_uri: publication?.uri,
+      newsletterEnabled,
+      published,
+      membershipsEnabled:
+        !!publication?.publication_membership_settings?.enabled,
+    }),
+    loadSchedulingOptions({
+      leaflet_id,
+      publication_uri: publication?.uri,
+      published,
+    }),
+  ]);
 
   return (
     <ReplicacheProvider
@@ -173,6 +183,7 @@ export default async function PublishLeafletPage(props: Props) {
         entitiesToDelete={entitiesToDelete}
         hasDraft={hasDraft}
         emailOnly={emailOnly}
+        scheduling={scheduling}
       />
     </ReplicacheProvider>
   );
@@ -202,5 +213,27 @@ async function loadEmailOnlyOptions(args: {
     existing: existing as EmailPostSummary | null,
     ineligibleReason,
     membershipsEnabled: args.membershipsEnabled,
+  };
+}
+
+// Scheduling applies to a publication's unpublished drafts.
+async function loadSchedulingOptions(args: {
+  leaflet_id: string;
+  publication_uri: string | undefined;
+  published: boolean;
+}) {
+  if (!args.publication_uri || args.published) return undefined;
+  let [{ data: existing }, ineligibleReason] = await Promise.all([
+    supabaseServerClient
+      .from("publication_scheduled_posts")
+      .select()
+      .eq("leaflet", args.leaflet_id)
+      .maybeSingle(),
+    scheduledPostIneligibleReason(args.publication_uri),
+  ]);
+  if (!existing && ineligibleReason === "feature_not_enabled") return undefined;
+  return {
+    existing: existing as ScheduledPost | null,
+    ineligibleReason,
   };
 }

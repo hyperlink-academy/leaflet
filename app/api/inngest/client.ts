@@ -103,6 +103,13 @@ export const events = {
     "newsletter/email-post.send.requested",
     { schema: staticSchema<{ email_post_id: string; revision: number }>() },
   ),
+  // `revision` works as it does for an email post's send.
+  postScheduledPublishRequested: eventType(
+    "post/scheduled-publish.requested",
+    {
+      schema: staticSchema<{ scheduled_post_id: string; revision: number }>(),
+    },
+  ),
   newsletterSubscriberJoined: eventType("newsletter/subscriber.joined", {
     schema: staticSchema<{ publication_uri: string; identity_id: string }>(),
   }),

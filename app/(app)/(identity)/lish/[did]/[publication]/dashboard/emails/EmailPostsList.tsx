@@ -1,22 +1,32 @@
 "use client";
-import { Fragment } from "react";
 import { EmptyState } from "components/EmptyState";
-import { SpeedyLink } from "components/SpeedyLink";
 import { Popover } from "components/Popover";
-import { EditTiny } from "components/Icons/EditTiny";
-import { ClockTiny } from "components/Icons/ClockTiny";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import { useDueRefresh } from "src/hooks/useDueRefresh";
 import {
+  isEmailPostSending,
   onSubscribeTrigger,
   pausedReason,
   subscriberCountLabel,
   type EmailPostSummary,
 } from "src/emailPosts/types";
 import { usePublicationData } from "../PublicationSWRProvider";
+import { TimedPostItem, statusPill as pill } from "../TimedPostItem";
 
 export function EmailPostsList(props: { showPageBackground: boolean }) {
-  let { data } = usePublicationData();
-  let emailPosts = data?.emailPosts ?? [];
+  let { data, mutate } = usePublicationData();
+  let now = useDueRefresh(
+    (data?.emailPosts ?? []).map((e) => ({
+      status: e.status,
+      dueAt: e.send_at,
+    })),
+    "sending",
+    mutate,
+  );
+  let emailPosts = (data?.emailPosts ?? []).map((e) =>
+    isEmailPostSending(e, now) ? { ...e, status: "sending" as const } : e,
+  );
+
   if (!data?.publication) return null;
   if (emailPosts.length === 0)
     return (
@@ -53,52 +63,19 @@ function EmailPostItem(props: {
   email: EmailPostSummary;
   showPageBackground: boolean;
 }) {
-  let { email, showPageBackground } = props;
+  let { email } = props;
   return (
-    <Fragment>
-      <div
-        className={`grow flex flex-col rounded-lg border ${showPageBackground ? "border-border-light py-1 px-2" : "border-transparent px-1"}`}
-        style={{
-          backgroundColor: showPageBackground
-            ? "rgba(var(--bg-page), var(--bg-page-alpha))"
-            : "transparent",
-        }}
-      >
-        <div className="flex justify-between gap-2">
-          <SpeedyLink
-            className="hover:no-underline!"
-            href={`/${email.leaflet}`}
-          >
-            <h3 className="text-primary grow leading-snug">
-              {email.title || "Untitled"}
-            </h3>
-          </SpeedyLink>
-          <div className="flex items-center gap-2">
-            <EmailPostStatusBadge email={email} />
-            <SpeedyLink href={`/${email.leaflet}`}>
-              <EditTiny />
-            </SpeedyLink>
-          </div>
-        </div>
-        {email.description ? (
-          <p className="italic text-secondary">{email.description}</p>
-        ) : null}
-        <div className="text-sm text-tertiary flex gap-3 justify-between items-center pt-3">
-          <EmailPostWhen email={email} />
-          <SpeedyLink
-            className="font-bold text-accent-contrast"
-            href={`/${email.leaflet}/publish`}
-          >
-            {email.sent_at || email.status === "sending"
-              ? "Details"
-              : "Send options"}
-          </SpeedyLink>
-        </div>
-      </div>
-      {!showPageBackground && (
-        <hr className="last:hidden border-border-light" />
-      )}
-    </Fragment>
+    <TimedPostItem
+      leaflet={email.leaflet}
+      title={email.title}
+      description={email.description}
+      badge={<EmailPostStatusBadge email={email} />}
+      when={<EmailPostWhen email={email} />}
+      optionsLabel={
+        email.sent_at || email.status === "sending" ? "Details" : "Send options"
+      }
+      showPageBackground={props.showPageBackground}
+    />
   );
 }
 
@@ -139,14 +116,6 @@ export function EmailPostStatusBadge(props: { email: EmailPostSummary }) {
     hour: "numeric",
     minute: "2-digit",
   });
-  let pill = (className: string, label: string, clock?: boolean) => (
-    <div
-      className={`flex items-center gap-1 font-bold text-xs px-1.5 ${className}`}
-    >
-      {clock && <ClockTiny className="shrink-0 scale-75" />}
-      {label}
-    </div>
-  );
   switch (email.status) {
     case "scheduled":
       return (

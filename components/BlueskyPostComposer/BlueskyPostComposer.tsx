@@ -21,6 +21,7 @@ export function BlueskyPostComposer(props: {
   onCharCountChange: (count: number) => void;
 
   persistKey?: string;
+  initialContent?: string;
 
   autoFocus?: boolean;
   hideCharacterCounter?: boolean;
@@ -41,6 +42,7 @@ export function BlueskyPostComposer(props: {
             editorStateRef={props.editorStateRef}
             onCharCountChange={props.onCharCountChange}
             persistKey={props.persistKey}
+            initialContent={props.initialContent}
             autoFocus={props.autoFocus}
           />
         </div>

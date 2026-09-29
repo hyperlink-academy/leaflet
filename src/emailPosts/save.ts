@@ -10,7 +10,7 @@ import { draftContributorDids, draftPagesForEmail } from "src/emailPosts/draft";
 import {
   EMAIL_POST_SUMMARY_COLUMNS,
   isEmailPostFinal,
-  latestSendAt,
+  isValidSendAt,
   UNSENT_EMAIL_POST_STATUSES,
   type EmailPostAudience,
   type EmailPostStatus,
@@ -32,11 +32,8 @@ export type SaveEmailPostError =
   | "on_subscribe_taken"
   | "database_error";
 
-// A schedule a few seconds in the past is a slow form submit, not a mistake.
-const SEND_AT_GRACE_MS = 60_000;
-
 // The publication, if the actor owns it or is a confirmed contributor.
-async function loadActablePublication(
+export async function loadActablePublication(
   publicationUri: string,
   actorDid: string,
 ) {
@@ -70,8 +67,9 @@ export async function saveEmailPost(
   const pub = await loadActablePublication(args.publication_uri, actorDid);
   if (!pub) return Err("unauthorized");
 
-  // The draft must belong to this publication and never have been published:
-  // a post that's on the web already goes out through the normal publish.
+  // The draft must belong to this publication and never have been published
+  // or scheduled to be: a post that's on the web, or on its way there, goes
+  // out through the normal publish.
   const { data: draft } = await supabaseServerClient
     .from("leaflets_in_publications")
     .select("doc, permission_tokens(root_entity)")
@@ -80,6 +78,12 @@ export async function saveEmailPost(
     .maybeSingle();
   const rootEntity = draft?.permission_tokens?.root_entity;
   if (!draft || draft.doc || !rootEntity) return Err("not_a_draft");
+
+  const { count: scheduledPublishes } = await supabaseServerClient
+    .from("publication_scheduled_posts")
+    .select("id", { count: "exact", head: true })
+    .eq("leaflet", args.leaflet_id);
+  if (scheduledPublishes) return Err("not_a_draft");
 
   const ineligible = await emailOnlyIneligibleReason(args.publication_uri);
   if (ineligible) return Err(ineligible);
@@ -98,12 +102,7 @@ export async function saveEmailPost(
   if (args.send.mode === "now") sendAt = new Date().toISOString();
   if (args.send.mode === "scheduled") {
     const at = new Date(args.send.send_at);
-    if (
-      isNaN(at.getTime()) ||
-      at.getTime() < Date.now() - SEND_AT_GRACE_MS ||
-      at > latestSendAt()
-    )
-      return Err("invalid_send_at");
+    if (!isValidSendAt(at)) return Err("invalid_send_at");
     sendAt = at.toISOString();
   }
   const onSubscribe = args.send.mode === "on_subscribe";

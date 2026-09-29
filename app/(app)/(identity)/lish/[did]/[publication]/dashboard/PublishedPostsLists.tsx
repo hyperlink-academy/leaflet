@@ -161,6 +161,7 @@ function PublishedPostItem(props: {
                       ],
                       leaflets_to_documents: [],
                       publications: [],
+                      publication_scheduled_posts: null,
                       blocked_by_admin: null,
                       custom_domain_routes: [],
                     }}

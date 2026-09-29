@@ -532,6 +532,14 @@ async function publish({
     };
   }
 
+  // A published post has no use for a schedule: this is how a scheduled
+  // publish finishes, and how publishing by hand ahead of time cancels one.
+  if (publication_uri)
+    await supabaseServerClient
+      .from("publication_scheduled_posts")
+      .delete()
+      .eq("leaflet", leaflet_id);
+
   if (!publication_uri) {
     // Heuristic: Remove title entities if this is the first time publishing standalone
     // (when entitiesToDelete is provided and there's no existing document)

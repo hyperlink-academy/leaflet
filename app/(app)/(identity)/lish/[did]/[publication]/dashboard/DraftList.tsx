@@ -10,6 +10,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import { AddTiny } from "components/Icons/AddTiny";
 import { NewDraftButton } from "./NewDraftButton";
 import { DashboardEmptyState } from "./DashboardEmptyState";
+import { ScheduledPostsList } from "./ScheduledPostsList";
 
 export function useVisibleDrafts() {
   let { data: pub_data } = usePublicationData();
@@ -36,6 +37,9 @@ export function DraftList(props: {
   let { data: pub_data } = usePublicationData();
   let { identity } = useIdentityData();
   let visibleDrafts = useVisibleDrafts();
+  let unscheduledDrafts = visibleDrafts.filter(
+    (d) => !d.permission_tokens?.publication_scheduled_posts,
+  );
   const normalizedPubRecord = useNormalizedPublicationRecord();
   if (!pub_data?.publication) return null;
   const { leaflets_in_publications, ...publication } = pub_data.publication;
@@ -56,35 +60,45 @@ export function DraftList(props: {
 
   return (
     <div className="flex flex-col">
-      <LeafletList
-        searchValue={props.searchValue}
-        showPreview={false}
-        defaultDisplay="list"
-        leaflets={visibleDrafts.map((d) => ({
-          archived: (d._raw as { archived?: boolean }).archived,
-          added_at: "",
-          token: {
-            ...d.permission_tokens!,
-            leaflets_in_publications: [
-              {
-                ...d._raw,
-                publications: publication,
-              },
-            ],
-          },
-        }))}
-        titles={{
-          ...visibleDrafts.reduce(
-            (acc, draft) => {
-              if (draft.permission_tokens)
-                acc[draft.permission_tokens.root_entity] =
-                  draft.title || "Untitled";
-              return acc;
-            },
-            {} as { [l: string]: string },
-          ),
-        }}
+      <ScheduledPostsList
+        drafts={visibleDrafts.filter((d) =>
+          (d.title || "Untitled")
+            .toLowerCase()
+            .includes(props.searchValue.toLowerCase()),
+        )}
+        showPageBackground={props.showPageBackground}
       />
+      {unscheduledDrafts.length > 0 && (
+        <LeafletList
+          searchValue={props.searchValue}
+          showPreview={false}
+          defaultDisplay="list"
+          leaflets={unscheduledDrafts.map((d) => ({
+            archived: (d._raw as { archived?: boolean }).archived,
+            added_at: "",
+            token: {
+              ...d.permission_tokens!,
+              leaflets_in_publications: [
+                {
+                  ...d._raw,
+                  publications: publication,
+                },
+              ],
+            },
+          }))}
+          titles={{
+            ...unscheduledDrafts.reduce(
+              (acc, draft) => {
+                if (draft.permission_tokens)
+                  acc[draft.permission_tokens.root_entity] =
+                    draft.title || "Untitled";
+                return acc;
+              },
+              {} as { [l: string]: string },
+            ),
+          }}
+        />
+      )}
       <div className="spacer h-16 w-full bg-transparent shrink-0 " />
     </div>
   );

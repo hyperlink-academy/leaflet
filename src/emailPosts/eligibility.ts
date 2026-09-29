@@ -7,7 +7,7 @@ export type EmailOnlyIneligibleReason =
   | "newsletter_not_enabled"
   | "not_pro";
 
-async function ownerEntitlements(ownerDid: string) {
+export async function ownerEntitlements(ownerDid: string) {
   const { data: owner } = await supabaseServerClient
     .from("identities")
     .select(

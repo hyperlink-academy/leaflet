@@ -25,17 +25,30 @@ import { EditorState } from "prosemirror-state";
 import { TagSelector } from "components/Tags";
 import { ToggleGroup } from "components/ToggleGroup";
 import {
+  latestSendAt,
   onSubscribeTrigger,
   type EmailPostSummary,
 } from "src/emailPosts/types";
 import type { EmailOnlyIneligibleReason } from "src/emailPosts/eligibility";
 import { EmailOnlyForm } from "./EmailOnlyForm";
+import {
+  cancelScheduledPost,
+  saveScheduledPost,
+} from "actions/publications/scheduledPosts";
+import type { SaveScheduledPostError } from "src/scheduledPosts/save";
+import type { ScheduledPostIneligibleReason } from "src/scheduledPosts/eligibility";
+import {
+  isScheduledPostPublishing,
+  scheduledPostProblem,
+  type ScheduledPost,
+} from "src/scheduledPosts/types";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { PubIcon } from "components/ActionBar/Publications";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { DatePicker, TimePicker } from "components/DatePicker";
 import { Popover } from "components/Popover";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { Separator } from "react-aria-components";
 import { setHours, setMinutes } from "date-fns";
 import {
@@ -74,12 +87,30 @@ type Props = {
     ineligibleReason: EmailOnlyIneligibleReason | null;
     membershipsEnabled: boolean;
   };
+  // Set when this draft can be scheduled to publish later, or already is.
+  scheduling?: {
+    existing: ScheduledPost | null;
+    ineligibleReason: ScheduledPostIneligibleReason | null;
+  };
 };
 
 type PublishState =
   | { state: "default" }
   | { state: "success"; post_url: string }
-  | { state: "email"; email: EmailPostSummary };
+  | { state: "email"; email: EmailPostSummary }
+  | { state: "scheduled"; scheduled: ScheduledPost };
+
+const scheduleErrorCopy: Record<SaveScheduledPostError, string> = {
+  unauthorized: "You don't have permission to publish to this publication.",
+  feature_not_enabled: "Scheduling posts isn't available for this publication.",
+  not_pro: "Scheduling posts is a Leaflet Pro feature.",
+  already_published: "This post has already been published.",
+  is_email_post: "This post is set to go out as an email, not to be published.",
+  invalid_publish_at: "Pick a time in the next year to publish this post.",
+  publishing: "This post is already being published.",
+  database_error:
+    "Something went wrong scheduling this post. Please try again!",
+};
 
 export function PublishPost(props: Props) {
   let [publishState, setPublishState] = useState<PublishState>({
@@ -92,6 +123,12 @@ export function PublishPost(props: Props) {
       ) : publishState.state === "email" ? (
         <EmailPostSuccess
           email={publishState.email}
+          publication_uri={props.publication_uri}
+          record={props.pubRecord}
+        />
+      ) : publishState.state === "scheduled" ? (
+        <ScheduledPostSuccess
+          scheduled={publishState.scheduled}
           publication_uri={props.publication_uri}
           record={props.pubRecord}
         />
@@ -128,15 +165,29 @@ const PublishPostForm = (
     `${publishKey}:mode`,
     "publish",
   );
-  // Once a draft is an email-only post, only its email options apply.
-  let emailMode = !!existingEmail || (!!props.emailOnly && mode === "email");
+  let [scheduled, setScheduled] = useState(props.scheduling?.existing ?? null);
+  let canSchedule =
+    !!props.scheduling && !props.scheduling.ineligibleReason && !existingEmail;
+  // Once a draft is an email-only post, only its email options apply; one
+  // that's scheduled to publish isn't going out as an email.
+  let emailMode =
+    !!existingEmail || (!!props.emailOnly && !scheduled && mode === "email");
+  // A scheduled post reopens with what it was scheduled with.
   let [shareState, setShareState, clearShareState] =
-    useLocalStorageState<ShareState>(`${publishKey}:share`, {
-      bluesky: true,
-      postToReaders: true,
-      email: true,
-      quiet: false,
-    });
+    useLocalStorageState<ShareState>(
+      `${publishKey}:share`,
+      scheduled
+        ? {
+            bluesky: !!scheduled.bsky_post,
+            postToReaders: scheduled.show_in_discover,
+            email: scheduled.send_email,
+            quiet:
+              !scheduled.bsky_post &&
+              !scheduled.show_in_discover &&
+              !scheduled.send_email,
+          }
+        : { bluesky: true, postToReaders: true, email: true, quiet: false },
+    );
   let [isLoading, setIsLoading] = useState(false);
   const nothingSelected =
     !shareState.bluesky &&
@@ -180,13 +231,21 @@ const PublishPostForm = (
 
   // Stored as an ISO string (Date isn't JSON-serializable); undefined ⇒ "Now"
   let [publishedAtISO, setPublishedAtISO, clearPublishedAt] =
-    useLocalStorageState<string | null>(`${publishKey}:publishedAt`, null);
+    useLocalStorageState<string | null>(
+      `${publishKey}:publishedAt`,
+      scheduled?.publish_at ?? null,
+    );
   let localPublishedAt = publishedAtISO ? new Date(publishedAtISO) : undefined;
   let setLocalPublishedAt = useCallback(
     (date: Date | undefined) =>
       setPublishedAtISO(date ? date.toISOString() : null),
     [setPublishedAtISO],
   );
+  // A publish date in the future schedules the post rather than publishing it.
+  let scheduleFor =
+    canSchedule && localPublishedAt && localPublishedAt.getTime() > Date.now()
+      ? localPublishedAt
+      : undefined;
   // The cover image lives on the document root as a root/cover-image reference,
   // set from the draft editor.
   let coverImageEntity =
@@ -245,6 +304,36 @@ const PublishPostForm = (
       )
         await addPostHeaderBlock(rep, { page: firstPage, permission_set });
       await rep?.push();
+      if (scheduleFor && scheduleFor > new Date() && props.publication_uri) {
+        let quiet = shareState.quiet;
+        let [text, facets] = editorStateRef.current
+          ? editorStateToFacetedText(editorStateRef.current)
+          : [];
+        let saved = await saveScheduledPost({
+          publication_uri: props.publication_uri,
+          leaflet_id: props.leaflet_id,
+          publish_at: scheduleFor.toISOString(),
+          send_email: shareState.email && !quiet,
+          show_in_discover: shareState.postToReaders && !quiet,
+          bsky_post:
+            shareState.bluesky && !quiet
+              ? {
+                  text: text || "",
+                  facets: facets || [],
+                  langs: viewerPostLangs(),
+                }
+              : null,
+          title,
+          description,
+          tags: currentTags,
+          entitiesToDelete: props.entitiesToDelete ?? [],
+        });
+        setIsLoading(false);
+        if (saved.ok)
+          props.setPublishState({ state: "scheduled", scheduled: saved.value });
+        else setPublishError(scheduleErrorCopy[saved.error]);
+        return;
+      }
       result = await publishToPublication({
         root_entity: props.root_entity,
         publication_uri: props.publication_uri,
@@ -317,7 +406,7 @@ const PublishPostForm = (
     props.setPublishState({ state: "success", post_url });
   }
 
-  let modeToggle = props.emailOnly && !existingEmail && (
+  let modeToggle = props.emailOnly && !existingEmail && !scheduled && (
     <ToggleGroup
       fullWidth
       className="text-base! p-1.5!"
@@ -372,6 +461,15 @@ const PublishPostForm = (
         }}
       >
         <div className="frosted-container flex flex-col gap-3 sm:p-3 p-4">
+          {scheduled && (
+            <ScheduledPostNotice
+              scheduled={scheduled}
+              onCanceled={() => {
+                setScheduled(null);
+                setLocalPublishedAt(undefined);
+              }}
+            />
+          )}
           {state === "post-details" ? (
             <>
               <h2>Publish: Post Details</h2>
@@ -384,6 +482,10 @@ const PublishPostForm = (
               <BackdateOptions
                 publishedAt={localPublishedAt}
                 setPublishedAt={setLocalPublishedAt}
+                canSchedule={canSchedule}
+                showScheduleUpsell={
+                  props.scheduling?.ineligibleReason === "not_pro"
+                }
               />
               <hr className="border-border-light" />
 
@@ -486,6 +588,7 @@ const PublishPostForm = (
                 leaflet_id={props.leaflet_id}
                 publishedAt={localPublishedAt?.toISOString()}
                 bskyDraftKey={bskyDraftKey}
+                bskyInitialContent={scheduled?.bsky_post?.text}
                 coverImageSrc={coverImageSrc}
               />
               <hr className="border-border mb-2" />
@@ -506,8 +609,12 @@ const PublishPostForm = (
                   >
                     {isLoading ? (
                       <DotLoader className="h-[23px]" />
-                    ) : (
+                    ) : !scheduleFor ? (
                       "Publish this Post!"
+                    ) : scheduled ? (
+                      "Update Schedule"
+                    ) : (
+                      "Schedule this Post!"
                     )}
                   </ButtonPrimary>
                 </div>
@@ -586,41 +693,41 @@ const CoverImageControls = (props: {
   );
 };
 
+const timeOfDay = (date: Date) =>
+  `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+
 const BackdateOptions = (props: {
   publishedAt: Date | undefined;
   setPublishedAt: (date: Date | undefined) => void;
+  // Whether a date in the future can be picked, which schedules the post.
+  canSchedule: boolean;
+  showScheduleUpsell: boolean;
 }) => {
-  const formattedDate = useLocalizedDate(
+  const formattedDate = usePublishTimeLabel(
     props.publishedAt?.toISOString() || "",
-    {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "numeric",
-      hour12: true,
-    },
   );
 
-  const [timeValue, setTimeValue] = useState<string>(() => {
-    const date = props.publishedAt || new Date();
-    return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
-  });
+  const [timeValue, setTimeValue] = useState<string>(() =>
+    timeOfDay(props.publishedAt || new Date()),
+  );
 
-  let currentTime = `${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`;
+  const latest = () => (props.canSchedule ? latestSendAt() : new Date());
+
+  const setPublishedAt = (date: Date) => {
+    const limit = latest();
+    if (date > limit) {
+      props.setPublishedAt(limit);
+      setTimeValue(timeOfDay(limit));
+    } else props.setPublishedAt(date);
+  };
 
   const handleTimeChange = (time: string) => {
     setTimeValue(time);
     if (!props.publishedAt) return;
 
     const [hours, minutes] = time.split(":").map((str) => parseInt(str, 10));
-    const newDate = setHours(setMinutes(props.publishedAt, minutes), hours);
-    const currentDate = new Date();
-
-    if (newDate > currentDate) {
-      props.setPublishedAt(currentDate);
-      setTimeValue(currentTime);
-    } else props.setPublishedAt(newDate);
+    if (isNaN(hours) || isNaN(minutes)) return;
+    setPublishedAt(setHours(setMinutes(props.publishedAt, minutes), hours));
   };
 
   const handleDateChange = (date: Date | undefined) => {
@@ -631,47 +738,122 @@ const BackdateOptions = (props: {
     const [hours, minutes] = timeValue
       .split(":")
       .map((str) => parseInt(str, 10));
-    const newDate = new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate(),
-      hours,
-      minutes,
+    setPublishedAt(
+      new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate(),
+        hours,
+        minutes,
+      ),
     );
-    const currentDate = new Date();
-    if (newDate > currentDate) {
-      props.setPublishedAt(currentDate);
-      setTimeValue(currentTime);
-    } else props.setPublishedAt(newDate);
   };
 
+  const scheduling =
+    props.canSchedule &&
+    !!props.publishedAt &&
+    props.publishedAt.getTime() > Date.now();
+
   return (
-    <div className="flex justify-between gap-2">
-      <div className="text-tertiary">Publish Date</div>
-      <Popover
-        className="w-64 px-2!"
-        trigger={
-          props.publishedAt ? (
-            <div className="text-secondary font-bold hover:underline">
-              {formattedDate}
+    <div className="flex flex-col gap-1">
+      <div className="flex justify-between gap-2">
+        <div className="text-tertiary">Publish Date</div>
+        <Popover
+          className="w-64 px-2!"
+          trigger={
+            props.publishedAt ? (
+              <div className="text-secondary font-bold hover:underline">
+                {formattedDate}
+              </div>
+            ) : (
+              <div className="text-secondary font-bold hover:underline">
+                Now
+              </div>
+            )
+          }
+        >
+          <div className="flex flex-col gap-3">
+            <DatePicker
+              selected={props.publishedAt}
+              defaultMonth={props.publishedAt}
+              onSelect={handleDateChange}
+              disabled={(date) => date > latest()}
+            />
+            <Separator className="border-border" />
+            <div className="flex gap-4 pb-1 items-center">
+              <TimePicker value={timeValue} onChange={handleTimeChange} />
             </div>
-          ) : (
-            <div className="text-secondary font-bold hover:underline">Now</div>
-          )
-        }
-      >
-        <div className="flex flex-col gap-3">
-          <DatePicker
-            selected={props.publishedAt}
-            onSelect={handleDateChange}
-            disabled={(date) => date > new Date()}
-          />
-          <Separator className="border-border" />
-          <div className="flex gap-4 pb-1 items-center">
-            <TimePicker value={timeValue} onChange={handleTimeChange} />
+            {props.showScheduleUpsell && (
+              <p className="text-sm text-tertiary pb-1">
+                Want to publish this later? Scheduling posts is a{" "}
+                <Link href="/upgrade">Leaflet Pro</Link> feature.
+              </p>
+            )}
           </div>
-        </div>
-      </Popover>
+        </Popover>
+      </div>
+      {scheduling && (
+        <p className="text-sm text-tertiary text-right">
+          This post will be published then, with any edits made in the meantime.
+        </p>
+      )}
+    </div>
+  );
+};
+
+// Node and browsers format clock times with different invisible whitespace,
+// so the server renders the date alone and the time joins after hydration.
+function usePublishTimeLabel(iso: string) {
+  let loaded = useHasPageLoaded();
+  return useLocalizedDate(iso, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    ...(loaded ? { hour: "numeric", minute: "2-digit" } : {}),
+  });
+}
+
+const ScheduledPostNotice = (props: {
+  scheduled: ScheduledPost;
+  onCanceled: () => void;
+}) => {
+  let { scheduled } = props;
+  let publishAt = usePublishTimeLabel(scheduled.publish_at);
+  let [loading, setLoading] = useState(false);
+  let [error, setError] = useState<string | null>(null);
+  let problem = scheduledPostProblem(scheduled);
+  let publishing = isScheduledPostPublishing(scheduled, Date.now());
+  return (
+    <div className="accent-container px-3 py-2 text-sm text-secondary flex justify-between items-start gap-3">
+      <div>
+        {error ??
+          (problem
+            ? `${problem} Pick a new time, or publish it now.`
+            : publishing
+              ? "This post is being published now."
+              : `This post is scheduled to publish ${publishAt}.`)}
+      </div>
+      {!publishing && (
+        <button
+          type="button"
+          className="font-bold text-accent-contrast shrink-0"
+          disabled={loading}
+          onClick={async () => {
+            setLoading(true);
+            let result = await cancelScheduledPost(scheduled.leaflet);
+            setLoading(false);
+            if (result.ok) props.onCanceled();
+            else
+              setError(
+                result.error === "publishing"
+                  ? "This post is already being published."
+                  : "Couldn't unschedule this post.",
+              );
+          }}
+        >
+          {loading ? <DotLoader /> : "Unschedule"}
+        </button>
+      )}
     </div>
   );
 };
@@ -741,6 +923,30 @@ const PublishPostSuccess = (props: {
         </Link>
       )}
       <a href={props.post_url}>See published post</a>
+    </div>
+  );
+};
+
+const ScheduledPostSuccess = (props: {
+  scheduled: ScheduledPost;
+  publication_uri?: string;
+  record: Props["pubRecord"];
+}) => {
+  let uri = props.publication_uri ? new AtUri(props.publication_uri) : null;
+  let publishAt = usePublishTimeLabel(props.scheduled.publish_at);
+  return (
+    <div className="frosted-container p-4 m-3 sm:m-4 flex flex-col gap-1 justify-center text-center w-fit h-fit mx-auto place-self-center">
+      <h2 className="pt-2">Post scheduled!</h2>
+      <p className="text-secondary">It will be published {publishAt}.</p>
+      {uri && props.record && (
+        <Link
+          className="hover:no-underline! font-bold place-self-center pt-2"
+          href={`/lish/${uri.host}/${encodeURIComponent(props.record.name || "")}/dashboard`}
+        >
+          <ButtonPrimary>Back to Dashboard</ButtonPrimary>
+        </Link>
+      )}
+      <Link href={`/${props.scheduled.leaflet}`}>Back to the post</Link>
     </div>
   );
 };
