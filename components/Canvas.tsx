@@ -552,7 +552,6 @@ function CanvasBlock(props: {
         : `${BODY_CONTROLS}, ${TEXT_CONTROLS}`,
     bodyText: holdsText
       ? {
-          selector: "[contenteditable]",
           onClick: ({ target, x, y }) => {
             let entityID = target
               .closest("[data-entityid]")

@@ -11,7 +11,6 @@ import { useUIState } from "src/useUIState";
 import { elementId } from "src/utils/elementId";
 import { type CanvasBounds, clampToCanvas } from "src/utils/embeddedCanvasSize";
 
-// Helper function to load image dimensions and thumbhash
 const processImage = async (
   file: File,
 ): Promise<{
@@ -19,11 +18,7 @@ const processImage = async (
   height: number;
   thumbhash: string;
 }> => {
-  // Generate thumbhash (createImageBitmap also gives us the natural dimensions,
-  // so there's no need to decode the file a second time via an HTMLImageElement).
-  const arrayBuffer = await file.arrayBuffer();
-  const blob = new Blob([arrayBuffer], { type: file.type });
-  const imageBitmap = await createImageBitmap(blob);
+  const imageBitmap = await createImageBitmap(file);
 
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -80,61 +75,32 @@ const useAddCanvasImages = (entityID: string) => {
     ) => {
       if (!rep || imageFiles.length === 0) return;
 
-      const SPACING = 0;
       const DEFAULT_WIDTH = 360;
-
-      // Process all images to get dimensions and thumbhashes
       const processedImages = await Promise.all(
         imageFiles.map((file) => processImage(file)),
       );
-
-      // Calculate grid dimensions based on image count
       const COLUMNS = Math.ceil(Math.sqrt(imageFiles.length));
-
-      // Calculate the width and height for each column and row
-      const colWidths: number[] = [];
       const rowHeights: number[] = [];
-
-      for (let i = 0; i < imageFiles.length; i++) {
-        const col = i % COLUMNS;
+      processedImages.forEach((dims, i) => {
         const row = Math.floor(i / COLUMNS);
-        const dims = processedImages[i];
+        const height = dims.height * (DEFAULT_WIDTH / dims.width);
+        rowHeights[row] = Math.max(rowHeights[row] || 0, height);
+      });
 
-        // Scale image to fit within DEFAULT_WIDTH while maintaining aspect ratio
-        const scale = DEFAULT_WIDTH / dims.width;
-        const scaledWidth = DEFAULT_WIDTH;
-        const scaledHeight = dims.height * scale;
-
-        // Track max width for each column and max height for each row
-        colWidths[col] = Math.max(colWidths[col] || 0, scaledWidth);
-        rowHeights[row] = Math.max(rowHeights[row] || 0, scaledHeight);
-      }
-
-      const sum = (sizes: number[]) =>
-        sizes.reduce((total, size) => total + size, 0) +
-        SPACING * (sizes.length - 1);
-      const origin = place({ width: sum(colWidths), height: sum(rowHeights) });
+      const origin = place({
+        width: COLUMNS * DEFAULT_WIDTH,
+        height: rowHeights.reduce((total, size) => total + size, 0),
+      });
 
       const client = supabaseBrowserClient();
 
-      // Calculate positions and prepare data for all images
       const imageBlocks = imageFiles.map((file, index) => {
         const entity = v7();
         const fileID = v7();
         const row = Math.floor(index / COLUMNS);
-        const col = index % COLUMNS;
-
-        // Calculate x position by summing all previous column widths
-        let x = origin.x;
-        for (let c = 0; c < col; c++) {
-          x += colWidths[c] + SPACING;
-        }
-
-        // Calculate y position by summing all previous row heights
+        const x = origin.x + (index % COLUMNS) * DEFAULT_WIDTH;
         let y = origin.y;
-        for (let r = 0; r < row; r++) {
-          y += rowHeights[r] + SPACING;
-        }
+        for (let r = 0; r < row; r++) y += rowHeights[r];
 
         const url = client.storage
           .from("minilink-user-assets")
@@ -151,7 +117,6 @@ const useAddCanvasImages = (entityID: string) => {
       });
 
       await undoManager.withUndoGroup(async () => {
-        // Create all blocks with image facts
         for (const block of imageBlocks) {
           localImages.set(block.url, URL.createObjectURL(block.file));
           setImageUploadStatus(block.url, { state: "uploading" });
@@ -179,7 +144,6 @@ const useAddCanvasImages = (entityID: string) => {
           });
         }
 
-        // Upload all files to storage in parallel
         await Promise.all(
           imageBlocks.map((block) =>
             uploadImageAndFinalize({
@@ -221,7 +185,6 @@ export const useHandleCanvasDrop = (entityID: string) => {
       };
 
       await addImages(imageFiles, () => drop);
-      return true;
     },
     [addImages, entityID],
   );

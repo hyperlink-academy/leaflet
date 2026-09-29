@@ -464,13 +464,7 @@ const BlockTypeComponents: {
 // Only rendered on canvases. The Blocks list pads each block for a page; pull
 // it back out so a block keeps its place on the canvas when it becomes the
 // first block of a group.
-function GroupBlock(
-  props: BlockProps & {
-    preview?: boolean;
-    areYouSure?: boolean;
-    setAreYouSure?: (value: boolean) => void;
-  },
-) {
+function GroupBlock(props: React.ComponentProps<typeof BaseBlock>) {
   let focusedBlock = useUIState((s) =>
     s.focusedEntity?.entityType === "block" &&
     (s.focusedEntity.entityID === props.entityID ||
@@ -644,10 +638,7 @@ const NonTextBlockOptions = (props: {
       className={`flex gap-1 absolute -top-[25px] right-2 pb-0.5 pt-1 px-1 rounded-t-md bg-border text-bg-page ${props.optionsClassName}`}
     >
       {pageType?.data.value === "canvas" ? (
-        <>
-          <CanvasLayerControls parent={parent} entityID={entityID} />
-          <Separator classname="border-bg-page! h-4! mx-0.5" />
-        </>
+        <CanvasLayerControls parent={parent} entityID={entityID} />
       ) : (
         <>
           <button
@@ -670,9 +661,9 @@ const NonTextBlockOptions = (props: {
           >
             <ArrowDownTiny className="rotate-180" />
           </button>
-          <Separator classname="border-bg-page! h-4! mx-0.5" />
         </>
       )}
+      <Separator classname="border-bg-page! h-4! mx-0.5" />
       {props.extraOptions && (
         <>
           {props.extraOptions}{" "}
