@@ -407,7 +407,8 @@ const BlockEmbedInput = (
       props.onDone?.();
       return;
     }
-    if (!rep) return;
+    // A block on its own on a canvas is in no list to add to.
+    if (!rep || props.pageType === "canvas") return;
     let textEntity = await addBlockBelow(rep, {
       parent: props.parent,
       position: props.position,
