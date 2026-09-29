@@ -35,7 +35,7 @@ export async function groupCanvasBlock(
   });
 }
 
-export async function groupCanvasBlockAndAddBelow(
+async function groupCanvasBlockAndAdd(
   rep: Replicache<ReplicacheMutators>,
   undoManager: UndoManager,
   args: {
@@ -49,6 +49,7 @@ export async function groupCanvasBlockAndAddBelow(
       checklist?: boolean;
     };
   },
+  side: "above" | "below",
 ) {
   let groupEntity = v7();
   await groupCanvasBlock(rep, undoManager, {
@@ -63,9 +64,27 @@ export async function groupCanvasBlockAndAddBelow(
     permission_set: args.permission_set,
     parent: groupEntity,
     type: args.type,
-    // After the group's first child, which sits at generateKeyBetween(null, null).
-    position: generateKeyBetween(generateKeyBetween(null, null), null),
+    // Beside the group's first child, which sits at
+    // generateKeyBetween(null, null).
+    position:
+      side === "above"
+        ? generateKeyBetween(null, generateKeyBetween(null, null))
+        : generateKeyBetween(generateKeyBetween(null, null), null),
     list: args.list,
   });
   return groupEntity;
 }
+
+type AddArgs = Parameters<typeof groupCanvasBlockAndAdd>[2];
+
+export const groupCanvasBlockAndAddBelow = (
+  rep: Replicache<ReplicacheMutators>,
+  undoManager: UndoManager,
+  args: AddArgs,
+) => groupCanvasBlockAndAdd(rep, undoManager, args, "below");
+
+export const groupCanvasBlockAndAddAbove = (
+  rep: Replicache<ReplicacheMutators>,
+  undoManager: UndoManager,
+  args: AddArgs,
+) => groupCanvasBlockAndAdd(rep, undoManager, args, "above");

@@ -673,11 +673,7 @@ const enter =
   ) => {
     if (state.doc.textContent.startsWith("/")) return true;
     // Empty list item: just outdent, don't create a new block
-    if (
-      propsRef.current.listData &&
-      propsRef.current.pageType !== "canvas" &&
-      state.doc.content.size <= 2
-    ) {
+    if (propsRef.current.listData && state.doc.content.size <= 2) {
       // The outdent's mutations run async, so keep the undo group open until
       // they resolve instead of closing it synchronously.
       um.startGroup();
@@ -985,7 +981,11 @@ const metaA =
       );
       view?.dom.blur();
       if (repRef.current) {
-        let allBlocks = getViewBlocks(repRef.current, propsRef.current.parent);
+        // A block alone on a canvas is all there is to select.
+        let allBlocks =
+          propsRef.current.pageType === "canvas"
+            ? [propsRef.current]
+            : getViewBlocks(repRef.current, propsRef.current.parent);
         useUIState.setState({
           selectedBlocks: allBlocks.map((b) => ({
             entityID: b.entityID,

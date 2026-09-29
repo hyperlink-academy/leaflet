@@ -189,6 +189,45 @@ export function getPageReadingOrder(scan: SyncScan, pageID: string): Block[] {
   return [...assembleBlocks(scan, pageID), ...canvasBlocks];
 }
 
+// A block placed on a canvas outside of a group, as the one-item document it
+// would be. Groups are left to their children.
+export const getCanvasBlock = (
+  rep: Replicache<ReplicacheMutators>,
+  pageID: string,
+  entityID: string,
+): Block | null => {
+  let scan = getBlockStructureMirror(rep);
+  let fact = scan
+    .eav(pageID, "canvas/block")
+    .find((b) => b.data.value === entityID);
+  let type = scan.eav(entityID, "block/type")[0]?.data.value;
+  if (!fact || !type || type === "group") return null;
+  let headingLevel =
+    type === "heading"
+      ? scan.eav(entityID, "block/heading-level")[0]?.data.value
+      : undefined;
+  let checklist = scan.eav(entityID, "block/check-list")[0];
+  return {
+    entityID,
+    parent: pageID,
+    factID: fact.id,
+    position: "",
+    type,
+    ...(headingLevel !== undefined && { headingLevel }),
+    ...(scan.eav(entityID, "block/is-list")[0]?.data.value && {
+      listData: {
+        depth: 1,
+        parent: pageID,
+        path: [{ entity: entityID, depth: 1 }],
+        checklist: !!checklist,
+        checked: checklist?.data.value,
+        listStyle: scan.eav(entityID, "block/list-style")[0]?.data.value,
+        listStart: scan.eav(entityID, "block/list-number")[0]?.data.value,
+      },
+    }),
+  };
+};
+
 export const getBlocksFromMirror = (
   mirror: BlockStructureMirror,
   entityID: string,

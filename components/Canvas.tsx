@@ -570,6 +570,7 @@ function CanvasBlock(props: {
   let y = props.position.y + (dragDelta?.y || 0) / liveZoom;
   let transform = `translate(${x}px, ${y}px) rotate(${Math.round(rotation + angle)}deg) scale(${!dragDelta ? "1.0" : "1.02"})`;
   let [areYouSure, setAreYouSure] = useState(false);
+  let isList = !!useEntity(props.entityID, "block/is-list")?.data.value;
   let blockProps = useMemo(() => {
     return {
       pageType: "canvas" as const,
@@ -583,6 +584,9 @@ function CanvasBlock(props: {
       parent: props.parent,
       nextBlock: null,
       previousBlock: null,
+      listData: isList
+        ? { path: [], parent: props.parent, depth: 1 }
+        : undefined,
     };
   }, [
     props.preview,
@@ -590,6 +594,7 @@ function CanvasBlock(props: {
     props.factID,
     props.parent,
     type?.data.value,
+    isList,
   ]);
   useBlockKeyboardHandlers(blockProps, areYouSure, setAreYouSure);
   let blockMouseHandlers = useBlockMouseHandlers(blockProps);
@@ -603,8 +608,6 @@ function CanvasBlock(props: {
         },
       }
     : blockMouseHandlers;
-
-  let isList = useEntity(props.entityID, "block/is-list");
 
   return (
     <div
@@ -632,11 +635,6 @@ function CanvasBlock(props: {
         {type && (
           <BaseBlock
             {...blockProps}
-            listData={
-              isList?.data.value
-                ? { path: [], parent: props.parent, depth: 1 }
-                : undefined
-            }
             areYouSure={areYouSure}
             setAreYouSure={setAreYouSure}
           />

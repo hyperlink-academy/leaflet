@@ -84,7 +84,7 @@ export function useMountProsemirror({
         ySyncPlugin(value),
         cursorPlugin,
         keymap(km),
-        inputrules(propsRef, repRef, openMentionAutocomplete),
+        inputrules(propsRef, repRef, rep.undoManager, openMentionAutocomplete),
         keymap(baseKeymap),
         highlightSelectionPlugin,
         commentDraftPlugin,

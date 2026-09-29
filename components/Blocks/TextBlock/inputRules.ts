@@ -10,6 +10,9 @@ import type { ReplicacheMutators } from "src/replicache";
 import { BlockProps } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
 import { addBlockBelow } from "src/utils/addBlockBelow";
+import { groupCanvasBlockAndAddAbove } from "src/utils/groupCanvasBlock";
+import type { UndoManager } from "src/undoManager";
+import { v7 } from "uuid";
 import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
 import { flushSync } from "react-dom";
@@ -128,6 +131,7 @@ export const footnoteInputRules = () =>
 export const inputrules = (
   propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
   repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+  undoManager: UndoManager,
   openMentionAutocomplete?: () => void,
 ) =>
   inputRules({
@@ -231,13 +235,31 @@ export const inputrules = (
         if (propsRef.current.listData) return null;
         let rep = repRef.current;
         if (!rep) return null;
-        addBlockBelow(rep, {
-          parent: propsRef.current.parent,
-          position: propsRef.current.previousBlock?.position || null,
-          nextPosition: propsRef.current.position,
-          permission_set: propsRef.current.entity_set.set,
-          type: "horizontal-rule",
-        });
+        let { entityID, parent, entity_set } = propsRef.current;
+        if (propsRef.current.pageType === "canvas") {
+          // A block alone on a canvas has no "above it": it becomes a group
+          // that starts with the rule.
+          undoManager.withUndoGroup(async () => {
+            let group = await groupCanvasBlockAndAddAbove(rep, undoManager, {
+              page: parent,
+              blockEntity: entityID,
+              newEntityID: v7(),
+              permission_set: entity_set.set,
+              type: "horizontal-rule",
+            });
+            focusBlock(
+              { entityID, parent: group, type: "text" },
+              { type: "start" },
+            );
+          });
+        } else
+          addBlockBelow(rep, {
+            parent,
+            position: propsRef.current.previousBlock?.position || null,
+            nextPosition: propsRef.current.position,
+            permission_set: entity_set.set,
+            type: "horizontal-rule",
+          });
         return state.tr.delete(0, match[0].length);
       }),
 

@@ -21,7 +21,11 @@ import { useIsMobile } from "src/hooks/isMobile";
 import { deleteBlock } from "src/utils/deleteBlock";
 import { schema } from "../Blocks/TextBlock/schema";
 import { MarkType } from "prosemirror-model";
-import { useSelectingMouse, getSortedSelection } from "./selectionState";
+import {
+  useSelectingMouse,
+  getSelectedOrFocusedBlocks,
+  getSortedSelection,
+} from "./selectionState";
 import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
 import { zoomIntoBlock } from "src/utils/zoomIntoBlock";
 
@@ -59,7 +63,7 @@ export function SelectionManager() {
         altKey: true,
         key: ["l", "¬"],
         handler: async () => {
-          let [sortedBlocks] = await getSortedSelectionBound();
+          let sortedBlocks = await getSelectedOrFocusedBlocks(rep);
           await toggleListForBlocks(sortedBlocks, rep);
         },
       },
@@ -68,7 +72,7 @@ export function SelectionManager() {
         altKey: true,
         key: ["1", "¡"],
         handler: async () => {
-          let [sortedBlocks] = await getSortedSelectionBound();
+          let sortedBlocks = await getSelectedOrFocusedBlocks(rep);
           await setTextBlockStyle(sortedBlocks, { style: "heading", level: 1 }, rep);
         },
       },
@@ -77,7 +81,7 @@ export function SelectionManager() {
         altKey: true,
         key: ["2", "™"],
         handler: async () => {
-          let [sortedBlocks] = await getSortedSelectionBound();
+          let sortedBlocks = await getSelectedOrFocusedBlocks(rep);
           await setTextBlockStyle(sortedBlocks, { style: "heading", level: 2 }, rep);
         },
       },
@@ -86,7 +90,7 @@ export function SelectionManager() {
         altKey: true,
         key: ["3", "£"],
         handler: async () => {
-          let [sortedBlocks] = await getSortedSelectionBound();
+          let sortedBlocks = await getSelectedOrFocusedBlocks(rep);
           await setTextBlockStyle(sortedBlocks, { style: "heading", level: 3 }, rep);
         },
       },
@@ -95,7 +99,7 @@ export function SelectionManager() {
         altKey: true,
         key: ["0", "º"],
         handler: async () => {
-          let [sortedBlocks] = await getSortedSelectionBound();
+          let sortedBlocks = await getSelectedOrFocusedBlocks(rep);
           await setTextBlockStyle(
             sortedBlocks,
             { style: "text", size: "default" },
@@ -108,7 +112,7 @@ export function SelectionManager() {
         altKey: true,
         key: ["+", "≠"],
         handler: async () => {
-          let [sortedBlocks] = await getSortedSelectionBound();
+          let sortedBlocks = await getSelectedOrFocusedBlocks(rep);
           await setTextBlockStyle(
             sortedBlocks,
             { style: "text", size: "large" },
@@ -121,7 +125,7 @@ export function SelectionManager() {
         altKey: true,
         key: ["-", "–"],
         handler: async () => {
-          let [sortedBlocks] = await getSortedSelectionBound();
+          let sortedBlocks = await getSelectedOrFocusedBlocks(rep);
           await setTextBlockStyle(
             sortedBlocks,
             { style: "text", size: "small" },
