@@ -10,11 +10,12 @@ import {
 
 export type DefaultBlockType = "h1" | "text" | "posts-list" | "signup";
 
-// A block to seed into a new leaflet. Either a bare type, or a text block with
-// pre-filled content.
+// A block to seed into a new leaflet. Either a bare type, a text block with
+// pre-filled content, or a posts-list block with a preset view.
 export type DefaultBlockSpec =
   | DefaultBlockType
-  | { type: "text"; content: string };
+  | { type: "text"; content: string }
+  | { type: "posts-list"; view: "small" | "medium" | "chapter" };
 
 export type FactInput = { attribute: string; data: unknown };
 
@@ -149,11 +150,18 @@ export async function createLeaflet({
           attribute: "block/type",
           data: { type: "block-type-union", value: type },
         });
-        if (typeof spec !== "string" && spec.content) {
+        if (typeof spec !== "string" && spec.type === "text" && spec.content) {
           facts.push({
             entity,
             attribute: "block/text",
             data: { type: "text", value: createYjsText(spec.content) },
+          });
+        }
+        if (typeof spec !== "string" && spec.type === "posts-list") {
+          facts.push({
+            entity,
+            attribute: "posts-list/view",
+            data: { type: "posts-list-view-union", value: spec.view },
           });
         }
       }

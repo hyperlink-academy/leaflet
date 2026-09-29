@@ -18,6 +18,8 @@ import { Checkbox } from "components/Checkbox";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { encodeIconFile } from "src/utils/imageEncoding";
 
+type PubType = "blog" | "serial";
+
 type DomainState =
   | { status: "empty" }
   | { status: "valid" }
@@ -30,6 +32,7 @@ export const CreatePubForm = () => {
   let [nameValue, setNameValue] = useState("");
   let [descriptionValue, setDescriptionValue] = useState("");
   let [showInDiscover, setShowInDiscover] = useState(true);
+  let [pubType, setPubType] = useState<PubType>("blog");
   let [logoFile, setLogoFile] = useState<File | null>(null);
   let [logoPreview, setLogoPreview] = useState<string | null>(null);
   let [logoError, setLogoError] = useState<string | null>(null);
@@ -45,7 +48,7 @@ export const CreatePubForm = () => {
   let router = useRouter();
   return (
     <form
-      className="flex flex-col gap-3"
+      className="flex flex-col gap-3 my-4"
       onSubmit={async (e) => {
         if (formState !== "normal") return;
         e.preventDefault();
@@ -65,11 +68,12 @@ export const CreatePubForm = () => {
               showComments: true,
               showMentions: true,
               showPrevNext: true,
-              prevNextDirection: "rtl",
+              prevNextDirection: pubType === "serial" ? "ltr" : "rtl",
               showRecommends: true,
-              showFirstLast: false,
+              showFirstLast: pubType === "serial",
               showOtherPublicationsInTags: true,
             },
+            postsListView: pubType === "serial" ? "chapter" : undefined,
           });
         } catch {
           setFormState("normal");
@@ -169,6 +173,8 @@ export const CreatePubForm = () => {
         setDomainState={setDomainState}
       />
       <hr className="border-border-light" />
+      <PubTypeInput pubType={pubType} setPubType={setPubType} />
+      <hr className="border-border-light" />
       <Checkbox
         checked={showInDiscover}
         onChange={(e) => setShowInDiscover(e.target.checked)}
@@ -207,6 +213,59 @@ export const CreatePubForm = () => {
     </form>
   );
 };
+
+function PubTypeInput(props: {
+  pubType: PubType;
+  setPubType: (t: PubType) => void;
+}) {
+  let options: { value: PubType; label: string; description: string }[] = [
+    {
+      value: "blog",
+      label: "Blog",
+      description:
+        "Your posts mostly stand alone, like a blog or a newsletter.",
+    },
+    {
+      value: "serial",
+      label: "Serial",
+      description:
+        "Your posts mostly exist in sequence, like a comic, a novel, or a tutorial.",
+    },
+  ];
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-sm text-tertiary font-bold italic">Type</p>
+      <div className="grid grid-cols-2 gap-2">
+        {options.map((option) => {
+          let selected = props.pubType === option.value;
+          return (
+            <label
+              key={option.value}
+              htmlFor={`pubType-${option.value}`}
+              className={`${selected ? "accent-container border border-accent-contrast outline-offset-1 outline-2 outline-accent-contrast" : "opaque-container"} flex flex-col leading-snug px-2 py-1.5 cursor-pointer text-sm `}
+            >
+              <input
+                type="radio"
+                name="pubType"
+                id={`pubType-${option.value}`}
+                value={option.value}
+                checked={selected}
+                onChange={() => props.setPubType(option.value)}
+                className="sr-only"
+              />
+              <p
+                className={`font-bold ${selected ? "text-accent-contrast" : "text-secondary"}`}
+              >
+                {option.label}
+              </p>
+              <p className="text-tertiary">{option.description}</p>
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 let subdomainValidator = string()
   .min(3)

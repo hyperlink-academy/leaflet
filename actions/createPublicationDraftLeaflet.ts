@@ -13,12 +13,15 @@ export async function createPublicationDraftLeaflet(args: {
   did: string;
   description?: string;
   theme?: PubLeafletPublication.Theme;
+  postsListView?: "small" | "medium" | "chapter";
 }): Promise<string> {
   const firstBlocks: DefaultBlockSpec[] = [
     ...(args.description
       ? [{ type: "text" as const, content: args.description }, "text" as const]
       : []),
-    "posts-list",
+    args.postsListView
+      ? { type: "posts-list" as const, view: args.postsListView }
+      : ("posts-list" as const),
     "signup",
   ];
 
