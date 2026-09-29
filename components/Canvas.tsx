@@ -8,6 +8,7 @@ import {
   useCallback,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useDrag } from "src/hooks/useDrag";
@@ -28,7 +29,10 @@ import {
   useLeafletPublicationData,
   useLeafletPublicationPage,
 } from "./PageSWRDataProvider";
-import { useHandleCanvasDrop } from "./Blocks/useHandleCanvasDrop";
+import {
+  useHandleCanvasDrop,
+  useHandleCanvasPaste,
+} from "./Blocks/useHandleCanvasDrop";
 import { useBlockMouseHandlers } from "./Blocks/useBlockMouseHandlers";
 import { RecommendEmptyTiny } from "./Icons/RecommendTiny";
 import { useSubscribe } from "src/replicache/useSubscribe";
@@ -167,11 +171,19 @@ export function CanvasContent(props: {
   let entity_set = useEntitySetContext();
   let size = useCanvasSize(props.entityID);
   let handleDrop = useHandleCanvasDrop(props.entityID);
+  let contentRef = useRef<HTMLDivElement>(null);
+  useHandleCanvasPaste(
+    props.entityID,
+    contentRef,
+    size,
+    !props.preview && entity_set.permissions.write,
+  );
   let stackOrders = useCanvasStackOrders(props.entityID);
   let inking = useInkSession((s) => s.page === props.entityID);
 
   return (
     <div
+      ref={contentRef}
       onClick={async (e) => {
         if (e.currentTarget !== e.target) return;
         useUIState.setState(() => ({

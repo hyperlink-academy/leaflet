@@ -81,6 +81,24 @@ export const useHandlePaste = (
         });
         return true;
       }
+      const { listData, parent, position, nextPosition } = propsRef.current;
+      // A lone canvas block has no "after it"; if the paste brings blocks, it
+      // becomes the first block of a group that takes them.
+      const groupEntity = propsRef.current.pageType === "canvas" ? v7() : null;
+      let grouped: Promise<void> | undefined;
+      const prepareParent = groupEntity
+        ? () =>
+            (grouped ??= groupCanvasBlock(rep, undoManager, {
+              page: parent,
+              blockEntity: propsRef.current.entityID,
+              groupEntity,
+              permission_set: entity_set.set,
+            }))
+        : undefined;
+      const pastePosition = groupEntity
+        ? generateKeyBetween(null, null)
+        : position;
+      const pasteNextPosition = groupEntity ? null : nextPosition;
       // if there is no html, but there is text, convert the text to markdown
       let xml = new DOMParser().parseFromString(textHTML, "text/html");
       if ((!textHTML || !xml.children.length) && text) {
@@ -95,11 +113,6 @@ export const useHandlePaste = (
         if (
           !(children.length === 1 && children[0].tagName === "IMG" && hasImage)
         ) {
-          const { listData, parent, position, nextPosition } = propsRef.current;
-          // A lone canvas block has no "after it"; if the paste brings
-          // blocks, it becomes the first block of a group that takes them.
-          const groupEntity =
-            propsRef.current.pageType === "canvas" ? v7() : null;
           resolveCopiedFootnoteRefs(children, (footnoteEntityID) =>
             rep.query(async (tx) => {
               let [text] = await scanIndex(tx).eav(
@@ -116,17 +129,9 @@ export const useHandlePaste = (
               entity_set,
               propsRef,
               pasteParent: groupEntity ?? (listData ? listData.parent : parent),
-              position: groupEntity ? generateKeyBetween(null, null) : position,
-              nextPosition: groupEntity ? null : nextPosition,
-              prepareParent: groupEntity
-                ? () =>
-                    groupCanvasBlock(rep, undoManager, {
-                      page: parent,
-                      blockEntity: propsRef.current.entityID,
-                      groupEntity,
-                      permission_set: entity_set.set,
-                    })
-                : undefined,
+              position: pastePosition,
+              nextPosition: pasteNextPosition,
+              prepareParent,
             }),
           );
         }
@@ -147,11 +152,6 @@ export const useHandlePaste = (
             const intoEmptyBlock =
               editorState.editor.doc.textContent.length === 0;
             const entity = intoEmptyBlock ? propsRef.current.entityID : v7();
-            const parent = propsRef.current.parent;
-            const position = generateKeyBetween(
-              propsRef.current.position,
-              propsRef.current.nextPosition,
-            );
             prepareImage(file, rep, {
               attribute: "block/image",
               entityID: entity,
@@ -183,16 +183,20 @@ export const useHandlePaste = (
                     await rep.mutate.createEntity([
                       { entityID: entity, permission_set: entity_set.set },
                     ]);
-                    await undoManager.withUndoGroup(() =>
-                      rep.mutate.assertFact([
+                    await undoManager.withUndoGroup(async () => {
+                      await prepareParent?.();
+                      await rep.mutate.assertFact([
                         {
-                          entity: parent,
+                          entity: groupEntity ?? parent,
                           id: v7(),
                           attribute: "card/block",
                           data: {
                             type: "ordered-reference",
                             value: entity,
-                            position,
+                            position: generateKeyBetween(
+                              pastePosition,
+                              pasteNextPosition,
+                            ),
                           },
                         },
                         {
@@ -201,14 +205,25 @@ export const useHandlePaste = (
                           data: { type: "block-type-union", value: "image" },
                         },
                         imageFact,
-                      ]),
-                    );
+                      ]);
+                    });
+                    // Grouping remounts the text block's editor, dropping focus.
+                    if (groupEntity)
+                      focusBlock(
+                        {
+                          entityID: propsRef.current.entityID,
+                          type: propsRef.current.type,
+                          parent: groupEntity,
+                        },
+                        { type: "end" },
+                      );
                   }
                 } finally {
                   await finishUpload();
                 }
               })
               .catch(() => {});
+            return true;
           }
           return;
         }

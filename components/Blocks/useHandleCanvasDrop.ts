@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { type RefObject, useCallback, useEffect } from "react";
 import { useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { v7 } from "uuid";
@@ -7,6 +7,9 @@ import { localImages, uploadImageAndFinalize } from "src/utils/addImage";
 import { setImageUploadStatus } from "src/utils/imageUploadStatus";
 import { rgbaToThumbHash, thumbHashToDataURL } from "thumbhash";
 import { getCanvasZoom } from "src/canvasZoom/session";
+import { useUIState } from "src/useUIState";
+import { elementId } from "src/utils/elementId";
+import { type CanvasBounds, clampToCanvas } from "src/utils/embeddedCanvasSize";
 
 // Helper function to load image dimensions and thumbhash
 const processImage = async (
@@ -56,31 +59,26 @@ const processImage = async (
   };
 };
 
-export const useHandleCanvasDrop = (entityID: string) => {
+const imageFilesOf = (data: DataTransfer | null) =>
+  Array.from(data?.files ?? []).filter((file) =>
+    file.type.startsWith("image/"),
+  );
+
+// Adds the images to the canvas as a grid. `place` gets the grid's footprint
+// in canvas px and returns where its top-left corner goes.
+const useAddCanvasImages = (entityID: string) => {
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
 
   return useCallback(
-    async (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (!rep) return;
-
-      const files = e.dataTransfer.files;
-      if (!files || files.length === 0) return;
-
-      // Filter for image files only
-      const imageFiles = Array.from(files).filter((file) =>
-        file.type.startsWith("image/"),
-      );
-
-      if (imageFiles.length === 0) return;
-
-      const parentRect = e.currentTarget.getBoundingClientRect();
-      const zoom = getCanvasZoom(entityID);
-      const dropX = Math.max((e.clientX - parentRect.left) / zoom, 0);
-      const dropY = Math.max((e.clientY - parentRect.top) / zoom, 0);
+    async (
+      imageFiles: File[],
+      place: (grid: { width: number; height: number }) => {
+        x: number;
+        y: number;
+      },
+    ) => {
+      if (!rep || imageFiles.length === 0) return;
 
       const SPACING = 0;
       const DEFAULT_WIDTH = 360;
@@ -112,6 +110,11 @@ export const useHandleCanvasDrop = (entityID: string) => {
         rowHeights[row] = Math.max(rowHeights[row] || 0, scaledHeight);
       }
 
+      const sum = (sizes: number[]) =>
+        sizes.reduce((total, size) => total + size, 0) +
+        SPACING * (sizes.length - 1);
+      const origin = place({ width: sum(colWidths), height: sum(rowHeights) });
+
       const client = supabaseBrowserClient();
 
       // Calculate positions and prepare data for all images
@@ -122,13 +125,13 @@ export const useHandleCanvasDrop = (entityID: string) => {
         const col = index % COLUMNS;
 
         // Calculate x position by summing all previous column widths
-        let x = dropX;
+        let x = origin.x;
         for (let c = 0; c < col; c++) {
           x += colWidths[c] + SPACING;
         }
 
         // Calculate y position by summing all previous row heights
-        let y = dropY;
+        let y = origin.y;
         for (let r = 0; r < row; r++) {
           y += rowHeights[r] + SPACING;
         }
@@ -194,9 +197,93 @@ export const useHandleCanvasDrop = (entityID: string) => {
           ),
         );
       });
-
-      return true;
     },
     [rep, entityID, entity_set.set, undoManager],
   );
+};
+
+export const useHandleCanvasDrop = (entityID: string) => {
+  let addImages = useAddCanvasImages(entityID);
+
+  return useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const imageFiles = imageFilesOf(e.dataTransfer);
+      if (imageFiles.length === 0) return;
+
+      const parentRect = e.currentTarget.getBoundingClientRect();
+      const zoom = getCanvasZoom(entityID);
+      const drop = {
+        x: Math.max((e.clientX - parentRect.left) / zoom, 0),
+        y: Math.max((e.clientY - parentRect.top) / zoom, 0),
+      };
+
+      await addImages(imageFiles, () => drop);
+      return true;
+    },
+    [addImages, entityID],
+  );
+};
+
+// With the canvas itself focused there is no block to paste into, so pasted
+// images land in the middle of the part of the canvas that is on screen.
+export const useHandleCanvasPaste = (
+  entityID: string,
+  content: RefObject<HTMLElement | null>,
+  canvas: CanvasBounds,
+  enabled: boolean,
+) => {
+  let addImages = useAddCanvasImages(entityID);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let onPaste = (e: ClipboardEvent) => {
+      let focused = useUIState.getState().focusedEntity;
+      if (focused?.entityType !== "page" || focused.entityID !== entityID)
+        return;
+      let active = document.activeElement;
+      if (
+        e.defaultPrevented ||
+        (active instanceof HTMLElement &&
+          (active.isContentEditable ||
+            active.matches("input, textarea, select")))
+      )
+        return;
+      let imageFiles = imageFilesOf(e.clipboardData);
+      let scrollArea = document.getElementById(
+        elementId.page(entityID).canvasScrollArea,
+      );
+      if (imageFiles.length === 0 || !content.current || !scrollArea) return;
+      e.preventDefault();
+
+      let visible = scrollArea.getBoundingClientRect();
+      let origin = content.current.getBoundingClientRect();
+      let zoom = getCanvasZoom(entityID);
+      let center = {
+        x:
+          (Math.max(visible.left, 0) +
+            Math.min(visible.right, window.innerWidth)) /
+          2,
+        y:
+          (Math.max(visible.top, 0) +
+            Math.min(visible.bottom, window.innerHeight)) /
+          2,
+      };
+      addImages(imageFiles, (grid) => {
+        let position = clampToCanvas(
+          {
+            x: (center.x - origin.left) / zoom - grid.width / 2,
+            y: (center.y - origin.top) / zoom - grid.height / 2,
+          },
+          grid,
+          canvas,
+        );
+        return { x: Math.max(position.x, 0), y: Math.max(position.y, 0) };
+      });
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, [addImages, entityID, content, canvas, enabled]);
 };
