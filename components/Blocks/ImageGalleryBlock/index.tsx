@@ -20,6 +20,7 @@ import {
 } from "./ImageGalleryLightbox";
 import { EditorGalleryImageItem } from "./GalleryImageItem";
 import { ImageGalleryOptions, EditGalleryImages } from "./ImageGalleryOptions";
+import { useCanOpenLightbox } from "./useCanOpenLightbox";
 
 export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
   let { rep, undoManager } = useReplicache();
@@ -66,12 +67,13 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
     });
   };
 
-  // Writers select the block first; a second click on an image opens the
-  // lightbox. Readers (no write permission) open it on the first click.
-  let canOpenLightbox =
-    !props.preview && (!entity_set.permissions.write || !!isSelected);
+  let { clickOpensLightbox } = useCanOpenLightbox({
+    entityID: props.entityID,
+    isSelected: !!isSelected,
+    preview: props.preview,
+  });
   let openLightbox = (index: number) => {
-    if (canOpenLightbox) {
+    if (clickOpensLightbox()) {
       setLightboxAltExpanded(false);
       setLightboxIndex(index);
     }

@@ -21,6 +21,7 @@ import {
   EditorLightboxSlide,
 } from "./ImageGalleryBlock/ImageGalleryLightbox";
 import { getPostImageEntities } from "./ImageGalleryBlock/getPostImages";
+import { useCanOpenLightbox } from "./ImageGalleryBlock/useCanOpenLightbox";
 
 export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let { rep, undoManager } = useReplicache();
@@ -66,10 +67,11 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     altExpanded?: boolean;
   } | null>(null);
 
-  // Writers select the block first; a second click on the image opens the
-  // lightbox. Readers (no write permission) open it on the first click.
-  let canOpenLightbox =
-    !props.preview && (!entity_set.permissions.write || !!isSelected);
+  let { canOpenLightbox, clickOpensLightbox } = useCanOpenLightbox({
+    entityID: props.entityID,
+    isSelected: !!isSelected,
+    preview: props.preview,
+  });
 
   let openLightbox = (opts?: { altExpanded?: boolean }) => {
     let ids = rep ? getPostImageEntities(rep, props.parent) : [];
@@ -218,7 +220,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
           type="button"
           className={`block ${isFullBleed ? "w-full" : "w-fit"} ${canOpenLightbox ? "cursor-zoom-in" : ""}`}
           onClick={() => {
-            if (canOpenLightbox) openLightbox();
+            if (clickOpensLightbox()) openLightbox();
           }}
         >
           {localSrc || image.data.local ? (
