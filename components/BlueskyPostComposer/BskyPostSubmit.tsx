@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { AtUri } from "@atproto/syntax";
 import type { AppBskyRichtextFacet } from "@atproto/api";
 import type { EditorState } from "prosemirror-state";
-import type { PublishBskyResult } from "actions/publishBskyPost";
+import type { PublishBskyResult } from "src/utils/publishBskyPost";
 import { ButtonPrimary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
