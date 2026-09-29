@@ -1,13 +1,13 @@
 export const CONTENT_WIDTH = 1272;
-export const ZOOM_STEPS = [0.25, 0.5, 0.75, 1, 1.5, 2] as const;
+const ZOOM_STEPS = [0.25, 0.5, 0.75, 1, 1.5, 2] as const;
 export const MAX_ZOOM = 2;
 // Mirrored by the .canvasZoomLayer min-height rule in globals.css.
-export const MIN_ZOOM_FLOOR = 0.25;
+const MIN_ZOOM_FLOOR = 0.25;
 
 const WHEEL_UNIT_CLAMP = 10;
 // Time constant of the per-frame approach toward a wheel/button/keyboard
 // target: 95% of the way in ~3x this.
-export const ZOOM_SMOOTHING_MS = 60;
+const ZOOM_SMOOTHING_MS = 60;
 // Ratio to the target below which the zoom snaps onto it.
 const ZOOM_SNAP_RATIO = 1e-3;
 const LINE_HEIGHT_PX = 16;
@@ -15,18 +15,14 @@ const PAGE_HEIGHT_PX = 800;
 
 export type Point = { x: number; y: number };
 
-export function fitToWidth(clientWidth: number, contentWidth = CONTENT_WIDTH) {
-  if (clientWidth <= 0 || contentWidth <= 0) return 1;
-  return clientWidth / contentWidth;
+// A zero-width box (not laid out yet) gets the floor.
+export function minZoom(clientWidth: number, contentWidth: number) {
+  return Math.min(MIN_ZOOM_FLOOR, clientWidth / contentWidth || 1);
 }
 
-export function minZoom(clientWidth: number, contentWidth = CONTENT_WIDTH) {
-  return Math.min(MIN_ZOOM_FLOOR, fitToWidth(clientWidth, contentWidth));
-}
-
-export function clampZoom(z: number, min: number, max = MAX_ZOOM) {
+export function clampZoom(z: number, min: number) {
   if (!Number.isFinite(z)) return min;
-  return Math.min(max, Math.max(min, z));
+  return Math.min(MAX_ZOOM, Math.max(min, z));
 }
 
 // Converts one wheel event into a multiplicative zoom factor. The caller must
@@ -47,25 +43,21 @@ export function wheelToZoomFactor(deltaY: number, deltaMode: number) {
 // tldraw's midpoint rule: stepping in lands on the first step whose lower
 // neighbour is closer than half a step away, so a zoom just past a step still
 // reaches the next one instead of snapping back onto the step it left.
-export function nextStep(
-  z: number,
-  dir: 1 | -1,
-  steps: readonly number[] = ZOOM_STEPS,
-) {
+export function nextStep(z: number, dir: 1 | -1) {
   if (dir === 1) {
-    for (let i = 1; i < steps.length; i++) {
-      let z1 = steps[i - 1];
-      let z2 = steps[i];
+    for (let i = 1; i < ZOOM_STEPS.length; i++) {
+      let z1 = ZOOM_STEPS[i - 1];
+      let z2 = ZOOM_STEPS[i];
       if (z2 - z1 > (z - z1) * 2) return z2;
     }
-    return steps[steps.length - 1];
+    return ZOOM_STEPS[ZOOM_STEPS.length - 1];
   }
-  for (let i = steps.length - 1; i > 0; i--) {
-    let z1 = steps[i - 1];
-    let z2 = steps[i];
+  for (let i = ZOOM_STEPS.length - 1; i > 0; i--) {
+    let z1 = ZOOM_STEPS[i - 1];
+    let z2 = ZOOM_STEPS[i];
     if (z2 - z1 > (z2 - z) * 2) return z1;
   }
-  return steps[0];
+  return ZOOM_STEPS[0];
 }
 
 // `anchorViewport` is measured from the scroller's client box (clientX minus
@@ -94,26 +86,8 @@ export function anchorToCanvas(args: {
   };
 }
 
-export function anchoredScroll(args: {
-  anchorViewportX: number;
-  anchorViewportY: number;
-  scrollLeft: number;
-  scrollTop: number;
-  zOld: number;
-  zNew: number;
-}) {
-  let anchorViewport = { x: args.anchorViewportX, y: args.anchorViewportY };
-  let anchorCanvas = anchorToCanvas({
-    anchorViewport,
-    scrollLeft: args.scrollLeft,
-    scrollTop: args.scrollTop,
-    zoom: args.zOld,
-  });
-  return scrollForAnchor({ anchorViewport, anchorCanvas, zoom: args.zNew });
-}
-
 export type Scroll = { left: number; top: number };
-export type Size = { width: number; height: number };
+type Size = { width: number; height: number };
 export type Pads = { top: number; right: number; bottom: number; left: number };
 
 export const NO_PADS: Pads = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -179,16 +153,11 @@ export function trimPads(
 // same going in and out), returning the target once within the snap ratio.
 // Wheel events arrive on their own jittery cadence, so applying each one
 // directly moves the zoom on some frames and not others.
-export function approachZoom(
-  current: number,
-  target: number,
-  dtMs: number,
-  tau = ZOOM_SMOOTHING_MS,
-) {
+export function approachZoom(current: number, target: number, dtMs: number) {
   if (!(dtMs > 0)) return current;
   let gap = Math.log(target / current);
   if (Math.abs(gap) < ZOOM_SNAP_RATIO) return target;
-  return current * Math.exp(gap * (1 - Math.exp(-dtMs / tau)));
+  return current * Math.exp(gap * (1 - Math.exp(-dtMs / ZOOM_SMOOTHING_MS)));
 }
 
 // Empty space the spacer keeps around the content on each side, besides

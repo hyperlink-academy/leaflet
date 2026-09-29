@@ -3,19 +3,12 @@ import type { CSSProperties, ReactNode } from "react";
 import { useCanvasZoomEngine } from "./CanvasZoomProvider";
 import type { CanvasArea } from "./mobileView";
 
-/**
- * The zoom itself is never rendered by React: the stylesheet defaults
- * `--canvas-zoom` to fit-to-width capped at 1 (so the server-rendered page
- * already shows the right scale) and the engine overwrites the property
- * inline. `contentHeight` is the content's laid-out height in canvas px,
- * which sizes the spacer before any script runs.
- */
+// The zoom is never rendered by React: the stylesheet's default applies until
+// the engine writes `--canvas-zoom` inline.
 export function CanvasZoomLayer(props: {
+  /** Canvas px; sizes the spacer before any script runs. */
   contentHeight: number;
-  /**
-   * Anchored mobile view area; the stylesheet's default zoom fits it, and
-   * shifts a locked canvas to it.
-   */
+  /** Anchored mobile view area, which the stylesheet's default zoom fits. */
   mobileArea?: CanvasArea | null;
   children: ReactNode;
 }) {

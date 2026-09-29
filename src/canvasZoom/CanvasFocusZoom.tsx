@@ -8,11 +8,9 @@ import { useCanvasZoomEngine } from "./CanvasZoomProvider";
 const EDGE_MARGIN = 24;
 
 /**
- * Editor only. Focusing a block on a coarse-pointer device while the canvas
- * is zoomed out (fit-to-width on a phone) zooms it to 1 so the text is
- * legible and editable, moving the block's top-left to where it is on
- * screen (kept inside the viewport by a margin so the block lands in view).
- * Blur leaves the zoom alone.
+ * Focusing a block on a coarse-pointer device while zoomed out zooms to 1 so
+ * the text is editable, keeping the block's top-left where it is on screen
+ * (inset by a margin so the block lands in view).
  */
 export function CanvasFocusZoom(props: { pageEntityID: string }) {
   let engine = useCanvasZoomEngine();

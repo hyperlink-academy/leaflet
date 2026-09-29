@@ -7,7 +7,6 @@ import { useCanvasZoom } from "src/canvasZoom/CanvasZoomProvider";
 export function CanvasZoomControls(props: { className?: string }) {
   let { zoom, min, max, ready, locked, zoomIn, zoomOut, reset } =
     useCanvasZoom();
-  let percent = Math.round(zoom * 100);
   if (locked) return null;
   return (
     <div
@@ -28,7 +27,7 @@ export function CanvasZoomControls(props: { className?: string }) {
         className="text-sm tabular-nums w-10 text-center hover:text-accent-contrast"
         onMouseDown={reset}
       >
-        {percent}%
+        {Math.round(zoom * 100)}%
       </TooltipButton>
       <TooltipButton
         side="bottom"

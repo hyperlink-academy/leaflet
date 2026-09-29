@@ -1,15 +1,7 @@
 "use client";
-/**
- * A canvas page shown below a publication's header and nav scrolls with the
- * page, like a doc page: the page scroller owns vertical scrolling, so one
- * native scroll moves the header, the stuck nav and the canvas together and
- * the header scrolls away leaving the nav. The canvas box is as tall as the
- * zoomed canvas and only scrolls sideways (CanvasZoomProvider's
- * `pageScroll`).
- *
- * The layout that owns the header wraps the box in a CanvasPageArea and
- * puts the canvas's overlays in CanvasOverlay strips beside the box.
- */
+// A canvas page below a publication's header and nav scrolls with the page
+// like a doc page; its box is as tall as the zoomed canvas and only scrolls
+// sideways (CanvasZoomProvider's `pageScroll`).
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { nearestScroller, useCanvasZoomEngine } from "./CanvasZoomProvider";
 
@@ -69,12 +61,9 @@ export function CanvasPageArea(props: {
 }
 
 /**
- * Holds controls drawn over the canvas (zoom controls, add buttons,
- * toolbars), each positioned absolutely with `top-*` or `bottom-*` classes.
- * In a page-scrolled canvas the strip is a zero-height sticky line at the
- * viewport's edge, rendered beside the box (the top strip before it, the
- * bottom strip after it) so the controls stay on screen over a tall canvas.
- * Elsewhere the controls sit against the page card as they always have.
+ * Controls drawn over the canvas. In a page-scrolled canvas: a zero-height
+ * sticky strip beside the box, so they stay on screen over a tall canvas;
+ * elsewhere a passthrough.
  */
 export function CanvasOverlay(props: {
   edge: "top" | "bottom";

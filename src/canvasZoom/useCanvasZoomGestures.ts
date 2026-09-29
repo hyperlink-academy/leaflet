@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import type { CanvasZoomEngine } from "./CanvasZoomProvider";
-import { type Point, nextStep, wheelToZoomFactor } from "./math";
+import { MAX_ZOOM, type Point, nextStep, wheelToZoomFactor } from "./math";
 import { setCanvasPinching } from "./session";
+import { isIOS } from "src/utils/isDevice";
 
 // Finger-distance change before two fingers count as a zoom rather than a
 // pan. Kept small so a pinch responds at once; the distance is rebased when
@@ -9,6 +10,13 @@ import { setCanvasPinching } from "./session";
 const PINCH_ZOOM_THRESHOLD = 8;
 const PINCH_PAN_THRESHOLD = 16;
 const PINCH_PAN_TO_ZOOM_THRESHOLD = 48;
+const DOUBLE_TAP_MS = 300;
+const DOUBLE_TAP_SLOP = 30;
+const TAP_MOVE_SLOP = 10;
+
+// Content a double tap is meant for rather than the canvas behind it.
+const INTERACTIVE =
+  "a, button, input, textarea, select, video, audio, [contenteditable], [role='button'], .ProseMirror";
 
 type SafariGestureEvent = Event & {
   scale: number;
@@ -16,23 +24,13 @@ type SafariGestureEvent = Event & {
   clientY: number;
 };
 
-type PinchState = "unsure" | "panning" | "zooming";
-
 type Pinch = {
-  state: PinchState;
+  state: "unsure" | "panning" | "zooming";
   startDist: number;
   startMid: Point;
   startZoom: number;
   anchorCanvas: Point;
 };
-
-function isIOS() {
-  if (typeof navigator === "undefined") return false;
-  return (
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
-  );
-}
 
 function touchPoints(touches: TouchList) {
   let a = touches[0];
@@ -43,9 +41,16 @@ function touchPoints(touches: TouchList) {
   };
 }
 
+/**
+ * Wheel, trackpad, pinch and keyboard zoom, plus double tap when `doubleTap`.
+ * Double tap (touch only) zooms in around the tap: to 1 when below it,
+ * otherwise to the next step, and from MAX_ZOOM back to the minimum. It is
+ * detected from pointer events, since iOS fires no dblclick for taps.
+ */
 export function useCanvasZoomGestures(
   engine: CanvasZoomEngine,
-  enabled = true,
+  enabled: boolean,
+  doubleTap: boolean,
 ) {
   useEffect(() => {
     let scroller = engine.boxRef.current;
@@ -57,6 +62,8 @@ export function useCanvasZoomGestures(
     let safariGestureActive = false;
     let safariGestureStartZoom = 1;
     let pinch: Pinch | null = null;
+    let down: { id: number; x: number; y: number; t: number } | null = null;
+    let lastTap: { x: number; y: number; t: number } | null = null;
 
     scroller.addEventListener(
       "wheel",
@@ -65,9 +72,7 @@ export function useCanvasZoomGestures(
         if (!(e.ctrlKey || e.metaKey)) return;
         e.preventDefault();
         // deltaY must be read before deltaMode; see wheelToZoomFactor.
-        let deltaY = e.deltaY;
-        let deltaMode = e.deltaMode;
-        let factor = wheelToZoomFactor(deltaY, deltaMode);
+        let factor = wheelToZoomFactor(e.deltaY, e.deltaMode);
         engine.zoomAtClient(engine.targetZoom() * factor, e.clientX, e.clientY);
       },
       { passive: false, signal },
@@ -111,9 +116,7 @@ export function useCanvasZoomGestures(
     // browser starts a native scroll it fires pointercancel and stops
     // delivering pointermove, while touchmove keeps flowing. Cancelling the
     // second finger's touchstart keeps the sequence cancelable, and
-    // cancelling the moves is what stops native scrolling and selection for
-    // it (an inline touch-action toggle would only add a style recalc and a
-    // full layer repaint at each end of the pinch).
+    // cancelling the moves stops native scrolling and selection.
     let endPinch = () => {
       if (!pinch) return;
       pinch = null;
@@ -128,12 +131,11 @@ export function useCanvasZoomGestures(
         e.preventDefault();
         if (pinch) return;
         let { dist, mid } = touchPoints(e.touches);
-        let startZoom = engine.targetZoom();
         pinch = {
           state: "unsure",
           startDist: Math.max(dist, 1),
           startMid: mid,
-          startZoom,
+          startZoom: engine.targetZoom(),
           anchorCanvas: engine.canvasPointAt(engine.toViewport(mid.x, mid.y)),
         };
         setCanvasPinching(true);
@@ -223,9 +225,52 @@ export function useCanvasZoomGestures(
       { capture: true, signal },
     );
 
+    scroller.addEventListener(
+      "pointerdown",
+      (e) => {
+        if (e.pointerType !== "touch" || !e.isPrimary || pinch || !doubleTap) {
+          down = null;
+          return;
+        }
+        down = { id: e.pointerId, x: e.clientX, y: e.clientY, t: e.timeStamp };
+      },
+      { signal },
+    );
+    scroller.addEventListener("pointercancel", () => (down = null), { signal });
+    scroller.addEventListener(
+      "pointerup",
+      (e) => {
+        let d = down;
+        down = null;
+        if (!d || d.id !== e.pointerId || pinch) return;
+        if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > TAP_MOVE_SLOP)
+          return;
+        let tap = { x: e.clientX, y: e.clientY, t: e.timeStamp };
+        let prev = lastTap;
+        lastTap = tap;
+        if (
+          !prev ||
+          tap.t - prev.t > DOUBLE_TAP_MS ||
+          Math.hypot(tap.x - prev.x, tap.y - prev.y) > DOUBLE_TAP_SLOP
+        )
+          return;
+        lastTap = null;
+        if ((e.target as Element | null)?.closest?.(INTERACTIVE)) return;
+        let current = engine.targetZoom();
+        let zoom =
+          current < 1 - 1e-6
+            ? 1
+            : current >= MAX_ZOOM - 1e-6
+              ? engine.minRef.current
+              : nextStep(current, 1);
+        engine.zoomAtClient(zoom, tap.x, tap.y);
+      },
+      { signal },
+    );
+
     return () => {
       abort.abort();
       endPinch();
     };
-  }, [engine, enabled]);
+  }, [engine, enabled, doubleTap]);
 }

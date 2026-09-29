@@ -1,7 +1,5 @@
-// Live zoom per canvas page, kept for the life of the tab like the scroll
-// positions in usePreserveScroll. Updated on every rendered frame of a gesture
-// so non-React code (e.g. ProseMirror scroll handling) reads the same value
-// the DOM currently shows.
+// Live zoom per canvas page for the tab's life, updated on every gesture frame
+// so non-React readers see the value the DOM currently shows.
 const zoomByPage = new Map<string, number>();
 
 let pinching = false;

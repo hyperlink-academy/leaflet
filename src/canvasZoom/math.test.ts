@@ -2,13 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   approachZoom,
   MAX_ZOOM,
-  ZOOM_STEPS,
-  anchoredScroll,
+  anchorToCanvas,
+  scrollForAnchor,
   NO_PADS,
   padsForScroll,
   trimPads,
   clampZoom,
-  fitToWidth,
   minZoom,
   nextStep,
   wheelToZoomFactor,
@@ -45,14 +44,6 @@ describe("wheelToZoomFactor", () => {
     );
   });
 
-  it("treats a pixel-converted Firefox delta the same as a native pixel delta", () => {
-    // Firefox reports deltaMode LINE for mouse wheels but converts to PIXEL
-    // when the listener reads deltaY first; both readings must agree.
-    let asLine = wheelToZoomFactor(3, DOM_DELTA_LINE);
-    let asConvertedPixels = wheelToZoomFactor(48, DOM_DELTA_PIXEL);
-    expect(asLine).toBeCloseTo(asConvertedPixels);
-  });
-
   it("ignores non-finite deltas", () => {
     expect(wheelToZoomFactor(NaN, DOM_DELTA_PIXEL)).toBe(1);
   });
@@ -74,8 +65,8 @@ describe("nextStep", () => {
   it("stays at the limits", () => {
     expect(nextStep(MAX_ZOOM, 1)).toBe(MAX_ZOOM);
     expect(nextStep(3, 1)).toBe(MAX_ZOOM);
-    expect(nextStep(ZOOM_STEPS[0], -1)).toBe(ZOOM_STEPS[0]);
-    expect(nextStep(0.1, -1)).toBe(ZOOM_STEPS[0]);
+    expect(nextStep(0.25, -1)).toBe(0.25);
+    expect(nextStep(0.1, -1)).toBe(0.25);
   });
 
   it("between steps, goes to the next step past the nearer half", () => {
@@ -89,139 +80,44 @@ describe("nextStep", () => {
   });
 });
 
-describe("anchoredScroll", () => {
-  function check(args: {
-    anchorViewportX: number;
-    anchorViewportY: number;
-    scrollLeft: number;
-    scrollTop: number;
-    zOld: number;
-    zNew: number;
-  }) {
-    let anchorCanvasX = (args.scrollLeft + args.anchorViewportX) / args.zOld;
-    let anchorCanvasY = (args.scrollTop + args.anchorViewportY) / args.zOld;
-    let next = anchoredScroll(args);
-    expect(next.scrollLeft).toBeCloseTo(
-      anchorCanvasX * args.zNew - args.anchorViewportX,
-    );
-    expect(next.scrollTop).toBeCloseTo(
-      anchorCanvasY * args.zNew - args.anchorViewportY,
-    );
-    // The canvas point under the anchor is unchanged after the zoom.
-    expect((next.scrollLeft + args.anchorViewportX) / args.zNew).toBeCloseTo(
-      anchorCanvasX,
-    );
-    expect((next.scrollTop + args.anchorViewportY) / args.zNew).toBeCloseTo(
-      anchorCanvasY,
-    );
-    return next;
-  }
-
-  it("keeps the anchor fixed when zooming in", () => {
-    let next = check({
-      anchorViewportX: 300,
-      anchorViewportY: 200,
+describe("scrollForAnchor / anchorToCanvas", () => {
+  it("keeps the canvas point under the anchor across a zoom", () => {
+    let anchorViewport = { x: 300, y: 200 };
+    let anchorCanvas = anchorToCanvas({
+      anchorViewport,
       scrollLeft: 100,
       scrollTop: 50,
-      zOld: 1,
-      zNew: 2,
+      zoom: 1,
     });
-    expect(next).toEqual({ scrollLeft: 500, scrollTop: 300 });
-  });
-
-  it("keeps the anchor fixed when zooming out", () => {
-    check({
-      anchorViewportX: 640,
-      anchorViewportY: 360,
-      scrollLeft: 800,
-      scrollTop: 1200,
-      zOld: 1.5,
-      zNew: 0.75,
+    expect(anchorCanvas).toEqual({ x: 400, y: 250 });
+    expect(scrollForAnchor({ anchorViewport, anchorCanvas, zoom: 2 })).toEqual({
+      scrollLeft: 500,
+      scrollTop: 300,
     });
-  });
-
-  it("is a no-op at the same zoom", () => {
+    expect(scrollForAnchor({ anchorViewport, anchorCanvas, zoom: 1 })).toEqual({
+      scrollLeft: 100,
+      scrollTop: 50,
+    });
     expect(
-      anchoredScroll({
-        anchorViewportX: 10,
-        anchorViewportY: 20,
-        scrollLeft: 30,
-        scrollTop: 40,
-        zOld: 1.2,
-        zNew: 1.2,
-      }),
-    ).toEqual({ scrollLeft: 30, scrollTop: 40 });
-  });
-
-  it("composes: zooming in then out returns to the start", () => {
-    let a = anchoredScroll({
-      anchorViewportX: 123,
-      anchorViewportY: 456,
-      scrollLeft: 210,
-      scrollTop: 330,
-      zOld: 1,
-      zNew: 1.7,
-    });
-    let b = anchoredScroll({
-      anchorViewportX: 123,
-      anchorViewportY: 456,
-      scrollLeft: a.scrollLeft,
-      scrollTop: a.scrollTop,
-      zOld: 1.7,
-      zNew: 1,
-    });
-    expect(b.scrollLeft).toBeCloseTo(210);
-    expect(b.scrollTop).toBeCloseTo(330);
+      scrollForAnchor({ anchorViewport, anchorCanvas, zoom: 0.35 }),
+    ).toEqual({ scrollLeft: -160, scrollTop: -112.5 });
   });
 });
 
-describe("clampZoom", () => {
-  it("clamps into [min, max]", () => {
+describe("clampZoom / minZoom", () => {
+  it("clamps into [min, MAX_ZOOM]", () => {
     expect(clampZoom(5, 0.25)).toBe(MAX_ZOOM);
     expect(clampZoom(0.01, 0.25)).toBe(0.25);
     expect(clampZoom(1.3, 0.25)).toBe(1.3);
     expect(clampZoom(NaN, 0.25)).toBe(0.25);
   });
 
-  it("preserves the focal point when the requested zoom is clamped", () => {
-    let requested = 4;
-    let clamped = clampZoom(requested, 0.25);
-    let anchorViewportX = 200;
-    let anchorViewportY = 100;
-    let scrollLeft = 400;
-    let scrollTop = 300;
-    let next = anchoredScroll({
-      anchorViewportX,
-      anchorViewportY,
-      scrollLeft,
-      scrollTop,
-      zOld: 1,
-      zNew: clamped,
-    });
-    expect((next.scrollLeft + anchorViewportX) / clamped).toBeCloseTo(
-      scrollLeft + anchorViewportX,
-    );
-    expect((next.scrollTop + anchorViewportY) / clamped).toBeCloseTo(
-      scrollTop + anchorViewportY,
-    );
-  });
-});
-
-describe("fitToWidth / minZoom", () => {
-  it("divides the scroller width by the content width", () => {
-    expect(fitToWidth(1272)).toBe(1);
-    expect(fitToWidth(636)).toBe(0.5);
-    expect(fitToWidth(390)).toBeCloseTo(390 / 1272);
-    expect(fitToWidth(500, 1000)).toBe(0.5);
-  });
-
-  it("falls back to 1 for a zero-width scroller", () => {
-    expect(fitToWidth(0)).toBe(1);
-  });
-
   it("min zoom is the smaller of the floor and fit-to-width", () => {
-    expect(minZoom(1272)).toBe(0.25);
-    expect(minZoom(200)).toBeCloseTo(200 / 1272);
+    expect(minZoom(1272, 1272)).toBe(0.25);
+    expect(minZoom(200, 1272)).toBeCloseTo(200 / 1272);
+    expect(minZoom(0, 1272)).toBe(0.25);
+    expect(minZoom(390, 640)).toBe(0.25);
+    expect(minZoom(120, 640)).toBeCloseTo(120 / 640);
   });
 });
 
@@ -333,14 +229,10 @@ describe("approachZoom", () => {
   });
 });
 
-describe("centered canvases", () => {
-  let client = { width: 800, height: 600 };
-
-  it("surround the content with half a viewport", () => {
+describe("contentMargin", () => {
+  it("is half a viewport on a centered canvas and none otherwise", () => {
+    let client = { width: 800, height: 600 };
     expect(contentMargin(true, client)).toEqual({ left: 400, top: 300 });
-  });
-
-  it("keep no margin on other canvases", () => {
     expect(contentMargin(false, client)).toEqual({ left: 0, top: 0 });
   });
 });

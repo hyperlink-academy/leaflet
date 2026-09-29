@@ -1301,12 +1301,10 @@ body > iframe[src*="js.stripe.com"] {
   }
 }
 
-/* Canvas zoom. --canvas-zoom is written inline by the zoom engine
-   (src/canvasZoom); the stylesheet default below is fit-to-width capped at
-   100%, from the scroller's inline size, so server-rendered HTML is already
-   at the right scale. --canvas-mobile-area (inline on the spacer, inherited)
-   narrows what has to fit to the canvas's anchored mobile area.
-   tan(atan2()) divides two lengths into a plain number. */
+/* Canvas zoom (src/canvasZoom). The engine writes --canvas-zoom inline; the
+   default below fits the box's width (or --canvas-mobile-area), capped at 1,
+   so server-rendered HTML is already at scale. tan(atan2()) divides two
+   lengths into a plain number. */
 .canvasWrapper {
   container-type: size;
 }
@@ -1350,17 +1348,16 @@ body > iframe[src*="js.stripe.com"] {
   min-height: 100%;
   overflow: clip;
   width: calc(
-    var(--canvas-content-width, 1272) * 1px * var(--canvas-zoom) + 2 *
+    var(--canvas-content-width) * 1px * var(--canvas-zoom) + 2 *
       var(--canvas-margin-x, 0px)
   );
   height: calc(
-    var(--canvas-content-height, 0) * 1px * var(--canvas-zoom) + 2 *
+    var(--canvas-content-height) * 1px * var(--canvas-zoom) + 2 *
       var(--canvas-margin-y, 0px)
   );
 }
 /* Empty space around the content on each side, besides the engine's
-   padding; contentMargin in src/canvasZoom/math.ts mirrors it. A centered
-   canvas keeps half the scroller's client box (100cq*). */
+   padding; the engine mirrors it. A centered canvas keeps half the box. */
 .canvasZoomCentered {
   --canvas-margin-x: 50cqw;
   --canvas-margin-y: 50cqh;
@@ -1373,23 +1370,19 @@ body > iframe[src*="js.stripe.com"] {
   /* Permanently composited: the raster is scaled on the GPU during a gesture
      instead of being redrawn (and its images re-decoded) every frame. The
      layer is never resized by script, since a resize discards that raster:
-     it is tall enough to fill the viewport at the smallest zoom (0.25 floor,
-     MIN_ZOOM_FLOOR in math.ts) and the spacer clips the rest. */
+     it is tall enough to fill the viewport at the 0.25 zoom floor and the
+     spacer clips the rest. */
   will-change: transform;
   position: relative;
   left: var(--canvas-margin-x, 0px);
   top: var(--canvas-margin-y, 0px);
-  width: calc(var(--canvas-content-width, 1272) * 1px);
+  width: calc(var(--canvas-content-width) * 1px);
   transform-origin: 0 0;
   transform: scale(var(--canvas-zoom));
 }
-/* Around the canvas, where nothing can be placed: a border a screen pixel
-   wide at any zoom, then the theme's primary color as far as a 2400px box
-   shows at the 0.25 zoom floor (the spacer clips the rest). Both are drawn
-   outside the canvas's own box, so neither shows until an edge is in view.
-   Its own layer, painted last: the border's width follows the zoom, and
-   repainting it must not re-raster the canvas. A drawing (centered) has its
-   own surround. */
+/* Outside the canvas: a 1 screen px border, then the primary color out to
+   what a 2400px box shows at the 0.25 zoom floor. Its own layer, so its
+   zoom-dependent repaint doesn't re-raster the canvas. */
 .canvasZoomSpacer:not(.canvasZoomCentered) > .canvasZoomLayer::after {
   --canvas-zoom: inherit;
   content: "";
@@ -1401,11 +1394,8 @@ body > iframe[src*="js.stripe.com"] {
     0 0 0 calc(1px / var(--canvas-zoom)) var(--color-border),
     0 0 0 9600px var(--color-primary);
 }
-/* Locked (lockViewerZoom): nothing scrolls sideways, since the spacer is as
-   wide as the box and clips the layer. The layer is shifted by the offset a
-   scroll to the anchored mobile area (--canvas-mobile-left, canvas px) would
-   have landed on, capped like one at the content's right edge, so the
-   server-rendered HTML is already framed. */
+/* Locked: the spacer is as wide as the box, so nothing scrolls sideways; the
+   layer is shifted to where a scroll to --canvas-mobile-left would land. */
 .canvasZoomSpacer.canvasZoomLocked {
   width: 100%;
 }
@@ -1417,7 +1407,7 @@ body > iframe[src*="js.stripe.com"] {
             var(--canvas-mobile-left, 0) * var(--canvas-zoom) * 1px,
             max(
               0px,
-              var(--canvas-content-width, 1272) * var(--canvas-zoom) * 1px -
+              var(--canvas-content-width) * var(--canvas-zoom) * 1px -
                 100cqw
             )
           )
@@ -1433,9 +1423,7 @@ body > iframe[src*="js.stripe.com"] {
       tan(
         atan2(
           100cqw,
-          calc(
-            var(--canvas-mobile-area, var(--canvas-content-width, 1272)) * 1px
-          )
+          calc(var(--canvas-mobile-area, var(--canvas-content-width)) * 1px)
         )
       )
     );
@@ -1443,10 +1431,7 @@ body > iframe[src*="js.stripe.com"] {
   .canvasZoomLayer {
     min-height: calc(
       100cqh /
-        min(
-          0.25,
-          tan(atan2(100cqw, calc(var(--canvas-content-width, 1272) * 1px)))
-        )
+        min(0.25, tan(atan2(100cqw, calc(var(--canvas-content-width) * 1px))))
     );
   }
 }
