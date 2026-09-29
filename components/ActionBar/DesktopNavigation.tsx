@@ -213,18 +213,24 @@ export const PageTitle = (props: {
   pageTitle: string;
   showHomeButton?: boolean;
 }) => {
+  let pathname = usePathname();
   return (
     <div className="flex gap-2 w-full px-1 py-0.5 items-center ">
-      {props.showHomeButton && (
-        <SpeedyLink
-          eager
-          href={"/home"}
-          aria-label="Home"
-          className="flex items-center shrink-0 text-tertiary hover:text-accent-contrast"
-        >
-          <HomeTiny />
-        </SpeedyLink>
-      )}
+      {props.showHomeButton &&
+        (pathname === "/home" ? (
+          <div className="flex items-center shrink-0 text-tertiary">
+            <HomeTiny />
+          </div>
+        ) : (
+          <SpeedyLink
+            eager
+            href={"/home"}
+            aria-label="Home"
+            className="flex items-center shrink-0 text-tertiary hover:text-accent-contrast"
+          >
+            <HomeTiny />
+          </SpeedyLink>
+        ))}
       <div className="truncate min-w-0 text-tertiary uppercase text-sm font-bold">
         {props.pageTitle}
       </div>

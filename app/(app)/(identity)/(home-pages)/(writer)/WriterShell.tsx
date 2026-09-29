@@ -13,6 +13,7 @@ const PAGE_META = [
     prefix: "/home",
     id: "home",
     title: "Home",
+    showHomeButton: true,
   },
   {
     prefix: "/looseleafs",
