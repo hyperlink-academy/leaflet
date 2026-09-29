@@ -26,6 +26,7 @@ import { Popover } from "./Popover";
 import { Separator } from "./Layout";
 import { CommentTiny } from "./Icons/CommentTiny";
 import { AddTags, PublicationMetadata } from "./Pages/PublicationMetadata";
+import { useCardBorderHidden } from "./Pages/useCardBorderHidden";
 import {
   useLeafletPublicationData,
   useLeafletPublicationPage,
@@ -94,6 +95,9 @@ export function Canvas(props: {
   let mobileArea = mobileViewArea(
     useEntity(props.entityID, "canvas/mobile-view")?.data.value,
   );
+  // PageWrapper's negative margin starts a borderless card 12px above the
+  // page options; a page-scrolled canvas has none to clear.
+  let clearPageOptions = useCardBorderHidden() && !props.pageScroll;
 
   return (
     <CanvasZoomProvider
@@ -110,7 +114,9 @@ export function Canvas(props: {
         {/* A drawing is a picture in its parent page, with no phone framing
             or post metadata of its own. */}
         {!size.fixed && (
-          <div className="absolute top-6 right-3 sm:top-4 sm:right-4 z-20 flex flex-row gap-2 items-start">
+          <div
+            className={`absolute ${clearPageOptions ? "top-9" : "top-6"} right-3 sm:top-4 sm:right-4 z-20 flex flex-row gap-2 items-start`}
+          >
             {!props.preview && entity_set.permissions.write && (
               <MobileViewToggle entityID={props.entityID} />
             )}

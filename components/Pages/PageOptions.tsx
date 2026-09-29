@@ -6,7 +6,6 @@ import { useEntitySetContext } from "../EntitySetProvider";
 
 import { useReplicache } from "src/replicache";
 
-import { Media } from "../Media";
 import { MenuItem, Menu } from "../Menu";
 import { PageThemeSetter } from "../ThemeManager/PageThemeSetter";
 import { PageShareMenu } from "./PageShareMenu";
@@ -88,24 +87,22 @@ export const PageOptions = (props: {
 const UndoButtons = () => {
   let undoState = useUndoState();
   let { undoManager } = useReplicache();
+  if (!undoState.canUndo) return null;
   return (
-    <Media mobile>
-      {undoState.canUndo && (
-        <div className="gap-1 flex sm:flex-col">
-          <PageOptionButton secondary onClick={() => undoManager.undo()}>
-            <UndoTiny />
-          </PageOptionButton>
+    // Touch devices have no undo shortcut, however wide they are.
+    <div className="gap-1 flex sm:flex-col sm:pointer-fine:hidden">
+      <PageOptionButton secondary onClick={() => undoManager.undo()}>
+        <UndoTiny />
+      </PageOptionButton>
 
-          <PageOptionButton
-            secondary
-            onClick={() => undoManager.redo()}
-            disabled={!undoState.canRedo}
-          >
-            <RedoTiny />
-          </PageOptionButton>
-        </div>
-      )}
-    </Media>
+      <PageOptionButton
+        secondary
+        onClick={() => undoManager.redo()}
+        disabled={!undoState.canRedo}
+      >
+        <RedoTiny />
+      </PageOptionButton>
+    </div>
   );
 };
 
