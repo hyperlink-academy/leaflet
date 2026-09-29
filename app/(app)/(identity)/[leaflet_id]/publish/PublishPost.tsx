@@ -23,6 +23,13 @@ import { useSubscribe } from "src/replicache/useSubscribe";
 import { editorStateToFacetedText } from "components/BlueskyPostComposer/ProsemirrorEditor";
 import { EditorState } from "prosemirror-state";
 import { TagSelector } from "components/Tags";
+import { ToggleGroup } from "components/ToggleGroup";
+import {
+  onSubscribeTrigger,
+  type EmailPostSummary,
+} from "src/emailPosts/types";
+import type { EmailOnlyIneligibleReason } from "src/emailPosts/eligibility";
+import { EmailOnlyForm } from "./EmailOnlyForm";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { PubIcon } from "components/ActionBar/Publications";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
@@ -61,16 +68,33 @@ type Props = {
   subscriberCount?: number;
   entitiesToDelete?: string[];
   hasDraft: boolean;
+  // Set when this draft can be sent as an email-only post, or already is one.
+  emailOnly?: {
+    existing: EmailPostSummary | null;
+    ineligibleReason: EmailOnlyIneligibleReason | null;
+    membershipsEnabled: boolean;
+  };
 };
 
+type PublishState =
+  | { state: "default" }
+  | { state: "success"; post_url: string }
+  | { state: "email"; email: EmailPostSummary };
+
 export function PublishPost(props: Props) {
-  let [publishState, setPublishState] = useState<
-    { state: "default" } | { state: "success"; post_url: string }
-  >({ state: "default" });
+  let [publishState, setPublishState] = useState<PublishState>({
+    state: "default",
+  });
   return (
     <div className="publishPage w-screen min-h-screen bg-bg-page flex justify-center text-primary">
       {publishState.state === "default" ? (
         <PublishPostForm setPublishState={setPublishState} {...props} />
+      ) : publishState.state === "email" ? (
+        <EmailPostSuccess
+          email={publishState.email}
+          publication_uri={props.publication_uri}
+          record={props.pubRecord}
+        />
       ) : (
         <PublishPostSuccess
           record={props.pubRecord}
@@ -85,7 +109,7 @@ export function PublishPost(props: Props) {
 
 const PublishPostForm = (
   props: {
-    setPublishState: (s: { state: "success"; post_url: string }) => void;
+    setPublishState: (s: PublishState) => void;
   } & Props,
 ) => {
   let editorStateRef = useRef<EditorState | null>(null);
@@ -97,6 +121,15 @@ const PublishPostForm = (
     "post-details",
   );
   let [charCount, setCharCount] = useState(0);
+  let [existingEmail, setExistingEmail] = useState(
+    props.emailOnly?.existing ?? null,
+  );
+  let [mode, setMode] = useLocalStorageState<"publish" | "email">(
+    `${publishKey}:mode`,
+    "publish",
+  );
+  // Once a draft is an email-only post, only its email options apply.
+  let emailMode = !!existingEmail || (!!props.emailOnly && mode === "email");
   let [shareState, setShareState, clearShareState] =
     useLocalStorageState<ShareState>(`${publishKey}:share`, {
       bluesky: true,
@@ -284,8 +317,54 @@ const PublishPostForm = (
     props.setPublishState({ state: "success", post_url });
   }
 
+  let modeToggle = props.emailOnly && !existingEmail && (
+    <ToggleGroup
+      fullWidth
+      className="text-base! p-1.5!"
+      optionClassName="py-1"
+      value={emailMode ? "email" : "publish"}
+      onChange={setMode}
+      options={[
+        { value: "publish", label: "Publish" },
+        { value: "email", label: "Send as email" },
+      ]}
+    />
+  );
+
+  if (emailMode && props.emailOnly && props.publication_uri)
+    return (
+      <div className="flex flex-col gap-4 w-[640px] max-w-full sm:px-4 px-3 sm:py-8 py-4 text-primary">
+        {modeToggle}
+        <div className="frosted-container flex flex-col gap-3 sm:p-3 p-4">
+          <h2>Send as Email</h2>
+          <PublishingTo
+            label="Sending from"
+            publication_uri={props.publication_uri}
+            record={props.pubRecord}
+          />
+          <hr className="border-border-light" />
+          <EmailOnlyForm
+            leaflet_id={props.leaflet_id}
+            root_entity={props.root_entity}
+            publication_uri={props.publication_uri}
+            title={title}
+            description={description}
+            subscriberCount={props.subscriberCount}
+            membershipsEnabled={props.emailOnly.membershipsEnabled}
+            ineligibleReason={props.emailOnly.ineligibleReason}
+            existing={existingEmail}
+            onSaved={(email) =>
+              props.setPublishState({ state: "email", email })
+            }
+            onCanceled={() => setExistingEmail(null)}
+          />
+        </div>
+      </div>
+    );
+
   return (
     <div className="flex flex-col gap-4 w-[640px] max-w-full sm:px-4 px-3 sm:py-8 py-4 text-primary">
+      {modeToggle}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -600,11 +679,12 @@ const BackdateOptions = (props: {
 const PublishingTo = (props: {
   publication_uri?: string;
   record?: NormalizedPublication | null;
+  label?: string;
 }) => {
   if (props.publication_uri && props.record) {
     return (
       <div className="flex  justify-between gap-4">
-        <div className="text-tertiary">Publishing to</div>
+        <div className="text-tertiary">{props.label ?? "Publishing to"}</div>
         <div className="flex gap-2 items-center ">
           <div className="font-bold text-secondary">{props.record.name}</div>
           <PubIcon
@@ -661,6 +741,46 @@ const PublishPostSuccess = (props: {
         </Link>
       )}
       <a href={props.post_url}>See published post</a>
+    </div>
+  );
+};
+
+const EmailPostSuccess = (props: {
+  email: EmailPostSummary;
+  publication_uri?: string;
+  record: Props["pubRecord"];
+}) => {
+  let uri = props.publication_uri ? new AtUri(props.publication_uri) : null;
+  let { email } = props;
+  let sendAt = useLocalizedDate(email.send_at ?? "", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  let [heading, detail] =
+    email.send_mode === "on_subscribe"
+      ? [
+          "Email turned on!",
+          `Each reader will get it ${onSubscribeTrigger(email.audience)}.`,
+        ]
+      : email.send_at && new Date(email.send_at).getTime() > Date.now()
+        ? ["Email scheduled!", `It will go out ${sendAt}.`]
+        : ["Email on its way!", "It's sending to your subscribers now."];
+  return (
+    <div className="frosted-container p-4 m-3 sm:m-4 flex flex-col gap-1 justify-center text-center w-fit h-fit mx-auto place-self-center">
+      <h2 className="pt-2">{heading}</h2>
+      <p className="text-secondary">{detail}</p>
+      {uri && props.record && (
+        <Link
+          className="hover:no-underline! font-bold place-self-center pt-2"
+          href={`/lish/${uri.host}/${encodeURIComponent(props.record.name || "")}/dashboard/emails`}
+        >
+          <ButtonPrimary>See your Emails</ButtonPrimary>
+        </Link>
+      )}
+      <Link href={`/${email.leaflet}`}>Back to the post</Link>
     </div>
   );
 };

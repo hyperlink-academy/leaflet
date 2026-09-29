@@ -5,6 +5,7 @@ import {
   recordEmailSubscription,
 } from "src/subscriptions/email";
 import type { SubscriptionSource } from "src/subscriptionSource";
+import { queueOnSubscribeEmail } from "src/emailPosts/onSubscribe";
 
 // A member is also a subscriber. Called from the inline join flow and from the
 // connect-events webhook's activation paths (requires_action joins only become
@@ -58,6 +59,8 @@ export async function ensureSubscriberRecordsForMembership(
     }
     if (!recorded && identity.atp_did)
       await publishAtprotoSubscriptionForDid(identity.atp_did, publicationUri);
+    // A reader already subscribed for free only becomes paid-audience here.
+    if (!recorded) await queueOnSubscribeEmail(publicationUri, identity.id);
   } catch (e) {
     console.error(
       "[ensureSubscriberRecordsForMembership] mirroring failed:",

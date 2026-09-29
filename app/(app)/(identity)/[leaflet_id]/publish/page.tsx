@@ -6,6 +6,11 @@ import { getIdentityData } from "actions/getIdentityData";
 import { AtpAgent } from "@atproto/api";
 import { ReplicacheProvider } from "src/replicache";
 import { isUuid } from "src/utils/isUuid";
+import { emailOnlyIneligibleReason } from "src/emailPosts/eligibility";
+import {
+  EMAIL_POST_SUMMARY_COLUMNS,
+  type EmailPostSummary,
+} from "src/emailPosts/types";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -34,7 +39,8 @@ export default async function PublishLeafletPage(props: Props) {
          publications(
            *,
            documents_in_publications(count),
-           publication_newsletter_settings(enabled)
+           publication_newsletter_settings(enabled),
+           publication_membership_settings(enabled)
          ),
        documents(*)),
        leaflets_to_documents(
@@ -56,7 +62,7 @@ export default async function PublishLeafletPage(props: Props) {
       let { data: pubData } = await supabaseServerClient
         .from("publications")
         .select(
-          "*, documents_in_publications(count), publication_newsletter_settings(enabled)",
+          "*, documents_in_publications(count), publication_newsletter_settings(enabled), publication_membership_settings(enabled)",
         )
         .eq("uri", decodeURIComponent(pub_uri))
         .single();
@@ -135,6 +141,15 @@ export default async function PublishLeafletPage(props: Props) {
     data.leaflets_in_publications.length > 0 ||
     data.leaflets_to_documents.length > 0;
 
+  let emailOnly = await loadEmailOnlyOptions({
+    leaflet_id,
+    publication_uri: publication?.uri,
+    newsletterEnabled,
+    published: !!data.leaflets_in_publications[0]?.doc,
+    membershipsEnabled:
+      !!publication?.publication_membership_settings?.enabled,
+  });
+
   return (
     <ReplicacheProvider
       rootEntity={rootEntity}
@@ -157,7 +172,33 @@ export default async function PublishLeafletPage(props: Props) {
         subscriberCount={subscriberCount}
         entitiesToDelete={entitiesToDelete}
         hasDraft={hasDraft}
+        emailOnly={emailOnly}
       />
     </ReplicacheProvider>
   );
+}
+
+// Email-only sending applies to unpublished drafts in a publication with email
+// mode on — or to a draft that's already an email-only post, whatever changed
+// since.
+async function loadEmailOnlyOptions(args: {
+  leaflet_id: string;
+  publication_uri: string | undefined;
+  newsletterEnabled: boolean;
+  published: boolean;
+  membershipsEnabled: boolean;
+}) {
+  if (!args.publication_uri) return undefined;
+  let { data: existing } = await supabaseServerClient
+    .from("publication_email_posts")
+    .select(EMAIL_POST_SUMMARY_COLUMNS)
+    .eq("leaflet", args.leaflet_id)
+    .maybeSingle();
+  if (!existing && (!args.newsletterEnabled || args.published))
+    return undefined;
+  return {
+    existing: existing as EmailPostSummary | null,
+    ineligibleReason: await emailOnlyIneligibleReason(args.publication_uri),
+    membershipsEnabled: args.membershipsEnabled,
+  };
 }

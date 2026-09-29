@@ -1,53 +1,19 @@
-import { render } from "@react-email/render";
 import { AtUri } from "@atproto/syntax";
 import { inngest, events } from "../client";
 import { supabaseServerClient } from "supabase/serverClient";
-import { PostEmail, type PostEmailPage } from "emails/post";
-import { emailPropsFromPublication } from "emails/fromPublication";
 import {
   getDocumentPages,
   normalizeDocumentRecord,
-  normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
+import { getBylineDids, hasExplicitByline } from "src/utils/byline";
 import {
-  buildFromHeader,
-  resolveFromDomain,
-  resolveReplyToEmail,
-} from "src/utils/newsletterSender";
-import {
-  PubLeafletPagesCanvas,
-  PubLeafletPagesLinearDocument,
-} from "lexicons/api";
-import type { AppBskyFeedDefs } from "@atproto/api";
-import { hydrateBskyPostBlocks } from "src/utils/fetchBskyPosts";
-import { manageSubscriptionUrl } from "src/subscriptions/manageUrl";
-import { fetchStandardSiteBlockData } from "src/utils/fetchStandardSiteBlockData";
-import { getProfiles } from "src/identity";
-import {
-  getBylineDids,
-  hasExplicitByline,
-  toBylineProfiles,
-  formatBylineProfiles,
-} from "src/utils/byline";
-import type { Json } from "supabase/database.types";
-import {
-  getMembersDelimiterGatePolicy,
-  isEntitledToGatedPost,
-  membershipUnlocksGatedPost,
-  pageHasMembersDelimiter,
-  truncateBlocksAtMembersDelimiter,
-} from "src/membership";
-
-// Postmark's /email/batch caps a call at 500 messages AND 50 MB of payload;
-// long posts hit the byte cap first, so batches are sized by both.
-const BATCH_SIZE = 500;
-const MAX_BATCH_BYTES = 40 * 1024 * 1024;
-// Distinctive URL used once at render-time and string-replaced per recipient
-// so we only pay the React Email render cost once per batch.
-const UNSUB_PLACEHOLDER =
-  "https://placeholder.leaflet.pub/unsubscribe-token-replace-me";
-const MANAGE_PLACEHOLDER =
-  "https://placeholder.leaflet.pub/manage-subscription-replace-me";
+  BROADCAST_PUBLICATION_COLUMNS,
+  broadcastPostEmail,
+  emailAuthorName,
+  emailBodyFromPages,
+  loadUnsentSubscribers,
+  resolveBroadcastSender,
+} from "src/emailPosts/broadcast";
 
 export const send_post_broadcast = inngest.createFunction(
   {
@@ -77,9 +43,7 @@ export const send_post_broadcast = inngest.createFunction(
       const [pubRes, docRes] = await Promise.all([
         supabaseServerClient
           .from("publications")
-          .select(
-            "record, publication_domains(domain), publication_newsletter_settings(enabled, reply_to_email, reply_to_verified_at), publication_membership_settings(enabled), publication_membership_tiers(id, monthly_price_cents, active)",
-          )
+          .select(BROADCAST_PUBLICATION_COLUMNS)
           .eq("uri", publication_uri)
           .maybeSingle(),
         supabaseServerClient
@@ -94,68 +58,43 @@ export const send_post_broadcast = inngest.createFunction(
       };
     });
 
-    const settings = loaded.pub?.publication_newsletter_settings;
-    if (!loaded.pub || !settings?.enabled) {
-      await step.run("mark-failed-not-enabled", async () => {
+    const sender = resolveBroadcastSender(loaded.pub);
+    if (!sender.ok) {
+      await step.run("mark-failed", async () => {
         await supabaseServerClient
           .from("publication_post_sends")
           .update({
             status: "failed",
-            error: "newsletter_not_enabled",
+            error: sender.error,
             completed_at: new Date().toISOString(),
           })
           .eq("publication", publication_uri)
           .eq("document", document_uri);
       });
-      return { aborted: "newsletter_not_enabled" };
+      return { aborted: sender.error };
     }
 
-    const pubRecord = normalizePublicationRecord(loaded.pub.record);
+    const { pubRecord, pubProps } = sender.value;
     const docRecord = normalizeDocumentRecord(loaded.doc?.data, document_uri);
-    const pubProps = emailPropsFromPublication(pubRecord);
     const postTitle = docRecord?.title || "(untitled)";
     const postDescription = docRecord?.description;
     const postUrl =
       pubRecord?.url && docRecord?.path
         ? `${pubRecord.url.replace(/\/$/, "")}${docRecord.path}`
         : pubProps.publicationUrl;
-    const fromDomain = resolveFromDomain(
-      pubRecord?.url,
-      loaded.pub.publication_domains?.[0]?.domain,
-    );
-    if (!fromDomain) {
-      await step.run("mark-failed-no-from-address", async () => {
-        await supabaseServerClient
-          .from("publication_post_sends")
-          .update({
-            status: "failed",
-            error: "no_from_address",
-            completed_at: new Date().toISOString(),
-          })
-          .eq("publication", publication_uri)
-          .eq("document", document_uri);
-      });
-      return { aborted: "no_from_address" };
-    }
-    const fromHeader = buildFromHeader(pubRecord?.name, fromDomain);
-    const replyToEmail = resolveReplyToEmail(settings);
-    const did = authorDid;
 
     // Byline: render contributor names when the doc has an explicit byline,
     // otherwise fall back to the single document author (the URI host DID).
-    const hasContributors = hasExplicitByline(docRecord, authorDid);
-    const bylineDids = getBylineDids(docRecord, authorDid);
-    const bylineProfiles = await step.run("load-byline-profiles", async () =>
-      toBylineProfiles(bylineDids, await getProfiles(bylineDids)),
-    );
-    let authorName: string | undefined;
-    if (hasContributors) {
-      authorName = formatBylineProfiles(bylineProfiles);
-    } else {
-      // Preserve previous behavior exactly for the single-author default:
-      // use the author's handle (not displayName).
-      authorName = bylineProfiles[0]?.handle ?? undefined;
-    }
+    // A step result of undefined comes back as null.
+    const authorName =
+      (await step.run("load-byline", () =>
+        emailAuthorName(
+          authorDid,
+          hasExplicitByline(docRecord, authorDid)
+            ? getBylineDids(docRecord, authorDid)
+            : [],
+        ),
+      )) ?? undefined;
     const publishedAtLabel = docRecord?.publishedAt
       ? new Date(docRecord.publishedAt).toLocaleDateString("en-US", {
           month: "short",
@@ -164,83 +103,15 @@ export const send_post_broadcast = inngest.createFunction(
         })
       : undefined;
 
-    // The first page is the document body. Canvas pages don't map to a linear
-    // email body — the email renders an empty postContent section and falls
-    // back to the "See Full Post" link.
-    const docPages = docRecord ? (getDocumentPages(docRecord) ?? []) : [];
-    const firstPage = docPages[0];
-    let blocks: PubLeafletPagesLinearDocument.Block[] =
-      firstPage?.$type === "pub.leaflet.pages.linearDocument"
-        ? (firstPage as PubLeafletPagesLinearDocument.Main).blocks ?? []
-        : [];
-    // Pages without an id can't be the target of a page block.
-    const pages = docPages.filter(
-      (p): p is PostEmailPage =>
-        (PubLeafletPagesLinearDocument.isMain(p) ||
-          PubLeafletPagesCanvas.isMain(p)) &&
-        !!p.id,
+    const { blocks, pages } = emailBodyFromPages(
+      docRecord ? getDocumentPages(docRecord) ?? [] : [],
     );
 
-    const pubTiers = loaded.pub.publication_membership_tiers ?? [];
-    const hasDelimiter =
-      !!loaded.pub.publication_membership_settings?.enabled &&
-      pageHasMembersDelimiter({ blocks });
-    const gatePolicy = hasDelimiter
-      ? getMembersDelimiterGatePolicy(blocks)
-      : null;
-    // Every recipient is already a subscriber, so a subscriber gate can send
-    // the full body to the whole list. Invalid policies remain gated.
-    const gated = hasDelimiter && gatePolicy?.audience !== "subscribers";
-    const previewBlocks = gated
-      ? truncateBlocksAtMembersDelimiter(blocks)
-      : blocks;
-
-    const activeTierPrices = pubTiers
-      .filter(
-        (tier) =>
-          tier.active &&
-          membershipUnlocksGatedPost(
-            { kind: "paid", tierId: tier.id },
-            gatePolicy,
-          ),
-      )
-      .map((t) => t.monthly_price_cents);
-    const membersUpsell = {
-      joinUrl: `${pubProps.publicationUrl.replace(/\/$/, "")}/join`,
-      cheapestMonthlyCents: activeTierPrices.length
-        ? Math.min(...activeTierPrices)
-        : null,
-    };
-
-    // Best-effort: hydrateBskyPostBlocks returns {} on failure, so bskyPost
-    // blocks degrade to the "not supported" card instead of failing the send.
-    const bskyPosts = (await step.run("hydrate-bsky-posts", async () =>
-      hydrateBskyPostBlocks(blocks),
-    )) as Record<string, AppBskyFeedDefs.PostView>;
-
-    const { standardSitePosts, standardSitePublications } = (await step.run(
-      "load-standard-site-block-data",
-      async () => fetchStandardSiteBlockData(blocks),
-    )) as Awaited<ReturnType<typeof fetchStandardSiteBlockData>>;
-
     const subscribers = await step.run("snapshot-subscribers", async () => {
-      // A retried send (e.g. after a partial batch failure) must not email
-      // anyone who already got this post.
-      const [{ data }, { data: alreadySent }] = await Promise.all([
-        supabaseServerClient
-          .from("publication_email_subscribers")
-          .select("id, email, unsubscribe_token, identity_id")
-          .eq("publication", publication_uri)
-          .eq("state", "confirmed"),
-        supabaseServerClient
-          .from("publication_email_subscriber_events")
-          .select("subscriber")
-          .eq("publication", publication_uri)
-          .eq("event_type", "post_sent")
-          .eq("metadata->>document", document_uri),
-      ]);
-      const sentTo = new Set((alreadySent ?? []).map((e) => e.subscriber));
-      const subs = (data ?? []).filter((s) => !sentTo.has(s.id));
+      const subs = await loadUnsentSubscribers(publication_uri, {
+        key: "document",
+        value: document_uri,
+      });
       await supabaseServerClient
         .from("publication_post_sends")
         .update({
@@ -268,260 +139,20 @@ export const send_post_broadcast = inngest.createFunction(
       return { sent: 0 };
     }
 
-    const assetsBaseUrl = (
-      process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub"
-    ).replace(/\/$/, "");
-
-    // For a gated post, collect who is entitled to the full body: active
-    // members plus the publication owner and confirmed contributors. Email
-    // subscriptions and memberships are both keyed to identities, but a
-    // subscriber row can predate the reader's identity link, so match on
-    // identity id or on the identity's email address.
-    const entitled = !gated
-      ? { identityIds: [] as string[], emails: [] as string[] }
-      : await step.run("load-entitled-members", async () => {
-          const identityIds = new Set<string>();
-          const emails = new Set<string>();
-          const [{ data: members }, { data: contributors }] = await Promise.all(
-            [
-              supabaseServerClient
-                .from("publication_memberships")
-                .select(
-                  "identity_id, status, current_period_end, tier, identities(email)",
-                )
-                .eq("publication", publication_uri),
-              supabaseServerClient
-                .from("publication_contributors")
-                .select("contributor_did")
-                .eq("publication", publication_uri)
-                .eq("confirmed", true),
-            ],
-          );
-          for (const m of members ?? []) {
-            const entitledMember = isEntitledToGatedPost({
-              viewerDid: null,
-              ownerDid: null,
-              contributors: [],
-              paidMembership: m,
-              gatePolicy,
-            });
-            if (!entitledMember) continue;
-            identityIds.add(m.identity_id);
-            if (m.identities?.email) {
-              emails.add(m.identities.email.toLowerCase());
-            }
-          }
-          const dids = [
-            authorDid,
-            ...(contributors ?? []).map((c) => c.contributor_did),
-          ];
-          const { data: identities } = await supabaseServerClient
-            .from("identities")
-            .select("id, email")
-            .in("atp_did", dids);
-          for (const i of identities ?? []) {
-            identityIds.add(i.id);
-            if (i.email) emails.add(i.email.toLowerCase());
-          }
-          return {
-            identityIds: [...identityIds],
-            emails: [...emails],
-          };
-        });
-    const entitledIdentityIds = new Set(entitled.identityIds);
-    const entitledEmails = new Set(entitled.emails);
-    const subscriberIsEntitled = (s: (typeof subscribers)[number]) =>
-      (!!s.identity_id && entitledIdentityIds.has(s.identity_id)) ||
-      entitledEmails.has(s.email.toLowerCase());
-
-    const groups = (
-      gated
-        ? [
-            {
-              key: "preview",
-              blocks: previewBlocks,
-              upsell: true,
-              recipients: subscribers.filter((s) => !subscriberIsEntitled(s)),
-            },
-            {
-              key: "full",
-              // Members get everything. The delimiter stays in the array —
-              // the email renders it as nothing — so later blocks keep the
-              // record indices their #index anchors are built from.
-              blocks,
-              upsell: false,
-              recipients: subscribers.filter(subscriberIsEntitled),
-            },
-          ]
-        : [
-            {
-              key: "all",
-              blocks: previewBlocks,
-              upsell: false,
-              recipients: subscribers,
-            },
-          ]
-    ).filter((g) => g.recipients.length > 0);
-
-    const buildMessage = (
-      sub: (typeof subscribers)[number],
-      htmlTemplate: string,
-    ) => {
-      const unsubscribeUrl = `${assetsBaseUrl}/emails/unsubscribe?unsubscribe_token=${encodeURIComponent(
-        sub.unsubscribe_token,
-      )}`;
-      const manageUrl = manageSubscriptionUrl({
-        baseUrl: assetsBaseUrl,
-        email: sub.email,
-        publicationUrl: pubProps.publicationUrl,
-      });
-      const htmlBody = htmlTemplate
-        .split(UNSUB_PLACEHOLDER)
-        .join(unsubscribeUrl)
-        .split(MANAGE_PLACEHOLDER)
-        .join(manageUrl.replace(/&/g, "&amp;"));
-      return {
-        MessageStream: "broadcast",
-        From: fromHeader,
-        ReplyTo: replyToEmail,
-        To: sub.email,
-        Subject: postTitle,
-        HtmlBody: htmlBody,
-        Headers: [
-          {
-            Name: "List-Unsubscribe-Post",
-            Value: "List-Unsubscribe=One-Click",
-          },
-          {
-            Name: "List-Unsubscribe",
-            Value: `<${unsubscribeUrl}>`,
-          },
-        ],
-        Metadata: {
-          subscriber_id: sub.id,
-          publication: publication_uri,
-        },
-      };
-    };
-
-    for (const group of groups) {
-      // Render once per group with a placeholder, then string-replace per
-      // recipient.
-      const htmlTemplate = await step.run(
-        `render-template-${group.key}`,
-        async () => {
-          return render(
-            PostEmail({
-              ...pubProps,
-              postTitle,
-              postDescription,
-              postUrl,
-              authorName,
-              publishedAtLabel,
-              blocks: group.blocks,
-              pages,
-              bskyPosts,
-              standardSitePosts,
-              standardSitePublications,
-              currentPublicationUri: publication_uri,
-              did,
-              assetsBaseUrl: `${assetsBaseUrl}/`,
-              unsubscribeUrl: UNSUB_PLACEHOLDER,
-              manageUrl: MANAGE_PLACEHOLDER,
-              membersUpsell: group.upsell ? membersUpsell : undefined,
-            }),
-          );
-        },
-      );
-
-      const bytesPerMessage = Buffer.byteLength(
-        JSON.stringify(buildMessage(group.recipients[0], htmlTemplate)),
-      );
-      const batchSize = Math.max(
-        1,
-        Math.min(BATCH_SIZE, Math.floor(MAX_BATCH_BYTES / bytesPerMessage)),
-      );
-      const chunks: (typeof subscribers)[] = [];
-      for (let i = 0; i < group.recipients.length; i += batchSize) {
-        chunks.push(group.recipients.slice(i, i + batchSize));
-      }
-
-      for (let ci = 0; ci < chunks.length; ci++) {
-        const chunk = chunks[ci];
-        const batchResults = await step.run(
-          `send-batch-${group.key}-${ci}`,
-          async (): Promise<
-            {
-              subscriber_id: string;
-              ok: boolean;
-              code: number;
-              message: string;
-            }[]
-          > => {
-            const messages = chunk.map((sub) =>
-              buildMessage(sub, htmlTemplate),
-            );
-
-            const res = await fetch("https://api.postmarkapp.com/email/batch", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Postmark-Server-Token": process.env.POSTMARK_API_KEY!,
-              },
-              body: JSON.stringify(messages),
-            });
-            if (!res.ok) {
-              const body = await res.text().catch(() => "");
-              // Throwing triggers Inngest step-retry for transport failures.
-              throw new Error(
-                `Postmark /email/batch ${res.status}: ${body.slice(0, 500)}`,
-              );
-            }
-            const raw = (await res.json()) as Array<{
-              ErrorCode: number;
-              Message: string;
-            }>;
-            return chunk.map((sub, i) => ({
-              subscriber_id: sub.id,
-              ok: raw[i]?.ErrorCode === 0,
-              code: raw[i]?.ErrorCode ?? -1,
-              message: raw[i]?.Message ?? "no response",
-            }));
-          },
-        );
-
-        await step.run(`log-events-${group.key}-${ci}`, async () => {
-          const rows = batchResults.map((r) => ({
-            subscriber: r.subscriber_id,
-            publication: publication_uri,
-            event_type: r.ok ? "post_sent" : "send_failed",
-            metadata: (r.ok
-              ? { document: document_uri }
-              : {
-                  document: document_uri,
-                  code: r.code,
-                  message: r.message,
-                }) as unknown as Json,
-          }));
-          // The snapshot step dedupes retries on these rows, so a lost insert
-          // would re-email the whole batch on a resend. Throw so Inngest
-          // retries the (atomic) insert and surfaces exhaustion in onFailure.
-          const { error } = await supabaseServerClient
-            .from("publication_email_subscriber_events")
-            .insert(rows);
-          if (error) {
-            throw new Error(
-              `event insert failed for batch ${group.key}-${ci}: ${error.message}`,
-            );
-          }
-        });
-
-        // Partial per-recipient failures (ErrorCode !== 0) don't count as
-        // a terminal failure — the row still transitions to `sent`. Per-recipient
-        // failure signal lives in the event log. Transport-level batch failures
-        // throw above and exhaust retries into the function's onFailure handler.
-      }
-    }
+    await broadcastPostEmail((id, fn) => step.run(id, fn) as Promise<any>, {
+      publicationUri: publication_uri,
+      authorDid,
+      sender: sender.value,
+      postTitle,
+      postDescription,
+      postUrl,
+      authorName,
+      publishedAtLabel,
+      blocks,
+      pages,
+      recipients: subscribers,
+      eventMetadata: { document: document_uri },
+    });
 
     await step.run("finalize", async () => {
       await supabaseServerClient

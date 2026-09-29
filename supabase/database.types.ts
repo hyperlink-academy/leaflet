@@ -1296,6 +1296,87 @@ export type Database = {
           },
         ]
       }
+      publication_email_posts: {
+        Row: {
+          audience: string
+          byline_dids: string[]
+          created_at: string
+          created_by: string
+          description: string
+          error: string | null
+          id: string
+          image_paths: string[]
+          leaflet: string
+          pages: Json
+          publication: string
+          revision: number
+          send_at: string | null
+          send_mode: string
+          sent_at: string | null
+          status: string
+          subscriber_count: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: string
+          byline_dids?: string[]
+          created_at?: string
+          created_by: string
+          description?: string
+          error?: string | null
+          id?: string
+          image_paths?: string[]
+          leaflet: string
+          pages: Json
+          publication: string
+          revision?: number
+          send_at?: string | null
+          send_mode: string
+          sent_at?: string | null
+          status: string
+          subscriber_count?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: string
+          byline_dids?: string[]
+          created_at?: string
+          created_by?: string
+          description?: string
+          error?: string | null
+          id?: string
+          image_paths?: string[]
+          leaflet?: string
+          pages?: Json
+          publication?: string
+          revision?: number
+          send_at?: string | null
+          send_mode?: string
+          sent_at?: string | null
+          status?: string
+          subscriber_count?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_email_posts_leaflet_fkey"
+            columns: ["leaflet"]
+            isOneToOne: true
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_email_posts_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       publication_email_subscriber_events: {
         Row: {
           event_type: string

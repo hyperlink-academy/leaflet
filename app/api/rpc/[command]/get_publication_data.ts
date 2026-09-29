@@ -6,6 +6,7 @@ import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { getAuthIdentity } from "src/auth";
 import { ids } from "lexicons/api/lexicons";
 import { LIVE_MEMBERSHIP_STATUSES } from "src/membership";
+import type { EmailPostSummary } from "src/emailPosts/types";
 
 export type GetPublicationDataReturnType = Awaited<
   ReturnType<(typeof get_publication_data)["handler"]>
@@ -62,7 +63,8 @@ export const get_publication_data = makeRoute({
          )
         ),
         publication_contributors(contributor_did, confirmed, created_at),
-        publication_pages(*)`,
+        publication_pages(*),
+        publication_email_posts(id, leaflet, title, description, send_mode, send_at, audience, status, subscriber_count, sent_at, error, updated_at)`,
         )
         .or(
           `name.eq."${publication_name}", uri.eq."${pubLeafletUri}", uri.eq."${siteStandardUri}"`,
@@ -90,7 +92,14 @@ export const get_publication_data = makeRoute({
           (c) => c.contributor_did === viewerDid && c.confirmed,
         ));
     if (!canAccess) {
-      return { result: { publication: null, documents: [], drafts: [] } };
+      return {
+        result: {
+          publication: null,
+          documents: [],
+          drafts: [],
+          emailPosts: [] as EmailPostSummary[],
+        },
+      };
     }
 
     // Pre-normalize documents from documents_in_publications
@@ -119,9 +128,14 @@ export const get_publication_data = makeRoute({
       })
       .filter((d): d is NonNullable<typeof d> => d !== null);
 
-    // Pre-filter drafts (leaflets without published documents, not archived)
+    const emailPosts = (publication?.publication_email_posts ??
+      []) as EmailPostSummary[];
+    const emailLeaflets = new Set(emailPosts.map((e) => e.leaflet));
+
+    // Pre-filter drafts (leaflets without published documents or an email-only
+    // send, not archived)
     const drafts = (publication?.leaflets_in_publications || [])
-      .filter((l) => !l.documents)
+      .filter((l) => !l.documents && !emailLeaflets.has(l.leaflet))
       .filter((l) => !(l as { archived?: boolean }).archived)
       .map((l) => ({
         leaflet: l.leaflet,
@@ -136,6 +150,7 @@ export const get_publication_data = makeRoute({
         publication,
         documents,
         drafts,
+        emailPosts,
       },
     };
   },

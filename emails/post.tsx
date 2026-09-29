@@ -76,7 +76,11 @@ type PostEmailProps = {
   publicationUrl: string;
   postTitle: string;
   postDescription?: string;
-  postUrl: string;
+  /**
+   * The post on the web. Omitted for email-only posts, which have no web page:
+   * the title, blocks and footer then render without links out to it.
+   */
+  postUrl?: string;
   authorName?: string;
   publishedAtLabel?: string;
   blocks: PubLeafletPagesLinearDocument.Block[];
@@ -891,46 +895,56 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                                   {byline}
                                 </ReactEmailText>
                               </Column>
-                              <Column style={{ width: 12 }} />
-                              <Column
-                                style={{ width: 16, verticalAlign: "middle" }}
-                              >
-                                <Link
-                                  href={drawerUrl(p.postUrl, "quotes")}
-                                  style={accentLink}
-                                >
-                                  <Img
-                                    width={16}
-                                    height={16}
-                                    src={makeEmailIconUrl(
-                                      p.assetsBaseUrl,
-                                      "quote",
-                                      theme.accentBackground,
-                                    )}
-                                    alt="See quotes"
-                                  />
-                                </Link>
-                              </Column>
-                              <Column style={{ width: 8 }} />
-                              <Column
-                                style={{ width: 16, verticalAlign: "middle" }}
-                              >
-                                <Link
-                                  href={drawerUrl(p.postUrl, "comments")}
-                                  style={accentLink}
-                                >
-                                  <Img
-                                    width={16}
-                                    height={16}
-                                    src={makeEmailIconUrl(
-                                      p.assetsBaseUrl,
-                                      "comment",
-                                      theme.accentBackground,
-                                    )}
-                                    alt="See comments"
-                                  />
-                                </Link>
-                              </Column>
+                              {p.postUrl ? (
+                                <>
+                                  <Column style={{ width: 12 }} />
+                                  <Column
+                                    style={{
+                                      width: 16,
+                                      verticalAlign: "middle",
+                                    }}
+                                  >
+                                    <Link
+                                      href={drawerUrl(p.postUrl, "quotes")}
+                                      style={accentLink}
+                                    >
+                                      <Img
+                                        width={16}
+                                        height={16}
+                                        src={makeEmailIconUrl(
+                                          p.assetsBaseUrl,
+                                          "quote",
+                                          theme.accentBackground,
+                                        )}
+                                        alt="See quotes"
+                                      />
+                                    </Link>
+                                  </Column>
+                                  <Column style={{ width: 8 }} />
+                                  <Column
+                                    style={{
+                                      width: 16,
+                                      verticalAlign: "middle",
+                                    }}
+                                  >
+                                    <Link
+                                      href={drawerUrl(p.postUrl, "comments")}
+                                      style={accentLink}
+                                    >
+                                      <Img
+                                        width={16}
+                                        height={16}
+                                        src={makeEmailIconUrl(
+                                          p.assetsBaseUrl,
+                                          "comment",
+                                          theme.accentBackground,
+                                        )}
+                                        alt="See comments"
+                                      />
+                                    </Link>
+                                  </Column>
+                                </>
+                              ) : null}
                             </Row>
                           </Section>
                         ) : null}
@@ -943,7 +957,7 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                             // Matches the published page's block anchor id
                             // (PostContent renders each root-page block with
                             // id={index}), so emails can deep-link to a block.
-                            blockUrl={`${p.postUrl}#${i}`}
+                            blockUrl={p.postUrl && `${p.postUrl}#${i}`}
                             did={p.did}
                             assetsBaseUrl={p.assetsBaseUrl}
                             theme={theme}
@@ -985,21 +999,23 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                           style={{ width: "100%", minWidth: "100%" }}
                         >
                           <tbody>
-                            <tr>
-                              <td align="center" style={{ paddingTop: 16 }}>
-                                <Link
-                                  href={p.postUrl}
-                                  style={{
-                                    ...accentLink,
-                                    fontWeight: "bold",
-                                    fontSize: 14,
-                                    lineHeight: "20px",
-                                  }}
-                                >
-                                  Read in Browser
-                                </Link>
-                              </td>
-                            </tr>
+                            {p.postUrl ? (
+                              <tr>
+                                <td align="center" style={{ paddingTop: 16 }}>
+                                  <Link
+                                    href={p.postUrl}
+                                    style={{
+                                      ...accentLink,
+                                      fontWeight: "bold",
+                                      fontSize: 14,
+                                      lineHeight: "20px",
+                                    }}
+                                  >
+                                    Read in Browser
+                                  </Link>
+                                </td>
+                              </tr>
+                            ) : null}
                             <tr>
                               <td
                                 align="center"
@@ -1202,7 +1218,7 @@ const BlockRenderer = ({
   assetsBaseUrl: string;
   theme: EmailTheme;
   colors: ResolvedColors;
-  postUrl: string;
+  postUrl?: string;
   blockUrl?: string;
   pages?: PostEmailPage[];
   bskyPosts?: Record<string, AppBskyFeedDefs.PostView>;
@@ -1466,7 +1482,7 @@ const BlockRenderer = ({
         <PageLinkEmailBlock
           page={page}
           compact={normalizePageLinkDisplay(block.display) === "compact"}
-          href={pageUrl(postUrl, block.id)}
+          href={postUrl && pageUrl(postUrl, block.id)}
           did={did}
           theme={theme}
           colors={colors}
@@ -1848,7 +1864,7 @@ const PageLinkEmailBlock = ({
 }: {
   page: PostEmailPage;
   compact?: boolean;
-  href: string;
+  href?: string;
   did: string;
   theme: EmailTheme;
   colors: ResolvedColors;
@@ -2173,7 +2189,7 @@ const EmbeddedCanvasEmailBlock = ({
 }: {
   blocks: PubLeafletPagesCanvas.Block[];
   size: { width: number; height: number };
-  href: string;
+  href?: string;
   did: string;
   theme: EmailTheme;
   colors: ResolvedColors;
@@ -2417,7 +2433,7 @@ const ImageGalleryEmailBlock = ({
   block: PubLeafletBlocksImageGallery.Main;
   did: string;
   assetsBaseUrl: string;
-  href: string;
+  href?: string;
   theme: EmailTheme;
   colors: ResolvedColors;
 }) => {
@@ -2741,25 +2757,27 @@ const BlockNotSupported = ({
       >
         This media isn't supported in email...
       </ReactEmailText>
-      <ReactEmailText
-        style={{
-          fontSize: 14,
-          lineHeight: 1.4,
-          margin: "4px 0 0",
-          textAlign: "center",
-        }}
-      >
-        <Link
-          href={postUrl}
+      {postUrl ? (
+        <ReactEmailText
           style={{
-            color: theme.accentBackground,
-            fontWeight: "bold",
-            textDecoration: "none",
+            fontSize: 14,
+            lineHeight: 1.4,
+            margin: "4px 0 0",
+            textAlign: "center",
           }}
         >
-          See full post
-        </Link>
-      </ReactEmailText>
+          <Link
+            href={postUrl}
+            style={{
+              color: theme.accentBackground,
+              fontWeight: "bold",
+              textDecoration: "none",
+            }}
+          >
+            See full post
+          </Link>
+        </ReactEmailText>
+      ) : null}
     </Section>
   );
 };

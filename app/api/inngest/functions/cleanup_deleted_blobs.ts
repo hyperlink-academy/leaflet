@@ -34,6 +34,10 @@ export const cleanup_deleted_blobs = inngest.createFunction(
                 SELECT 1 FROM document_version_blob_refs r WHERE r.path = q.path
               )
               AND NOT EXISTS (
+                SELECT 1 FROM publication_email_posts e
+                WHERE e.image_paths @> ARRAY[q.path]
+              )
+              AND NOT EXISTS (
                 SELECT 1 FROM facts f
                 WHERE f.data->>'type' = 'image'
                   AND split_part(split_part(f.data->>'src', '?', 1), '/', -1) = q.path

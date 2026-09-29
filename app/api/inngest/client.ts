@@ -97,6 +97,15 @@ export const events = {
       root_entity?: string;
     }>(),
   }),
+  // `revision` is the email post's revision when it was scheduled; a run
+  // whose revision was superseded by a later save exits without sending.
+  newsletterEmailPostSendRequested: eventType(
+    "newsletter/email-post.send.requested",
+    { schema: staticSchema<{ email_post_id: string; revision: number }>() },
+  ),
+  newsletterSubscriberJoined: eventType("newsletter/subscriber.joined", {
+    schema: staticSchema<{ publication_uri: string; identity_id: string }>(),
+  }),
 };
 
 // Create a client to send and receive events.

@@ -17,6 +17,7 @@ export type UserEvent =
   | "subscribe"
   | "unsubscribe"
   | "publish" // published a document; props publication, document, first_publish, blocks
+  | "send_email_post" // saved an email-only post; props publication, send_mode (now | scheduled | on_subscribe), audience
   | "create_publication" // props publication
   | "signup" // identity row created; props method (email | bluesky), source
   | "create_document" // props kind (doc | canvas | template | duplicate | publication_draft), publication

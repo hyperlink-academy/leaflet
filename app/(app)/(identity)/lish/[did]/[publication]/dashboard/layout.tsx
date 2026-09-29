@@ -17,6 +17,7 @@ import { AnalyticsSmall } from "components/Icons/AnalyticsSmall";
 import { SubscribersSmall } from "components/Icons/SubscribersSmall";
 import { PublishSmall } from "components/Icons/PublishSmall";
 import { ArchiveSmall } from "components/Icons/ArchiveSmall";
+import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -121,6 +122,15 @@ export default async function PublicationDashboardLayout(props: {
           tabs={{
             Drafts: { href: baseHref, icon: <ArchiveSmall /> },
             Published: { href: `${baseHref}/posts`, icon: <PublishSmall /> },
+            ...(publication.publication_newsletter_settings?.enabled ||
+            publication_data.emailPosts.length > 0
+              ? {
+                  Emails: {
+                    href: `${baseHref}/emails`,
+                    icon: <BlockMailboxSmall />,
+                  },
+                }
+              : {}),
             ...(isOwner
               ? {
                   Subscribers: {
