@@ -15,6 +15,7 @@ import {
 import { CanvasBackgroundPattern } from "components/Canvas";
 import { canvasBlockEdges } from "src/utils/blockSpacing";
 import { CONTENT_WIDTH } from "src/canvasZoom/math";
+import { visibleCanvasX } from "src/utils/embeddedCanvasSize";
 import { Block } from "./PostContent";
 import { PollData } from "./fetchPollData";
 
@@ -32,17 +33,20 @@ type BlockDataProps = {
 // A published canvas laid out at full size: the grid and the blocks, placed
 // and stacked, in reading order (which block indexes are counted against).
 // The canvas page scrolls and zooms this; a page link scales it down. A
-// drawing passes its size, which clips it and drops the grid.
+// drawing passes its size, which clips it and drops the grid; a
+// publication's page passes its width.
 export function CanvasBlocks({
   blocks,
   size,
+  contentWidth = CONTENT_WIDTH,
   ...props
 }: BlockDataProps & {
   blocks: PubLeafletPagesCanvas.Block[];
   size?: { width: number; height: number };
+  contentWidth?: number;
 }) {
-  let { width, height } = size ?? {
-    width: CONTENT_WIDTH,
+  let { width: canvasWidth, height } = size ?? {
+    width: contentWidth,
     height: canvasContentHeight(blocks),
   };
   let sortedBlocks = useMemo(
@@ -56,7 +60,7 @@ export function CanvasBlocks({
   return (
     <div
       style={{
-        width,
+        width: canvasWidth,
         minHeight: height,
         height: size ? height : "100%",
         contain: "size layout paint",
@@ -79,7 +83,7 @@ export function CanvasBlocks({
               left: 0,
               width,
               zIndex: stackOrders[index],
-              transform: `translate(${x}px, ${y}px)${rotation ? ` rotate(${rotation}deg)` : ""}`,
+              transform: `translate(${visibleCanvasX(x, canvasWidth)}px, ${y}px)${rotation ? ` rotate(${rotation}deg)` : ""}`,
             }}
           >
             <CanvasBlockContent

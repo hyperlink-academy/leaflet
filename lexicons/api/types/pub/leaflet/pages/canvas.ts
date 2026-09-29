@@ -47,7 +47,7 @@ export interface Main {
   blocks: Block[]
   /** How a narrow viewport frames the canvas: the whole canvas scaled to fit the width (unconstrained, the default), or a phone-width area anchored to the canvas's left edge or centered on it, shown at up to 1:1. */
   mobileView?: 'unconstrained' | 'left' | 'center' | (string & {})
-  /** Fixed canvas width in canvas px. With height, bounds the canvas: blocks are clipped to the area. Absent, the canvas is 1272px wide and grows with its content. */
+  /** Fixed canvas width in canvas px. With height, bounds the canvas: blocks are clipped to the area. Absent, the canvas grows with its content and is 1272px wide, or as wide as the inside of the publication's page (its theme's pageWidth) when it is one of a publication's pages. */
   width?: number
   /** Fixed canvas height in canvas px; see width. */
   height?: number

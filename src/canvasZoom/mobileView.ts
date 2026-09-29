@@ -9,12 +9,13 @@ export const MOBILE_VIEW_WIDTH = 520;
 export type CanvasArea = { left: number; width: number };
 
 /** The canvas area a narrow viewport should frame, or null for fit-to-width. */
-export function mobileViewArea(view?: string | null): CanvasArea | null {
-  if (view === "left") return { left: 0, width: MOBILE_VIEW_WIDTH };
+export function mobileViewArea(
+  view?: string | null,
+  contentWidth = CONTENT_WIDTH,
+): CanvasArea | null {
+  let width = Math.min(MOBILE_VIEW_WIDTH, contentWidth);
+  if (view === "left") return { left: 0, width };
   if (view === "center")
-    return {
-      left: Math.round((CONTENT_WIDTH - MOBILE_VIEW_WIDTH) / 2),
-      width: MOBILE_VIEW_WIDTH,
-    };
+    return { left: Math.round((contentWidth - width) / 2), width };
   return null;
 }

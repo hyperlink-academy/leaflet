@@ -43,6 +43,7 @@ import { collectAndFetchBlockResources } from "./collectAndFetchBlockResources";
 import { PostContent } from "./PostContent";
 import { CanvasContent } from "./CanvasPage";
 import { mobileViewArea } from "src/canvasZoom/mobileView";
+import { publicationCanvasWidth } from "src/utils/publicationCanvasWidth";
 import { getProfiles } from "src/identity";
 import { attachBylineProfiles, bylineDidsForPosts } from "src/utils/byline";
 
@@ -219,6 +220,10 @@ export async function PublicationPageRenderer({
 
   const theme = resolvePublicationTheme(normalizedPublication);
   const showPageBackground = !!theme?.showPageBackground;
+  const canvasWidth = publicationCanvasWidth(
+    normalizedPublication?.theme?.pageWidth,
+    showPageBackground,
+  );
 
   const documentContextValue: DocumentContextValue = {
     uri: page.record.publication,
@@ -303,7 +308,11 @@ export async function PublicationPageRenderer({
                     )[]
                   }
                   zoomKey={`${publication.uri}${page.path}`}
-                  mobileArea={mobileViewArea(canvasPage.mobileView)}
+                  contentWidth={canvasWidth}
+                  mobileArea={mobileViewArea(
+                    canvasPage.mobileView,
+                    canvasWidth,
+                  )}
                   lockViewerZoom={!!canvasPage.lockViewerZoom}
                 />
               ) : (

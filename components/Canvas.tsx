@@ -77,7 +77,11 @@ import { CanvasInkLayer } from "./Blocks/DrawingBlock/CanvasInkLayer";
 import { InkToolbar } from "./Blocks/DrawingBlock/InkToolbar";
 import { useInkSession } from "./Blocks/DrawingBlock/useInkSession";
 import { useCanvasSize } from "src/hooks/queries/useCanvasSize";
-import { type CanvasBounds, clampToCanvas } from "src/utils/embeddedCanvasSize";
+import {
+  type CanvasBounds,
+  clampToCanvas,
+  visibleCanvasX,
+} from "src/utils/embeddedCanvasSize";
 
 export function Canvas(props: {
   entityID: string;
@@ -94,6 +98,7 @@ export function Canvas(props: {
   let size = useCanvasSize(props.entityID);
   let mobileArea = mobileViewArea(
     useEntity(props.entityID, "canvas/mobile-view")?.data.value,
+    size.width,
   );
   // PageWrapper's negative margin starts a borderless card 12px above the
   // page options; a page-scrolled canvas has none to clear.
@@ -250,7 +255,10 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
               preview={props.preview}
               parent={props.entityID}
               entityID={b.data.value}
-              position={b.data.position}
+              position={{
+                ...b.data.position,
+                x: visibleCanvasX(b.data.position.x, size.width),
+              }}
               factID={b.id}
               stackOrder={stackOrders.get(b.data.value)}
               canvas={size}
@@ -341,6 +349,7 @@ const MobileViewToggle = (props: { entityID: string }) => {
 const MobileViewGuides = (props: { entityID: string }) => {
   let area = mobileViewArea(
     useEntity(props.entityID, "canvas/mobile-view")?.data.value,
+    useCanvasSize(props.entityID).width,
   );
   if (!area) return null;
   return (

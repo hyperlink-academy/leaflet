@@ -59,8 +59,8 @@ export function Page(props: {
     return pages[pages.length - 1] === props.entityID;
   });
   let sideColumnVisible = pageType === "doc" && !drawerOpen && isRightmostPage;
-  // A canvas below a publication header scrolls with the page, as a doc
-  // page does (src/canvasZoom/CanvasPageScroll.tsx).
+  // A canvas below a publication header scrolls with the page and is as wide
+  // as one, as a doc page is (src/canvasZoom/CanvasPageScroll.tsx).
   let canvasBelowHeader = !!props.header && pageType === "canvas";
   let cardBorderHidden = useCardBorderHidden();
 
@@ -162,6 +162,8 @@ export const PageWrapper = (props: {
   let { ref } = usePreserveScroll<HTMLDivElement>(props.id);
   let canvasPageScroll =
     props.pageType === "canvas" && props.overflow === "scroll";
+  // Scrolled by the page and as wide as one.
+  let pageLayout = props.pageType === "doc" || canvasPageScroll;
   return (
     // this div wraps the contents AND the page options.
     // it needs to be its own div because this container does NOT scroll, and therefore doesn't clip the absolutely positioned pageOptions
@@ -188,7 +190,7 @@ export const PageWrapper = (props: {
       publicationScrollContainer
       grow relative
       shrink-0 snap-center
-      ${props.flow ? "" : props.overflow === "hidden" || (props.pageType === "canvas" && !canvasPageScroll) ? "overflow-hidden" : "overflow-y-scroll"}
+      ${props.flow ? "" : props.overflow === "hidden" || !pageLayout ? "overflow-hidden" : "overflow-y-scroll"}
       ${
         !cardBorderHidden &&
         `border
@@ -199,9 +201,14 @@ export const PageWrapper = (props: {
       }
       ${cardBorderHidden && (props.flow ? "sm:pt-6 pt-3" : "sm:h-[calc(100%+48px)] h-[calc(100%+20px)] sm:-my-6 -my-3 sm:pt-6 pt-3")}
       ${props.fullPageScroll && "max-w-full "}
-    ${props.pageType === "doc" && !props.fullPageScroll ? (props.fixedWidth ? "w-[10000px] sm:max-w-prose max-w-[var(--page-width-units)]" : "w-[10000px] sm:mx-0 max-w-[var(--page-width-units)]") : ""}
+      ${
+        // The canvas is as wide as the inside of the card, and a classic
+        // scrollbar would take its width out of that.
+        canvasPageScroll && !cardBorderHidden ? "no-scrollbar" : ""
+      }
+    ${pageLayout && !props.fullPageScroll ? (props.fixedWidth ? "w-[10000px] sm:max-w-prose max-w-[var(--page-width-units)]" : "w-[10000px] sm:mx-0 max-w-[var(--page-width-units)]") : ""}
     ${
-      props.pageType === "canvas" &&
+      !pageLayout &&
       !props.fullPageScroll &&
       "max-w-[var(--page-width-units)] sm:max-w-[calc(var(--leaflet-layout-width,100vw)-128px)] lg:max-w-[calc(var(--leaflet-layout-width,100vw)-128px)]"
     }
@@ -210,7 +217,7 @@ export const PageWrapper = (props: {
       >
         <div
           className={`postPageContent static
-          ${props.fullPageScroll && !canvasPageScroll ? `${props.pageType === "doc" ? "min-h-full" : "h-full"} sm:max-w-[var(--page-width-units)] mx-auto` : ` contents w-full ${props.flow ? "" : "h-full"}`}
+          ${props.fullPageScroll ? `${pageLayout ? "min-h-full" : "h-full"} sm:max-w-[var(--page-width-units)] mx-auto` : ` contents w-full ${props.flow ? "" : "h-full"}`}
         `}
         >
           {props.children}

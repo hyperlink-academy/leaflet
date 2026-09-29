@@ -2382,7 +2382,7 @@ export const schemaDict = {
           width: {
             type: 'integer',
             description:
-              'Fixed canvas width in canvas px. With height, bounds the canvas: blocks are clipped to the area. Absent, the canvas is 1272px wide and grows with its content.',
+              "Fixed canvas width in canvas px. With height, bounds the canvas: blocks are clipped to the area. Absent, the canvas grows with its content and is 1272px wide, or as wide as the inside of the publication's page (its theme's pageWidth) when it is one of a publication's pages.",
           },
           height: {
             type: 'integer',

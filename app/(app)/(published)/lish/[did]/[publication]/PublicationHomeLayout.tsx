@@ -24,8 +24,8 @@ export function PublicationHomeLayout(props: {
   subscribe: SubscribeData;
   children: React.ReactNode;
   pageWidth?: number;
-  // The page is a canvas: it scrolls with the page below the nav and the
-  // card widens to the canvas, as in the publication editor.
+  // The page is a canvas: it scrolls with the page below the nav, and is as
+  // wide as the inside of the page (publicationCanvasWidth).
   canvasPage?: boolean;
 }) {
   let { ref } = usePreserveScroll<HTMLDivElement>(
@@ -85,7 +85,7 @@ export function PublicationHomeLayout(props: {
       {header}
       {props.canvasPage ? (
         <CanvasPageArea
-          className={`pubContent flex flex-col items-center ${props.showPageBackground ? "" : "pt-3"}`}
+          className={`pubContent sm:max-w-(--page-width-units) mx-auto flex flex-col items-center ${props.showPageBackground ? "" : "pt-3"}`}
         >
           {props.children}
         </CanvasPageArea>
@@ -110,12 +110,12 @@ export function PublicationHomeLayout(props: {
   );
   if (props.showPageBackground) {
     return (
-      <div
-        className={`pubWrapper flex flex-col sm:py-6 h-full max-w-(--page-width-units) mx-auto px-0 py-2 ${props.canvasPage ? "sm:max-w-[min(1274px,calc(100vw-128px))]" : ""}`}
-      >
+      <div className="pubWrapper flex flex-col sm:py-6 h-full max-w-(--page-width-units) mx-auto px-0 py-2">
         <div
           ref={ref}
-          className="pubContentScroll publicationScrollContainer overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] border border-border rounded-lg flex flex-col max-w-full w-[10000px]"
+          // A classic scrollbar would take its width out of the canvas's,
+          // zooming the canvas out to fit what is left.
+          className={`pubContentScroll publicationScrollContainer overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] border border-border rounded-lg flex flex-col max-w-full w-[10000px] ${props.canvasPage ? "no-scrollbar" : ""}`}
         >
           {inner}
         </div>

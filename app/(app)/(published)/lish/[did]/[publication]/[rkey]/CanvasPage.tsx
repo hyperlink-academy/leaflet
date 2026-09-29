@@ -6,12 +6,13 @@ import {
 } from "lexicons/api";
 import { PostPageData } from "src/utils/getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { useMemo, type ComponentProps } from "react";
+import { useMemo, type ComponentProps, type CSSProperties } from "react";
 import { PageWrapper } from "components/Pages/Page";
 import { CanvasZoomProvider } from "src/canvasZoom/CanvasZoomProvider";
 import { CanvasZoomLayer } from "src/canvasZoom/CanvasZoomLayer";
 import { CanvasOverlay } from "src/canvasZoom/CanvasPageScroll";
 import { mobileViewArea, type CanvasArea } from "src/canvasZoom/mobileView";
+import { CONTENT_WIDTH } from "src/canvasZoom/math";
 import { CanvasZoomControls } from "components/CanvasZoomControls";
 import { CanvasBlocks } from "./CanvasBlockContent";
 import { canvasContentHeight } from "src/utils/canvasBlockOrder";
@@ -113,14 +114,16 @@ export function CanvasPage({
 }
 
 // A publication's canvas page (`pageScroll`) sits below the publication
-// header inside a CanvasPageArea and scrolls with the page.
+// header inside a CanvasPageArea and scrolls with the page; it is as wide
+// as the publication's page (`contentWidth`).
 export function CanvasContent({
   zoomKey,
   mobileArea,
   lockViewerZoom,
   pageScroll,
+  contentWidth = CONTENT_WIDTH,
   ...props
-}: Omit<ComponentProps<typeof CanvasBlocks>, "preview"> & {
+}: Omit<ComponentProps<typeof CanvasBlocks>, "preview" | "size"> & {
   zoomKey: string;
   mobileArea: CanvasArea | null;
   lockViewerZoom: boolean;
@@ -130,20 +133,26 @@ export function CanvasContent({
     <CanvasZoomProvider
       pageKey={zoomKey}
       pageScroll={pageScroll}
+      contentWidth={contentWidth}
       initialArea={mobileArea}
       lockViewerZoom={lockViewerZoom}
     >
-      {/* w-[1272px] max-w-full: the page keeps its full-canvas width while
-          the zoomed-out spacer shrinks, and the box (not the page card
+      {/* The canvas's width, max-w-full: the page keeps its full-canvas width
+          while the zoomed-out spacer shrinks, and the box (not the page card
           around it) carries the horizontal overflow when zoomed in. */}
       <div
-        className={`canvasWrapper w-[1272px] max-w-full ${pageScroll ? "canvasPageScroll" : "h-full overflow-y-scroll"} touch-pan-x touch-pan-y postContent`}
+        style={{ "--canvas-width": `${contentWidth}px` } as CSSProperties}
+        className={`canvasWrapper w-(--canvas-width) max-w-full ${pageScroll ? "canvasPageScroll" : "h-full overflow-y-scroll"} touch-pan-x touch-pan-y postContent`}
       >
         <CanvasZoomLayer
           contentHeight={canvasContentHeight(props.blocks)}
           mobileArea={mobileArea}
         >
-          <CanvasBlocks {...props} preview={false} />
+          <CanvasBlocks
+            {...props}
+            contentWidth={contentWidth}
+            preview={false}
+          />
         </CanvasZoomLayer>
       </div>
       <CanvasOverlay edge="bottom">

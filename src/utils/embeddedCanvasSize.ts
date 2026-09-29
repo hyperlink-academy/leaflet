@@ -25,8 +25,9 @@ export function embeddedCanvasSizeName(
   return null;
 }
 
-// How much of a block must stay inside a drawing, so a drawing's edge can't
-// lose it where nothing can reach it. Other canvases grow to fit.
+// How much of a block must stay inside the canvas's width, and inside a
+// drawing's height, so an edge can't lose it where nothing can reach it.
+// Any other canvas grows down to fit.
 const MIN_VISIBLE = 24;
 
 export function clampToCanvas(
@@ -34,15 +35,23 @@ export function clampToCanvas(
   block: { width: number; height: number },
   canvas: CanvasBounds,
 ) {
-  if (!canvas.fixed) return position;
   let clamp = (v: number, min: number, max: number) =>
     Math.min(Math.max(v, min), Math.max(min, max));
   return {
     x: clamp(position.x, MIN_VISIBLE - block.width, canvas.width - MIN_VISIBLE),
-    y: clamp(
-      position.y,
-      MIN_VISIBLE - block.height,
-      canvas.height - MIN_VISIBLE,
-    ),
+    y: canvas.fixed
+      ? clamp(
+          position.y,
+          MIN_VISIBLE - block.height,
+          canvas.height - MIN_VISIBLE,
+        )
+      : position.y,
   };
+}
+
+// Where a block placed at `x` is drawn: a canvas that is a publication's
+// page narrows with the page width setting, which must not hide the blocks
+// placed past its new edge.
+export function visibleCanvasX(x: number, canvasWidth: number) {
+  return Math.min(x, canvasWidth - MIN_VISIBLE);
 }
