@@ -17,7 +17,7 @@ import { PaintSmall } from "components/Icons/PaintSmall";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { INK_COLORS, INK_SIZES, inkColor } from "./ink";
 import { useInkSession } from "./useInkSession";
-import { cancelInk } from "./inkMutations";
+import { stopInk } from "./inkMutations";
 
 export function InkToolbar(props: { pageID: string }) {
   let { rep, undoManager } = useReplicache();
@@ -130,12 +130,12 @@ export function InkToolbar(props: { pageID: string }) {
         <EraserSmall width={18} height={18} />
       </button>
 
-      {/* Once there is a drawing, done and cancel sit on its frame. */}
+      {/* Once there is a drawing, done sits on its frame. */}
       {!hasTarget && (
         <button
           aria-label="Stop drawing"
           title="Stop drawing"
-          onClick={() => cancelInk(rep, undoManager)}
+          onClick={() => stopInk(rep, undoManager)}
           className="w-7 h-7 flex items-center justify-center rounded-full text-tertiary hover:bg-border-light"
         >
           <CloseTiny />

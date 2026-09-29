@@ -1,12 +1,11 @@
 import { useMemo } from "react";
-import { useEntity, useReplicache } from "src/replicache";
+import { useEntity } from "src/replicache";
 import { useIsBlockSelected } from "src/useUIState";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { EditTiny } from "components/Icons/EditTiny";
 import { BlockLayout, type BlockProps } from "../Block";
 import { InkSvg } from "./InkSvg";
 import { useInkSession } from "./useInkSession";
-import { startInk } from "./inkMutations";
 
 export function DrawingBlock(props: BlockProps & { preview?: boolean }) {
   let strokeFacts = useEntity(props.entityID, "drawing/stroke");
@@ -17,7 +16,6 @@ export function DrawingBlock(props: BlockProps & { preview?: boolean }) {
   let editing = useInkSession((s) => s.target === props.entityID);
   let isSelected = useIsBlockSelected(props.entityID);
   let { permissions } = useEntitySetContext();
-  let { rep } = useReplicache();
   // Ink is drawn in canvas coordinates against the drawing's own canvas
   // block, which a drawing inside a group doesn't have.
   let canEdit =
@@ -34,7 +32,7 @@ export function DrawingBlock(props: BlockProps & { preview?: boolean }) {
   );
   if (!viewBox) return null;
 
-  let edit = () => startInk(rep, props.parent, props.entityID);
+  let edit = () => useInkSession.getState().start(props.parent, props.entityID);
 
   return (
     <BlockLayout

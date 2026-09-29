@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { CheckTiny } from "components/Icons/CheckTiny";
-import { CloseTiny } from "components/Icons/CloseTiny";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import {
   getCanvasZoom,
@@ -25,7 +24,6 @@ import {
   commitStroke,
   eraseStrokes,
   readDrawing,
-  cancelInk,
   stopInk,
 } from "./inkMutations";
 
@@ -253,8 +251,8 @@ export function CanvasInkLayer(props: { pageID: string }) {
   );
 }
 
-// Done and cancel, pinned above the drawing's top-right corner and kept the
-// same size on screen at any zoom.
+// Done, pinned above the drawing's top-right corner and kept the same size on
+// screen at any zoom.
 function InkSessionControls(props: { pageID: string }) {
   let { rep, undoManager } = useReplicache();
   let { zoom } = useCanvasZoom();
@@ -275,7 +273,7 @@ function InkSessionControls(props: { pageID: string }) {
   });
   return (
     <div
-      className="inkSessionControls absolute flex gap-1 cursor-default"
+      className="inkSessionControls absolute cursor-default"
       style={{
         left: corner.x,
         top: corner.y - 4 / zoom,
@@ -285,18 +283,10 @@ function InkSessionControls(props: { pageID: string }) {
       onPointerDown={(e) => e.stopPropagation()}
     >
       <button
-        aria-label="Discard changes"
-        title="Discard changes"
-        onClick={() => cancelInk(rep, undoManager)}
-        className="p-1 rounded-full bg-bg-page border border-border text-secondary hover:text-accent-contrast shadow-sm"
-      >
-        <CloseTiny />
-      </button>
-      <button
         aria-label="Done drawing"
         title="Done"
         onClick={() => stopInk(rep, undoManager)}
-        className="p-1 rounded-full bg-accent-1 border border-accent-1 text-accent-2 shadow-sm"
+        className="block p-1 rounded-full bg-accent-1 border border-accent-1 text-accent-2 shadow-sm"
       >
         <CheckTiny />
       </button>
