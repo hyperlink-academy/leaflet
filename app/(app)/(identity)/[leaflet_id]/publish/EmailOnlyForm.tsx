@@ -45,6 +45,7 @@ const audienceLabels: Record<EmailPostAudience, string> = {
 
 const errorCopy: Record<SaveEmailPostError, string> = {
   unauthorized: "You don't have permission to send email for this publication.",
+  feature_not_enabled: "Sending as email isn't available for this publication.",
   newsletter_not_enabled: "Email mode isn't turned on for this publication.",
   not_pro: "Sending as email is a Leaflet Pro feature.",
   not_a_draft: "Only unpublished drafts can be sent as an email.",

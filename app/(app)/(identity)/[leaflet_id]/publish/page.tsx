@@ -196,9 +196,11 @@ async function loadEmailOnlyOptions(args: {
     .maybeSingle();
   if (!existing && (!args.newsletterEnabled || args.published))
     return undefined;
+  let ineligibleReason = await emailOnlyIneligibleReason(args.publication_uri);
+  if (!existing && ineligibleReason === "feature_not_enabled") return undefined;
   return {
     existing: existing as EmailPostSummary | null,
-    ineligibleReason: await emailOnlyIneligibleReason(args.publication_uri),
+    ineligibleReason,
     membershipsEnabled: args.membershipsEnabled,
   };
 }

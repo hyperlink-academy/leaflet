@@ -18,6 +18,8 @@ import { SubscribersSmall } from "components/Icons/SubscribersSmall";
 import { PublishSmall } from "components/Icons/PublishSmall";
 import { ArchiveSmall } from "components/Icons/ArchiveSmall";
 import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
+import { canSendEmailPosts } from "src/entitlements";
+import { emailPostsEnabledForOwner } from "src/emailPosts/eligibility";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -93,6 +95,13 @@ export default async function PublicationDashboardLayout(props: {
     return <PubNotFound />;
   }
 
+  let showEmailsTab =
+    publication_data.emailPosts.length > 0 ||
+    (!!publication.publication_newsletter_settings?.enabled &&
+      (isOwner
+        ? canSendEmailPosts(identity.entitlements)
+        : await emailPostsEnabledForOwner(publication.identity_did)));
+
   let uri = new AtUri(publication.uri);
   let baseHref = `/lish/${params.did}/${params.publication}/dashboard`;
 
@@ -122,8 +131,7 @@ export default async function PublicationDashboardLayout(props: {
           tabs={{
             Drafts: { href: baseHref, icon: <ArchiveSmall /> },
             Published: { href: `${baseHref}/posts`, icon: <PublishSmall /> },
-            ...(publication.publication_newsletter_settings?.enabled ||
-            publication_data.emailPosts.length > 0
+            ...(showEmailsTab
               ? {
                   Emails: {
                     href: `${baseHref}/emails`,

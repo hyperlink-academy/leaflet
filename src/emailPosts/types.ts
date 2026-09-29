@@ -4,7 +4,7 @@ export type EmailPostSendMode = "scheduled" | "on_subscribe";
 export type EmailPostAudience = "all" | "free" | "paid";
 // scheduled → sending → sent | failed for a one-off send; an on-subscribe
 // email sits in active. Either pauses when the publication stops being
-// eligible (email mode off, or its owner loses Pro) until the author saves it
+// eligible (email mode off, or its owner loses Pro or the feature flag) until the author saves it
 // again.
 export type EmailPostStatus =
   | "scheduled"
@@ -72,5 +72,7 @@ export function subscriberCountLabel(n: number | null) {
 export function pausedReason(error: string | null) {
   if (error === "not_pro")
     return "The publication's owner no longer has Leaflet Pro.";
+  if (error === "feature_not_enabled")
+    return "Sending as email isn't available for this publication.";
   return "Email mode is turned off for this publication.";
 }
