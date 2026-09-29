@@ -3,7 +3,7 @@ import { combine } from "zustand/middleware";
 import { useUIState } from "src/useUIState";
 import { INK_COLORS, INK_SIZES } from "./ink";
 
-export type InkTool = "pen" | "eraser" | "fill";
+type InkTool = "pen" | "eraser" | "fill";
 
 // A color pick keeps the fill tool, and otherwise goes back to the pen.
 const inking = (tool: InkTool): InkTool => (tool === "fill" ? "fill" : "pen");
@@ -37,7 +37,6 @@ export const useInkSession = create(
           colorPickerOpen: false,
         });
       },
-      setTarget: (target: string) => set({ target }),
       setTool: (tool: InkTool) => set({ tool }),
       setColor: (color: string) =>
         set((s) => ({ color, tool: inking(s.tool) })),
@@ -50,7 +49,6 @@ export const useInkSession = create(
       setSize: (size: number) => set({ size, tool: "pen" }),
       setColorPickerOpen: (colorPickerOpen: boolean) =>
         set({ colorPickerOpen }),
-      setErasing: (erasing: string[]) => set({ erasing }),
     }),
   ),
 );

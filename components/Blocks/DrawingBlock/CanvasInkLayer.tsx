@@ -74,8 +74,7 @@ export function CanvasInkLayer(props: { pageID: string }) {
   // for every touch; iOS would then scroll under the pencil too. Cancelling
   // the stylus's own touch events keeps it drawing.
   useEffect(() => {
-    let el = ref.current;
-    if (!el) return;
+    let el = ref.current!;
     let onTouch = (e: TouchEvent) => {
       // touchType is WebKit-only and missing from the DOM types.
       for (let t of Array.from(e.changedTouches))
@@ -118,7 +117,7 @@ export function CanvasInkLayer(props: { pageID: string }) {
       g.erased.add(s.id);
       hit = true;
     }
-    if (hit) useInkSession.getState().setErasing([...g.erased]);
+    if (hit) useInkSession.setState({ erasing: [...g.erased] });
   };
 
   let addPoints = (g: Gesture, e: React.PointerEvent) => {
@@ -156,7 +155,7 @@ export function CanvasInkLayer(props: { pageID: string }) {
   let cancel = () => {
     gesture.current = null;
     setLive(null);
-    useInkSession.getState().setErasing([]);
+    useInkSession.setState({ erasing: [] });
   };
 
   let finish = (e: React.PointerEvent) => {
@@ -170,7 +169,7 @@ export function CanvasInkLayer(props: { pageID: string }) {
         page: props.pageID,
         target,
         strokeIDs: [...g.erased],
-      }).then(() => useInkSession.getState().setErasing([]));
+      }).then(() => useInkSession.setState({ erasing: [] }));
       return;
     }
     if (g.fill) {
@@ -226,7 +225,6 @@ export function CanvasInkLayer(props: { pageID: string }) {
         let erase =
           tool === "eraser" ||
           (e.pointerType === "pen" && !!(e.buttons & PEN_ERASER_BUTTONS));
-        let target = useInkSession.getState().target;
         gesture.current = {
           pointerId: e.pointerId,
           erase,
@@ -234,8 +232,8 @@ export function CanvasInkLayer(props: { pageID: string }) {
           points: [],
           simulatePressure: e.pointerType !== "pen",
           drawing:
-            erase && rep && target
-              ? readDrawing(rep, props.pageID, target)
+            erase && rep && session.target
+              ? readDrawing(rep, props.pageID, session.target)
               : null,
           erased: new Set(),
         };
@@ -277,7 +275,7 @@ function InkSessionControls(props: { pageID: string }) {
   let viewBox = useEntity(target, "drawing/view-box")?.data.value;
   let width = useEntity(target, "canvas/block/width")?.data.value || 360;
   let rotation = useEntity(target, "canvas/block/rotation")?.data.value || 0;
-  if (!target || !placed || !viewBox) return null;
+  if (!placed || !viewBox) return null;
 
   let corner = frameTopRight({
     position: placed.data.position,

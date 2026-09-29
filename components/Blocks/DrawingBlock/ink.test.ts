@@ -136,11 +136,13 @@ const pen = (points: number[]) => ({ points, color: "primary", size: 16 });
 const center = { x: 500, y: 500 };
 
 describe("closed strokes", () => {
-  it("closes a stroke whose ends meet", () => {
+  it("closes a stroke whose ends meet or that runs on past its start", () => {
     let loop = strokeLoop(pen(arc(center, 400, 0, 1)))!;
     expect(polygonContains(loop, center)).toBe(true);
     expect(polygonContains(loop, { x: 500, y: 50 })).toBe(false);
     expect(polygonContains(loop, { x: 1000, y: 1000 })).toBe(false);
+    let over = strokeLoop(pen(arc(center, 400, 0, 1.2)))!;
+    expect(polygonContains(over, center)).toBe(true);
   });
 
   it("closes across a small gap but not a wide one", () => {
@@ -162,11 +164,6 @@ describe("closed strokes", () => {
       ...arc({ x: 900, y: 30 }, 30, -0.25, 0.4),
     ];
     expect(strokeLoop(pen(hook))).toBeNull();
-  });
-
-  it("closes a stroke that runs on past its start", () => {
-    let loop = strokeLoop(pen(arc(center, 400, 0, 1.2)))!;
-    expect(polygonContains(loop, center)).toBe(true);
   });
 
   it("closes the loop of a stroke with a tail", () => {

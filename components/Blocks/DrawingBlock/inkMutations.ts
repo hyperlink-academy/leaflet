@@ -119,23 +119,22 @@ const SIMPLIFY_PRESSURE_TOLERANCE = 0.03;
 // Canvas px points (x, y, pressure 0-1 triples) in, drawing-space stroke out.
 function toStroke(
   canvasPoints: number[],
-  toDrawing: (p: { x: number; y: number }) => { x: number; y: number },
-  args: {
-    color: string;
-    // Drawing units.
-    size: number;
-    unitsPerPx: number;
-    simulatePressure: boolean;
-  },
+  layout: DrawingLayout,
+  args: { color: string; size: number; simulatePressure: boolean },
 ): Omit<InkStroke, "fill"> & { points: number[] } {
+  let scale = drawingScale(layout);
+  let size = args.size / scale;
   let drawn: number[] = [];
   for (let i = 0; i + 2 < canvasPoints.length; i += 3) {
-    let d = toDrawing({ x: canvasPoints[i], y: canvasPoints[i + 1] });
+    let d = canvasToDrawing(layout, {
+      x: canvasPoints[i],
+      y: canvasPoints[i + 1],
+    });
     drawn.push(d.x, d.y, canvasPoints[i + 2]);
   }
   let samples = simplifySamples(
-    inkSamples(drawn, args.size, !args.simulatePressure),
-    SIMPLIFY_TOLERANCE_PX * args.unitsPerPx,
+    inkSamples(drawn, size, !args.simulatePressure),
+    SIMPLIFY_TOLERANCE_PX / scale,
     SIMPLIFY_PRESSURE_TOLERANCE,
   );
   let points: number[] = [];
@@ -149,10 +148,19 @@ function toStroke(
   return {
     points,
     color: args.color,
-    size: Math.max(1, Math.round(args.size)),
+    size: Math.max(1, Math.round(size)),
     ...(args.simulatePressure && { simulatePressure: true }),
   };
 }
+
+// A new drawing's frame: drawing units are INK_UNITS_PER_PX per canvas px, with
+// the origin at canvas (0, 0).
+const NEW_DRAWING: DrawingLayout = {
+  position: { x: -DRAWING_PADDING, y: -DRAWING_PADDING },
+  width: 2 * DRAWING_PADDING + 1,
+  rotation: 0,
+  viewBox: { x: 0, y: 0, width: INK_UNITS_PER_PX, height: INK_UNITS_PER_PX },
+};
 
 async function writeLayout(
   rep: Rep,
@@ -200,75 +208,54 @@ export async function commitStroke(
 ) {
   let target = useInkSession.getState().target;
   let existing = target ? await readDrawing(rep, args.page, target) : null;
+  let layout = existing?.layout ?? NEW_DRAWING;
+  let stroke = toStroke(args.canvasPoints, layout, args);
+  let bounds = strokeBounds(stroke);
+  if (!bounds) return;
   await undoManager.withUndoGroup(async () => {
-    if (!target || !existing) {
-      let stroke = toStroke(
-        args.canvasPoints,
-        (p) => ({ x: p.x * INK_UNITS_PER_PX, y: p.y * INK_UNITS_PER_PX }),
-        {
-          ...args,
-          size: args.size * INK_UNITS_PER_PX,
-          unitsPerPx: INK_UNITS_PER_PX,
-        },
-      );
-      let viewBox = strokeBounds(stroke);
-      if (!viewBox) return;
-      let entity = v7();
-      await rep.mutate.addCanvasBlock({
-        parent: args.page,
-        permission_set: args.permission_set,
-        factID: v7(),
-        newEntityID: entity,
-        type: "drawing",
-        position: {
-          x: viewBox.x / INK_UNITS_PER_PX - DRAWING_PADDING,
-          y: viewBox.y / INK_UNITS_PER_PX - DRAWING_PADDING,
-        },
-        width: viewBox.width / INK_UNITS_PER_PX + 2 * DRAWING_PADDING,
+    if (target && existing) {
+      await rep.mutate.assertFact({
+        id: v7(),
+        entity: target,
+        attribute: "drawing/stroke",
+        data: { type: "ink-stroke", value: stroke },
       });
-      await rep.mutate.assertFact([
-        {
-          entity,
-          attribute: "drawing/view-box",
-          data: { type: "view-box", value: viewBox },
-        },
-        {
-          id: v7(),
-          entity,
-          attribute: "drawing/stroke",
-          data: { type: "ink-stroke", value: stroke },
-        },
-      ]);
-      useInkSession.getState().setTarget(entity);
+      let viewBox = unionBounds([layout.viewBox, bounds])!;
+      if (!sameBox(viewBox, layout.viewBox))
+        await writeLayout(
+          rep,
+          args.page,
+          target,
+          existing.positionFactID,
+          refitLayout(layout, viewBox),
+        );
       return;
     }
-    let { layout } = existing;
-    let stroke = toStroke(
-      args.canvasPoints,
-      (p) => canvasToDrawing(layout, p),
-      {
-        ...args,
-        size: args.size / drawingScale(layout),
-        unitsPerPx: 1 / drawingScale(layout),
-      },
-    );
-    let bounds = strokeBounds(stroke);
-    if (!bounds) return;
-    await rep.mutate.assertFact({
-      id: v7(),
-      entity: target,
-      attribute: "drawing/stroke",
-      data: { type: "ink-stroke", value: stroke },
+    let entity = v7();
+    let { position, width } = refitLayout(layout, bounds);
+    await rep.mutate.addCanvasBlock({
+      parent: args.page,
+      permission_set: args.permission_set,
+      factID: v7(),
+      newEntityID: entity,
+      type: "drawing",
+      position,
+      width,
     });
-    let viewBox = unionBounds([layout.viewBox, bounds])!;
-    if (!sameBox(viewBox, layout.viewBox))
-      await writeLayout(
-        rep,
-        args.page,
-        target,
-        existing.positionFactID,
-        refitLayout(layout, viewBox),
-      );
+    await rep.mutate.assertFact([
+      {
+        entity,
+        attribute: "drawing/view-box",
+        data: { type: "view-box", value: bounds },
+      },
+      {
+        id: v7(),
+        entity,
+        attribute: "drawing/stroke",
+        data: { type: "ink-stroke", value: stroke },
+      },
+    ]);
+    useInkSession.setState({ target: entity });
   });
 }
 
@@ -278,7 +265,7 @@ export async function eraseStrokes(
   args: { page: string; target: string; strokeIDs: string[] },
 ) {
   let existing = await readDrawing(rep, args.page, args.target);
-  if (!existing || args.strokeIDs.length === 0) return;
+  if (!existing) return;
   let remaining = existing.strokes.filter(
     (s) => !args.strokeIDs.includes(s.id),
   );

@@ -16,14 +16,13 @@ export function InkSvg(props: {
   strokes: { id: string; stroke: InkStroke }[];
   // In paint order, beneath the strokes.
   fills?: { id: string; fill: InkFill }[];
-  className?: string;
 }) {
   let { x, y, width, height } = props.viewBox;
   return (
     <svg
       viewBox={`${x} ${y} ${width} ${height}`}
       overflow="visible"
-      className={`block w-full h-auto ${props.className || ""}`}
+      className="block w-full h-auto"
       style={{ aspectRatio: `${width} / ${height}` }}
     >
       {props.fills?.map((f) => (

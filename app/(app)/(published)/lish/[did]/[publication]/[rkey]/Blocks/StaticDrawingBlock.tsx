@@ -5,14 +5,12 @@ export const StaticDrawingBlock = ({
   block,
 }: {
   block: PubLeafletBlocksDrawing.Main;
-}) => {
-  return (
-    <div className="drawingBlock w-full">
-      <InkSvg
-        viewBox={block.viewBox}
-        strokes={block.strokes.map((stroke, i) => ({ id: String(i), stroke }))}
-        fills={block.fills?.map((fill, i) => ({ id: String(i), fill }))}
-      />
-    </div>
-  );
-};
+}) => (
+  <div className="w-full">
+    <InkSvg
+      viewBox={block.viewBox}
+      strokes={block.strokes.map((stroke, i) => ({ id: String(i), stroke }))}
+      fills={block.fills?.map((fill, i) => ({ id: String(i), fill }))}
+    />
+  </div>
+);

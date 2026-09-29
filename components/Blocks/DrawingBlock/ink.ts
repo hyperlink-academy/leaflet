@@ -39,10 +39,8 @@ export const INK_COLORS: { value: string; label: string }[] = [
 ];
 
 export function inkColor(color: string) {
-  if (Object.prototype.hasOwnProperty.call(THEME_INK, color))
-    return THEME_INK[color];
   if (/^#[0-9a-f]{3,8}$/i.test(color)) return color;
-  return "currentColor";
+  return Object.hasOwn(THEME_INK, color) ? THEME_INK[color] : "currentColor";
 }
 
 type Sample = [x: number, y: number, pressure: number];
@@ -52,12 +50,10 @@ const SAMPLES_PER_SIZE = 4;
 // Samples either side averaged into each sample's pressure.
 const PRESSURE_WINDOW = 8;
 
-// Resamples x, y, pressure (0-1) triples to even spacing along the stroke
-// and smooths their pressure. perfect-freehand's streamline and thinning are
-// per input point, so without this how a stroke renders depends on how
-// densely it was sampled: a pencil's pressure jitters between samples, which
-// thinning turns into beads along the line, and sparse stored points would
-// have their corners cut.
+// Resamples x, y, pressure (0-1) triples to even spacing and smooths their
+// pressure, so a stroke renders the same however densely it was sampled:
+// perfect-freehand's thinning turns pencil pressure jitter into beads, and its
+// streamline cuts the corners of sparse points.
 export function inkSamples(
   points: readonly number[],
   size: number,
@@ -115,22 +111,17 @@ export function simplifySamples(
     let [first, last] = stack.pop()!;
     let [ax, ay, ap] = samples[first];
     let [bx, by, bp] = samples[last];
-    let dx = bx - ax,
-      dy = by - ay;
-    let lengthSq = dx * dx + dy * dy;
     let worst = 1,
       index = -1;
     for (let i = first + 1; i < last; i++) {
       let [x, y, p] = samples[i];
-      let t =
-        lengthSq === 0
-          ? 0
-          : Math.max(
-              0,
-              Math.min(1, ((x - ax) * dx + (y - ay) * dy) / lengthSq),
-            );
+      let { t, distance } = nearestOnSegment(
+        { x, y },
+        { x: ax, y: ay },
+        { x: bx, y: by },
+      );
       let error = Math.max(
-        Math.hypot(x - (ax + t * dx), y - (ay + t * dy)) / tolerance,
+        distance / tolerance,
         Math.abs(p - (ap + t * (bp - ap))) / pressureTolerance,
       );
       if (error > worst) {
@@ -145,28 +136,26 @@ export function simplifySamples(
   return samples.filter((_, i) => keep[i]);
 }
 
-function freehandInput(stroke: InkStroke) {
+function freehandArgs(stroke: InkStroke, last: boolean) {
   let p = stroke.points;
   let raw: number[] = [];
   for (let i = 0; i + 2 < p.length; i += 3)
     raw.push(p[i], p[i + 1], p[i + 2] / INK_PRESSURE_SCALE);
-  return inkSamples(raw, stroke.size, !stroke.simulatePressure);
-}
-
-function freehandOptions(stroke: InkStroke, last: boolean) {
-  return {
-    size: stroke.size,
-    thinning: 0.6,
-    smoothing: 0.5,
-    streamline: 0.5,
-    simulatePressure: !!stroke.simulatePressure,
-    last,
-  };
+  return [
+    inkSamples(raw, stroke.size, !stroke.simulatePressure),
+    {
+      size: stroke.size,
+      thinning: 0.6,
+      smoothing: 0.5,
+      streamline: 0.5,
+      simulatePressure: !!stroke.simulatePressure,
+      last,
+    },
+  ] as const;
 }
 
 export function inkStrokePath(stroke: InkStroke, last = true) {
-  let outline = getStroke(freehandInput(stroke), freehandOptions(stroke, last));
-  return svgPathFromOutline(outline);
+  return svgPathFromOutline(getStroke(...freehandArgs(stroke, last)));
 }
 
 // Quadratic curves through the outline's midpoints, per perfect-freehand's
@@ -206,23 +195,16 @@ export function strokeBounds(stroke: InkStroke): ViewBox | null {
 }
 
 export function unionBounds(boxes: (ViewBox | null)[]): ViewBox | null {
-  let result: ViewBox | null = null;
-  for (let b of boxes) {
-    if (!b) continue;
-    if (!result) {
-      result = { ...b };
-      continue;
-    }
-    let x = Math.min(result.x, b.x);
-    let y = Math.min(result.y, b.y);
-    result = {
-      x,
-      y,
-      width: Math.max(result.x + result.width, b.x + b.width) - x,
-      height: Math.max(result.y + result.height, b.y + b.height) - y,
-    };
-  }
-  return result;
+  let bs = boxes.filter((b) => b !== null);
+  if (!bs.length) return null;
+  let x = Math.min(...bs.map((b) => b.x)),
+    y = Math.min(...bs.map((b) => b.y));
+  return {
+    x,
+    y,
+    width: Math.max(...bs.map((b) => b.x + b.width)) - x,
+    height: Math.max(...bs.map((b) => b.y + b.height)) - y,
+  };
 }
 
 export function sameBox(a: ViewBox, b: ViewBox) {
@@ -257,26 +239,24 @@ function rotate(p: Point, degrees: number): Point {
   return { x: p.x * cos - p.y * sin, y: p.x * sin + p.y * cos };
 }
 
-export function drawingToCanvas(l: DrawingLayout, d: Point): Point {
-  let s = drawingScale(l);
+// A point in the unrotated frame, from its top-left corner, on the canvas.
+function frameToCanvas(l: DrawingLayout, f: Point): Point {
   let w = l.width,
     h = frameHeight(l);
-  let r = rotate(
-    {
-      x: DRAWING_PADDING + s * (d.x - l.viewBox.x) - w / 2,
-      y: DRAWING_PADDING + s * (d.y - l.viewBox.y) - h / 2,
-    },
-    l.rotation,
-  );
+  let r = rotate({ x: f.x - w / 2, y: f.y - h / 2 }, l.rotation);
   return { x: l.position.x + w / 2 + r.x, y: l.position.y + h / 2 + r.y };
 }
 
-// The frame's top-right corner on the canvas, following its rotation.
+export function drawingToCanvas(l: DrawingLayout, d: Point): Point {
+  let s = drawingScale(l);
+  return frameToCanvas(l, {
+    x: DRAWING_PADDING + s * (d.x - l.viewBox.x),
+    y: DRAWING_PADDING + s * (d.y - l.viewBox.y),
+  });
+}
+
 export function frameTopRight(l: DrawingLayout): Point {
-  let w = l.width,
-    h = frameHeight(l);
-  let r = rotate({ x: w / 2, y: -h / 2 }, l.rotation);
-  return { x: l.position.x + w / 2 + r.x, y: l.position.y + h / 2 + r.y };
+  return frameToCanvas(l, { x: l.width, y: 0 });
 }
 
 export function canvasToDrawing(l: DrawingLayout, c: Point): Point {
@@ -310,31 +290,14 @@ export function refitLayout(l: DrawingLayout, viewBox: ViewBox): DrawingLayout {
   return next;
 }
 
-function distanceToSegment(p: Point, a: Point, b: Point) {
-  let dx = b.x - a.x,
-    dy = b.y - a.y;
-  let lengthSq = dx * dx + dy * dy;
-  let t =
-    lengthSq === 0
-      ? 0
-      : Math.max(
-          0,
-          Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSq),
-        );
-  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
-}
-
 // Both p and radius are in drawing units.
 export function strokeHit(stroke: InkStroke, p: Point, radius: number) {
   let pts = stroke.points;
   let reach = radius + stroke.size / 2;
   for (let i = 0; i + 2 < pts.length; i += 3) {
     let a = { x: pts[i], y: pts[i + 1] };
-    let b =
-      i + 5 < pts.length
-        ? { x: pts[i + 3], y: pts[i + 4] }
-        : { x: a.x, y: a.y };
-    if (distanceToSegment(p, a, b) <= reach) return true;
+    let b = i + 5 < pts.length ? { x: pts[i + 3], y: pts[i + 4] } : a;
+    if (nearestOnSegment(p, a, b).distance <= reach) return true;
   }
   return false;
 }
@@ -353,10 +316,9 @@ const MIN_LOOP_SPAN = 3;
 // and trails the input, so the stored points stray outside the rendered
 // stroke where this doesn't.
 function strokeCenterline(stroke: InkStroke): Point[] {
-  let points = getStrokePoints(
-    freehandInput(stroke),
-    freehandOptions(stroke, true),
-  ).map((p): Sample => [p.point[0], p.point[1], 0]);
+  let points = getStrokePoints(...freehandArgs(stroke, true)).map(
+    (p): Sample => [p.point[0], p.point[1], 0],
+  );
   return simplifySamples(points, stroke.size * CENTERLINE_TOLERANCE, 1).map(
     ([x, y]) => ({ x, y }),
   );
@@ -400,23 +362,14 @@ export function strokeLoop(stroke: InkStroke): number[] | null {
   let line = strokeCenterline(stroke);
   if (line.length < 3) return null;
   let lengths = [0];
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
-  for (let i = 0; i < line.length; i++) {
-    let p = line[i];
-    minX = Math.min(minX, p.x);
-    maxX = Math.max(maxX, p.x);
-    minY = Math.min(minY, p.y);
-    maxY = Math.max(maxY, p.y);
-    if (i > 0)
-      lengths.push(
-        lengths[i - 1] + Math.hypot(p.x - line[i - 1].x, p.y - line[i - 1].y),
-      );
-  }
+  for (let i = 1; i < line.length; i++)
+    lengths.push(
+      lengths[i - 1] +
+        Math.hypot(line[i].x - line[i - 1].x, line[i].y - line[i - 1].y),
+    );
+  let bounds = strokeBounds(stroke)!;
   // Centers this far apart leave the visible gap between two stroke edges.
-  let reach = stroke.size + LOOP_GAP * Math.max(maxX - minX, maxY - minY);
+  let reach = stroke.size + LOOP_GAP * Math.max(bounds.width, bounds.height);
 
   // A position along the stroke: `t` of the way down the segment from
   // line[index].
@@ -467,7 +420,7 @@ export function strokeLoop(stroke: InkStroke): number[] | null {
   return points;
 }
 
-export function polygonArea(points: readonly number[]) {
+function polygonArea(points: readonly number[]) {
   let sum = 0;
   for (let i = 0; i + 1 < points.length; i += 2) {
     let j = (i + 2) % points.length;
@@ -523,19 +476,8 @@ export function drawingFills<S extends { id: string; stroke: InkStroke }>(
   strokes: S[],
 ) {
   return strokes
-    .flatMap((s) =>
-      s.stroke.fill
-        ? [
-            {
-              id: s.id,
-              fill: s.stroke.fill,
-              area: polygonArea(s.stroke.fill.points),
-            },
-          ]
-        : [],
-    )
-    .sort((a, b) => b.area - a.area)
-    .map(({ id, fill }) => ({ id, fill }));
+    .flatMap((s) => (s.stroke.fill ? [{ id: s.id, fill: s.stroke.fill }] : []))
+    .sort((a, b) => polygonArea(b.fill.points) - polygonArea(a.fill.points));
 }
 
 export function inkFillPath(fill: InkFill) {

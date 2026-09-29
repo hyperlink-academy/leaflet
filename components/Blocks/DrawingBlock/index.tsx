@@ -59,7 +59,7 @@ export function DrawingBlock(props: BlockProps & { preview?: boolean }) {
       }
     >
       <div
-        className={`drawingBlock w-full rounded-md outline-2 outline-offset-4 ${editing ? "outline-dashed outline-border" : "outline-transparent"}`}
+        className={`w-full rounded-md outline-2 outline-offset-4 ${editing ? "outline-dashed outline-border" : "outline-transparent"}`}
         onDoubleClick={canEdit ? edit : undefined}
       >
         <InkSvg viewBox={viewBox} strokes={strokes} fills={fills} />
