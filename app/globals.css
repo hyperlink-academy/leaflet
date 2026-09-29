@@ -1383,15 +1383,23 @@ body > iframe[src*="js.stripe.com"] {
   transform-origin: 0 0;
   transform: scale(var(--canvas-zoom));
 }
-/* The canvas background, outside the content's paint containment. It starts
-   at the canvas origin, so the top and left edges (nothing can be placed
-   past them) stay visible, and overhangs right and down by what a 2400px
-   box shows at the 0.25 zoom floor, so it reaches the window's bottom and
-   right edges however far out you zoom (the spacer clips the rest). */
-.canvasBackgroundFill {
+/* Around the canvas, where nothing can be placed: a border a screen pixel
+   wide at any zoom, then the theme's primary color as far as a 2400px box
+   shows at the 0.25 zoom floor (the spacer clips the rest). Both are drawn
+   outside the canvas's own box, so neither shows until an edge is in view.
+   Its own layer, painted last: the border's width follows the zoom, and
+   repainting it must not re-raster the canvas. A drawing (centered) has its
+   own surround. */
+.canvasZoomSpacer:not(.canvasZoomCentered) > .canvasZoomLayer::after {
+  --canvas-zoom: inherit;
+  content: "";
   position: absolute;
-  inset: 0 -9600px -9600px 0;
+  inset: 0;
   pointer-events: none;
+  will-change: transform;
+  box-shadow:
+    0 0 0 calc(1px / var(--canvas-zoom)) var(--color-border),
+    0 0 0 9600px var(--color-primary);
 }
 /* Locked (lockViewerZoom): nothing scrolls sideways, since the spacer is as
    wide as the box and clips the layer. The layer is shifted by the offset a

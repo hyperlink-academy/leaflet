@@ -36,13 +36,10 @@ type BlockDataProps = {
 export function CanvasBlocks({
   blocks,
   size,
-  background = true,
   ...props
 }: BlockDataProps & {
   blocks: PubLeafletPagesCanvas.Block[];
   size?: { width: number; height: number };
-  /** False when the zoom layer draws the grid around the content. */
-  background?: boolean;
 }) {
   let { width, height } = size ?? {
     width: CONTENT_WIDTH,
@@ -66,7 +63,7 @@ export function CanvasBlocks({
       }}
       className="relative"
     >
-      {!size && background && (
+      {!size && (
         <div className="w-full h-full pointer-events-none">
           <CanvasBackgroundPattern pattern="grid" />
         </div>
