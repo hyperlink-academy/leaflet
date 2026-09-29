@@ -566,6 +566,11 @@ export function useCanvasImage(
   return { decoding: "sync", className: animated ? "canvasAnimatedImage" : "" };
 }
 
+// The zoom a canvas has settled at, and 1 outside of one. A render can't read
+// the live zoom from the session instead: React Compiler caches that call.
+export function useCanvasZoomLevel() {
+  return useContext(CanvasZoomContext)?.zoom ?? 1;
+}
 export function useCanvasZoomEngine() {
   let engine = useContext(CanvasZoomEngineContext);
   if (!engine)

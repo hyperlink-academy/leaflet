@@ -11,6 +11,7 @@ import { isUrl } from "src/utils/isURL";
 import { elementId } from "src/utils/elementId";
 import { focusBlock } from "src/utils/focusBlock";
 import { useDrag } from "src/hooks/useDrag";
+import { useCanvasZoomLevel } from "src/canvasZoom/CanvasZoomProvider";
 import { BlockEmbedSmall } from "components/Icons/BlockEmbedSmall";
 import { CheckTiny } from "components/Icons/CheckTiny";
 import { EditTiny } from "components/Icons/EditTiny";
@@ -47,21 +48,16 @@ const useEmbedSizing = (props: BlockProps & { preview?: boolean }) => {
   let height = useEntity(props.entityID, "embed/height")?.data.value || 360;
   let aspectRatio = useEntity(props.entityID, "embed/aspect-ratio")?.data.value;
 
-  let heightOnDragEnd = useCallback(
-    (dragPosition: { x: number; y: number }) => {
+  // Drag deltas arrive in screen px; on a canvas the height is canvas px.
+  let zoom = useCanvasZoomLevel();
+  let heightHandle = useDrag({
+    onDragEnd: (dragPosition) =>
       rep?.mutate.assertFact({
         entity: props.entityID,
         attribute: "embed/height",
-        data: {
-          type: "number",
-          value: height + dragPosition.y,
-        },
-      });
-    },
-    [props, rep, height],
-  );
-
-  let heightHandle = useDrag({ onDragEnd: heightOnDragEnd });
+        data: { type: "number", value: height + dragPosition.y / zoom },
+      }),
+  });
 
   let resizeHandle =
     !props.preview && permissions.write && !aspectRatio ? (
@@ -78,7 +74,7 @@ const useEmbedSizing = (props: BlockProps & { preview?: boolean }) => {
 
   let sizeStyle = aspectRatio
     ? { aspectRatio }
-    : { height: height + (heightHandle.dragDelta?.y || 0) };
+    : { height: height + (heightHandle.dragDelta?.y || 0) / zoom };
 
   return {
     aspectRatio,
