@@ -62,14 +62,14 @@ function AddDomainForm(props: { onAdded: (domain: string) => void }) {
       onSubmit={async (e) => {
         e.preventDefault();
         setLoading(true);
-        let { error } = await addDomain(value);
+        let { error, domain } = await addDomain(value);
         if (error) {
           setLoading(false);
           smoker({
             error: true,
             text:
               error === "invalid_domain"
-                ? "Invalid domain! Use just the domain, like www.example.com"
+                ? "Invalid domain! Use just the domain, like example.com"
                 : error === "domain_already_in_use"
                   ? "That domain is already in use!"
                   : "An unknown error occurred",
@@ -81,7 +81,7 @@ function AddDomainForm(props: { onAdded: (domain: string) => void }) {
           return;
         }
         await mutate();
-        props.onAdded(value);
+        props.onAdded(domain ?? value);
       }}
     >
       <div className="flex justify-between">
@@ -96,9 +96,9 @@ function AddDomainForm(props: { onAdded: (domain: string) => void }) {
       <Input
         className="input-with-border text-primary"
         autoFocus
-        placeholder="www.example.com"
+        placeholder="example.com"
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => setValue(e.target.value.toLowerCase())}
       />
 
       <div className="flex justify-end items-center mt-2">

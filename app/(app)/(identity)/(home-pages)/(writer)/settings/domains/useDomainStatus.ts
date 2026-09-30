@@ -6,8 +6,11 @@ export function useDomainStatus(domain: string) {
     return await callRPC("get_domain_status", { domain });
   });
   let pending = data?.config?.misconfigured || data?.verification;
-  return { data, pending, mutate };
+  let ready = !!data && !data.error && !pending;
+  return { data, pending, ready, mutate };
 }
+
+export type DomainReadiness = "ready" | "pending" | "error";
 
 export function useDomainStatuses(domains: string[]) {
   let sorted = [...domains].sort();
@@ -20,10 +23,13 @@ export function useDomainStatuses(domains: string[]) {
           mutateGlobal(`domain-status-${domain}`, status, {
             revalidate: false,
           });
-          let pending = !!(
+          let readiness: DomainReadiness =
             status?.config?.misconfigured || status?.verification
-          );
-          return [domain, pending] as const;
+              ? "pending"
+              : !status || status.error
+                ? "error"
+                : "ready";
+          return [domain, readiness] as const;
         }),
       );
       return Object.fromEntries(entries);

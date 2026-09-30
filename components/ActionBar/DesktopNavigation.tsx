@@ -25,6 +25,7 @@ import { Separator } from "components/Layout";
 import { LeafletTiny } from "components/Icons/LeafletTiny";
 import { ButtonPrimary } from "components/Buttons";
 import { useTutorialNavTour } from "app/(app)/(identity)/(home-pages)/(writer)/home/Tutorial/TutorialNavTooltip";
+import { HomeSmall } from "components/Icons/HomeSmall";
 
 type NavigationProps = {
   pageTitle: React.ReactNode;
@@ -215,20 +216,20 @@ export const PageTitle = (props: {
 }) => {
   let pathname = usePathname();
   return (
-    <div className="flex gap-2 w-full px-1 py-0.5 items-center ">
+    <div className="flex gap-[6px] w-full px-1 py-0.5 items-center ">
       {props.showHomeButton &&
         (pathname === "/home" ? (
-          <div className="flex items-center shrink-0 text-tertiary">
-            <HomeTiny />
+          <div className="flex gap-1 items-center shrink-0 text-tertiary ">
+            <HomeSmall className="ml-1 scale-90" /> /
           </div>
         ) : (
           <SpeedyLink
             eager
             href={"/home"}
             aria-label="Home"
-            className="flex items-center shrink-0 text-tertiary hover:text-accent-contrast"
+            className="flex gap-1 items-center shrink-0 text-tertiary hover:no-underline!"
           >
-            <HomeTiny />
+            <HomeSmall className="ml-1 scale-90 text-accent-contrast" /> /
           </SpeedyLink>
         ))}
       <div className="truncate min-w-0 text-tertiary uppercase text-sm font-bold">

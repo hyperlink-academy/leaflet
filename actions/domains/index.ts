@@ -45,9 +45,19 @@ async function clearAllAssignments(domain: string) {
 // Adding domains
 // ==============
 
-export async function addDomain(domain: string) {
+type AddDomainError =
+  | "unknown-error"
+  | "invalid_domain"
+  | "domain_already_in_use";
+
+export async function addDomain(
+  domain: string,
+): Promise<{ error?: AddDomainError; domain?: string }> {
   // Middleware matches the request's Host header exactly, which is always lowercase.
-  domain = domain.trim().toLowerCase();
+  domain = domain
+    .trim()
+    .toLowerCase()
+    .replace(/^www\./, "");
   let identity = await getAuthIdentity();
   if (!identity || (!identity.email && !identity.atp_did)) return {};
   if (
@@ -77,8 +87,7 @@ async function createDomain(
     });
   } catch (e) {
     console.log(e);
-    let error: "unknown-error" | "invalid_domain" | "domain_already_in_use" =
-      "unknown-error";
+    let error: AddDomainError = "unknown-error";
     if ((e as any).rawValue) {
       error =
         (e as { rawValue?: { error?: { code?: "invalid_domain" } } })?.rawValue
@@ -92,13 +101,29 @@ async function createDomain(
     return { error };
   }
 
+  // Best effort: the domain works without it, and the verify screen only shows
+  // www records when Vercel knows about the www host.
+  try {
+    await vercel.projects.addProjectDomain({
+      idOrName: VERCEL_PROJECT,
+      teamId: VERCEL_TEAM,
+      requestBody: {
+        name: `www.${domain}`,
+        redirect: domain,
+        redirectStatusCode: 308,
+      },
+    });
+  } catch (e) {
+    console.log(e);
+  }
+
   await supabase.from("custom_domains").insert({
     domain,
     identity: email,
     confirmed: false,
     identity_id,
   });
-  return {};
+  return { domain };
 }
 
 // Assigning domains
@@ -173,11 +198,7 @@ export async function assignDomainToPublication({
 
 // Remove all assignments from a domain (routes + publication links),
 // but keep the domain itself registered.
-export async function removeDomainAssignment({
-  domain,
-}: {
-  domain: string;
-}) {
+export async function removeDomainAssignment({ domain }: { domain: string }) {
   if (!(await assertOwnsDomain(domain))) return null;
   await clearAllAssignments(domain);
   await expireDomainCache(domain);
@@ -220,6 +241,13 @@ export async function deleteDomain({ domain }: { domain: string }) {
       teamId: VERCEL_TEAM,
       domain,
     }),
+    vercel.projects
+      .removeProjectDomain({
+        idOrName: VERCEL_PROJECT,
+        teamId: VERCEL_TEAM,
+        domain: `www.${domain}`,
+      })
+      .catch(() => {}),
   ]);
   await expireDomainCache(domain);
 
