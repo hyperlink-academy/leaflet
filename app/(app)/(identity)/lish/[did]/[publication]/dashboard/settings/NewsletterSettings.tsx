@@ -16,12 +16,12 @@ import {
   usePublicationData,
 } from "../PublicationSWRProvider";
 import { useToaster } from "components/Toast";
+import { SubscribePageLinkInput } from "./SubscribePageSettings";
 import {
   clearReplyToEmail,
   confirmReplyToVerification,
   disableNewsletter,
   enableNewsletter,
-  setEmbedRedirectUrl,
   setReplyToEmail,
 } from "actions/publications/newsletterSettings";
 import {
@@ -64,8 +64,6 @@ export const NewsletterSettings = () => {
             <EmbedFormSnippet
               publicationUri={publicationUri}
               publicationUrl={record?.url}
-              savedRedirectUrl={settings?.embed_redirect_url ?? null}
-              mutate={mutate}
             />
           </SettingsSection>
           <DisableNewsletterSection
@@ -381,8 +379,6 @@ function ReplyToButton(props: {
 const EmbedFormSnippet = (props: {
   publicationUri: string;
   publicationUrl?: string;
-  savedRedirectUrl: string | null;
-  mutate: ReturnType<typeof usePublicationData>["mutate"];
 }) => {
   let toaster = useToaster();
   let appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub";
@@ -392,12 +388,8 @@ const EmbedFormSnippet = (props: {
     publication: props.publicationUri,
   });
   let defaultRedirect = props.publicationUrl || appUrl;
-  let [draft, setDraft] = useState<string | null>(null);
-  let [saving, setSaving] = useState(false);
-  let savedRedirect = props.savedRedirectUrl ?? defaultRedirect;
-  let redirectValue = draft ?? savedRedirect;
-  let redirectDirty = redirectValue.trim() !== savedRedirect;
-  let redirect = escapeHtmlAttribute(savedRedirect);
+  let [redirectValue, setRedirectValue] = useState("");
+  let redirect = escapeHtmlAttribute(redirectValue.trim() || defaultRedirect);
   let snippet = `<form action="${actionUrl}" method="get">
   <input type="hidden" name="action" value="${action}" />
   <input type="hidden" name="redirect" value="${redirect}" />
@@ -416,94 +408,49 @@ const EmbedFormSnippet = (props: {
         then sent back to your webpage.
       </p>
       <InputSetting label="HTML Snippet">
-        <div className="flex flex-col">
-          <pre className="input-with-border bg-border-light text-primary text-sm rounded-md p-2 pr-16 overflow-x-auto whitespace-pre">
-            <code>{snippet}</code>
-          </pre>
-          <ButtonSecondary
-            type="button"
-            compact
-            fullWidth
-            className="mt-2"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(snippet);
-                toaster({ type: "success", content: "Copied!" });
-              } catch {
-                toaster({
-                  type: "error",
-                  content: "Couldn't copy to clipboard.",
-                });
-              }
-            }}
-          >
-            Copy HTML
-          </ButtonSecondary>
-        </div>
+        <pre className="input-with-border bg-border-light text-primary text-sm rounded-md p-2 pr-16 overflow-x-auto whitespace-pre">
+          <code>{snippet}</code>
+        </pre>
       </InputSetting>
       <InputSetting
         htmlFor="embedRedirect"
         label="Redirect To"
         helpText="Specify where a subscriber is redirected to once they subscribe."
       >
-        <div className="relative">
-          <Input
-            id="embedRedirect"
-            className="input-with-border w-full text-primary"
-            type="url"
-            value={redirectValue}
-            placeholder={defaultRedirect}
-            onChange={(e) => setDraft(e.currentTarget.value)}
-          />
-          {redirectDirty && (
-            <div className="absolute top-[4px] right-1">
-              <ButtonPrimary
-                className="text-sm"
-                compact
-                disabled={saving}
-                onClick={async () => {
-                  if (saving) return;
-                  let next = redirectValue.trim();
-                  setSaving(true);
-                  let res = await setEmbedRedirectUrl(
-                    props.publicationUri,
-                    next === defaultRedirect ? "" : next,
-                  );
-                  setSaving(false);
-                  if (!res.ok) {
-                    toaster({
-                      type: "error",
-                      content:
-                        res.error === "invalid_url"
-                          ? "Please enter a full URL, like https://example.com."
-                          : "Failed to save redirect.",
-                    });
-                    return;
-                  }
-                  await props.mutate();
-                  setDraft(null);
-                  toaster({ type: "success", content: "Redirect saved." });
-                }}
-              >
-                {saving ? <DotLoader /> : "Save"}
-              </ButtonPrimary>
-            </div>
-          )}
-        </div>
+        <Input
+          id="embedRedirect"
+          className="input-with-border w-full text-primary"
+          type="url"
+          value={redirectValue}
+          placeholder={defaultRedirect}
+          onChange={(e) => setRedirectValue(e.currentTarget.value)}
+        />
       </InputSetting>
+      <ButtonSecondary
+        type="button"
+        compact
+        fullWidth
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(snippet);
+            toaster({ type: "success", content: "Copied!" });
+          } catch {
+            toaster({
+              type: "error",
+              content: "Couldn't copy to clipboard.",
+            });
+          }
+        }}
+      >
+        Copy HTML
+      </ButtonSecondary>
       <hr />
-      <InputSetting label="Preview">
-        <form
-          className="light-container flex gap-2 items-center p-3 max-w-prose"
-          onSubmit={(e) => e.preventDefault()}
-        >
-          <Input
-            className="input-with-border grow min-w-0 text-primary"
-            type="email"
-            placeholder="you@example.com"
-          />
-          <ButtonPrimary type="submit">Subscribe</ButtonPrimary>
-        </form>
+      <InputSetting
+        htmlFor="subscribePageUrl"
+        label="Subscribe Page"
+        helpText="Or link to this page, or embed it in an iframe."
+      >
+        <SubscribePageLinkInput id="subscribePageUrl" />
       </InputSetting>
     </>
   );
