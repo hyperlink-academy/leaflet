@@ -35,6 +35,11 @@ describe("processBlocksToPages", () => {
         data: { type: "reference", value: "canvasPage" },
       }),
       fact({
+        entity: "embedded-canvas",
+        attribute: "image/alt",
+        data: { type: "string", value: "A sketch of a cat" },
+      }),
+      fact({
         entity: "canvasPage",
         attribute: "page/type",
         data: { type: "page-type-union", value: "canvas" },
@@ -59,6 +64,7 @@ describe("processBlocksToPages", () => {
     expect(pages[0].blocks[0].block).toEqual({
       $type: "pub.leaflet.blocks.embeddedCanvas",
       id: "canvasPage",
+      alt: "A sketch of a cat",
     });
     expect(pages[1]).toMatchObject({
       $type: "pub.leaflet.pages.canvas",

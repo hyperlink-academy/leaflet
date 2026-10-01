@@ -17,6 +17,7 @@ export function ImageAltButton(props: {
   canEdit?: boolean;
   className?: string;
   onSeeMore?: () => void;
+  placeholder?: string;
 }) {
   let canEdit = props.canEdit ?? true;
   let alt = useEntity(props.entityID, "image/alt")?.data.value;
@@ -80,6 +81,7 @@ export function ImageAltButton(props: {
               </div>
             }
             entityID={props.entityID}
+            placeholder={props.placeholder}
             title={hasAlt ? "Edit Alt Text" : "Add Alt Text"}
           />
         )}

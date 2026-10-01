@@ -46,6 +46,11 @@ export const PubLeafletBlocksEmbeddedCanvas: LexiconDoc = {
         "A fixed-size canvas shown in full inline. id refers to a pub.leaflet.pages.canvas in the document's pages whose width and height bound it.",
       properties: {
         id: { type: "string" },
+        alt: {
+          type: "string",
+          description:
+            "Alt text description of the canvas as a picture, for accessibility.",
+        },
       },
     },
   },

@@ -9,6 +9,7 @@ import { useCanvasSize } from "src/hooks/queries/useCanvasSize";
 import { ScaledCanvas } from "./ScaledCanvas";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { EditTiny } from "components/Icons/EditTiny";
+import { ImageAltButton } from "./ImageAltButton";
 import { BlockSettings } from "./SettingsTriggerButton";
 import { BlockSettingOptions } from "./BlockSettingOptions";
 import {
@@ -28,6 +29,8 @@ export function EmbeddedCanvasBlock(
   let size = useCanvasSize(page || null);
   let isSelected = useIsBlockSelected(props.entityID);
   let isOpen = useUIState((s) => !!page && s.openPages.includes(page));
+  let alt = useEntity(props.entityID, "image/alt")?.data.value;
+  let { permissions } = useEntitySetContext();
   if (!page || !size.fixed) return null;
 
   return (
@@ -37,13 +40,21 @@ export function EmbeddedCanvasBlock(
         areYouSure={props.areYouSure}
         setAreYouSure={props.setAreYouSure}
         extraOptions={<EmbeddedCanvasSizeSettings page={page} size={size} />}
-        className={`embeddedCanvasBlockWrapper relative p-0! ${isOpen ? "border-accent-contrast! outline-accent-contrast!" : ""}`}
+        className={`embeddedCanvasBlockWrapper group/image relative p-0! ${isOpen ? "border-accent-contrast! outline-accent-contrast!" : ""}`}
       >
-        <ScaledCanvas size={size} inert>
+        <ScaledCanvas size={size} inert alt={alt}>
           <CanvasContent entityID={page} preview />
         </ScaledCanvas>
         {!props.preview && (
           <EditEmbeddedCanvasButton parent={props.parent} page={page} />
+        )}
+        {!props.preview && (
+          <ImageAltButton
+            entityID={props.entityID}
+            selected={!!isSelected}
+            canEdit={permissions.write}
+            placeholder="Describe this drawing…"
+          />
         )}
       </BlockLayout>
     </CardThemeProvider>

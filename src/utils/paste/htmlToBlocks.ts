@@ -426,6 +426,13 @@ function buildBlockFromHTML(
         });
       }
     }
+    const alt = child.getAttribute("data-alt");
+    if (alt)
+      facts.push({
+        entity: entityID,
+        attribute: "image/alt",
+        data: { type: "string", value: alt },
+      });
     const display = child.getAttribute("data-display");
     if (isPageLinkDisplay(display)) {
       facts.push({

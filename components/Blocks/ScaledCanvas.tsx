@@ -1,15 +1,18 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { CanvasSize } from "src/utils/embeddedCanvasSize";
 
-// A drawing's canvas shown whole, scaled to the available width.
+// A drawing's canvas shown whole, scaled to the available width. With alt
+// text it is exposed to assistive tech as a single labelled image.
 export function ScaledCanvas(props: {
   size: CanvasSize;
   inert?: boolean;
+  alt?: string;
   children: ReactNode;
 }) {
   return (
     <div
-      inert={props.inert}
+      role={props.alt ? "img" : undefined}
+      aria-label={props.alt || undefined}
       className="relative w-full overflow-clip"
       style={{
         aspectRatio: `${props.size.width} / ${props.size.height}`,
@@ -17,6 +20,7 @@ export function ScaledCanvas(props: {
       }}
     >
       <div
+        inert={props.inert}
         className="absolute top-0 left-0 origin-top-left"
         style={
           {

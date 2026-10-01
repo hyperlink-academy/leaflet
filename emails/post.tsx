@@ -1501,6 +1501,7 @@ const BlockRenderer = ({
         <EmbeddedCanvasEmailBlock
           blocks={page.blocks}
           size={{ width: page.width, height: page.height }}
+          alt={block.alt}
           href={blockUrl ?? postUrl}
           did={did}
           theme={theme}
@@ -2184,6 +2185,7 @@ const CanvasThumbnail = ({
 const EmbeddedCanvasEmailBlock = ({
   blocks,
   size,
+  alt,
   href,
   did,
   theme,
@@ -2192,6 +2194,7 @@ const EmbeddedCanvasEmailBlock = ({
 }: {
   blocks: PubLeafletPagesCanvas.Block[];
   size: { width: number; height: number };
+  alt?: string;
   href?: string;
   did: string;
   theme: EmailTheme;
@@ -2210,6 +2213,9 @@ const EmbeddedCanvasEmailBlock = ({
     >
       <Link
         href={href}
+        role={alt ? "img" : undefined}
+        aria-label={alt || undefined}
+        title={alt || undefined}
         style={{ color: "inherit", display: "block", textDecoration: "none" }}
       >
         <CanvasThumbnail

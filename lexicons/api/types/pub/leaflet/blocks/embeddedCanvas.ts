@@ -18,6 +18,8 @@ const id = 'pub.leaflet.blocks.embeddedCanvas'
 export interface Main {
   $type?: 'pub.leaflet.blocks.embeddedCanvas'
   id: string
+  /** Alt text description of the canvas as a picture, for accessibility. */
+  alt?: string
 }
 
 const hashMain = 'main'

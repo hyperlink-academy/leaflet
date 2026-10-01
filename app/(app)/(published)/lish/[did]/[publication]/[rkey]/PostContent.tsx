@@ -56,6 +56,7 @@ import { useStandardSitePublication } from "components/StandardSitePublicationDa
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { CanvasBlocks } from "./CanvasBlockContent";
 import { ScaledCanvas } from "components/Blocks/ScaledCanvas";
+import { ReadOnlyAltText } from "components/Blocks/ReadOnlyAltText";
 import { PublishedImageGallery } from "./Blocks/PublishedImageGallery";
 import { PublishedImageBlock } from "./Blocks/PublishedImageBlock";
 import { useOpenImageLightbox } from "./GlobalImageLightbox";
@@ -307,9 +308,9 @@ export let Block = ({
         return;
       let size = { width: page.width, height: page.height };
       return (
-        <div className={className} {...blockProps}>
+        <div className={`relative ${className}`} {...blockProps}>
           <div className="w-full block-border overflow-clip bg-bg-page">
-            <ScaledCanvas size={size}>
+            <ScaledCanvas size={size} alt={block.alt}>
               <CanvasBlocks
                 blocks={page.blocks}
                 size={size}
@@ -322,6 +323,7 @@ export let Block = ({
               />
             </ScaledCanvas>
           </div>
+          {block.alt && <ReadOnlyAltText alt={block.alt} />}
         </div>
       );
     },

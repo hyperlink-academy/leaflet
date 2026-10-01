@@ -54,9 +54,11 @@ export function ReadOnlyAltText(props: {
 }
 
 // The alt text itself, clamped on the image. Alt longer than the clamp gets a
-// "See more" that hands off to the lightbox, which can give it the full height.
+// "See more" that hands off to the lightbox, which can give it the full height;
+// with no lightbox it scrolls in place instead.
 export function AltTextBody(props: { alt: string; onSeeMore?: () => void }) {
   let [overflows, setOverflows] = useState(false);
+  let [expanded, setExpanded] = useState(false);
   let textRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -72,17 +74,21 @@ export function AltTextBody(props: { alt: string; onSeeMore?: () => void }) {
   return (
     <div className="opaque-container leading-snug text-secondary border-none! text-sm px-1.5 p-1 shrink-0">
       <div className="relative">
-        <div ref={textRef} className="line-clamp-4">
+        <div
+          ref={textRef}
+          className={expanded ? "max-h-40 overflow-y-auto" : "line-clamp-4"}
+        >
           {props.alt}
         </div>
-        {overflows && props.onSeeMore && (
+        {overflows && !expanded && (
           // Sits on the clipped last line, over the text it truncates.
           <button
             className="absolute bottom-0 right-0 bg-bg-page pl-2 text-accent-contrast "
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
-              props.onSeeMore?.();
+              if (props.onSeeMore) props.onSeeMore();
+              else setExpanded(true);
             }}
           >
             See more

@@ -349,7 +349,7 @@ describe("Leaflet copy → paste round trip", () => {
       },
     ];
     const result = build(
-      `<div data-type="embedded-canvas" data-entityid="old-canvas-page" data-facts='${JSON.stringify(facts)}'></div>`,
+      `<div data-type="embedded-canvas" data-entityid="old-canvas-page" data-alt="A sketch of a cat" data-facts='${JSON.stringify(facts)}'></div>`,
     );
     expect(result.blocks).toHaveLength(1);
     const embedded = result.blocks[0];
@@ -364,6 +364,9 @@ describe("Leaflet copy → paste round trip", () => {
         (f) => f.entity === page && f.attribute === "canvas/fixed-height",
       )?.data,
     ).toEqual({ type: "number", value: 240 });
+    expect(
+      embedded.facts.find((f) => f.attribute === "image/alt")?.data,
+    ).toEqual({ type: "string", value: "A sketch of a cat" });
   });
 });
 

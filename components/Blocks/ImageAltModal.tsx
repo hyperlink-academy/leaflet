@@ -11,6 +11,7 @@ export function ImageAltModal(props: {
   entityID: string;
   trigger: React.ReactNode;
   title: string;
+  placeholder?: string;
 }) {
   let [altEditorOpen, setAltEditorOpen] = useState(false);
 
@@ -26,6 +27,7 @@ export function ImageAltModal(props: {
     >
       <ImageAltModalContent
         entityID={props.entityID}
+        placeholder={props.placeholder}
         onClose={() => setAltEditorOpen(false)}
       />
     </Modal>
@@ -34,6 +36,7 @@ export function ImageAltModal(props: {
 
 function ImageAltModalContent(props: {
   entityID: string;
+  placeholder?: string;
   onClose: () => void;
 }) {
   let { rep } = useReplicache();
@@ -67,7 +70,7 @@ function ImageAltModalContent(props: {
       <textarea
         autoFocus
         className="input-with-border w-full resize-none min-h-[64px]  p-2"
-        placeholder="Describe this image…"
+        placeholder={props.placeholder ?? "Describe this image…"}
         value={value}
         onChange={(e) => setDraft(e.currentTarget.value)}
         onKeyDown={(e) => {

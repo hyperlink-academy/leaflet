@@ -278,11 +278,13 @@ const BlockTypeToHTML: {
     let [card] = await scanIndex(tx).eav(b.entityID, "block/card");
     if (!card) return "";
     let facts = await getAllFacts(tx, card.data.value);
+    let [alt] = await scanIndex(tx).eav(b.entityID, "image/alt");
     return (
       <div
         data-type="embedded-canvas"
         data-facts={JSON.stringify(facts)}
         data-entityid={card.data.value}
+        data-alt={alt?.data.value || undefined}
       />
     );
   },

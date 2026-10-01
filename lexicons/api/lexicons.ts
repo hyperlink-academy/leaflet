@@ -1464,6 +1464,11 @@ export const schemaDict = {
           id: {
             type: 'string',
           },
+          alt: {
+            type: 'string',
+            description:
+              'Alt text description of the canvas as a picture, for accessibility.',
+          },
         },
       },
     },

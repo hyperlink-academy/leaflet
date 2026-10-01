@@ -229,7 +229,12 @@ export async function processBlocksToPages(opts: {
       const [page] = scan.eav(b.entityID, "block/card");
       if (!page) return;
       pages.push(await pageToRecord(page.data.value, membersOnly));
-      return { $type: ids.PubLeafletBlocksEmbeddedCanvas, id: page.data.value };
+      const [alt] = scan.eav(b.entityID, "image/alt");
+      return {
+        $type: ids.PubLeafletBlocksEmbeddedCanvas,
+        id: page.data.value,
+        ...(alt?.data.value && { alt: alt.data.value }),
+      };
     },
     "bluesky-post": async (b) => {
       const [post] = scan.eav(b.entityID, "block/bluesky-post");
