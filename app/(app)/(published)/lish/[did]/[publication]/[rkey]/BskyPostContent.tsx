@@ -8,17 +8,14 @@ import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { Separator } from "components/Layout";
 import { OpenPage } from "./postPageState";
 import { useOpenThread } from "./Interactions/drawerThreadContext";
-import {
-  ThreadLink,
-  QuotesLink,
-  useThreadPrefetchHandlers,
-} from "./PostLinks";
+import { ThreadLink, QuotesLink, useThreadPrefetchHandlers } from "./PostLinks";
 import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { Avatar } from "components/Avatar";
 import { timeAgo } from "src/utils/timeAgo";
 import { ProfilePopover } from "components/ProfilePopover";
 import { QuotePosition } from "src/utils/quotePosition";
 import { QuoteContent } from "./Interactions/Quotes";
+import type { BskyPostMedia } from "src/utils/bskyPostView";
 
 type PostView = AppBskyFeedDefs.PostView;
 
@@ -35,6 +32,9 @@ export function BskyPostContent(props: {
   replyEnabled?: boolean;
   replyOnClick?: (e: React.MouseEvent) => void;
   clientHost?: string;
+  // The overlay that opens the thread is a button, which the editor's block
+  // mouse handlers skip, so it would make the post unselectable there.
+  openThreadOnClick?: boolean;
   hasQuote?: {
     position: QuotePosition;
     index: number;
@@ -53,6 +53,7 @@ export function BskyPostContent(props: {
     replyEnabled,
     replyOnClick,
     clientHost = "bsky.app",
+    openThreadOnClick = true,
     hasQuote,
   } = props;
   const openThread = useOpenThread();
@@ -64,7 +65,8 @@ export function BskyPostContent(props: {
 
   // Only allow opening the thread page when there's a discussion to show
   const hasThreadContent =
-    (post.replyCount ?? 0) > 0 || (post.quoteCount ?? 0) > 0;
+    openThreadOnClick &&
+    ((post.replyCount ?? 0) > 0 || (post.quoteCount ?? 0) > 0);
 
   return (
     <div className={`bskyPost relative flex flex-col w-full `}>
@@ -129,43 +131,147 @@ export function BskyPostContent(props: {
               </div>
             )}
           </div>
-          {props.showBlueskyLink ||
-          (showInteractions &&
-            ((props.post.quoteCount && props.post.quoteCount > 0) ||
-              (props.post.replyCount && props.post.replyCount > 0))) ? (
-            <div
-              className={`postCountsAndLink flex gap-2 items-center justify-between  pointer-events-auto mt-2`}
-            >
-              {showInteractions ? (
-                <PostCounts
-                  post={post}
-                  parent={parent}
-                  replyEnabled={replyEnabled}
-                  replyOnClick={replyOnClick}
-                  quoteEnabled={quoteEnabled}
-                  showBlueskyLink={showBlueskyLink}
-                  url={url}
-                />
-              ) : (
-                <div />
-              )}
-
-              <div className="flex gap-3 items-center">
-                {showBlueskyLink && (
-                  <>
-                    <a
-                      className="text-tertiary relative hover:text-accent-contrast"
-                      target="_blank"
-                      href={url}
-                    >
-                      <BlueskyLinkTiny />
-                    </a>
-                  </>
-                )}
-              </div>
-            </div>
-          ) : null}
+          <PostCountsAndLink
+            post={post}
+            parent={parent}
+            url={url}
+            showBlueskyLink={showBlueskyLink}
+            showInteractions={showInteractions}
+            quoteEnabled={quoteEnabled}
+            replyEnabled={replyEnabled}
+            replyOnClick={replyOnClick}
+          />
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Just the post's images or video, with the counts and link out below.
+export function BskyPostMediaContent(props: {
+  post: PostView;
+  media: BskyPostMedia;
+  parent: OpenPage | undefined;
+  className?: string;
+  quoteEnabled?: boolean;
+  replyEnabled?: boolean;
+  clientHost?: string;
+  openThreadOnClick?: boolean;
+}) {
+  const {
+    post,
+    parent,
+    clientHost = "bsky.app",
+    openThreadOnClick = true,
+  } = props;
+  const openThread = useOpenThread();
+  const threadPrefetchHandlers = useThreadPrefetchHandlers(post.uri);
+
+  const postId = post.uri.split("/")[4];
+  const url = `https://${clientHost}/profile/${post.author.handle}/post/${postId}`;
+  const hasThreadContent =
+    openThreadOnClick &&
+    ((post.replyCount ?? 0) > 0 || (post.quoteCount ?? 0) > 0);
+
+  return (
+    <div className={`bskyPost bskyPostMedia relative flex flex-col w-full`}>
+      {hasThreadContent && (
+        <button
+          className="absolute inset-0"
+          {...threadPrefetchHandlers}
+          onClick={() => {
+            openThread(parent, { type: "thread", uri: post.uri });
+          }}
+        />
+      )}
+      <div
+        className={`flex flex-col w-full pointer-events-none ${props.className}`}
+      >
+        <div
+          className="bskyPostEmbedWrapper pointer-events-auto relative"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <BlueskyEmbed
+            parent={parent}
+            embed={props.media}
+            postUrl={url}
+            className="text-sm"
+          />
+        </div>
+        <PostCountsAndLink
+          post={post}
+          parent={parent}
+          url={url}
+          showBlueskyLink
+          showInteractions
+          quoteEnabled={props.quoteEnabled}
+          replyEnabled={props.replyEnabled}
+          handle={post.author.handle}
+        />
+      </div>
+    </div>
+  );
+}
+
+function PostCountsAndLink(props: {
+  post: PostView;
+  parent: OpenPage | undefined;
+  url: string;
+  showBlueskyLink: boolean;
+  showInteractions: boolean;
+  quoteEnabled?: boolean;
+  replyEnabled?: boolean;
+  replyOnClick?: (e: React.MouseEvent) => void;
+  // Credits the author when the byline above isn't shown.
+  handle?: string;
+}) {
+  const { post, showBlueskyLink, showInteractions } = props;
+  const hasCounts = (post.quoteCount ?? 0) > 0 || (post.replyCount ?? 0) > 0;
+  if (!showBlueskyLink && !(showInteractions && hasCounts)) return null;
+
+  return (
+    <div
+      className={`postCountsAndLink flex gap-2 items-center justify-between  pointer-events-auto mt-2`}
+    >
+      {showInteractions ? (
+        // Sized to its counts, so the handle beside it only truncates when it
+        // can't fit.
+        <div className="shrink-0">
+          <PostCounts
+            post={post}
+            parent={props.parent}
+            replyEnabled={props.replyEnabled}
+            replyOnClick={props.replyOnClick}
+            quoteEnabled={props.quoteEnabled}
+            showBlueskyLink={showBlueskyLink}
+            url={props.url}
+          />
+        </div>
+      ) : (
+        <div />
+      )}
+
+      <div className="flex gap-3 items-center min-w-0">
+        {props.handle && (
+          <ProfilePopover
+            triggerClassName="min-w-0 max-w-full"
+            trigger={
+              <div className="text-xs text-tertiary truncate hover:underline">
+                @{props.handle}
+              </div>
+            }
+            didOrHandle={props.handle}
+          />
+        )}
+        {showBlueskyLink && (
+          <a
+            className="text-tertiary relative shrink-0 hover:text-accent-contrast"
+            target="_blank"
+            href={props.url}
+          >
+            <BlueskyLinkTiny />
+          </a>
+        )}
       </div>
     </div>
   );

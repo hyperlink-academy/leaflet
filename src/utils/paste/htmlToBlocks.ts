@@ -6,6 +6,7 @@ import { prosemirrorToYDoc } from "y-prosemirror";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { isPageLinkDisplay } from "src/utils/pageLinkDisplay";
+import { isBskyPostView } from "src/utils/bskyPostView";
 import { multiBlockSchema, schema } from "components/Blocks/TextBlock/schema";
 import type { Fact } from "src/replicache";
 import type { FactInput } from "src/replicache/mutations";
@@ -368,6 +369,14 @@ function buildBlockFromHTML(
       } catch {
         // Malformed bluesky-post payload — leave as a bare bluesky-post block.
       }
+    }
+    const view = child.getAttribute("data-view");
+    if (isBskyPostView(view)) {
+      facts.push({
+        entity: entityID,
+        attribute: "bluesky-post/view",
+        data: { type: "bluesky-post-view-union", value: view },
+      });
     }
   }
 

@@ -66,6 +66,7 @@ export const PubLeafletBlocksBskyPost: LexiconDoc = {
       properties: {
         postRef: { type: "ref", ref: "com.atproto.repo.strongRef" },
         clientHost: { type: "string" },
+        view: { type: "string", knownValues: ["full", "media"] },
       },
     },
   },

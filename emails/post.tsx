@@ -176,7 +176,10 @@ const facet = (
   features,
 });
 
-const bskyPostBlock = (rkey: string): PubLeafletPagesLinearDocument.Block => ({
+const bskyPostBlock = (
+  rkey: string,
+  view?: "media",
+): PubLeafletPagesLinearDocument.Block => ({
   $type: "pub.leaflet.pages.linearDocument#block",
   block: {
     $type: "pub.leaflet.blocks.bskyPost",
@@ -184,6 +187,7 @@ const bskyPostBlock = (rkey: string): PubLeafletPagesLinearDocument.Block => ({
       uri: `at://did:plc:preview/app.bsky.feed.post/${rkey}`,
       cid: "preview",
     },
+    view,
   },
 });
 
@@ -626,6 +630,8 @@ const defaultProps: PostEmailProps = {
     bskyPostBlock("external"),
     bskyPostBlock("quote"),
     bskyPostBlock("video"),
+    bskyPostBlock("image", "media"),
+    bskyPostBlock("video", "media"),
     bskyPostBlock("labeled"),
     bskyPostBlock("optout"),
     // No fixture post for this URI — exercises the deleted/unfetched fallback.
@@ -1405,6 +1411,7 @@ const BlockRenderer = ({
         <BskyPostEmailBlock
           post={post}
           clientHost={block.clientHost}
+          view={block.view}
           theme={theme}
           colors={colors}
           assetsBaseUrl={assetsBaseUrl}

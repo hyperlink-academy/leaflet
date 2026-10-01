@@ -333,6 +333,15 @@ describe("Leaflet copy → paste round trip", () => {
     expect(factValue("page-link/display")).toBe("compact");
   });
 
+  test("a pasted bluesky post keeps its view", () => {
+    const result = build(fixture("leaflet-copy.html"));
+    const post = result.blocks.find((b) => b.type === "bluesky-post")!;
+    expect(
+      (post.facts.find((f) => f.attribute === "bluesky-post/view")!.data as any)
+        .value,
+    ).toBe("media");
+  });
+
   test("a pasted embedded canvas stays one and keeps its canvas size", () => {
     const facts = [
       {

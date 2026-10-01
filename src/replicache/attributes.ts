@@ -290,6 +290,10 @@ const BlueskyPostBlockAttributes = {
     type: "string",
     cardinality: "one",
   },
+  "bluesky-post/view": {
+    type: "bluesky-post-view-union",
+    cardinality: "one",
+  },
 } as const;
 
 const ButtonBlockAttributes = {
@@ -646,6 +650,10 @@ export type Data<A extends keyof typeof Attributes> = {
   "standard-site-post-size-union": {
     type: "standard-site-post-size-union";
     value: "large" | "medium" | "small";
+  };
+  "bluesky-post-view-union": {
+    type: "bluesky-post-view-union";
+    value: "full" | "media";
   };
   "page-link-display-union": {
     type: "page-link-display-union";

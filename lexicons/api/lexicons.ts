@@ -1302,6 +1302,10 @@ export const schemaDict = {
           clientHost: {
             type: 'string',
           },
+          view: {
+            type: 'string',
+            knownValues: ['full', 'media'],
+          },
         },
       },
     },

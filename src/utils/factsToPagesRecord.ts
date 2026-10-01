@@ -240,6 +240,7 @@ export async function processBlocksToPages(opts: {
       const [post] = scan.eav(b.entityID, "block/bluesky-post");
       if (!post || !post.data.value.post) return;
       const [hostFact] = scan.eav(b.entityID, "bluesky-post/host");
+      const [viewFact] = scan.eav(b.entityID, "bluesky-post/view");
       const block: $Typed<PubLeafletBlocksBskyPost.Main> = {
         $type: ids.PubLeafletBlocksBskyPost,
         postRef: {
@@ -247,6 +248,7 @@ export async function processBlocksToPages(opts: {
           cid: post.data.value.post.cid,
         },
         clientHost: hostFact?.data.value,
+        ...(viewFact?.data.value === "media" && { view: "media" }),
       };
       return block;
     },

@@ -122,10 +122,12 @@ const BlockTypeToHTML: {
   "bluesky-post": async (b, tx) => {
     let [post] = await scanIndex(tx).eav(b.entityID, "block/bluesky-post");
     if (!post) return null;
+    let [view] = await scanIndex(tx).eav(b.entityID, "bluesky-post/view");
     return (
       <div
         data-type="bluesky-post"
         data-bluesky-post={JSON.stringify(post.data.value)}
+        data-view={view?.data.value}
       />
     );
   },

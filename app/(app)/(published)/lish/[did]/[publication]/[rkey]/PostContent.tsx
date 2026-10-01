@@ -337,6 +337,7 @@ export let Block = ({
           className={className}
           pageId={pageId}
           clientHost={block.clientHost}
+          view={block.view}
         />
       );
     },
