@@ -119,6 +119,12 @@ const METRIC_GROUPS: { title: string; metrics: ActivityMetricDef[] }[] = [
         trackedSince: "2026-08-27",
       },
       {
+        key: "comments",
+        title: "Comments",
+        unit: "comments",
+        trackedSince: "2026-10-01",
+      },
+      {
         key: "memberships_joined",
         title: "Memberships joined",
         unit: "memberships",

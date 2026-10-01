@@ -407,6 +407,7 @@ export const ACTIVITY_METRICS = {
   publications_created: { event: "create_publication" },
   subscribes: { event: "subscribe" },
   unsubscribes: { event: "unsubscribe" },
+  comments: { event: "comment" },
   memberships_joined: { event: "join_membership" },
   pro_upgrades: { event: "pro_upgrade" },
   pro_cancels: { event: "pro_cancel" },

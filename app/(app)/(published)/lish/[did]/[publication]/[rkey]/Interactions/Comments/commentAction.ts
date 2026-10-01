@@ -22,6 +22,7 @@ import {
   isPublicationCollection,
 } from "src/utils/collectionHelpers";
 import { tombstoneComment } from "src/comments/tombstoneComment";
+import { trackUserEvent } from "src/activeUserAnalytics";
 
 type PublishCommentResult =
   | { success: true; record: Json; profile: any; uri: string }
@@ -91,6 +92,11 @@ export async function publishComment(args: {
       } as unknown as Json,
     })
     .select();
+  trackUserEvent(identity, "comment", {
+    document: args.document,
+    record_uri: uri.toString(),
+    reply: String(!!args.comment.replyTo),
+  });
   let notifications: Notification[] = [];
   let recipient = args.comment.replyTo
     ? new AtUri(args.comment.replyTo).host

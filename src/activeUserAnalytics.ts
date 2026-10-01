@@ -20,6 +20,7 @@ export type UserEvent =
   | "send_email_post" // saved an email-only post; props publication, send_mode (now | scheduled | on_subscribe), audience
   | "schedule_post" // scheduled a post to publish later; props publication, publish_at, first_schedule ("false" for a reschedule)
   | "create_publication" // props publication
+  | "comment" // commented on a published document; props document, record_uri, reply ("true" for a reply to another comment)
   | "signup" // identity row created; props method (email | bluesky), source
   | "create_document" // props kind (doc | canvas | template | duplicate | publication_draft), publication
   | "pro_upgrade" // Leaflet Pro checkout completed; props plan
