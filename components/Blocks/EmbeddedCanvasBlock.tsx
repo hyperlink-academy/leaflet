@@ -10,7 +10,7 @@ import { ScaledCanvas } from "./ScaledCanvas";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { EditTiny } from "components/Icons/EditTiny";
 import { ImageAltButton } from "./ImageAltButton";
-import { BlockSettings } from "./SettingsTriggerButton";
+import { Popover } from "components/Popover";
 import { BlockSettingOptions } from "./BlockSettingOptions";
 import {
   type CanvasSize,
@@ -39,14 +39,16 @@ export function EmbeddedCanvasBlock(
         isSelected={!!isSelected}
         areYouSure={props.areYouSure}
         setAreYouSure={props.setAreYouSure}
-        extraOptions={<EmbeddedCanvasSizeSettings page={page} size={size} />}
         className={`embeddedCanvasBlockWrapper group/image relative p-0! ${isOpen ? "border-accent-contrast! outline-accent-contrast!" : ""}`}
       >
         <ScaledCanvas size={size} inert alt={alt}>
           <CanvasContent entityID={page} preview />
         </ScaledCanvas>
-        {!props.preview && (
-          <EditEmbeddedCanvasButton parent={props.parent} page={page} />
+        {!props.preview && permissions.write && (
+          <div className="absolute top-2 right-2 flex items-stretch gap-1">
+            <EmbeddedCanvasSizeButton page={page} size={size} />
+            <EditEmbeddedCanvasButton parent={props.parent} page={page} />
+          </div>
         )}
         {!props.preview && (
           <ImageAltButton
@@ -61,14 +63,15 @@ export function EmbeddedCanvasBlock(
   );
 }
 
+const overlayButtonStyle =
+  "flex items-center gap-1 rounded-md py-0.5 text-sm font-bold bg-accent-1 text-accent-2 hover:outline-solid hover:outline-1 hover:outline-accent-1 outline-offset-1";
+
 function EditEmbeddedCanvasButton(props: { parent: string; page: string }) {
   let { rep } = useReplicache();
-  let { permissions } = useEntitySetContext();
-  if (!permissions.write) return null;
   return (
     <button
       aria-label="Edit drawing"
-      className="absolute top-2 right-2 flex items-center gap-1 rounded-md px-2 py-0.5 text-sm font-bold bg-accent-1 text-accent-2 hover:outline-solid hover:outline-1 hover:outline-accent-1 outline-offset-1"
+      className={`${overlayButtonStyle} px-2`}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => {
         e.preventDefault();
@@ -82,7 +85,7 @@ function EditEmbeddedCanvasButton(props: { parent: string; page: string }) {
   );
 }
 
-function EmbeddedCanvasSizeSettings(props: { page: string; size: CanvasSize }) {
+function EmbeddedCanvasSizeButton(props: { page: string; size: CanvasSize }) {
   let { rep, undoManager } = useReplicache();
   let names = Object.keys(EMBEDDED_CANVAS_SIZES) as EmbeddedCanvasSizeName[];
   let current = names.find(
@@ -90,38 +93,72 @@ function EmbeddedCanvasSizeSettings(props: { page: string; size: CanvasSize }) {
       EMBEDDED_CANVAS_SIZES[n].width === props.size.width &&
       EMBEDDED_CANVAS_SIZES[n].height === props.size.height,
   );
+  let iconScale = Math.min(16 / props.size.width, 16 / props.size.height);
   return (
-    <BlockSettings label="Drawing" className="w-md">
-      <h4>Drawing Size</h4>
-      <BlockSettingOptions<EmbeddedCanvasSizeName>
-        options={names.map((value) => ({
-          value,
-          Icon: ({ selected }) => (
-            <SizeIcon size={EMBEDDED_CANVAS_SIZES[value]} selected={selected} />
-          ),
-        }))}
-        // A size set outside the presets highlights none of them.
-        value={current ?? ("" as EmbeddedCanvasSizeName)}
-        onSelect={async (value) => {
-          if (!rep) return;
-          let { width, height } = EMBEDDED_CANVAS_SIZES[value];
-          await undoManager.withUndoGroup(() =>
-            rep.mutate.assertFact([
-              {
-                entity: props.page,
-                attribute: "canvas/fixed-width",
-                data: { type: "number", value: width },
-              },
-              {
-                entity: props.page,
-                attribute: "canvas/fixed-height",
-                data: { type: "number", value: height },
-              },
-            ]),
-          );
-        }}
-      />
-    </BlockSettings>
+    <Popover
+      asChild
+      side="bottom"
+      align="end"
+      sideOffset={6}
+      className="p-0! w-md"
+      onOpenAutoFocus={(e) => e.preventDefault()}
+      trigger={
+        <button
+          aria-label="Drawing size"
+          className={`${overlayButtonStyle} px-1.5`}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            className="border-[1.5px] border-current rounded-[2px]"
+            style={{
+              width: props.size.width * iconScale,
+              height: props.size.height * iconScale,
+            }}
+          />
+        </button>
+      }
+    >
+      {/* Clicks here would otherwise bubble (through the portal) to the page
+          wrapper, which refocuses the page. */}
+      <div
+        className="flex flex-col gap-3 p-3 text-primary overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h4>Drawing Size</h4>
+        <BlockSettingOptions<EmbeddedCanvasSizeName>
+          options={names.map((value) => ({
+            value,
+            Icon: ({ selected }) => (
+              <SizeIcon
+                size={EMBEDDED_CANVAS_SIZES[value]}
+                selected={selected}
+              />
+            ),
+          }))}
+          // A size set outside the presets highlights none of them.
+          value={current ?? ("" as EmbeddedCanvasSizeName)}
+          onSelect={async (value) => {
+            if (!rep) return;
+            let { width, height } = EMBEDDED_CANVAS_SIZES[value];
+            await undoManager.withUndoGroup(() =>
+              rep.mutate.assertFact([
+                {
+                  entity: props.page,
+                  attribute: "canvas/fixed-width",
+                  data: { type: "number", value: width },
+                },
+                {
+                  entity: props.page,
+                  attribute: "canvas/fixed-height",
+                  data: { type: "number", value: height },
+                },
+              ]),
+            );
+          }}
+        />
+      </div>
+    </Popover>
   );
 }
 
