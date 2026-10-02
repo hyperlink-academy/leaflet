@@ -198,6 +198,14 @@ async function publish({
 
     pdsDid = data.identity_did!;
     draft = data.leaflets_in_publications[0];
+    if (draft?.email_only)
+      return {
+        success: false,
+        error: {
+          type: "publish_failed",
+          message: "This draft is an email, it can't be published as a post.",
+        },
+      };
     existingDocUri = draft?.doc;
   } else {
     // Publishing standalone - use leaflets_to_documents

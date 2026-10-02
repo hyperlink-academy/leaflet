@@ -805,6 +805,7 @@ export type Database = {
           cover_image: string | null
           description: string
           doc: string | null
+          email_only: boolean
           leaflet: string
           preferences: Json | null
           publication: string
@@ -818,6 +819,7 @@ export type Database = {
           cover_image?: string | null
           description?: string
           doc?: string | null
+          email_only?: boolean
           leaflet: string
           preferences?: Json | null
           publication: string
@@ -831,6 +833,7 @@ export type Database = {
           cover_image?: string | null
           description?: string
           doc?: string | null
+          email_only?: boolean
           leaflet?: string
           preferences?: Json | null
           publication?: string

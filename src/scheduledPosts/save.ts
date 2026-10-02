@@ -52,27 +52,22 @@ export async function saveScheduledPost(
   const publishAt = new Date(args.publish_at);
   if (!isValidSendAt(publishAt)) return Err("invalid_publish_at");
 
-  const [{ data: drafts }, { count: emailPosts }, { data: existing }] =
-    await Promise.all([
-      supabaseServerClient
-        .from("leaflets_in_publications")
-        .select("publication, doc")
-        .eq("leaflet", args.leaflet_id),
-      supabaseServerClient
-        .from("publication_email_posts")
-        .select("id", { count: "exact", head: true })
-        .eq("leaflet", args.leaflet_id),
-      supabaseServerClient
-        .from("publication_scheduled_posts")
-        .select("id, publication, revision")
-        .eq("leaflet", args.leaflet_id)
-        .maybeSingle(),
-    ]);
-  if (emailPosts) return Err("is_email_post");
+  const [{ data: drafts }, { data: existing }] = await Promise.all([
+    supabaseServerClient
+      .from("leaflets_in_publications")
+      .select("publication, doc, email_only")
+      .eq("leaflet", args.leaflet_id),
+    supabaseServerClient
+      .from("publication_scheduled_posts")
+      .select("id, publication, revision")
+      .eq("leaflet", args.leaflet_id)
+      .maybeSingle(),
+  ]);
   if (existing && existing.publication !== args.publication_uri)
     return Err("unauthorized");
 
   const draft = drafts?.find((d) => d.publication === args.publication_uri);
+  if (draft?.email_only) return Err("is_email_post");
   if (draft?.doc) return Err("already_published");
   // A draft of some other publication can't be scheduled into this one.
   if (!draft && drafts?.length) return Err("unauthorized");

@@ -11,8 +11,11 @@ export function TimedPostItem(props: {
   title: string;
   description: string;
   badge: React.ReactNode;
-  // When it goes out, and the label of the link to the draft's publish page.
-  footer?: { when: React.ReactNode; optionsLabel: string | null };
+  // When it goes out, and a link to the draft's send or publish options.
+  footer?: {
+    when: React.ReactNode;
+    options: { label: string; href: string } | null;
+  };
   showPageBackground: boolean;
 }) {
   let { showPageBackground } = props;
@@ -48,12 +51,12 @@ export function TimedPostItem(props: {
         {props.footer && (
           <div className="text-sm text-tertiary flex gap-3 justify-between items-center pt-3">
             {props.footer.when}
-            {props.footer.optionsLabel && (
+            {props.footer.options && (
               <SpeedyLink
                 className="font-bold text-accent-contrast"
-                href={`/${props.leaflet}/publish`}
+                href={props.footer.options.href}
               >
-                {props.footer.optionsLabel}
+                {props.footer.options.label}
               </SpeedyLink>
             )}
           </div>

@@ -4,13 +4,16 @@ import { Popover } from "components/Popover";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useDueRefresh } from "src/hooks/useDueRefresh";
 import {
+  isEmailPostFinal,
   isEmailPostSending,
   onSubscribeTrigger,
   pausedReason,
   subscriberCountLabel,
   type EmailPostSummary,
 } from "src/emailPosts/types";
+import type { EmailDraft } from "app/api/rpc/[command]/get_publication_data";
 import { usePublicationData } from "../PublicationSWRProvider";
+import { NewEmailButton } from "../NewDraftButton";
 import { TimedPostItem, statusPill as pill } from "../TimedPostItem";
 
 export function EmailPostsList(props: { showPageBackground: boolean }) {
@@ -23,43 +26,143 @@ export function EmailPostsList(props: { showPageBackground: boolean }) {
     "sending",
     mutate,
   );
-  let emailPosts = (data?.emailPosts ?? []).map((e) =>
-    isEmailPostSending(e, now) ? { ...e, status: "sending" as const } : e,
-  );
+  let withLiveStatus = (e: EmailPostSummary) =>
+    isEmailPostSending(e, now) ? { ...e, status: "sending" as const } : e;
 
   if (!data?.publication) return null;
-  if (emailPosts.length === 0)
+  let pubUri = data.publication.uri;
+
+  // Drafts: not yet sent, with the ones scheduled to send first, soonest
+  // first. On-subscribe emails keep sending, so they get their own section.
+  // An email whose draft is gone stays in sent history.
+  let unsent = data.emailDrafts
+    .map((d) => ({
+      ...d,
+      email:
+        d.email && !isEmailPostFinal(d.email.status)
+          ? withLiveStatus(d.email)
+          : d.email,
+    }))
+    .filter((d) => !d.email || !isEmailPostFinal(d.email.status));
+  let onSubscribe = unsent
+    .filter((d) => d.email?.send_mode === "on_subscribe")
+    .sort((a, b) => a.email!.audience.localeCompare(b.email!.audience));
+  let drafts = unsent
+    .filter((d) => d.email?.send_mode !== "on_subscribe")
+    .sort((a, b) => {
+      if (!a.email || !b.email) return a.email ? -1 : b.email ? 1 : 0;
+      return (a.email.send_at ?? "").localeCompare(b.email.send_at ?? "");
+    });
+  let sent = data.emailPosts
+    .map(withLiveStatus)
+    .filter((e) => isEmailPostFinal(e.status))
+    .sort((a, b) =>
+      (b.sent_at ?? b.send_at ?? "").localeCompare(
+        a.sent_at ?? a.send_at ?? "",
+      ),
+    );
+
+  if (unsent.length === 0 && sent.length === 0)
     return (
       <EmptyState title="No emails yet">
+        <div className="flex justify-center py-2 not-italic">
+          <NewEmailButton publication={pubUri} />
+        </div>
         <p className="text-tertiary text-sm">
-          Choose &quot;Send as email&quot; when publishing a draft to send it
-          only to your subscribers&apos; inboxes.
+          Send emails directly to your subscribers. These don&apos;t show on
+          your post lists. You can use them for reminders, promotions, or
+          events. You can also set welcome emails to be automatically sent to
+          new subscribers.
         </p>
       </EmptyState>
     );
 
-  // Upcoming (unsent) emails first, soonest first; then sent, newest first.
-  let upcoming = emailPosts
-    .filter((e) => !e.sent_at)
-    .sort((a, b) => (a.send_at ?? "").localeCompare(b.send_at ?? ""));
-  let sent = emailPosts
-    .filter((e) => e.sent_at)
-    .sort((a, b) => b.sent_at!.localeCompare(a.sent_at!));
-
   return (
-    <div className="w-full flex flex-col gap-2 pt-3 pb-6">
-      {[...upcoming, ...sent].map((email) => (
-        <EmailPostItem
-          key={email.id}
-          email={email}
-          showPageBackground={props.showPageBackground}
-        />
-      ))}
+    <div className="w-full flex flex-col gap-6 pt-3 pb-6">
+      <section className="flex flex-col gap-2">
+        <div className="flex justify-between items-center gap-2">
+          <h3 className="text-secondary">Drafts</h3>
+          <div className="hidden sm:block">
+            <NewEmailButton publication={pubUri} compact />
+          </div>
+        </div>
+        {drafts.length === 0 ? (
+          <EmptyState container="light">No email drafts right now</EmptyState>
+        ) : (
+          drafts.map((draft) => (
+            <EmailDraftItem
+              key={draft.leaflet}
+              draft={draft}
+              showPageBackground={props.showPageBackground}
+            />
+          ))
+        )}
+      </section>
+      {onSubscribe.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h3 className="text-secondary">When Someone Subscribes</h3>
+          {onSubscribe.map((draft) => (
+            <EmailDraftItem
+              key={draft.leaflet}
+              draft={draft}
+              showPageBackground={props.showPageBackground}
+            />
+          ))}
+        </section>
+      )}
+      {sent.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h3 className="text-secondary">Sent</h3>
+          {sent.map((email) => (
+            <SentEmailItem
+              key={email.id}
+              email={email}
+              showPageBackground={props.showPageBackground}
+            />
+          ))}
+        </section>
+      )}
     </div>
   );
 }
 
-function EmailPostItem(props: {
+function EmailDraftItem(props: {
+  draft: EmailDraft;
+  showPageBackground: boolean;
+}) {
+  let { draft } = props;
+  return (
+    <TimedPostItem
+      leaflet={draft.leaflet}
+      title={draft.title}
+      description={draft.description}
+      badge={
+        draft.email ? (
+          <EmailPostStatusBadge email={draft.email} />
+        ) : (
+          pill("light-container text-tertiary", "DRAFT")
+        )
+      }
+      footer={{
+        when: draft.email ? (
+          <EmailPostWhen email={draft.email} />
+        ) : (
+          <p>Not sent yet</p>
+        ),
+        options:
+          draft.email?.status === "sending"
+            ? null
+            : {
+                label: draft.email ? "Send options" : "Send",
+                href: `/${draft.leaflet}/email`,
+              },
+      }}
+      showPageBackground={props.showPageBackground}
+    />
+  );
+}
+
+function SentEmailItem(props: {
   email: EmailPostSummary;
   showPageBackground: boolean;
 }) {
@@ -72,10 +175,7 @@ function EmailPostItem(props: {
       badge={<EmailPostStatusBadge email={email} />}
       footer={{
         when: <EmailPostWhen email={email} />,
-        optionsLabel:
-          email.sent_at || email.status === "sending"
-            ? "Details"
-            : "Send options",
+        options: { label: "Details", href: `/${email.leaflet}/email` },
       }}
       showPageBackground={props.showPageBackground}
     />
@@ -107,6 +207,7 @@ function EmailPostWhen(props: { email: EmailPostSummary }) {
       </p>
     );
   if (email.status === "sending") return <p>Sending now</p>;
+  if (email.status === "failed") return <p>Failed to send</p>;
   return <p>Scheduled for {date}</p>;
 }
 

@@ -20,6 +20,8 @@ export type PublicationMetadata = {
   title: string;
   leaflet: string;
   doc: string | null;
+  /** Set when this draft only goes out as an email, never published. */
+  email_only?: boolean;
   publications: {
     identity_did: string;
     name: string;

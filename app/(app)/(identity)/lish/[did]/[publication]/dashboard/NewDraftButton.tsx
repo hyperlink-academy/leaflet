@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { useIsMobile } from "src/hooks/isMobile";
 import { DotLoader } from "components/utils/DotLoader";
 
-function useCreateDraft(publication: string) {
+function useCreateDraft(publication: string, options?: { emailOnly: true }) {
   let router = useRouter();
 
   let inFlight = useRef(false);
@@ -25,7 +25,11 @@ function useCreateDraft(publication: string) {
     inFlight.current = true;
     setCreating(true);
     try {
-      let newLeaflet = await createPublicationDraft(publication, pageType);
+      let newLeaflet = await createPublicationDraft(
+        publication,
+        pageType,
+        options,
+      );
       if (newLeaflet) return router.push(`/${newLeaflet}`);
     } catch (e) {
       console.error(e);
@@ -51,6 +55,33 @@ export function NewDraftButton(props: {
     <Button disabled={creating} onClick={() => createDraft()}>
       {creating ? <DotLoader /> : props.children}
     </Button>
+  );
+}
+
+// Starts an email-only draft, which goes out through the email send flow
+// rather than being published.
+export function NewEmailButton(props: {
+  publication: string;
+  compact?: boolean;
+}) {
+  let { createDraft, creating } = useCreateDraft(props.publication, {
+    emailOnly: true,
+  });
+  return (
+    <ButtonPrimary
+      compact={props.compact}
+      className={props.compact ? "text-sm!" : undefined}
+      disabled={creating}
+      onClick={() => createDraft("doc")}
+    >
+      {creating ? (
+        <DotLoader />
+      ) : (
+        <>
+          <AddTiny className="scale-90" /> Email
+        </>
+      )}
+    </ButtonPrimary>
   );
 }
 

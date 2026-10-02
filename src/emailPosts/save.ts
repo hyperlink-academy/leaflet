@@ -67,23 +67,17 @@ export async function saveEmailPost(
   const pub = await loadActablePublication(args.publication_uri, actorDid);
   if (!pub) return Err("unauthorized");
 
-  // The draft must belong to this publication and never have been published
-  // or scheduled to be: a post that's on the web, or on its way there, goes
-  // out through the normal publish.
+  // Only this publication's email-only drafts go out this way; a post that's
+  // on the web, or on its way there, goes out through the normal publish.
   const { data: draft } = await supabaseServerClient
     .from("leaflets_in_publications")
-    .select("doc, permission_tokens(root_entity)")
+    .select("doc, email_only, permission_tokens(root_entity)")
     .eq("publication", args.publication_uri)
     .eq("leaflet", args.leaflet_id)
     .maybeSingle();
   const rootEntity = draft?.permission_tokens?.root_entity;
-  if (!draft || draft.doc || !rootEntity) return Err("not_a_draft");
-
-  const { count: scheduledPublishes } = await supabaseServerClient
-    .from("publication_scheduled_posts")
-    .select("id", { count: "exact", head: true })
-    .eq("leaflet", args.leaflet_id);
-  if (scheduledPublishes) return Err("not_a_draft");
+  if (!draft || draft.doc || !draft.email_only || !rootEntity)
+    return Err("not_a_draft");
 
   const ineligible = await emailOnlyIneligibleReason(args.publication_uri);
   if (ineligible) return Err(ineligible);

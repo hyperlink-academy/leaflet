@@ -11,6 +11,7 @@ import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { AddSmall } from "components/Icons/AddSmall";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { PublishSmall } from "components/Icons/PublishSmall";
+import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
 import { useIdentityData } from "components/IdentityProvider";
 import { InputWithLabel } from "components/Input";
 import { Menu, MenuItem } from "components/Menu";
@@ -64,6 +65,20 @@ export const PublishButton = (props: { entityID: string }) => {
         ));
     if (!isOwnerOrContributor) return null;
   }
+
+  if (pub.email_only)
+    return (
+      <ActionButton
+        primary
+        labelOnMobile
+        className="sm:w-full! w-fit!"
+        icon={<BlockMailboxSmall className="shrink-0" />}
+        label={"Send Email"}
+        onClick={() => {
+          router.push(`/${params.leaflet_id}/email`);
+        }}
+      />
+    );
 
   if (!pub?.doc)
     return (

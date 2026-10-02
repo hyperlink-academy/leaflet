@@ -1,7 +1,7 @@
 "use client";
 
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
-import { NewDraftActionButton } from "../NewDraftButton";
+import { NewEmailButton } from "../NewDraftButton";
 import {
   usePublicationData,
   useNormalizedPublicationRecord,
@@ -17,7 +17,7 @@ export default function EmailsPage() {
     <DashboardPageLayout
       scrollKey={`dashboard-${pubUri}-Emails`}
       pageTitle="Emails"
-      mobileActions={<NewDraftActionButton publication={pubUri} compact />}
+      mobileActions={<NewEmailButton publication={pubUri} compact />}
       publication={pubUri}
       showHeader={false}
     >

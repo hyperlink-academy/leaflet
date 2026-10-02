@@ -94,6 +94,7 @@ export default async function PublicationDashboardLayout(props: {
   }
 
   let showEmailsTab =
+    publication_data.emailDrafts.length > 0 ||
     publication_data.emailPosts.length > 0 ||
     !!publication.publication_newsletter_settings?.enabled;
 

@@ -27,7 +27,7 @@ import {
   type EmailPostSummary,
 } from "src/emailPosts/types";
 import type { EmailOnlyIneligibleReason } from "src/emailPosts/eligibility";
-import { EmailPreview } from "./ShareOptions";
+import { EmailPreview } from "../publish/ShareOptions";
 
 type SendOn = EmailPostSend["mode"];
 

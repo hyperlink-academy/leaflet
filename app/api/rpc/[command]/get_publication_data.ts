@@ -6,7 +6,15 @@ import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { getAuthIdentity } from "src/auth";
 import { ids } from "lexicons/api/lexicons";
 import { LIVE_MEMBERSHIP_STATUSES } from "src/membership";
-import type { EmailPostSummary } from "src/emailPosts/types";
+import { isEmailPostFinal, type EmailPostSummary } from "src/emailPosts/types";
+
+export type EmailDraft = {
+  leaflet: string;
+  title: string;
+  description: string;
+  archived: boolean;
+  email: EmailPostSummary | null;
+};
 
 export type GetPublicationDataReturnType = Awaited<
   ReturnType<(typeof get_publication_data)["handler"]>
@@ -98,6 +106,7 @@ export const get_publication_data = makeRoute({
           publication: null,
           documents: [],
           drafts: [],
+          emailDrafts: [] as EmailDraft[],
           emailPosts: [] as EmailPostSummary[],
         },
       };
@@ -131,13 +140,30 @@ export const get_publication_data = makeRoute({
 
     const emailPosts = (publication?.publication_email_posts ??
       []) as EmailPostSummary[];
-    const emailLeaflets = new Set(emailPosts.map((e) => e.leaflet));
+    const emailByLeaflet = new Map(emailPosts.map((e) => [e.leaflet, e]));
 
-    // Pre-filter drafts (leaflets without published documents or an email-only
-    // send, not archived). A scheduled draft stays listed even when archived,
-    // since it's still going to publish.
+    // Email-only drafts, with their send if one's been set up. An archived one
+    // stays listed while its email is still going out.
+    const emailDrafts: EmailDraft[] = (
+      publication?.leaflets_in_publications || []
+    )
+      .filter((l) => l.email_only && !l.documents)
+      .map((l) => ({
+        leaflet: l.leaflet,
+        title: l.title,
+        description: l.description,
+        archived: !!l.archived,
+        email: emailByLeaflet.get(l.leaflet) ?? null,
+      }))
+      .filter(
+        (d) => !d.archived || (d.email && !isEmailPostFinal(d.email.status)),
+      );
+
+    // Pre-filter drafts (leaflets without published documents, not email-only,
+    // not archived). A scheduled draft stays listed even when archived, since
+    // it's still going to publish.
     const drafts = (publication?.leaflets_in_publications || [])
-      .filter((l) => !l.documents && !emailLeaflets.has(l.leaflet))
+      .filter((l) => !l.documents && !l.email_only)
       .filter(
         (l) =>
           !(l as { archived?: boolean }).archived ||
@@ -156,6 +182,7 @@ export const get_publication_data = makeRoute({
         publication,
         documents,
         drafts,
+        emailDrafts,
         emailPosts,
       },
     };
