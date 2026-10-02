@@ -50,7 +50,6 @@ import { Popover } from "components/Popover";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { Separator } from "react-aria-components";
-import { setHours, setMinutes } from "date-fns";
 import {
   ThemeBackgroundProvider,
   ThemeProvider,
@@ -723,11 +722,18 @@ const BackdateOptions = (props: {
 
   const handleTimeChange = (time: string) => {
     setTimeValue(time);
-    if (!props.publishedAt) return;
-
     const [hours, minutes] = time.split(":").map((str) => parseInt(str, 10));
     if (isNaN(hours) || isNaN(minutes)) return;
-    setPublishedAt(setHours(setMinutes(props.publishedAt, minutes), hours));
+    const day = props.publishedAt ?? new Date();
+    setPublishedAt(
+      new Date(
+        day.getFullYear(),
+        day.getMonth(),
+        day.getDate(),
+        hours,
+        minutes,
+      ),
+    );
   };
 
   const handleDateChange = (date: Date | undefined) => {
