@@ -101,7 +101,6 @@ type PublishState =
 
 const scheduleErrorCopy: Record<SaveScheduledPostError, string> = {
   unauthorized: "You don't have permission to publish to this publication.",
-  feature_not_enabled: "Scheduling posts isn't available for this publication.",
   not_pro: "Scheduling posts is a Leaflet Pro feature.",
   already_published: "This post has already been published.",
   is_email_post: "This post is set to go out as an email, not to be published.",

@@ -51,9 +51,7 @@ export function scheduledPostProblem(
   post: Pick<ScheduledPost, "status" | "error">,
 ) {
   if (post.status === "paused")
-    return post.error === "feature_not_enabled"
-      ? "Scheduling posts isn't available for this publication, so this post wasn't published."
-      : "The publication's owner no longer has Leaflet Pro, so this post wasn't published.";
+    return "The publication's owner no longer has Leaflet Pro, so this post wasn't published.";
   if (post.status !== "failed") return null;
   if (post.error === "oauth_session_expired")
     return "The publication's owner was signed out when this post was due, so it wasn't published. They'll need to sign in again.";

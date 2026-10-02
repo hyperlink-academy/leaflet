@@ -208,7 +208,6 @@ async function loadEmailOnlyOptions(args: {
   if (!existing && (!args.newsletterEnabled || args.published))
     return undefined;
   let ineligibleReason = await emailOnlyIneligibleReason(args.publication_uri);
-  if (!existing && ineligibleReason === "feature_not_enabled") return undefined;
   return {
     existing: existing as EmailPostSummary | null,
     ineligibleReason,
@@ -231,7 +230,6 @@ async function loadSchedulingOptions(args: {
       .maybeSingle(),
     scheduledPostIneligibleReason(args.publication_uri),
   ]);
-  if (!existing && ineligibleReason === "feature_not_enabled") return undefined;
   return {
     existing: existing as ScheduledPost | null,
     ineligibleReason,
