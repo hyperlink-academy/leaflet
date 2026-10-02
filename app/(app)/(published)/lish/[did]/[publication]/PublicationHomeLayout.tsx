@@ -83,12 +83,12 @@ export function PublicationHomeLayout(props: {
       {header}
       {props.canvasPage ? (
         <CanvasPageArea
-          className={`pubContent sm:max-w-(--page-width-units) mx-auto flex flex-col items-center ${props.showPageBackground ? "" : "pt-3"}`}
+          className={`publicationContent sm:max-w-(--page-width-units) mx-auto flex flex-col items-center ${props.showPageBackground ? "" : "pt-3"}`}
         >
           {props.children}
         </CanvasPageArea>
       ) : (
-        <main className="pubContent sm:max-w-(--page-width-units) w-full mx-auto pb-5 px-1">
+        <main className="publicationContent sm:max-w-(--page-width-units) w-full mx-auto pb-5 px-1">
           {props.children}
         </main>
       )}
