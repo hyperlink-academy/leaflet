@@ -41,6 +41,8 @@ export const UpgradeContent = (props: { signedOut?: boolean }) => {
             First 1,000 subscribers included, $5/1K after that
           </div>
           <hr className="my-4 border-border-light" />
+          <div className="font-bold text-primary">Post Scheduling</div>
+          <hr className="my-4 border-border-light" />
 
           <div className="font-bold text-primary">Group Publications</div>
         </div>
