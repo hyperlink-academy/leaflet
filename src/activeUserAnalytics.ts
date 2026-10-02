@@ -1,9 +1,13 @@
 import { after } from "next/server";
+import { headers } from "next/headers";
 import { tinybird } from "lib/tinybird";
 import { supabaseServerClient } from "supabase/serverClient";
 import { keyEntitlements } from "./identityPayload";
 import { isPro, PRO_ENTITLEMENT_KEY } from "./entitlements";
-import type { SubscriptionSource } from "./subscriptionSource";
+import {
+  sanitizeSubscriptionSource,
+  type SubscriptionSource,
+} from "./subscriptionSource";
 import { getAuthIdentity } from "./auth";
 
 // Active-user counts are "distinct identities with any event"; finer questions
@@ -37,6 +41,23 @@ export function subscriptionSourceProperties(
     source_publication: source?.publication ?? "",
     source_url: source?.url ?? "",
   };
+}
+
+// A server action's Referer is the page that called it. Flows that complete
+// after a redirect (OAuth, email login) stamp the url client-side instead, and
+// their cross-site Referer (the auth server) is ignored.
+export async function subscriptionSourceFromRequest(source: unknown) {
+  const sanitized = sanitizeSubscriptionSource(source);
+  if (sanitized?.url) return sanitized;
+  const requestHeaders = await headers();
+  const referer = requestHeaders.get("referer");
+  if (!referer) return sanitized;
+  try {
+    if (new URL(referer).host !== requestHeaders.get("host")) return sanitized;
+  } catch {
+    return sanitized;
+  }
+  return sanitizeSubscriptionSource({ ...sanitized, url: referer });
 }
 
 // Document creation actions resolve the caller from the auth cookie in SQL and

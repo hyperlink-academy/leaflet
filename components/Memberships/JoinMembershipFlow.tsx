@@ -172,9 +172,7 @@ export function JoinMembershipFlow(props: {
       publication: props.publicationUri,
       // The subscribe completes after a redirect, so stamp the originating
       // page into the source now.
-      ...(props.source
-        ? { source: { url: window.location.href, ...props.source } }
-        : {}),
+      source: { url: window.location.href, ...props.source },
     });
 
   // Where sign-in should land: back here, carrying the picked tier for paid
@@ -215,9 +213,7 @@ export function JoinMembershipFlow(props: {
       publicationUri: props.publicationUri,
       tierId,
       cadence: joinCadence,
-      source: props.source
-        ? { url: window.location.href, ...props.source }
-        : undefined,
+      source: { url: window.location.href, ...props.source },
     });
     if (!res.ok) {
       toaster({ type: "error", content: subscribeErrorMessage(res.error) });

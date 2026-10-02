@@ -42,6 +42,8 @@ type ActivityMetricDef = Metric & {
   key: ActivityMetric;
   // Collapse rows sharing this property into one expandable row.
   groupBy?: "publication";
+  // Who a group's distinct users are, e.g. "3 subscribers".
+  actors?: string;
 };
 
 const CORE_METRICS: Metric[] = [
@@ -111,12 +113,16 @@ const METRIC_GROUPS: { title: string; metrics: ActivityMetricDef[] }[] = [
         title: "Subscriptions",
         unit: "subscriptions",
         trackedSince: "2026-08-27",
+        groupBy: "publication",
+        actors: "subscribers",
       },
       {
         key: "unsubscribes",
         title: "Unsubscribes",
         unit: "unsubscribes",
         trackedSince: "2026-08-27",
+        groupBy: "publication",
+        actors: "readers",
       },
       {
         key: "comments",
@@ -447,6 +453,7 @@ const EventsTable = (props: { metric: ActivityMetricDef; from: string }) => {
                   key={rowKey(group[0])}
                   rows={group}
                   unit={props.metric.unit}
+                  actors={props.metric.actors ?? "authors"}
                 />
               ),
             )}
@@ -498,11 +505,13 @@ function groupEvents(
 const GroupedEventRows = (props: {
   rows: ActiveUserEventRow[];
   unit: string;
+  actors: string;
 }) => {
   let [open, setOpen] = useState(false);
   let [newest] = props.rows;
   let oldest = props.rows[props.rows.length - 1];
   let authors = new Set(props.rows.map((r) => r.user.id));
+  let placements = countPlacements(props.rows);
   return (
     <>
       <tr className="border-t border-border-light align-top">
@@ -520,7 +529,7 @@ const GroupedEventRows = (props: {
             />
           ) : (
             <span className="text-secondary whitespace-nowrap">
-              {authors.size} authors
+              {authors.size} {props.actors}
             </span>
           )}
         </td>
@@ -548,6 +557,13 @@ const GroupedEventRows = (props: {
               />
             )}
           </div>
+          {placements.length > 0 && (
+            <div className="text-xs text-tertiary">
+              {placements
+                .map(([placement, count]) => `${placement} ${count}`)
+                .join(" · ")}
+            </div>
+          )}
         </td>
       </tr>
       {open &&
@@ -557,6 +573,21 @@ const GroupedEventRows = (props: {
     </>
   );
 };
+
+// Where a group's subscribes came from, most common first; empty when none of
+// the rows carry a source.
+function countPlacements(rows: ActiveUserEventRow[]) {
+  if (
+    !rows.some((r) => r.properties.source_placement || r.properties.source_url)
+  )
+    return [];
+  let counts = new Map<string, number>();
+  for (let row of rows) {
+    let placement = row.properties.source_placement || "unknown";
+    counts.set(placement, (counts.get(placement) ?? 0) + 1);
+  }
+  return [...counts].sort((a, b) => b[1] - a[1]);
+}
 
 const eventTimeFormatter = new Intl.DateTimeFormat(undefined, {
   month: "short",
@@ -573,6 +604,8 @@ const HANDLED_PROPERTIES = new Set([
   "record_uri",
   "pro",
   "pro_source",
+  "source_placement",
+  "source_url",
 ]);
 
 const EventRow = (props: { row: ActiveUserEventRow; nested?: boolean }) => {
@@ -634,6 +667,7 @@ const EventRow = (props: { row: ActiveUserEventRow; nested?: boolean }) => {
               />
             )
           )}
+          <SourceDetail properties={row.properties} />
           {row.properties.record_uri && (
             <AtUriLink uri={row.properties.record_uri} label="record" />
           )}
@@ -647,6 +681,42 @@ const EventRow = (props: { row: ActiveUserEventRow; nested?: boolean }) => {
     </tr>
   );
 };
+
+// The control and page a subscribe (or membership join) was made from.
+const SourceDetail = (props: { properties: Record<string, string> }) => {
+  let { source_placement: placement, source_url: url } = props.properties;
+  if (!placement && !url) return null;
+  return (
+    <span className="text-secondary">
+      from{" "}
+      {placement ? (
+        <span className="font-mono text-xs">{placement}</span>
+      ) : (
+        "page"
+      )}
+      {url && (
+        <>
+          {" "}
+          on{" "}
+          <ExternalLink href={url}>
+            <span className="inline-block max-w-64 truncate align-bottom">
+              {displayUrl(url)}
+            </span>
+          </ExternalLink>
+        </>
+      )}
+    </span>
+  );
+};
+
+function displayUrl(url: string) {
+  try {
+    let parsed = new URL(url);
+    return (parsed.host + parsed.pathname).replace(/\/$/, "");
+  } catch {
+    return url;
+  }
+}
 
 const UserCell = (props: {
   user: ActiveUserEventRow["user"];

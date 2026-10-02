@@ -16,12 +16,15 @@ export const SUBSCRIPTION_PLACEMENTS = [
   "recommendation",
   "editor",
   "embed",
+  "reader",
 ] as const;
 
 export type SubscriptionPlacement = (typeof SUBSCRIPTION_PLACEMENTS)[number];
 
+// Placement is unset for controls that don't declare one; the url still says
+// which page the subscribe came from.
 export type SubscriptionSource = {
-  placement: SubscriptionPlacement;
+  placement?: SubscriptionPlacement;
   // The publication whose recommendations surfaced this subscribe
   // (placement: "recommendation").
   publication?: string;
@@ -38,16 +41,14 @@ export function sanitizeSubscriptionSource(
 ): SubscriptionSource | null {
   if (!source || typeof source !== "object") return null;
   const s = source as Record<string, unknown>;
+  const result: SubscriptionSource = {};
   if (
-    typeof s.placement !== "string" ||
-    !(SUBSCRIPTION_PLACEMENTS as readonly string[]).includes(s.placement)
+    typeof s.placement === "string" &&
+    (SUBSCRIPTION_PLACEMENTS as readonly string[]).includes(s.placement)
   )
-    return null;
-  const result: SubscriptionSource = {
-    placement: s.placement as SubscriptionPlacement,
-  };
+    result.placement = s.placement as SubscriptionPlacement;
   if (typeof s.publication === "string" && s.publication.length <= 512)
     result.publication = s.publication;
   if (typeof s.url === "string" && s.url.length <= 2048) result.url = s.url;
-  return result;
+  return Object.keys(result).length ? result : null;
 }
