@@ -580,6 +580,24 @@ export type Database = {
           },
         ]
       }
+      email_render_images: {
+        Row: {
+          created_at: string
+          key: string
+          spec: Json
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          spec: Json
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          spec?: Json
+        }
+        Relationships: []
+      }
       email_subscriptions_to_entity: {
         Row: {
           confirmation_code: string

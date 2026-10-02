@@ -103,7 +103,7 @@ export const send_post_broadcast = inngest.createFunction(
         })
       : undefined;
 
-    const { blocks, pages } = emailBodyFromPages(
+    const { blocks, pages, rootCanvas } = emailBodyFromPages(
       docRecord ? getDocumentPages(docRecord) ?? [] : [],
     );
 
@@ -150,6 +150,7 @@ export const send_post_broadcast = inngest.createFunction(
       publishedAtLabel,
       blocks,
       pages,
+      rootCanvas,
       recipients: subscribers,
       eventMetadata: { document: document_uri },
     });

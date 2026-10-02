@@ -65,6 +65,7 @@ import {
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import { supabaseServerClient } from "supabase/serverClient";
+import type { EmailRenderImage } from "src/emailRender/spec";
 
 /** A document page as both the broadcast's record and the preview's draft conversion produce it. */
 export type PostEmailPage =
@@ -136,6 +137,17 @@ type PostEmailProps = {
    * footer, matching the web renderer.
    */
   currentPublicationUri?: string;
+  /**
+   * The post's first page is a canvas, which has no linear body: the email
+   * shows it as the `root` render image between "See full post" buttons.
+   */
+  canvasPost?: boolean;
+  /**
+   * Canvases pre-rendered to images, by the ids
+   * collectEmailRenderTargets assigns. Anything missing falls back to its
+   * HTML rendering.
+   */
+  renderImages?: Record<string, EmailRenderImage>;
 };
 
 const drawerUrl = (base: string, drawer: "quotes" | "comments") => {
@@ -955,9 +967,19 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                           </Section>
                         ) : null}
 
+                        {p.canvasPost ? (
+                          <CanvasPostBody
+                            image={p.renderImages?.root}
+                            postUrl={p.postUrl}
+                            postTitle={p.postTitle}
+                            theme={theme}
+                          />
+                        ) : null}
+
                         {p.blocks.map((b, i) => (
                           <BlockRenderer
                             key={i}
+                            renderImages={p.renderImages}
                             block={b.block}
                             alignment={b.alignment}
                             // Matches the published page's block anchor id
@@ -1217,6 +1239,7 @@ const BlockRenderer = ({
   standardSitePosts,
   standardSitePublications,
   currentPublicationUri,
+  renderImages,
 }: {
   block: PubLeafletPagesLinearDocument.Block["block"];
   alignment?: string;
@@ -1231,6 +1254,7 @@ const BlockRenderer = ({
   standardSitePosts?: Record<string, StandardSitePostData>;
   standardSitePublications?: Record<string, StandardSitePublicationData>;
   currentPublicationUri?: string;
+  renderImages?: Record<string, EmailRenderImage>;
 }) => {
   const notSupported = () => (
     <BlockNotSupported theme={theme} colors={colors} postUrl={postUrl} />
@@ -1491,6 +1515,7 @@ const BlockRenderer = ({
       return (
         <PageLinkEmailBlock
           page={page}
+          image={renderImages?.[`preview:${block.id}`]}
           compact={normalizePageLinkDisplay(block.display) === "compact"}
           href={postUrl && pageUrl(postUrl, block.id)}
           did={did}
@@ -1506,6 +1531,7 @@ const BlockRenderer = ({
         return null;
       return (
         <EmbeddedCanvasEmailBlock
+          image={renderImages?.[`embed:${block.id}`]}
           blocks={page.blocks}
           size={{ width: page.width, height: page.height }}
           alt={block.alt}
@@ -1866,6 +1892,7 @@ const CANVAS_WIDTH = 1272;
 // (Gmail, Outlook) still get a thumbnail — only the 4° tilt is lost there.
 const PageLinkEmailBlock = ({
   page,
+  image,
   compact,
   href,
   did,
@@ -1874,6 +1901,7 @@ const PageLinkEmailBlock = ({
   assetsBaseUrl,
 }: {
   page: PostEmailPage;
+  image?: EmailRenderImage;
   compact?: boolean;
   href?: string;
   did: string;
@@ -1957,10 +1985,18 @@ const PageLinkEmailBlock = ({
       <div
         style={{
           ...cardStyle,
-          height: isCanvas ? PAGE_LINK_CANVAS_HEIGHT : PAGE_LINK_DOC_HEIGHT,
+          height: image
+            ? undefined
+            : isCanvas
+              ? PAGE_LINK_CANVAS_HEIGHT
+              : PAGE_LINK_DOC_HEIGHT,
         }}
       >
-        {isCanvas ? (
+        {isCanvas && image ? (
+          <Link href={href} style={cellLinkStyle}>
+            <RenderedImage image={image} alt="Canvas page preview" />
+          </Link>
+        ) : isCanvas ? (
           <Link href={href} style={{ ...cellLinkStyle, height: "100%" }}>
             <CanvasThumbnail
               blocks={page.blocks}
@@ -2190,6 +2226,7 @@ const CanvasThumbnail = ({
 // The editor and web show an embedded canvas whole, scaled to the body width; here
 // its blocks are re-rendered at that scale, like a canvas page link.
 const EmbeddedCanvasEmailBlock = ({
+  image,
   blocks,
   size,
   alt,
@@ -2199,6 +2236,7 @@ const EmbeddedCanvasEmailBlock = ({
   colors,
   assetsBaseUrl,
 }: {
+  image?: EmailRenderImage;
   blocks: PubLeafletPagesCanvas.Block[];
   size: { width: number; height: number };
   alt?: string;
@@ -2225,18 +2263,68 @@ const EmbeddedCanvasEmailBlock = ({
         title={alt || undefined}
         style={{ color: "inherit", display: "block", textDecoration: "none" }}
       >
-        <CanvasThumbnail
-          blocks={blocks}
-          size={size}
-          did={did}
-          theme={theme}
-          colors={colors}
-          assetsBaseUrl={assetsBaseUrl}
-        />
+        {image ? (
+          <RenderedImage image={image} alt={alt || "Canvas"} />
+        ) : (
+          <CanvasThumbnail
+            blocks={blocks}
+            size={size}
+            did={did}
+            theme={theme}
+            colors={colors}
+            assetsBaseUrl={assetsBaseUrl}
+          />
+        )}
       </Link>
     </div>
   </Section>
 );
+
+const RenderedImage = ({
+  image,
+  alt,
+}: {
+  image: EmailRenderImage;
+  alt: string;
+}) => (
+  <Img
+    src={image.src}
+    alt={alt}
+    style={{ display: "block", height: "auto", width: "100%" }}
+  />
+);
+
+// A canvas post's body: the canvas as one image, with buttons out to the
+// post above and below it, since an image is all of the canvas email can show.
+const CanvasPostBody = ({
+  image,
+  postUrl,
+  postTitle,
+  theme,
+}: {
+  image?: EmailRenderImage;
+  postUrl?: string;
+  postTitle: string;
+  theme: EmailTheme;
+}) => {
+  const button = postUrl ? (
+    <ButtonBlock text="See full post" url={postUrl} theme={theme} />
+  ) : null;
+  // An email-only post has no page to link to, so it needs something in
+  // place of the canvas.
+  if (!image) return button ?? <BlockNotSupported theme={theme} />;
+  return (
+    <>
+      {button}
+      <Section style={{ margin: BLOCK_MARGIN, minWidth: "100%" }}>
+        <Link href={postUrl} style={{ display: "block" }}>
+          <RenderedImage image={image} alt={postTitle} />
+        </Link>
+      </Section>
+      {button}
+    </>
+  );
+};
 
 // A block at thumbnail scale: the email's own block metrics (font sizes,
 // margins) multiplied down, so the thumbnail is a miniature of the email

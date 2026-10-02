@@ -10,15 +10,13 @@ import { hydrateBskyPostBlocks } from "src/utils/fetchBskyPosts";
 import { fetchStandardSiteBlockData } from "src/utils/fetchStandardSiteBlockData";
 import { PostEmail } from "emails/post";
 import { isConfirmedContributor } from "src/contributorPermissions";
-import {
-  draftContributorDids,
-  draftPagesForEmail,
-} from "src/emailPosts/draft";
+import { draftContributorDids, draftPagesForEmail } from "src/emailPosts/draft";
 import {
   emailAuthorName,
   emailBodyFromPages,
   resolveBroadcastSender,
 } from "src/emailPosts/broadcast";
+import { prepareEmailRenderImages } from "src/emailRender/render";
 
 type SendPreviewError =
   | "unauthorized"
@@ -64,15 +62,22 @@ export async function sendPostPreview(args: {
 
   const sender = resolveBroadcastSender(publication);
   if (!sender.ok) return Err(sender.error);
-  const { pubProps, fromHeader, replyToEmail } = sender.value;
+  const { pubRecord, pubProps, fromHeader, replyToEmail } = sender.value;
 
   const { pages: draftPages } = await draftPagesForEmail(args.root_entity);
-  const { blocks, pages } = emailBodyFromPages(draftPages);
+  const { blocks, pages, rootCanvas } = emailBodyFromPages(draftPages);
   const bskyPosts = await hydrateBskyPostBlocks(blocks);
   const { standardSitePosts, standardSitePublications } =
     await fetchStandardSiteBlockData(blocks);
 
   const assetsBaseUrl = await getCurrentDeploymentDomain();
+  const renderImages = await prepareEmailRenderImages({
+    body: { blocks, pages, rootCanvas },
+    authorDid: identity.atp_did,
+    publicationUri: args.publication_uri,
+    pubRecord,
+    assetsBaseUrl,
+  });
 
   // The published `contributors` field doesn't exist yet at preview time, so
   // the byline comes from the draft's `leaflet_contributors`.
@@ -99,6 +104,8 @@ export async function sendPostPreview(args: {
         }),
         blocks,
         pages,
+        canvasPost: !!rootCanvas,
+        renderImages,
         bskyPosts,
         standardSitePosts,
         standardSitePublications,

@@ -21,6 +21,7 @@ import { fetchStandardSiteBlockData } from "src/utils/fetchStandardSiteBlockData
 import { manageSubscriptionUrl } from "src/subscriptions/manageUrl";
 import type { Json } from "supabase/database.types";
 import { Err, Ok, type Result } from "src/result";
+import { prepareEmailRenderImages } from "src/emailRender/render";
 import {
   getMembersDelimiterGatePolicy,
   isActiveMembership,
@@ -74,13 +75,14 @@ type SenderFields = Pick<
   "record" | "publication_domains" | "publication_newsletter_settings"
 >;
 
-export type BroadcastSender<P extends SenderFields = PublicationForBroadcast> = {
-  pub: P;
-  pubRecord: ReturnType<typeof normalizePublicationRecord>;
-  pubProps: ReturnType<typeof emailPropsFromPublication>;
-  fromHeader: string;
-  replyToEmail: string;
-};
+export type BroadcastSender<P extends SenderFields = PublicationForBroadcast> =
+  {
+    pub: P;
+    pubRecord: ReturnType<typeof normalizePublicationRecord>;
+    pubProps: ReturnType<typeof emailPropsFromPublication>;
+    fromHeader: string;
+    replyToEmail: string;
+  };
 
 // Who a publication's newsletter comes from, or why it can't send.
 export function resolveBroadcastSender<P extends SenderFields>(
@@ -103,15 +105,16 @@ export function resolveBroadcastSender<P extends SenderFields>(
   });
 }
 
-// The first page is the email body. Canvas pages don't map to a linear body —
-// the email renders an empty postContent section. The rest are only reachable
-// through page blocks, which need an id to be targeted.
+// The first page is the email body: a linear page's blocks, or a canvas,
+// which the email shows as one image. The rest are only reachable through
+// page blocks, which need an id to be targeted.
 export function emailBodyFromPages(pages: PubLeafletContent.Main["pages"]) {
   const first = pages[0];
   return {
     blocks: PubLeafletPagesLinearDocument.isMain(first)
       ? first.blocks ?? []
       : [],
+    rootCanvas: PubLeafletPagesCanvas.isMain(first) ? first : undefined,
     pages: pages.filter(
       (p): p is PostEmailPage =>
         (PubLeafletPagesLinearDocument.isMain(p) ||
@@ -211,6 +214,7 @@ export async function broadcastPostEmail(
     publishedAtLabel?: string;
     blocks: PubLeafletPagesLinearDocument.Block[];
     pages: PostEmailPage[];
+    rootCanvas?: PubLeafletPagesCanvas.Main;
     recipients: Subscriber[];
     // Written to each event's metadata; must include the key
     // loadUnsentSubscribers dedupes on.
@@ -218,13 +222,14 @@ export async function broadcastPostEmail(
   },
 ) {
   const { publicationUri, authorDid, blocks } = args;
-  const { pub, pubProps, fromHeader, replyToEmail } = args.sender;
+  const { pub, pubRecord, pubProps, fromHeader, replyToEmail } = args.sender;
   const pubTiers = pub.publication_membership_tiers ?? [];
+  const firstPageBlocks = args.rootCanvas?.blocks ?? blocks;
   const hasDelimiter =
     !!pub.publication_membership_settings?.enabled &&
-    pageHasMembersDelimiter({ blocks });
+    pageHasMembersDelimiter({ blocks: firstPageBlocks });
   const gatePolicy = hasDelimiter
-    ? getMembersDelimiterGatePolicy(blocks)
+    ? getMembersDelimiterGatePolicy(firstPageBlocks)
     : null;
   // Every recipient is already a subscriber, so a subscriber gate can send
   // the full body to the whole list. Invalid policies remain gated.
@@ -264,6 +269,16 @@ export async function broadcastPostEmail(
   const assetsBaseUrl = (
     process.env.NEXT_PUBLIC_APP_URL || "https://leaflet.pub"
   ).replace(/\/$/, "");
+
+  const renderImages = await run("render-canvas-images", async () =>
+    prepareEmailRenderImages({
+      body: { blocks, pages: args.pages, rootCanvas: args.rootCanvas },
+      authorDid,
+      publicationUri,
+      pubRecord,
+      assetsBaseUrl,
+    }),
+  );
 
   // For a gated post, collect who is entitled to the full body: active
   // members plus the publication owner and confirmed contributors.
@@ -327,6 +342,11 @@ export async function broadcastPostEmail(
           {
             key: "preview",
             blocks: previewBlocks,
+            // A canvas has no reading order to cut at, so non-members get
+            // the "See full post" buttons without the canvas image.
+            renderImages: Object.fromEntries(
+              Object.entries(renderImages).filter(([id]) => id !== "root"),
+            ),
             upsell: true,
             recipients: args.recipients.filter((s) => !subscriberIsEntitled(s)),
           },
@@ -336,6 +356,7 @@ export async function broadcastPostEmail(
             // the email renders it as nothing — so later blocks keep the
             // record indices their #index anchors are built from.
             blocks,
+            renderImages,
             upsell: false,
             recipients: args.recipients.filter(subscriberIsEntitled),
           },
@@ -344,6 +365,7 @@ export async function broadcastPostEmail(
           {
             key: "all",
             blocks: previewBlocks,
+            renderImages,
             upsell: false,
             recipients: args.recipients,
           },
@@ -402,6 +424,8 @@ export async function broadcastPostEmail(
           publishedAtLabel: args.publishedAtLabel,
           blocks: group.blocks,
           pages: args.pages,
+          canvasPost: !!args.rootCanvas,
+          renderImages: group.renderImages,
           bskyPosts,
           standardSitePosts,
           standardSitePublications,

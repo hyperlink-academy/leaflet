@@ -51,7 +51,7 @@ export async function sendEmailPost(
     (await run("load-byline", () =>
       emailAuthorName(post.created_by, post.byline_dids),
     )) ?? undefined;
-  const { blocks, pages } = emailBodyFromPages(
+  const { blocks, pages, rootCanvas } = emailBodyFromPages(
     post.pages as unknown as PubLeafletContent.Main["pages"],
   );
 
@@ -70,6 +70,7 @@ export async function sendEmailPost(
     }),
     blocks,
     pages,
+    rootCanvas,
     recipients,
     eventMetadata: { email_post: post.id },
   });
