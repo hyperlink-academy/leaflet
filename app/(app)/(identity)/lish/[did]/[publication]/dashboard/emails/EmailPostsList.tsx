@@ -70,10 +70,13 @@ function EmailPostItem(props: {
       title={email.title}
       description={email.description}
       badge={<EmailPostStatusBadge email={email} />}
-      when={<EmailPostWhen email={email} />}
-      optionsLabel={
-        email.sent_at || email.status === "sending" ? "Details" : "Send options"
-      }
+      footer={{
+        when: <EmailPostWhen email={email} />,
+        optionsLabel:
+          email.sent_at || email.status === "sending"
+            ? "Details"
+            : "Send options",
+      }}
       showPageBackground={props.showPageBackground}
     />
   );

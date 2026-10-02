@@ -788,6 +788,18 @@ const BackdateOptions = (props: {
             <Separator className="border-border" />
             <div className="flex gap-4 pb-1 items-center">
               <TimePicker value={timeValue} onChange={handleTimeChange} />
+              {props.publishedAt && (
+                <button
+                  type="button"
+                  className="font-bold text-accent-contrast shrink-0"
+                  onClick={() => {
+                    props.setPublishedAt(undefined);
+                    setTimeValue(timeOfDay(new Date()));
+                  }}
+                >
+                  Reset to Now
+                </button>
+              )}
             </div>
             {props.showScheduleUpsell && (
               <p className="text-sm text-tertiary pb-1">

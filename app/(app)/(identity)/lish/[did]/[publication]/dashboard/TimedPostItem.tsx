@@ -11,9 +11,8 @@ export function TimedPostItem(props: {
   title: string;
   description: string;
   badge: React.ReactNode;
-  when: React.ReactNode;
-  // Label of the link to the draft's publish page; null leaves it out.
-  optionsLabel: string | null;
+  // When it goes out, and the label of the link to the draft's publish page.
+  footer?: { when: React.ReactNode; optionsLabel: string | null };
   showPageBackground: boolean;
 }) {
   let { showPageBackground } = props;
@@ -46,17 +45,19 @@ export function TimedPostItem(props: {
         {props.description ? (
           <p className="italic text-secondary">{props.description}</p>
         ) : null}
-        <div className="text-sm text-tertiary flex gap-3 justify-between items-center pt-3">
-          {props.when}
-          {props.optionsLabel && (
-            <SpeedyLink
-              className="font-bold text-accent-contrast"
-              href={`/${props.leaflet}/publish`}
-            >
-              {props.optionsLabel}
-            </SpeedyLink>
-          )}
-        </div>
+        {props.footer && (
+          <div className="text-sm text-tertiary flex gap-3 justify-between items-center pt-3">
+            {props.footer.when}
+            {props.footer.optionsLabel && (
+              <SpeedyLink
+                className="font-bold text-accent-contrast"
+                href={`/${props.leaflet}/publish`}
+              >
+                {props.footer.optionsLabel}
+              </SpeedyLink>
+            )}
+          </div>
+        )}
       </div>
       {!showPageBackground && (
         <hr className="last:hidden border-border-light" />
