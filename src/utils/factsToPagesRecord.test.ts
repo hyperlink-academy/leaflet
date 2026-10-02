@@ -20,6 +20,70 @@ const child = (parent: string, value: string, position: string) =>
   });
 
 describe("processBlocksToPages", () => {
+  it("publishes a canvas page's background image and pattern", async () => {
+    let facts = [
+      fact({
+        entity: "root",
+        attribute: "root/page",
+        data: { type: "ordered-reference", value: "page", position: "a0" },
+      }),
+      fact({
+        entity: "page",
+        attribute: "page/type",
+        data: { type: "page-type-union", value: "canvas" },
+      }),
+      fact({
+        entity: "page",
+        attribute: "canvas/background-pattern",
+        data: { type: "canvas-pattern-union", value: "plain" },
+      }),
+      fact({
+        entity: "page",
+        attribute: "theme/card-background-image",
+        data: {
+          type: "image",
+          src: "https://example.com/bg.png",
+          fallback: "",
+          width: 1200,
+          height: 1200,
+        },
+      }),
+      fact({
+        entity: "page",
+        attribute: "theme/card-background-image-repeat",
+        data: { type: "number", value: 320.7 },
+      }),
+      fact({
+        entity: "page",
+        attribute: "theme/card-background-image-opacity",
+        data: { type: "number", value: 0.5 },
+      }),
+    ];
+    let uploaded: string[] = [];
+    let { pages } = await processBlocksToPages({
+      facts,
+      root_entity: "root",
+      hooks: {
+        uploadImage: async (src) => {
+          uploaded.push(src);
+          return { ref: { $link: src } } as any;
+        },
+        uploadPoll: null,
+      },
+    });
+    expect(uploaded).toEqual(["https://example.com/bg.png"]);
+    expect(pages[0]).toMatchObject({
+      $type: "pub.leaflet.pages.canvas",
+      pattern: "plain",
+      background: {
+        $type: "pub.leaflet.pages.canvas#background",
+        image: { ref: { $link: "https://example.com/bg.png" } },
+        width: 320,
+        opacity: 50,
+      },
+    });
+  });
+
   it("publishes an embedded canvas as a block referencing its sized canvas page", async () => {
     let facts = [
       fact({

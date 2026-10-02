@@ -53,6 +53,9 @@ export interface Main {
   height?: number
   /** Viewers cannot zoom the canvas or scroll it sideways: no wheel, pinch, double-tap or zoom controls, and the initial framing (see mobileView) stays. Vertical scrolling is unaffected. */
   lockViewerZoom?: boolean
+  background?: Background
+  /** The guide pattern drawn over the canvas's background, under its blocks. Absent, a canvas that grows with its content shows the grid and a fixed-size canvas is plain. */
+  pattern?: 'grid' | 'dot' | 'plain' | (string & {})
 }
 
 const hashMain = 'main'
@@ -63,6 +66,26 @@ export function isMain<V>(v: V) {
 
 export function validateMain<V>(v: V) {
   return validate<Main & V>(v, id, hashMain)
+}
+
+/** An image tiled across the canvas, under its guide pattern and blocks. */
+export interface Background {
+  $type?: 'pub.leaflet.pages.canvas#background'
+  image: BlobRef
+  /** Width of each tile in canvas px. Defaults to 500. */
+  width?: number
+  /** Opacity of the image as a percentage. Defaults to 100. */
+  opacity?: number
+}
+
+const hashBackground = 'background'
+
+export function isBackground<V>(v: V) {
+  return is$typed(v, id, hashBackground)
+}
+
+export function validateBackground<V>(v: V) {
+  return validate<Background & V>(v, id, hashBackground)
 }
 
 export interface Block {

@@ -290,6 +290,8 @@ export let Block = ({
       return (
         <PublishedPageLinkBlock
           blocks={page.blocks}
+          canvasBackground={isCanvas ? page.background : undefined}
+          canvasPattern={isCanvas ? page.pattern : undefined}
           pageId={id}
           parentPageId={pageId}
           did={did}
@@ -313,6 +315,8 @@ export let Block = ({
             <ScaledCanvas size={size} alt={block.alt}>
               <CanvasBlocks
                 blocks={page.blocks}
+                background={page.background}
+                pattern={page.pattern}
                 size={size}
                 did={did}
                 bskyPostData={bskyPostData}

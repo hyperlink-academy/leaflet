@@ -567,7 +567,9 @@ export async function processBlocksToPages(opts: {
         $type: "pub.leaflet.blocks.postsList",
         ...(viewFact && { view: viewFact.data.value }),
         ...(highlightFact && { highlightFirstPost: highlightFact.data.value }),
-        ...(showPageCountFact && { showPageCount: showPageCountFact.data.value }),
+        ...(showPageCountFact && {
+          showPageCount: showPageCountFact.data.value,
+        }),
         ...(filterByTags.length > 0 && { filterByTags }),
         ...(limit && limit > 0 && { limit }),
         // The sub-flags only mean anything under readerControls, and each
@@ -629,10 +631,14 @@ export async function processBlocksToPages(opts: {
     const mobileView = scan.eav(pageID, "canvas/mobile-view")[0]?.data.value;
     const fixedWidth = scan.eav(pageID, "canvas/fixed-width")[0]?.data.value;
     const fixedHeight = scan.eav(pageID, "canvas/fixed-height")[0]?.data.value;
+    const pattern = scan.eav(pageID, "canvas/background-pattern")[0]?.data
+      .value;
     return {
       $type: "pub.leaflet.pages.canvas",
       id: pageID,
       blocks: await canvasBlocksToRecord(pageID, membersOnly),
+      ...(pattern && { pattern }),
+      ...(await canvasBackgroundToRecord(pageID, membersOnly)),
       ...(fixedWidth && fixedHeight
         ? { width: Math.floor(fixedWidth), height: Math.floor(fixedHeight) }
         : {}),
@@ -640,6 +646,29 @@ export async function processBlocksToPages(opts: {
       ...(scan.eav(pageID, "canvas/lock-viewer-zoom")[0]?.data.value && {
         lockViewerZoom: true,
       }),
+    };
+  }
+
+  async function canvasBackgroundToRecord(
+    pageID: string,
+    membersOnly: boolean,
+  ): Promise<{ background?: PubLeafletPagesCanvas.Background }> {
+    const [image] = scan.eav(pageID, "theme/card-background-image");
+    if (!image) return {};
+    const blobref = await hooks.uploadImage(image.data.src, { membersOnly });
+    if (!blobref) return {};
+    const tileWidth = scan.eav(pageID, "theme/card-background-image-repeat")[0]
+      ?.data.value;
+    const opacity = scan.eav(pageID, "theme/card-background-image-opacity")[0]
+      ?.data.value;
+    return {
+      background: {
+        $type: "pub.leaflet.pages.canvas#background",
+        image: blobref,
+        ...(tileWidth && { width: Math.floor(tileWidth) }),
+        ...(opacity !== undefined &&
+          opacity < 1 && { opacity: Math.round(opacity * 100) }),
+      },
     };
   }
 

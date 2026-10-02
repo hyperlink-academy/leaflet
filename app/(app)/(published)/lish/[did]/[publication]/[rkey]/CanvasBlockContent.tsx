@@ -14,6 +14,7 @@ import { CanvasBackgroundPattern } from "components/Canvas";
 import { canvasBlockEdges } from "src/utils/blockSpacing";
 import { CONTENT_WIDTH } from "src/canvasZoom/math";
 import { visibleCanvasX } from "src/utils/embeddedCanvasSize";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { Block } from "./PostContent";
 import { PollData } from "./fetchPollData";
 
@@ -34,11 +35,15 @@ type BlockDataProps = {
 export function CanvasBlocks({
   blocks,
   size,
+  background,
+  pattern,
   contentWidth = CONTENT_WIDTH,
   ...props
 }: BlockDataProps & {
   blocks: PubLeafletPagesCanvas.Block[];
   size?: { width: number; height: number };
+  background?: PubLeafletPagesCanvas.Background;
+  pattern?: PubLeafletPagesCanvas.Main["pattern"];
   contentWidth?: number;
 }) {
   let { width: canvasWidth, height } = size ?? {
@@ -57,11 +62,12 @@ export function CanvasBlocks({
       }}
       className="relative"
     >
-      {!size && (
-        <div className="w-full h-full pointer-events-none">
-          <CanvasBackgroundPattern pattern="grid" />
-        </div>
-      )}
+      <CanvasBackground
+        did={props.did}
+        background={background}
+        pattern={pattern}
+        defaultPattern={size ? "plain" : "grid"}
+      />
       {sortedBlocks.map((canvasBlock, index) => {
         let { x, y, width, rotation } = canvasBlock;
         return (
@@ -122,3 +128,33 @@ function CanvasBlockContent({
     </div>
   );
 }
+
+const CanvasBackground = (props: {
+  did: string;
+  background?: PubLeafletPagesCanvas.Background;
+  pattern?: PubLeafletPagesCanvas.Main["pattern"];
+  defaultPattern: "grid" | "plain";
+}) => {
+  let { background } = props;
+  let pattern = (["grid", "dot", "plain"] as const).find(
+    (p) => p === props.pattern,
+  );
+  let src = background && blobRefToSrc(background.image.ref, props.did);
+  return (
+    <div
+      className="w-full h-full pointer-events-none"
+      style={{
+        backgroundImage: src ? `url(${src})` : undefined,
+        backgroundRepeat: "repeat",
+        backgroundPosition: "center",
+        backgroundSize: background?.width || 500,
+        opacity:
+          src && background?.opacity !== undefined
+            ? background.opacity / 100
+            : 1,
+      }}
+    >
+      <CanvasBackgroundPattern pattern={pattern ?? props.defaultPattern} />
+    </div>
+  );
+};

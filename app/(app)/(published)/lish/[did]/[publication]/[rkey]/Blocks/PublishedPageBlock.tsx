@@ -37,11 +37,15 @@ export function PublishedPageLinkBlock(props: {
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
   isCanvas?: boolean;
+  canvasBackground?: PubLeafletPagesCanvas.Background;
+  canvasPattern?: PubLeafletPagesCanvas.Main["pattern"];
   pages?: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   display?: PubLeafletBlocksPage.Main["display"];
 }) {
   let frame = usePostFrame();
-  let isOpen = frame.openPages.some((p) => p.type === "doc" && p.id === props.pageId);
+  let isOpen = frame.openPages.some(
+    (p) => p.type === "doc" && p.id === props.pageId,
+  );
   // The overlay anchor below needs real anchor text; mirror DocLinkBlock's
   // title derivation (first text-ish block of the page).
   let [titleBlock] = pageRecordTextBlocks(props.blocks, {
@@ -80,10 +84,7 @@ export function PublishedPageLinkBlock(props: {
           button) paint above the overlay and stay interactive. An overlay
           rather than an anchor wrapper because the preview can itself contain
           links, and nested <a> tags get re-parented by the HTML parser. */}
-      <a
-        href={`?page=${props.pageId}`}
-        className="absolute inset-0"
-      >
+      <a href={`?page=${props.pageId}`} className="absolute inset-0">
         <span className="sr-only">{titleBlock?.plaintext || "Open page"}</span>
       </a>
       {compact ? (
@@ -96,6 +97,8 @@ export function PublishedPageLinkBlock(props: {
         <CanvasLinkPreview>
           <CanvasBlocks
             blocks={props.blocks as PubLeafletPagesCanvas.Block[]}
+            background={props.canvasBackground}
+            pattern={props.canvasPattern}
             did={props.did}
             pageId={props.pageId}
             bskyPostData={props.bskyPostData}

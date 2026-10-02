@@ -49,6 +49,8 @@ export function EmailRenderView(props: {
         <Frame spec={spec}>
           <CanvasBlocks
             blocks={spec.blocks}
+            background={spec.background}
+            pattern={spec.pattern}
             size={spec.size}
             did={spec.did}
             pages={spec.pages}

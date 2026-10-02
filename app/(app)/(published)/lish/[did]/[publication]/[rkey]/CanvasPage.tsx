@@ -136,6 +136,8 @@ export function CanvasContent({
         <CanvasBlocks
           {...props}
           blocks={blocks}
+          background={page.background}
+          pattern={page.pattern}
           contentWidth={contentWidth}
           preview={false}
         />

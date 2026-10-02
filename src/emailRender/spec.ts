@@ -20,6 +20,8 @@ export type EmailRenderPage =
 // drawn as part of one.
 export type EmailRenderTarget = {
   blocks: PubLeafletPagesCanvas.Block[];
+  background?: PubLeafletPagesCanvas.Background;
+  pattern?: PubLeafletPagesCanvas.Main["pattern"];
   // Pages the canvas's own page-link and embedded-canvas blocks show.
   pages: EmailRenderPage[];
   size: { width: number; height: number };
@@ -92,6 +94,8 @@ export function collectEmailRenderTargets(args: {
     trimBottom?: boolean,
   ): EmailRenderTarget => ({
     blocks: page.blocks ?? [],
+    ...(page.background && { background: page.background }),
+    ...(page.pattern && { pattern: page.pattern }),
     pages: linkedPages(page, args.pages),
     size,
     trimBottom,

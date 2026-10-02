@@ -16,7 +16,7 @@ import {
 } from "./spec";
 
 // Bump when the render page's output changes, so new sends re-render.
-const RENDER_VERSION = 1;
+const RENDER_VERSION = 2;
 
 function emailRenderKey(spec: EmailRenderSpec) {
   return createHash("sha256")
