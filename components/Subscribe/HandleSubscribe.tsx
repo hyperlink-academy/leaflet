@@ -86,9 +86,7 @@ export const SubscribeWithHandle = (props: {
       publication: props.publicationUri,
       // The subscribe completes after the OAuth redirect, so stamp the
       // originating page into the source now.
-      ...(props.source
-        ? { source: { url: window.location.href, ...props.source } }
-        : {}),
+      source: { url: window.location.href, ...props.source },
     });
     let inIframe = isInIframe();
     let url = new URL(window.location.href);

@@ -23,7 +23,10 @@ import {
   sendConfirmationEmail,
 } from "src/utils/confirmationEmail";
 import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscribers";
-import { trackUserEvent } from "src/activeUserAnalytics";
+import {
+  signupSourceProperties,
+  trackUserEvent,
+} from "src/activeUserAnalytics";
 import { parseActionFromSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 
 // When the email-login flow is entered as part of subscribing to a publication
@@ -140,11 +143,11 @@ async function mintAuthEmailToken(
   }
 }
 
-// `source` names the flow the sign-in was entered from, for the signup event.
+// `signup` describes where the sign-in was entered from, for the signup event.
 export async function confirmEmailAuthToken(
   tokenId: string,
   code: string,
-  source: string = "",
+  signup: Parameters<typeof signupSourceProperties>[0] = {},
 ) {
   const client = await pool.connect();
   const db = drizzle(client);
@@ -181,7 +184,10 @@ export async function confirmEmailAuthToken(
       .select()
       .single();
     identityID = newIdentity!.id;
-    trackUserEvent({ id: identityID }, "signup", { method: "email", source });
+    trackUserEvent({ id: identityID }, "signup", {
+      method: "email",
+      ...signupSourceProperties(signup),
+    });
   } else {
     identityID = identity.id;
   }
@@ -217,11 +223,10 @@ export async function confirmEmailLogin(
   redirect: string,
   action: string | null = null,
 ): Promise<{ ok: false } | { ok: true; url: string }> {
-  let confirmed = await confirmEmailAuthToken(
-    tokenId,
-    code,
-    parseActionFromSearchParam(action)?.action ?? "",
-  );
+  let confirmed = await confirmEmailAuthToken(tokenId, code, {
+    action: parseActionFromSearchParam(action),
+    page: redirect,
+  });
   if (!confirmed) return { ok: false };
 
   let finalRedirect = await applyAfterSignInAction(

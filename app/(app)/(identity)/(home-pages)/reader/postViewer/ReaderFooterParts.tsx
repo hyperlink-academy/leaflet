@@ -91,6 +91,7 @@ export const ReaderFooterPostInfo = (
         publicationName={pubRecord.name || ""}
         publicationDescription={pubRecord.description}
         newsletterMode={props.newsletterMode}
+        source={{ placement: "reader" }}
       />
     </div>
   );

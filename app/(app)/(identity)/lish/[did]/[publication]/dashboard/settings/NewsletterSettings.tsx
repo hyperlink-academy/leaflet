@@ -386,6 +386,7 @@ const EmbedFormSnippet = (props: {
   let action = encodeActionToSearchParam({
     action: "subscribe",
     publication: props.publicationUri,
+    source: { placement: "embed" },
   });
   let defaultRedirect = props.publicationUrl || appUrl;
   let [redirectValue, setRedirectValue] = useState("");

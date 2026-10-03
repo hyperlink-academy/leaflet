@@ -125,7 +125,9 @@ export const LoginContent = (props: {
   const handleCodeSubmit = async (code: string) => {
     if (!tokenId) return;
     setLoading(true);
-    const confirmedToken = await confirmEmailAuthToken(tokenId, code);
+    const confirmedToken = await confirmEmailAuthToken(tokenId, code, {
+      page: window.location.href,
+    });
     if (!confirmedToken) {
       setLoading(false);
       toaster({
