@@ -27,6 +27,7 @@ export function BskyPostContent(props: {
   showEmbed?: boolean;
   compactEmbed?: boolean;
   showBlueskyLink?: boolean;
+  linkTimestamp?: boolean;
   showInteractions?: boolean;
   quoteEnabled?: boolean;
   replyEnabled?: boolean;
@@ -104,6 +105,7 @@ export function BskyPostContent(props: {
             handle={post.author.handle}
             createdAt={record.createdAt}
           />
+            url={props.linkTimestamp ? url : undefined}
 
           <div className={`bskyPostBody flex flex-col min-w-0 w-full`}>
             {props.hasQuote && (
@@ -373,8 +375,10 @@ export function PostInfo(props: {
   createdAt: string;
   compact?: boolean;
 }) {
+  url?: string;
   const { displayName, handle, createdAt, compact = false } = props;
 
+  const timestampClassName = `${compact ? "text-xs" : "text-sm"} text-tertiary shrink-0`;
   return (
     <div className="postInfo flex items-center gap-2 leading-tight w-full">
       <ProfilePopover
@@ -395,11 +399,19 @@ export function PostInfo(props: {
         didOrHandle={handle}
       />
       <div className="w-1 h-1 rounded-full bg-border shrink-0" />
-      <div
-        className={`${compact ? "text-xs" : "text-sm"} text-tertiary shrink-0`}
-      >
-        {timeAgo(createdAt, { compact: true })}
-      </div>
+      {props.url ? (
+        <a
+          className={`${timestampClassName} relative pointer-events-auto hover:underline`}
+          target="_blank"
+          href={props.url}
+        >
+          {timeAgo(createdAt, { compact: true })}
+        </a>
+      ) : (
+        <div className={timestampClassName}>
+          {timeAgo(createdAt, { compact: true })}
+        </div>
+      )}
     </div>
   );
 }

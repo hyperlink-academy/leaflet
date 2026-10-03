@@ -676,6 +676,7 @@ function ReplyPostContent(props: {
         quoteEnabled
         replyEnabled
         replyOnClick={
+        linkTimestamp
           props.toggleCollapsed
             ? (e) => {
                 e.preventDefault();
