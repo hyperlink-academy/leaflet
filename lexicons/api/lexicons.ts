@@ -2402,6 +2402,10 @@ export const schemaDict = {
             description:
               'Viewers cannot zoom the canvas or scroll it sideways: no wheel, pinch, double-tap or zoom controls, and the initial framing (see mobileView) stays. Vertical scrolling is unaffected.',
           },
+          theme: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.theme.page',
+          },
           background: {
             type: 'ref',
             ref: 'lex:pub.leaflet.pages.canvas#background',
@@ -2567,6 +2571,10 @@ export const schemaDict = {
               type: 'ref',
               ref: 'lex:pub.leaflet.pages.linearDocument#block',
             },
+          },
+          theme: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.theme.page',
           },
         },
       },
@@ -3150,6 +3158,47 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletThemePage: {
+    lexicon: 1,
+    id: 'pub.leaflet.theme.page',
+    defs: {
+      main: {
+        type: 'object',
+        description:
+          "Colors a single page overrides. Each absent color is inherited from the document's or publication's theme.",
+        properties: {
+          pageBackground: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+          primary: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+          accentBackground: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+          accentText: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+        },
+      },
+    },
+  },
   PubLeafletThemeWordmark: {
     lexicon: 1,
     id: 'pub.leaflet.theme.wordmark',
@@ -3602,6 +3651,7 @@ export const ids = {
   PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
   PubLeafletThemeBackgroundImage: 'pub.leaflet.theme.backgroundImage',
   PubLeafletThemeColor: 'pub.leaflet.theme.color',
+  PubLeafletThemePage: 'pub.leaflet.theme.page',
   PubLeafletThemeWordmark: 'pub.leaflet.theme.wordmark',
   SiteStandardDocument: 'site.standard.document',
   SiteStandardGraphRecommend: 'site.standard.graph.recommend',

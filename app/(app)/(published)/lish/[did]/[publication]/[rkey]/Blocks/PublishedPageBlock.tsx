@@ -12,6 +12,7 @@ import {
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
   PubLeafletPublication,
+  PubLeafletThemePage,
 } from "lexicons/api";
 import { AppBskyFeedDefs } from "@atproto/api";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
@@ -25,6 +26,7 @@ import {
   type PageRecordTextBlock,
 } from "src/utils/pageRecordTextBlocks";
 import { normalizePageLinkDisplay } from "src/utils/pageLinkDisplay";
+import { PublishedPageThemeProvider } from "components/ThemeManager/PublishedPageThemeProvider";
 
 export function PublishedPageLinkBlock(props: {
   blocks: PubLeafletPagesLinearDocument.Block[] | PubLeafletPagesCanvas.Block[];
@@ -37,6 +39,7 @@ export function PublishedPageLinkBlock(props: {
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
   isCanvas?: boolean;
+  theme?: PubLeafletThemePage.Main;
   canvasBackground?: PubLeafletPagesCanvas.Background;
   canvasPattern?: PubLeafletPagesCanvas.Main["pattern"];
   pages?: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
@@ -54,8 +57,9 @@ export function PublishedPageLinkBlock(props: {
   });
   let compact = normalizePageLinkDisplay(props.display) === "compact";
   return (
-    <div
-      className={`w-full cursor-pointer
+    <PublishedPageThemeProvider theme={props.theme}>
+      <div
+        className={`w-full cursor-pointer
         pageLinkBlockWrapper relative group/pageLinkBlock
         bg-bg-page shadow-sm
         flex overflow-clip
@@ -63,58 +67,61 @@ export function PublishedPageLinkBlock(props: {
         ${isOpen && "!border-tertiary"}
         ${props.className}
         `}
-      onClick={(e) => {
-        if (e.isDefaultPrevented()) return;
-        if (e.shiftKey) return;
-        e.preventDefault();
-        e.stopPropagation();
+        onClick={(e) => {
+          if (e.isDefaultPrevented()) return;
+          if (e.shiftKey) return;
+          e.preventDefault();
+          e.stopPropagation();
 
-        frame.openPage(
-          props.parentPageId
-            ? { type: "doc", id: props.parentPageId }
-            : undefined,
-          { type: "doc", id: props.pageId },
-        );
-      }}
-    >
-      {/* A real href (the same ?page= deep link the heading anchors use) so
+          frame.openPage(
+            props.parentPageId
+              ? { type: "doc", id: props.parentPageId }
+              : undefined,
+            { type: "doc", id: props.pageId },
+          );
+        }}
+      >
+        {/* A real href (the same ?page= deep link the heading anchors use) so
           the sub-page is reachable without JS. Clicks bubble to the wrapper's
           handler, whose preventDefault cancels the navigation in favor of the
           SPA page-opening flow; positioned children (the preview, the comments
           button) paint above the overlay and stay interactive. An overlay
           rather than an anchor wrapper because the preview can itself contain
           links, and nested <a> tags get re-parented by the HTML parser. */}
-      <a href={`?page=${props.pageId}`} className="absolute inset-0">
-        <span className="sr-only">{titleBlock?.plaintext || "Open page"}</span>
-      </a>
-      {compact ? (
-        <CompactLinkBlock
-          titleBlock={titleBlock}
-          pageId={props.pageId}
-          parentPageId={props.parentPageId}
-        />
-      ) : props.isCanvas ? (
-        <CanvasLinkPreview>
-          <CanvasBlocks
-            blocks={props.blocks as PubLeafletPagesCanvas.Block[]}
-            background={props.canvasBackground}
-            pattern={props.canvasPattern}
-            did={props.did}
+        <a href={`?page=${props.pageId}`} className="absolute inset-0">
+          <span className="sr-only">
+            {titleBlock?.plaintext || "Open page"}
+          </span>
+        </a>
+        {compact ? (
+          <CompactLinkBlock
+            titleBlock={titleBlock}
             pageId={props.pageId}
-            bskyPostData={props.bskyPostData}
-            standardSitePostData={props.standardSitePostData}
-            pages={props.pages || []}
-            pollData={[]}
-            preview
+            parentPageId={props.parentPageId}
           />
-        </CanvasLinkPreview>
-      ) : (
-        <DocLinkBlock
-          {...props}
-          blocks={props.blocks as PubLeafletPagesLinearDocument.Block[]}
-        />
-      )}
-    </div>
+        ) : props.isCanvas ? (
+          <CanvasLinkPreview>
+            <CanvasBlocks
+              blocks={props.blocks as PubLeafletPagesCanvas.Block[]}
+              background={props.canvasBackground}
+              pattern={props.canvasPattern}
+              did={props.did}
+              pageId={props.pageId}
+              bskyPostData={props.bskyPostData}
+              standardSitePostData={props.standardSitePostData}
+              pages={props.pages || []}
+              pollData={[]}
+              preview
+            />
+          </CanvasLinkPreview>
+        ) : (
+          <DocLinkBlock
+            {...props}
+            blocks={props.blocks as PubLeafletPagesLinearDocument.Block[]}
+          />
+        )}
+      </div>
+    </PublishedPageThemeProvider>
   );
 }
 function CompactLinkBlock(props: {

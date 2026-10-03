@@ -1,0 +1,40 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.theme.page",
+  "defs": {
+    "main": {
+      "type": "object",
+      "description": "Colors a single page overrides. Each absent color is inherited from the document's or publication's theme.",
+      "properties": {
+        "pageBackground": {
+          "type": "union",
+          "refs": [
+            "pub.leaflet.theme.color#rgba",
+            "pub.leaflet.theme.color#rgb"
+          ]
+        },
+        "primary": {
+          "type": "union",
+          "refs": [
+            "pub.leaflet.theme.color#rgba",
+            "pub.leaflet.theme.color#rgb"
+          ]
+        },
+        "accentBackground": {
+          "type": "union",
+          "refs": [
+            "pub.leaflet.theme.color#rgba",
+            "pub.leaflet.theme.color#rgb"
+          ]
+        },
+        "accentText": {
+          "type": "union",
+          "refs": [
+            "pub.leaflet.theme.color#rgba",
+            "pub.leaflet.theme.color#rgb"
+          ]
+        }
+      }
+    }
+  }
+}

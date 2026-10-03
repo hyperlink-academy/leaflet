@@ -20,6 +20,63 @@ const child = (parent: string, value: string, position: string) =>
   });
 
 describe("processBlocksToPages", () => {
+  it("publishes only the theme colors a page overrides", async () => {
+    let facts = [
+      fact({
+        entity: "root",
+        attribute: "root/page",
+        data: { type: "ordered-reference", value: "page", position: "a0" },
+      }),
+      fact({
+        entity: "page",
+        attribute: "theme/card-background",
+        data: { type: "color", value: "0, 0%, 100%, 0.5" },
+      }),
+      fact({
+        entity: "page",
+        attribute: "theme/accent-background",
+        data: { type: "color", value: "0, 100%, 100%, 1" },
+      }),
+    ];
+    let { pages } = await processBlocksToPages({
+      facts,
+      root_entity: "root",
+      hooks: { uploadImage: async () => undefined, uploadPoll: null },
+    });
+    expect(pages[0].theme).toEqual({
+      $type: "pub.leaflet.theme.page",
+      pageBackground: {
+        $type: "pub.leaflet.theme.color#rgba",
+        r: 255,
+        g: 255,
+        b: 255,
+        a: 50,
+      },
+      accentBackground: {
+        $type: "pub.leaflet.theme.color#rgb",
+        r: 255,
+        g: 0,
+        b: 0,
+      },
+    });
+  });
+
+  it("omits the page theme when a page overrides nothing", async () => {
+    let facts = [
+      fact({
+        entity: "root",
+        attribute: "root/page",
+        data: { type: "ordered-reference", value: "page", position: "a0" },
+      }),
+    ];
+    let { pages } = await processBlocksToPages({
+      facts,
+      root_entity: "root",
+      hooks: { uploadImage: async () => undefined, uploadPoll: null },
+    });
+    expect(pages[0]).not.toHaveProperty("theme");
+  });
+
   it("publishes a canvas page's background image and pattern", async () => {
     let facts = [
       fact({

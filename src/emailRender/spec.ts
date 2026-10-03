@@ -5,6 +5,7 @@ import {
   PubLeafletPagesCanvas,
   PubLeafletPagesLinearDocument,
   PubLeafletPublication,
+  PubLeafletThemePage,
 } from "lexicons/api";
 import type * as SiteStandardThemeBasic from "lexicons/api/types/site/standard/theme/basic";
 import { canvasContentHeight } from "src/utils/canvasBlockOrder";
@@ -22,6 +23,7 @@ export type EmailRenderTarget = {
   blocks: PubLeafletPagesCanvas.Block[];
   background?: PubLeafletPagesCanvas.Background;
   pattern?: PubLeafletPagesCanvas.Main["pattern"];
+  pageTheme?: PubLeafletThemePage.Main;
   // Pages the canvas's own page-link and embedded-canvas blocks show.
   pages: EmailRenderPage[];
   size: { width: number; height: number };
@@ -96,6 +98,7 @@ export function collectEmailRenderTargets(args: {
     blocks: page.blocks ?? [],
     ...(page.background && { background: page.background }),
     ...(page.pattern && { pattern: page.pattern }),
+    ...(page.theme && { pageTheme: page.theme }),
     pages: linkedPages(page, args.pages),
     size,
     trimBottom,

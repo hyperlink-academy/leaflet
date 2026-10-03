@@ -9,6 +9,7 @@ import {
   is$typed as _is$typed,
   type OmitKey,
 } from '../../../../util'
+import type * as PubLeafletThemePage from '../theme/page'
 import type * as PubLeafletBlocksIframe from '../blocks/iframe'
 import type * as PubLeafletBlocksHtml from '../blocks/html'
 import type * as PubLeafletBlocksText from '../blocks/text'
@@ -53,6 +54,7 @@ export interface Main {
   height?: number
   /** Viewers cannot zoom the canvas or scroll it sideways: no wheel, pinch, double-tap or zoom controls, and the initial framing (see mobileView) stays. Vertical scrolling is unaffected. */
   lockViewerZoom?: boolean
+  theme?: PubLeafletThemePage.Main
   background?: Background
   /** The guide pattern drawn over the canvas's background, under its blocks. Absent, a canvas that grows with its content shows the grid and a fixed-size canvas is plain. */
   pattern?: 'grid' | 'dot' | 'plain' | (string & {})

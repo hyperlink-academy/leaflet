@@ -1,5 +1,6 @@
 import { LexiconDoc } from "@atproto/lexicon";
 import { BlockUnion } from "../blocks";
+import { PubLeafletThemePage } from "../theme";
 
 export const PubLeafletPagesLinearDocument: LexiconDoc = {
   lexicon: 1,
@@ -11,6 +12,7 @@ export const PubLeafletPagesLinearDocument: LexiconDoc = {
       properties: {
         id: { type: "string" },
         blocks: { type: "array", items: { type: "ref", ref: "#block" } },
+        theme: { type: "ref", ref: PubLeafletThemePage.id },
       },
     },
     block: {

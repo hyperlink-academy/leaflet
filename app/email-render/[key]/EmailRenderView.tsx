@@ -4,6 +4,7 @@ import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_si
 import type { PollData } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/fetchPollData";
 import { CanvasBlocks } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/CanvasBlockContent";
 import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
+import { PublishedPageThemeProvider } from "components/ThemeManager/PublishedPageThemeProvider";
 import { useCardBorderHiddenContext } from "components/ThemeManager/ThemeProvider";
 import {
   DocumentProvider,
@@ -47,16 +48,18 @@ export function EmailRenderView(props: {
     >
       <PublicationThemeProvider record={spec.theme} pub_creator={spec.themeDid}>
         <Frame spec={spec}>
-          <CanvasBlocks
-            blocks={spec.blocks}
-            background={spec.background}
-            pattern={spec.pattern}
-            size={spec.size}
-            did={spec.did}
-            pages={spec.pages}
-            {...props.resources}
-            preview={false}
-          />
+          <PublishedPageThemeProvider theme={spec.pageTheme}>
+            <CanvasBlocks
+              blocks={spec.blocks}
+              background={spec.background}
+              pattern={spec.pattern}
+              size={spec.size}
+              did={spec.did}
+              pages={spec.pages}
+              {...props.resources}
+              preview={false}
+            />
+          </PublishedPageThemeProvider>
         </Frame>
       </PublicationThemeProvider>
     </DocumentProvider>

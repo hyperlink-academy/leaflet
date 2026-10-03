@@ -1,5 +1,9 @@
 "use client";
-import { PubLeafletPagesLinearDocument } from "lexicons/api";
+import {
+  PubLeafletPagesLinearDocument,
+  PubLeafletThemePage,
+} from "lexicons/api";
+import { PublishedPageThemeProvider } from "components/ThemeManager/PublishedPageThemeProvider";
 import { useLeafletContent } from "contexts/LeafletContentContext";
 import {
   ExpandedInteractions,
@@ -27,9 +31,11 @@ import { SubscribePanel } from "components/Subscribe/SubscribeButton";
 
 export function LinearDocumentPage({
   blocks,
+  pageTheme,
   ...props
 }: Omit<SharedPageProps, "allPages"> & {
   blocks: PubLeafletPagesLinearDocument.Block[];
+  pageTheme?: PubLeafletThemePage.Main;
 }) {
   const {
     document,
@@ -58,7 +64,7 @@ export function LinearDocumentPage({
   const isSubpage = !!pageId;
 
   return (
-    <>
+    <PublishedPageThemeProvider theme={pageTheme}>
       <PageWrapper
         pageType="doc"
         fullPageScroll={fullPageScroll}
@@ -142,6 +148,6 @@ export function LinearDocumentPage({
         {!hasPageBackground && <div className={`spacer h-8 w-full`} />}
       </PageWrapper>
       <PublishedFootnotePopover footnotes={footnotes} />
-    </>
+    </PublishedPageThemeProvider>
   );
 }

@@ -17,6 +17,10 @@
             "type": "ref",
             "ref": "#block"
           }
+        },
+        "theme": {
+          "type": "ref",
+          "ref": "pub.leaflet.theme.page"
         }
       }
     },

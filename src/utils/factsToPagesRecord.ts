@@ -34,6 +34,7 @@ import {
   PubLeafletPagesLinearDocument,
   PubLeafletPollDefinition,
   PubLeafletRichtextFacet,
+  PubLeafletThemePage,
 } from "lexicons/api";
 import { ids } from "lexicons/api/lexicons";
 import { drawingFills } from "components/Blocks/DrawingBlock/ink";
@@ -46,7 +47,10 @@ import { getBlocksWithTypeLocal } from "src/replicache/getBlocks";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { List, parseBlocksToList } from "src/utils/parseBlocksToList";
 import { Delta, YJSFragmentToString } from "src/utils/yjsFragmentToString";
-import { ColorToRGB } from "components/ThemeManager/colorToLexicons";
+import {
+  ColorToRGB,
+  ColorToRGBA,
+} from "components/ThemeManager/colorToLexicons";
 import { ThemeDefaults } from "components/ThemeManager/themeUtils";
 import { parseColor } from "@react-stately/color";
 
@@ -619,6 +623,7 @@ export async function processBlocksToPages(opts: {
     pageID: string,
     membersOnly: boolean,
   ): Promise<PageRecord> {
+    const theme = pageThemeToRecord(pageID);
     if (scan.eav(pageID, "page/type")[0]?.data.value !== "canvas")
       return {
         $type: "pub.leaflet.pages.linearDocument",
@@ -627,6 +632,7 @@ export async function processBlocksToPages(opts: {
           getBlocksWithTypeLocal(facts, pageID),
           membersOnly,
         ),
+        ...(theme && { theme }),
       };
     const mobileView = scan.eav(pageID, "canvas/mobile-view")[0]?.data.value;
     const fixedWidth = scan.eav(pageID, "canvas/fixed-width")[0]?.data.value;
@@ -637,6 +643,7 @@ export async function processBlocksToPages(opts: {
       $type: "pub.leaflet.pages.canvas",
       id: pageID,
       blocks: await canvasBlocksToRecord(pageID, membersOnly),
+      ...(theme && { theme }),
       ...(pattern && { pattern }),
       ...(await canvasBackgroundToRecord(pageID, membersOnly)),
       ...(fixedWidth && fixedHeight
@@ -646,6 +653,35 @@ export async function processBlocksToPages(opts: {
       ...(scan.eav(pageID, "canvas/lock-viewer-zoom")[0]?.data.value && {
         lockViewerZoom: true,
       }),
+    };
+  }
+
+  function pageThemeToRecord(
+    pageID: string,
+  ): PubLeafletThemePage.Main | undefined {
+    const color = (
+      attribute:
+        | "theme/card-background"
+        | "theme/primary"
+        | "theme/accent-background"
+        | "theme/accent-text",
+    ) => {
+      const value = scan.eav(pageID, attribute)[0]?.data.value;
+      return value ? parseColor(`hsba(${value})`) : undefined;
+    };
+    const pageBackground = color("theme/card-background");
+    const primary = color("theme/primary");
+    const accentBackground = color("theme/accent-background");
+    const accentText = color("theme/accent-text");
+    if (!pageBackground && !primary && !accentBackground && !accentText) return;
+    return {
+      $type: "pub.leaflet.theme.page",
+      ...(pageBackground && { pageBackground: ColorToRGBA(pageBackground) }),
+      ...(primary && { primary: ColorToRGB(primary) }),
+      ...(accentBackground && {
+        accentBackground: ColorToRGB(accentBackground),
+      }),
+      ...(accentText && { accentText: ColorToRGB(accentText) }),
     };
   }
 

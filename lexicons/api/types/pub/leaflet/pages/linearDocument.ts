@@ -9,6 +9,7 @@ import {
   is$typed as _is$typed,
   type OmitKey,
 } from '../../../../util'
+import type * as PubLeafletThemePage from '../theme/page'
 import type * as PubLeafletBlocksIframe from '../blocks/iframe'
 import type * as PubLeafletBlocksHtml from '../blocks/html'
 import type * as PubLeafletBlocksText from '../blocks/text'
@@ -44,6 +45,7 @@ export interface Main {
   $type?: 'pub.leaflet.pages.linearDocument'
   id?: string
   blocks: Block[]
+  theme?: PubLeafletThemePage.Main
 }
 
 const hashMain = 'main'

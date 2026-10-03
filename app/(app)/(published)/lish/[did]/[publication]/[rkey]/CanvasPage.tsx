@@ -27,6 +27,7 @@ import { SharedPageProps } from "./PostPages";
 import { usePostFrame } from "./postFrame";
 import { PubLeafletBlocksPostHeader } from "lexicons/api";
 import { PostHeaderBlockProvider } from "./PostHeader/postHeaderBlockContext";
+import { PublishedPageThemeProvider } from "components/ThemeManager/PublishedPageThemeProvider";
 
 export function CanvasPage({
   page,
@@ -66,44 +67,46 @@ export function CanvasPage({
   );
 
   return (
-    <PageWrapper
-      pageType="canvas"
-      fullPageScroll={fullPageScroll}
-      id={`post-page-${pageId ?? document_uri}`}
-      drawerOpen={
-        !!drawer && (pageId ? drawer.pageId === pageId : !drawer.pageId)
-      }
-      pageOptions={pageOptions}
-    >
-      {!hasHeaderBlock && (
-        <CanvasMetadata
-          pageId={pageId}
-          isSubpage={isSubpage}
-          data={document}
-          profile={profile}
-          contributors={contributors}
-          preferences={preferences}
-          commentsCount={document.commentsCountByPage[pageId ?? ""] ?? 0}
-          quotesCount={getQuoteCount(document.quotesAndMentions, pageId)}
-          recommendsCount={document.recommendsCount}
-        />
-      )}
-      <DrawerThreadPageProvider pageId={pageId}>
-        <PostHeaderBlockProvider value={headerData}>
-          <CanvasContent
-            page={page}
-            did={did}
-            prerenderedCodeBlocks={prerenderedCodeBlocks}
-            bskyPostData={bskyPostData}
-            standardSitePostData={standardSitePostData}
-            pollData={pollData}
+    <PublishedPageThemeProvider theme={page.theme}>
+      <PageWrapper
+        pageType="canvas"
+        fullPageScroll={fullPageScroll}
+        id={`post-page-${pageId ?? document_uri}`}
+        drawerOpen={
+          !!drawer && (pageId ? drawer.pageId === pageId : !drawer.pageId)
+        }
+        pageOptions={pageOptions}
+      >
+        {!hasHeaderBlock && (
+          <CanvasMetadata
             pageId={pageId}
-            pages={pages}
-            zoomKey={pageId ? `${document_uri}#${pageId}` : document_uri}
+            isSubpage={isSubpage}
+            data={document}
+            profile={profile}
+            contributors={contributors}
+            preferences={preferences}
+            commentsCount={document.commentsCountByPage[pageId ?? ""] ?? 0}
+            quotesCount={getQuoteCount(document.quotesAndMentions, pageId)}
+            recommendsCount={document.recommendsCount}
           />
-        </PostHeaderBlockProvider>
-      </DrawerThreadPageProvider>
-    </PageWrapper>
+        )}
+        <DrawerThreadPageProvider pageId={pageId}>
+          <PostHeaderBlockProvider value={headerData}>
+            <CanvasContent
+              page={page}
+              did={did}
+              prerenderedCodeBlocks={prerenderedCodeBlocks}
+              bskyPostData={bskyPostData}
+              standardSitePostData={standardSitePostData}
+              pollData={pollData}
+              pageId={pageId}
+              pages={pages}
+              zoomKey={pageId ? `${document_uri}#${pageId}` : document_uri}
+            />
+          </PostHeaderBlockProvider>
+        </DrawerThreadPageProvider>
+      </PageWrapper>
+    </PublishedPageThemeProvider>
   );
 }
 
@@ -121,31 +124,33 @@ export function CanvasContent({
   let blocks = page.blocks ?? [];
   let mobileArea = mobileViewArea(page.mobileView, contentWidth);
   return (
-    <CanvasZoomProvider
-      pageKey={zoomKey}
-      pageScroll={pageScroll}
-      contentWidth={contentWidth}
-      initialArea={mobileArea}
-      lockViewerZoom={!!page.lockViewerZoom}
-    >
-      <CanvasZoomLayer
-        className="postContent"
-        contentHeight={canvasContentHeight(blocks)}
-        mobileArea={mobileArea}
+    <PublishedPageThemeProvider theme={page.theme}>
+      <CanvasZoomProvider
+        pageKey={zoomKey}
+        pageScroll={pageScroll}
+        contentWidth={contentWidth}
+        initialArea={mobileArea}
+        lockViewerZoom={!!page.lockViewerZoom}
       >
-        <CanvasBlocks
-          {...props}
-          blocks={blocks}
-          background={page.background}
-          pattern={page.pattern}
-          contentWidth={contentWidth}
-          preview={false}
-        />
-      </CanvasZoomLayer>
-      <CanvasOverlay edge="bottom">
-        <CanvasZoomControls className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-20 bg-bg-page border border-border-light rounded-md px-1 py-0.5" />
-      </CanvasOverlay>
-    </CanvasZoomProvider>
+        <CanvasZoomLayer
+          className="postContent"
+          contentHeight={canvasContentHeight(blocks)}
+          mobileArea={mobileArea}
+        >
+          <CanvasBlocks
+            {...props}
+            blocks={blocks}
+            background={page.background}
+            pattern={page.pattern}
+            contentWidth={contentWidth}
+            preview={false}
+          />
+        </CanvasZoomLayer>
+        <CanvasOverlay edge="bottom">
+          <CanvasZoomControls className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-20 bg-bg-page border border-border-light rounded-md px-1 py-0.5" />
+        </CanvasOverlay>
+      </CanvasZoomProvider>
+    </PublishedPageThemeProvider>
   );
 }
 

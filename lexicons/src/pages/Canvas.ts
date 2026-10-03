@@ -1,5 +1,6 @@
 import { LexiconDoc } from "@atproto/lexicon";
 import { BlockUnion } from "../blocks";
+import { PubLeafletThemePage } from "../theme";
 
 export const PubLeafletPagesCanvasDocument: LexiconDoc = {
   lexicon: 1,
@@ -31,6 +32,7 @@ export const PubLeafletPagesCanvasDocument: LexiconDoc = {
           description:
             "Viewers cannot zoom the canvas or scroll it sideways: no wheel, pinch, double-tap or zoom controls, and the initial framing (see mobileView) stays. Vertical scrolling is unaffected.",
         },
+        theme: { type: "ref", ref: PubLeafletThemePage.id },
         background: { type: "ref", ref: "#background" },
         pattern: {
           type: "string",

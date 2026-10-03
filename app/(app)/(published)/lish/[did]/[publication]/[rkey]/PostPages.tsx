@@ -80,6 +80,7 @@ function PageRenderer({
     <LinearDocumentPage
       {...sharedProps}
       blocks={(page as PubLeafletPagesLinearDocument.Main).blocks || []}
+      pageTheme={page.theme}
     />
   );
 }

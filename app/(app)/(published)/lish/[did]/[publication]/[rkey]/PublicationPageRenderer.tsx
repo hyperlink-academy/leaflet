@@ -42,6 +42,7 @@ import { publishedNavPages } from "src/utils/publishedPageMetadata";
 import { collectAndFetchBlockResources } from "./collectAndFetchBlockResources";
 import { PostContent } from "./PostContent";
 import { CanvasContent } from "./CanvasPage";
+import { PublishedPageThemeProvider } from "components/ThemeManager/PublishedPageThemeProvider";
 import { publicationCanvasWidth } from "src/utils/publicationCanvasWidth";
 import { getProfiles } from "src/identity";
 import { attachBylineProfiles, bylineDidsForPosts } from "src/utils/byline";
@@ -310,25 +311,35 @@ export async function PublicationPageRenderer({
                   contentWidth={canvasWidth}
                 />
               ) : (
-                <div
-                  className={`pubPageContent ${showPageBackground ? "pt-2" : "pt-6"}`}
+                <PublishedPageThemeProvider
+                  theme={
+                    (
+                      firstPage as
+                        | PubLeafletPagesLinearDocument.Main
+                        | undefined
+                    )?.theme
+                  }
                 >
-                  <PostContent
-                    blocks={allBlocks}
-                    did={did}
-                    pages={pages as PubLeafletPagesLinearDocument.Main[]}
-                    bskyPostData={JSON.parse(JSON.stringify(bskyPostData))}
-                    standardSitePostData={JSON.parse(
-                      JSON.stringify(standardSitePosts),
-                    )}
-                    standardSitePublicationData={JSON.parse(
-                      JSON.stringify(standardSitePublicationData),
-                    )}
-                    pollData={pollData}
-                    prerenderedCodeBlocks={prerenderedCodeBlocks}
-                    postsListData={postsListData}
-                  />
-                </div>
+                  <div
+                    className={`pubPageContent ${showPageBackground ? "pt-2" : "pt-6"}`}
+                  >
+                    <PostContent
+                      blocks={allBlocks}
+                      did={did}
+                      pages={pages as PubLeafletPagesLinearDocument.Main[]}
+                      bskyPostData={JSON.parse(JSON.stringify(bskyPostData))}
+                      standardSitePostData={JSON.parse(
+                        JSON.stringify(standardSitePosts),
+                      )}
+                      standardSitePublicationData={JSON.parse(
+                        JSON.stringify(standardSitePublicationData),
+                      )}
+                      pollData={pollData}
+                      prerenderedCodeBlocks={prerenderedCodeBlocks}
+                      postsListData={postsListData}
+                    />
+                  </div>
+                </PublishedPageThemeProvider>
               )}
             </PublicationHomeLayout>
           </PublicationBackgroundProvider>

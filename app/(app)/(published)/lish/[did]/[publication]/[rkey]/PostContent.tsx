@@ -55,6 +55,7 @@ import {
 import { useStandardSitePublication } from "components/StandardSitePublicationDataProvider";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
 import { CanvasBlocks } from "./CanvasBlockContent";
+import { PublishedPageThemeProvider } from "components/ThemeManager/PublishedPageThemeProvider";
 import { ScaledCanvas } from "components/Blocks/ScaledCanvas";
 import { ReadOnlyAltText } from "components/Blocks/ReadOnlyAltText";
 import { PublishedImageGallery } from "./Blocks/PublishedImageGallery";
@@ -290,6 +291,7 @@ export let Block = ({
       return (
         <PublishedPageLinkBlock
           blocks={page.blocks}
+          theme={page.theme}
           canvasBackground={isCanvas ? page.background : undefined}
           canvasPattern={isCanvas ? page.pattern : undefined}
           pageId={id}
@@ -310,25 +312,27 @@ export let Block = ({
         return;
       let size = { width: page.width, height: page.height };
       return (
-        <div className={`relative ${className}`} {...blockProps}>
-          <div className="w-full block-border overflow-clip bg-bg-page">
-            <ScaledCanvas size={size} alt={block.alt}>
-              <CanvasBlocks
-                blocks={page.blocks}
-                background={page.background}
-                pattern={page.pattern}
-                size={size}
-                did={did}
-                bskyPostData={bskyPostData}
-                standardSitePostData={standardSitePostData}
-                pollData={pollData}
-                pages={pages}
-                preview
-              />
-            </ScaledCanvas>
+        <PublishedPageThemeProvider theme={page.theme} key={block.id}>
+          <div className={`relative ${className}`} {...blockProps}>
+            <div className="w-full block-border overflow-clip bg-bg-page">
+              <ScaledCanvas size={size} alt={block.alt}>
+                <CanvasBlocks
+                  blocks={page.blocks}
+                  background={page.background}
+                  pattern={page.pattern}
+                  size={size}
+                  did={did}
+                  bskyPostData={bskyPostData}
+                  standardSitePostData={standardSitePostData}
+                  pollData={pollData}
+                  pages={pages}
+                  preview
+                />
+              </ScaledCanvas>
+            </div>
+            {block.alt && <ReadOnlyAltText alt={block.alt} />}
           </div>
-          {block.alt && <ReadOnlyAltText alt={block.alt} />}
-        </div>
+        </PublishedPageThemeProvider>
       );
     },
     "pub.leaflet.blocks.bskyPost": (block) => {
