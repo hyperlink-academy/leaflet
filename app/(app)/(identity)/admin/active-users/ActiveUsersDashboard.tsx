@@ -604,6 +604,7 @@ const HANDLED_PROPERTIES = new Set([
   "record_uri",
   "pro",
   "pro_source",
+  "source",
   "source_placement",
   "source_url",
 ]);
@@ -682,22 +683,26 @@ const EventRow = (props: { row: ActiveUserEventRow; nested?: boolean }) => {
   );
 };
 
-// The control and page a subscribe (or membership join) was made from.
+// Where a subscribe, membership join or signup came from: the flow (signups),
+// the control on the page, and the page itself.
 const SourceDetail = (props: { properties: Record<string, string> }) => {
-  let { source_placement: placement, source_url: url } = props.properties;
-  if (!placement && !url) return null;
+  let {
+    source: flow,
+    source_placement: placement,
+    source_url: url,
+  } = props.properties;
+  let labels = [flow, placement].filter(Boolean);
+  if (labels.length === 0 && !url) return null;
   return (
     <span className="text-secondary">
-      from{" "}
-      {placement ? (
-        <span className="font-mono text-xs">{placement}</span>
-      ) : (
-        "page"
+      {labels.length > 0 && (
+        <>
+          from <span className="font-mono text-xs">{labels.join(" · ")}</span>
+        </>
       )}
       {url && (
         <>
-          {" "}
-          on{" "}
+          {labels.length > 0 ? " on " : "on "}
           <ExternalLink href={url}>
             <span className="inline-block max-w-64 truncate align-bottom">
               {displayUrl(url)}

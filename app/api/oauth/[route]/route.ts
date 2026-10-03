@@ -24,7 +24,10 @@ import { idResolver } from "src/identity";
 import { mergeEmailIdentityIntoAtpIdentity } from "src/mergeIdentity";
 import { postAuthRedirect } from "src/postAuthRedirect";
 import { buildOauthLoginUrl } from "src/utils/customDomain";
-import { trackUserEvent } from "src/activeUserAnalytics";
+import {
+  signupSourceProperties,
+  trackUserEvent,
+} from "src/activeUserAnalytics";
 
 type OauthRequestClientState = {
   redirect: string | null;
@@ -256,7 +259,13 @@ export async function GET(
             trackUserEvent(
               { id: identity.id, atp_did: session.did },
               "signup",
-              { method: "bluesky", source: s.action?.action ?? "" },
+              {
+                method: "bluesky",
+                ...signupSourceProperties({
+                  action: s.action,
+                  page: s.redirect,
+                }),
+              },
             );
         } else if (
           currentIdentity &&

@@ -432,11 +432,15 @@ export function JoinMembershipFlow(props: {
     setConfirming(true);
     const plan = confirmStep.plan;
     if (confirmStep.kind === "authToken") {
-      const token = await confirmEmailAuthToken(
-        confirmStep.tokenId,
-        code,
-        "membership",
-      );
+      const token = await confirmEmailAuthToken(confirmStep.tokenId, code, {
+        flow: "membership",
+        action: {
+          action: "subscribe",
+          publication: props.publicationUri,
+          source: props.source,
+        },
+        page: window.location.href,
+      });
       if (!token) {
         setConfirming(false);
         toaster({ type: "error", content: "Incorrect code!" });
