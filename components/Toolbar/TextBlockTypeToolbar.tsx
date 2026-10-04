@@ -5,6 +5,7 @@ import {
 } from "components/Icons/BlockTextSmall";
 import { Props } from "components/Icons/Props";
 import { QuoteSmall } from "components/Icons/QuoteSmall";
+import { DropcapSmall } from "components/Icons/DropcapSmall";
 import { ShortcutKey, Separator } from "components/Layout";
 import { ToolbarButton } from "components/Toolbar";
 import { getSelectedOrFocusedBlocks } from "components/SelectionManager/selectionState";
@@ -27,6 +28,8 @@ export const TextBlockTypeToolbar = (props: {
   );
 
   let textSize = useEntity(focusedBlock?.entityID || null, "block/text-size");
+  let dropcap = useEntity(focusedBlock?.entityID || null, "block/dropcap");
+  let isDropcap = blockType?.data.value === "text" && !!dropcap?.data.value;
   let { rep, undoManager } = useReplicache();
 
   let setStyle = useCallback(
@@ -136,7 +139,8 @@ export const TextBlockTypeToolbar = (props: {
         active={
           blockType?.data.value === "text" &&
           textSize?.data.value !== "small" &&
-          textSize?.data.value !== "large"
+          textSize?.data.value !== "large" &&
+          !isDropcap
         }
         tooltipContent={<div>Normal Text</div>}
       >
@@ -146,7 +150,9 @@ export const TextBlockTypeToolbar = (props: {
         className={`px-[6px] text-lg ${props.className}`}
         onClick={() => setStyle({ style: "text", size: "large" })}
         active={
-          blockType?.data.value === "text" && textSize?.data.value === "large"
+          blockType?.data.value === "text" &&
+          textSize?.data.value === "large" &&
+          !isDropcap
         }
         tooltipContent={<div>Large Text</div>}
       >
@@ -156,7 +162,9 @@ export const TextBlockTypeToolbar = (props: {
         className={`px-[6px] text-sm text-secondary ${props.className}`}
         onClick={() => setStyle({ style: "text", size: "small" })}
         active={
-          blockType?.data.value === "text" && textSize?.data.value === "small"
+          blockType?.data.value === "text" &&
+          textSize?.data.value === "small" &&
+          !isDropcap
         }
         tooltipContent={<div>Small Text</div>}
       >
@@ -184,6 +192,20 @@ export const TextBlockTypeToolbar = (props: {
         }
       >
         <QuoteSmall />
+      </ToolbarButton>
+      <ToolbarButton
+        className={props.className}
+        onClick={() =>
+          setStyle(
+            isDropcap
+              ? { style: "text", size: "default" }
+              : { style: "dropcap" },
+          )
+        }
+        active={isDropcap}
+        tooltipContent={<div>Drop Cap</div>}
+      >
+        <DropcapSmall />
       </ToolbarButton>
     </>
   );

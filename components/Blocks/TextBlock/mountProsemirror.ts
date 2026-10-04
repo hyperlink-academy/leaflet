@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { pageOfParent, isBlockGroup } from "src/utils/blockGroups";
 import { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
@@ -29,6 +29,7 @@ import { useLinkPopoverStore } from "components/LinkPopover";
 import { useEditorCommentSheetStore } from "components/EditorComments/editorCommentStores";
 import { useEditorCommentPopoverStore } from "components/EditorComments/EditorCommentPopover";
 import { commentDraftPlugin } from "./commentDraftPlugin";
+import { dropcapKey, dropcapPlugin } from "./dropcapPlugin";
 import { stripCommentMarks } from "./stripCommentMarks";
 import { useCollabText } from "./useCollabText";
 
@@ -58,16 +59,25 @@ export function useMountProsemirror({
   let { entityID } = props;
   let rep = useReplicache();
   let mountRef = useRef<HTMLPreElement | null>(null);
+  let viewRef = useRef<EditorView | null>(null);
   const repRef = useRef<Replicache<ReplicacheMutators> | null>(null);
   let { yText: value, cursorPlugin, overlay } = useCollabText(entityID);
   let entity_set = useEntitySetContext();
   let alignment =
     useEntity(entityID, "block/text-alignment")?.data.value || "left";
-  let propsRef = useRef({ ...props, entity_set, alignment });
+  let dropcapFact = useEntity(entityID, "block/dropcap");
+  let dropcap = props.type === "text" && !!dropcapFact?.data.value;
+  let propsRef = useRef({ ...props, entity_set, alignment, dropcap });
   let handlePaste = useHandlePaste(entityID, propsRef);
 
-  propsRef.current = { ...props, entity_set, alignment };
+  propsRef.current = { ...props, entity_set, alignment, dropcap };
   repRef.current = rep.rep;
+
+  useEffect(() => {
+    let view = viewRef.current;
+    if (!view || dropcapKey.getState(view.state) === dropcap) return;
+    view.dispatch(view.state.tr.setMeta(dropcapKey, dropcap));
+  }, [dropcap]);
 
   useLayoutEffect(() => {
     if (!mountRef.current) return;
@@ -88,6 +98,7 @@ export function useMountProsemirror({
         keymap(baseKeymap),
         highlightSelectionPlugin,
         commentDraftPlugin,
+        dropcapPlugin(propsRef.current.dropcap),
         autolink({
           type: schema.marks.link,
           shouldAutoLink: () => true,
@@ -264,6 +275,7 @@ export function useMountProsemirror({
         dispatchTransaction,
       },
     );
+    viewRef.current = view;
 
     const unsubscribe = useEditorStates.subscribe(
       (s) => s.editorStates[entityID],
@@ -280,6 +292,7 @@ export function useMountProsemirror({
 
     return () => {
       unsubscribe();
+      viewRef.current = null;
       view.destroy();
       useEditorStates.setState((s) => ({
         ...s,

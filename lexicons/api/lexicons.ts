@@ -2006,6 +2006,11 @@ export const schemaDict = {
             type: 'string',
             enum: ['default', 'small', 'large'],
           },
+          dropcap: {
+            type: 'boolean',
+            description:
+              'Render the first letter as a drop cap, set large and sunk into the opening lines.',
+          },
           facets: {
             type: 'array',
             items: {

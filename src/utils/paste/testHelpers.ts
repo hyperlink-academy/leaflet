@@ -25,6 +25,7 @@ export type BlockSummary = {
   codeLanguage?: string;
   alignment?: string;
   textSize?: string;
+  dropcap?: boolean;
   imageURL?: string;
   buttonURL?: string;
 };
@@ -106,6 +107,7 @@ function summarize(result: BuildResult): BlockSummary[] {
       codeLanguage: factValue(b, "block/code-language"),
       alignment: factValue(b, "block/text-alignment"),
       textSize: factValue(b, "block/text-size"),
+      dropcap: factValue(b, "block/dropcap"),
       imageURL: imageByEntity.get(b.entityID),
       buttonURL: factValue(b, "button/url"),
     };

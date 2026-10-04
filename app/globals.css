@@ -572,6 +572,44 @@ img.ProseMirror-separator {
   @apply ml-2;
 }
 
+/* Drop cap: a two-line cap in the heading face. The float recipe is The New
+   Yorker's (63px/1 on a 21px/1.5 body, i.e. 3em = two lines), in em so it
+   scales with the theme's base size; the padding-top and negative
+   margin-bottom seat the glyph on the second baseline and keep the third
+   line from wrapping under it. Firefox sizes a floated ::first-letter from
+   font metrics rather than line-height, so it does without the pull-up.
+   .dropcap-letter is the editor's decoration span: WebKit mis-tracks caret
+   offsets around ::first-letter inside a contenteditable, and initial-letter
+   only applies to ::first-letter, so the editor always takes the float path. */
+.dropcap::first-letter,
+.dropcap-letter {
+  float: left;
+  font-family: var(
+    --theme-heading-font,
+    var(--theme-font, var(--font-quattro))
+  );
+  font-size: 3em;
+  line-height: 1;
+  padding: 0.1em 0.05em 0 0;
+  margin-bottom: -0.2em;
+}
+@-moz-document url-prefix("") {
+  .dropcap::first-letter {
+    margin-bottom: 0;
+  }
+}
+@supports (initial-letter: 2) or (-webkit-initial-letter: 2) {
+  .dropcap::first-letter {
+    float: none;
+    font-size: inherit;
+    line-height: inherit;
+    padding: 0;
+    margin: 0 0.15em 0 0;
+    -webkit-initial-letter: 2;
+    initial-letter: 2;
+  }
+}
+
 .container {
   /*need this max-w-none because this classname conflicts with one that tailwind uses that has a max-w-930px on it*/
   @apply max-w-none;

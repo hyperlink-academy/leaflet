@@ -311,6 +311,14 @@ describe("Leaflet copy → paste round trip", () => {
     );
   });
 
+  test("a drop cap paragraph round-trips", () => {
+    const [dropcap, plain] = paste(
+      `<p data-dropcap="true">Once upon a time.</p><p>Then nothing.</p>`,
+    );
+    expect(dropcap.dropcap).toBe(true);
+    expect(plain.dropcap).toBeUndefined();
+  });
+
   test("KaTeX markup inside a math block never leaks out as text", () => {
     for (const b of blocks) {
       expect(b.text).not.toContain("katex");

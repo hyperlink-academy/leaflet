@@ -267,6 +267,37 @@ describe("processBlocksToPages", () => {
     ]);
   });
 
+  it("publishes a text block's drop cap only when it is set", async () => {
+    let facts = [
+      fact({
+        entity: "root",
+        attribute: "root/page",
+        data: { type: "ordered-reference", value: "page", position: "a0" },
+      }),
+      child("page", "lead", "a0"),
+      block("lead", "text"),
+      fact({
+        entity: "lead",
+        attribute: "block/dropcap",
+        data: { type: "boolean", value: true },
+      }),
+      child("page", "body", "a1"),
+      block("body", "text"),
+    ];
+    let { pages } = await processBlocksToPages({
+      facts,
+      root_entity: "root",
+      hooks: { uploadImage: async () => undefined, uploadPoll: null },
+    });
+    expect(pages[0].blocks.map((b) => b.block)).toEqual([
+      expect.objectContaining({
+        $type: "pub.leaflet.blocks.text",
+        dropcap: true,
+      }),
+      expect.not.objectContaining({ dropcap: expect.anything() }),
+    ]);
+  });
+
   it("publishes the alignment of a lone canvas text block", async () => {
     let canvasBlock = (value: string, x: number) =>
       fact({

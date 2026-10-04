@@ -132,6 +132,10 @@ const BlockAttributes = {
     type: "text-size-union",
     cardinality: "one",
   },
+  "block/dropcap": {
+    type: "boolean",
+    cardinality: "one",
+  },
   "block/image": {
     type: "image",
     cardinality: "one",

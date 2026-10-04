@@ -19,6 +19,8 @@ export interface Main {
   $type?: 'pub.leaflet.blocks.text'
   plaintext: string
   textSize?: 'default' | 'small' | 'large'
+  /** Render the first letter as a drop cap, set large and sunk into the opening lines. */
+  dropcap?: boolean
   facets?: PubLeafletRichtextFacet.Main[]
 }
 

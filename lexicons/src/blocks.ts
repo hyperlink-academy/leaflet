@@ -11,6 +11,11 @@ export const PubLeafletBlocksText: LexiconDoc = {
       properties: {
         plaintext: { type: "string" },
         textSize: { type: "string", enum: ["default", "small", "large"] },
+        dropcap: {
+          type: "boolean",
+          description:
+            "Render the first letter as a drop cap, set large and sunk into the opening lines.",
+        },
         facets: {
           type: "array",
           items: { type: "ref", ref: PubLeafletRichTextFacet.id },

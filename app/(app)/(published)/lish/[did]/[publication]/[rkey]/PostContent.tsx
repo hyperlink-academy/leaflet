@@ -750,7 +750,7 @@ export let Block = ({
     "pub.leaflet.blocks.text": (block) => {
       return (
         <p
-          className={`textBlock whitespace-pre-wrap ${className} ${block.textSize === "small" ? "text-secondary" : "text-primary"}`}
+          className={`textBlock whitespace-pre-wrap ${className} ${block.textSize === "small" ? "text-secondary" : "text-primary"} ${block.dropcap ? "dropcap" : ""}`}
           {...blockProps}
           // em-based so small/large scale with the theme's custom base font
           // size, matching the editor's .textSizeSmall/.textSizeLarge classes.

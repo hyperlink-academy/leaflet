@@ -14,6 +14,7 @@ import {
 } from "@react-email/components";
 import type { PrismLanguage } from "@react-email/code-block";
 import { UnicodeString, type $Typed, type AppBskyFeedDefs } from "@atproto/api";
+import { dropcapLength } from "src/utils/dropcap";
 import React, { Fragment, type CSSProperties } from "react";
 import {
   PubLeafletBlocksBlockquote,
@@ -1272,12 +1273,21 @@ const BlockRenderer = ({
         }}
       >
         {block.plaintext ? (
-          <RichTextSpans
-            plaintext={block.plaintext}
-            facets={block.facets}
-            theme={theme}
-            assetsBaseUrl={assetsBaseUrl}
-          />
+          block.dropcap ? (
+            <DropcapRichText
+              plaintext={block.plaintext}
+              facets={block.facets}
+              theme={theme}
+              assetsBaseUrl={assetsBaseUrl}
+            />
+          ) : (
+            <RichTextSpans
+              plaintext={block.plaintext}
+              facets={block.facets}
+              theme={theme}
+              assetsBaseUrl={assetsBaseUrl}
+            />
+          )
         ) : (
           " "
         )}
@@ -3066,6 +3076,69 @@ function highlightFacetBackground(
 // Gmail strips color-mix(), so we resolve it to a literal rgb() at render time.
 const defaultHighlightBackground = (theme: EmailTheme): string =>
   mixRgb(theme.accentBackground, theme.pageBackground, 75);
+
+// Email clients don't honor ::first-letter, so the cap is a floated span
+// holding the same characters the published page enlarges (see
+// src/utils/dropcap.ts), with the New Yorker float recipe in pixels against
+// the 16px/1.5 body: 48px is two lines. Facets are re-based past the cap;
+// one that only covered the cap is dropped, since the cap carries its own
+// styling.
+const DropcapRichText = ({
+  plaintext,
+  facets,
+  theme,
+  assetsBaseUrl,
+}: {
+  plaintext: string;
+  facets?: PubLeafletRichtextFacet.Main[];
+  theme: EmailTheme;
+  assetsBaseUrl: string;
+}) => {
+  const capLength = dropcapLength(plaintext);
+  if (capLength === 0)
+    return (
+      <RichTextSpans
+        plaintext={plaintext}
+        facets={facets}
+        theme={theme}
+        assetsBaseUrl={assetsBaseUrl}
+      />
+    );
+  const cap = plaintext.slice(0, capLength);
+  const capBytes = new UnicodeString(cap).length;
+  const rest = plaintext.slice(capLength);
+  const restFacets = facets
+    ?.map((f) => ({
+      ...f,
+      index: {
+        byteStart: Math.max(0, f.index.byteStart - capBytes),
+        byteEnd: f.index.byteEnd - capBytes,
+      },
+    }))
+    .filter((f) => f.index.byteEnd > 0);
+  return (
+    <>
+      <span
+        style={{
+          float: "left",
+          fontFamily: theme.headingFont,
+          fontSize: 48,
+          lineHeight: "48px",
+          padding: "5px 2px 0 0",
+          marginBottom: -10,
+        }}
+      >
+        {cap}
+      </span>
+      <RichTextSpans
+        plaintext={rest}
+        facets={restFacets}
+        theme={theme}
+        assetsBaseUrl={assetsBaseUrl}
+      />
+    </>
+  );
+};
 
 const RichTextSpans = ({
   plaintext,

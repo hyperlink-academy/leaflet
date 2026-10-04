@@ -349,11 +349,13 @@ export async function processBlocksToPages(opts: {
     text: async (b) => {
       const [stringValue, facets] = getBlockContent(b.entityID);
       const [textSize] = scan.eav(b.entityID, "block/text-size");
+      const [dropcap] = scan.eav(b.entityID, "block/dropcap");
       const block: $Typed<PubLeafletBlocksText.Main> = {
         $type: ids.PubLeafletBlocksText,
         plaintext: stringValue,
         ...(facets.length > 0 && { facets }),
         ...(textSize && { textSize: textSize.data.value }),
+        ...(dropcap?.data.value && { dropcap: true }),
       };
       return block;
     },

@@ -227,6 +227,14 @@ function buildBlockFromHTML(
     });
   }
 
+  if (finalType === "text" && child.getAttribute("data-dropcap") === "true") {
+    facts.push({
+      entity: entityID,
+      attribute: "block/dropcap",
+      data: { type: "boolean", value: true },
+    });
+  }
+
   // block/text — Yjs-encode parsed content for text-ish blocks only.
   if (
     (finalType === "text" ||

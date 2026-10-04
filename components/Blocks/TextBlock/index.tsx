@@ -159,6 +159,8 @@ export function RenderedTextBlock(props: {
   let headingLevel =
     props.type === "heading" ? storedHeadingLevel?.data.value || 1 : undefined;
   let textSize = useEntity(props.entityID, "block/text-size");
+  let dropcapFact = useEntity(props.entityID, "block/dropcap");
+  let dropcap = props.type === "text" && !!dropcapFact?.data.value;
   let alignment =
     useEntity(props.entityID, "block/text-alignment")?.data.value || "left";
   let alignmentClass = {
@@ -200,6 +202,7 @@ export function RenderedTextBlock(props: {
       <RenderYJSFragment
         value={initialFact.data.value}
         wrapper="p"
+        attrs={dropcap ? { className: "dropcap" } : undefined}
         renderComments={permissions.write}
       />
     );

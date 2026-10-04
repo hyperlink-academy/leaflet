@@ -293,6 +293,7 @@ const BlockTypeToHTML: {
   text: async (b, tx, a) => {
     let [value] = await scanIndex(tx).eav(b.entityID, "block/text");
     let [textSize] = await scanIndex(tx).eav(b.entityID, "block/text-size");
+    let [dropcap] = await scanIndex(tx).eav(b.entityID, "block/dropcap");
 
     return (
       <RenderYJSFragment
@@ -300,6 +301,7 @@ const BlockTypeToHTML: {
         attrs={{
           "data-alignment": a,
           "data-text-size": textSize?.data.value,
+          "data-dropcap": dropcap?.data.value ? "true" : undefined,
         }}
         wrapper="p"
         renderComments={false}
