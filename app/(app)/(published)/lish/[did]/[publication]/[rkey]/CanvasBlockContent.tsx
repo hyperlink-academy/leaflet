@@ -73,7 +73,10 @@ export function CanvasBlocks({
         return (
           <div
             key={index}
-            className="absolute rounded-lg flex items-stretch origin-center p-3"
+            // Focusable so a click anywhere in the block focuses it, including
+            // on Safari, which doesn't focus a clicked button.
+            tabIndex={props.preview ? undefined : -1}
+            className={`absolute rounded-lg flex items-stretch origin-center p-3 outline-none ${props.preview ? "" : "publishedCanvasBlock"}`}
             style={{
               top: 0,
               left: 0,

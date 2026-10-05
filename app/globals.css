@@ -1375,6 +1375,32 @@ body > iframe[src*="js.stripe.com"] {
   --canvas-margin-x: 50cqw;
   --canvas-margin-y: 50cqh;
 }
+/* A published canvas block with something to interact with rises above its
+   neighbours while hovered or focused, so a block overlapping it can't get in
+   the way. Hover outranks focus so the last-clicked block doesn't cover the
+   one under the pointer. [data-canvas-passive] opts a control out: heading
+   self-links, and an image's lightbox and alt text, since images are
+   routinely layered under other blocks on purpose. */
+.publishedCanvasBlock:has(
+    :is(
+        a[href],
+        button,
+        iframe,
+        input,
+        textarea,
+        select,
+        video[controls],
+        audio[controls],
+        summary
+      ):not([data-canvas-passive])
+  ) {
+  &:focus-within {
+    z-index: 10000 !important;
+  }
+  &:hover {
+    z-index: 10001 !important;
+  }
+}
 .canvasAnimatedImage {
   will-change: transform;
 }

@@ -795,7 +795,11 @@ export let Block = ({
         preview || !slug ? (
           children
         ) : (
-          <a href={href} className="no-underline text-inherit cursor-pointer">
+          <a
+            href={href}
+            data-canvas-passive
+            className="no-underline text-inherit cursor-pointer"
+          >
             {children}
           </a>
         );

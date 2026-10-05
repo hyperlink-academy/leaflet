@@ -34,6 +34,7 @@ export function ReadOnlyAltText(props: {
     >
       <div className="flex gap-1 items-center justify-end">
         <button
+          data-canvas-passive
           onMouseDown={(e) => {
             e.stopPropagation();
             setShowAlt((s) => !s);
@@ -83,6 +84,7 @@ export function AltTextBody(props: { alt: string; onSeeMore?: () => void }) {
         {overflows && !expanded && (
           // Sits on the clipped last line, over the text it truncates.
           <button
+            data-canvas-passive
             className="absolute bottom-0 right-0 bg-bg-page pl-2 text-accent-contrast "
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {

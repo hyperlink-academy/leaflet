@@ -44,6 +44,7 @@ export function PublishedImageBlock(props: {
     >
       <button
         type="button"
+        data-canvas-passive
         className={`block ${props.isFullBleed ? "w-full" : "w-fit"} ${props.onOpenLightbox ? "cursor-pointer" : ""}`}
         onClick={props.onOpenLightbox}
       >
