@@ -4,7 +4,9 @@ import { CheckTiny } from "components/Icons/CheckTiny";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import {
   isCanvasPinching,
+  nearestScroller,
   useCanvasZoom,
+  useCanvasZoomEngine,
 } from "src/canvasZoom/CanvasZoomProvider";
 import { clientToCanvas } from "src/canvasZoom/session";
 import { isIOS } from "src/utils/isDevice";
@@ -30,8 +32,10 @@ import {
 
 // Canvas px around the eraser's point that sweeps a stroke away.
 const ERASER_RADIUS = 8;
-// The eraser end of a stylus reports this in PointerEvent.buttons.
+// The eraser end of a stylus reports these in PointerEvent.buttons and
+// PointerEvent.button.
 const PEN_ERASER_BUTTONS = 32;
+const PEN_ERASER_BUTTON = 5;
 
 const ERASER_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="8" fill="white" fill-opacity="0.6" stroke="black" stroke-width="1.5"/></svg>`,
@@ -49,17 +53,32 @@ type Gesture = {
   erased: Set<string>;
 };
 
+type Pan = {
+  pointerId: number;
+  x: number;
+  y: number;
+  scrollX: HTMLElement;
+  scrollY: HTMLElement;
+};
+
 // Captures pen, mouse and touch input over the whole canvas while the page is
 // in draw mode. Pinches still reach the canvas zoom, and once a stylus has
 // been used, a finger pans instead of drawing.
 export function CanvasInkLayer(props: { pageID: string }) {
   let { rep, undoManager } = useReplicache();
+  let engine = useCanvasZoomEngine();
   let entity_set = useEntitySetContext();
   let { tool, color, size } = useInkSession();
   let ref = useRef<HTMLDivElement>(null);
   let gesture = useRef<Gesture | null>(null);
+  let pan = useRef<Pan | null>(null);
   let touches = useRef(new Set<number>());
   let [penSeen, setPenSeen] = useState(false);
+  // Chrome and Firefox apply touch-action to pens as well as fingers, and
+  // only WebKit's touchType tells a stylus's touch events apart to cancel
+  // them, so elsewhere a pan-friendly touch-action would scroll under the pen
+  // and cancel its stroke. There fingers pan by hand instead.
+  let nativeFingerPan = penSeen && isIOS();
   let [live, setLive] = useState<InkStroke | null>(null);
   // Finished strokes shown here until the drawing block renders them.
   let [pending, setPending] = useState<{ key: number; stroke: InkStroke }[]>(
@@ -67,9 +86,9 @@ export function CanvasInkLayer(props: { pageID: string }) {
   );
   let pendingKey = useRef(0);
 
-  // Fingers pan once a stylus has been seen, so touch-action allows panning
-  // for every touch; iOS would then scroll under the pencil too. Cancelling
-  // the stylus's own touch events keeps it drawing.
+  // On iOS fingers pan natively once a stylus has been seen, so touch-action
+  // allows panning for every touch and the pencil would scroll too.
+  // Cancelling the stylus's own touch events keeps it drawing.
   useEffect(() => {
     let el = ref.current!;
     let onTouch = (e: TouchEvent) => {
@@ -138,7 +157,30 @@ export function CanvasInkLayer(props: { pageID: string }) {
     simulatePressure: g.simulatePressure,
   });
 
+  let startPan = (e: React.PointerEvent) => {
+    let box = engine.boxRef.current;
+    let scrollY = engine.pageScroll ? nearestScroller(box) : box;
+    if (!box || !scrollY) return;
+    ref.current?.setPointerCapture(e.pointerId);
+    pan.current = {
+      pointerId: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      scrollX: box,
+      scrollY,
+    };
+  };
+
+  let movePan = (p: Pan, e: React.PointerEvent) => {
+    if (isCanvasPinching()) return;
+    p.scrollX.scrollLeft -= e.clientX - p.x;
+    p.scrollY.scrollTop -= e.clientY - p.y;
+    p.x = e.clientX;
+    p.y = e.clientY;
+  };
+
   let cancel = () => {
+    pan.current = null;
     gesture.current = null;
     setLive(null);
     useInkSession.setState({ erasing: [] });
@@ -189,7 +231,7 @@ export function CanvasInkLayer(props: { pageID: string }) {
       className="canvasInkLayer absolute inset-0"
       style={{
         zIndex: CANVAS_DRAG_STACK_ORDER + 1,
-        touchAction: penSeen ? "pan-x pan-y" : "none",
+        touchAction: nativeFingerPan ? "pan-x pan-y" : "none",
         cursor: tool === "eraser" ? ERASER_CURSOR : "crosshair",
       }}
       onPointerDown={(e) => {
@@ -202,15 +244,21 @@ export function CanvasInkLayer(props: { pageID: string }) {
         // dragged stroke never produces.
         let session = useInkSession.getState();
         if (session.colorPickerOpen) return session.setColorPickerOpen(false);
-        if (e.pointerType === "touch" && penSeen) return;
+        if (e.pointerType === "touch" && penSeen) {
+          if (!nativeFingerPan) startPan(e);
+          return;
+        }
         if (e.pointerType === "pen" && !penSeen) setPenSeen(true);
-        if (e.pointerType === "mouse" && e.button !== 0) return;
+        let penEraser =
+          e.pointerType === "pen" &&
+          (e.button === PEN_ERASER_BUTTON ||
+            !!(e.buttons & PEN_ERASER_BUTTONS));
+        // A stylus barrel button or a right click isn't a stroke.
+        if (e.button !== 0 && !penEraser) return;
         if (isCanvasPinching()) return;
         e.preventDefault();
         ref.current?.setPointerCapture(e.pointerId);
-        let erase =
-          tool === "eraser" ||
-          (e.pointerType === "pen" && !!(e.buttons & PEN_ERASER_BUTTONS));
+        let erase = tool === "eraser" || penEraser;
         gesture.current = {
           pointerId: e.pointerId,
           tool: erase ? "eraser" : tool,
@@ -225,17 +273,24 @@ export function CanvasInkLayer(props: { pageID: string }) {
         addPoints(gesture.current, e);
       }}
       onPointerMove={(e) => {
+        let p = pan.current;
+        if (p && p.pointerId === e.pointerId) return movePan(p, e);
         let g = gesture.current;
         if (g && g.pointerId === e.pointerId) addPoints(g, e);
       }}
       onPointerUp={(e) => {
         touches.current.delete(e.pointerId);
+        if (pan.current?.pointerId === e.pointerId) pan.current = null;
         finish(e);
       }}
       onPointerCancel={(e) => {
         touches.current.delete(e.pointerId);
+        if (pan.current?.pointerId === e.pointerId) pan.current = null;
         if (gesture.current?.pointerId === e.pointerId) cancel();
       }}
+      // A long press with a pen or finger, or a held stylus button, opens the
+      // context menu over the drawing.
+      onContextMenu={(e) => e.preventDefault()}
     >
       <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
         {pending.map((p) => (
