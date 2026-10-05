@@ -124,38 +124,48 @@ export const PublicationMetadata = (props: {
       }
       postInfo={
         <>
-          <div className="flex gap-1 items-center">
-            {pub.publications && leaflet_id && (
-              <>
-                <DraftContributorSelector leaflet_id={leaflet_id} />
-              </>
-            )}
-            {pub.doc ? (
-              <div className="flex gap-2 items-center">
-                <p className="text-sm text-tertiary">
-                  Published{" "}
-                  {publishedAt && (
-                    <Backdater publishedAt={publishedAt} docURI={pub.doc} />
-                  )}
-                </p>
-
-                <Link
-                  target="_blank"
-                  className="text-sm"
-                  href={
-                    pub.publications
-                      ? `${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`
-                      : `/p/${new AtUri(pub.doc).host}/${new AtUri(pub.doc).rkey}`
-                  }
-                >
-                  View
-                </Link>
+          {/* The status drops to its own line as a unit when the byline is too
+              long to share one. It leads with a separator; the row is shifted
+              left by the separator plus gap and clipped, so that separator is
+              hidden whenever the status starts a line. */}
+          <div className="overflow-x-clip min-w-0">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 -ml-[9px]">
+              {/* empty:hidden because DraftContributorSelector can render nothing */}
+              <div className="pl-[9px] empty:hidden">
+                {pub.publications && leaflet_id && (
+                  <DraftContributorSelector leaflet_id={leaflet_id} />
+                )}
               </div>
-            ) : scheduledPublishAt ? (
-              <ScheduledLabel publishAt={scheduledPublishAt} />
-            ) : (
-              <p>Draft</p>
-            )}
+              <div className="flex gap-2 items-center">
+                <Separator classname="h-4!" />
+                {pub.doc ? (
+                  <>
+                    <p className="text-sm text-tertiary">
+                      Published{" "}
+                      {publishedAt && (
+                        <Backdater publishedAt={publishedAt} docURI={pub.doc} />
+                      )}
+                    </p>
+
+                    <Link
+                      target="_blank"
+                      className="text-sm"
+                      href={
+                        pub.publications
+                          ? `${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`
+                          : `/p/${new AtUri(pub.doc).host}/${new AtUri(pub.doc).rkey}`
+                      }
+                    >
+                      View
+                    </Link>
+                  </>
+                ) : scheduledPublishAt ? (
+                  <ScheduledLabel publishAt={scheduledPublishAt} />
+                ) : (
+                  <p>Draft</p>
+                )}
+              </div>
+            </div>
           </div>
           {!props.noInteractions && (
             <div className="flex gap-2 text-border items-center">

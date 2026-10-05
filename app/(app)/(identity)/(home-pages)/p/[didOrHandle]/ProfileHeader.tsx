@@ -24,13 +24,13 @@ export const ProfileHeader = (props: {
     <Avatar
       src={profileRecord.avatar}
       displayName={profileRecord.displayName}
-      className="profileAvatar mx-auto mt-3 sm:mt-4"
+      className="profileAvatar shrink-0 "
       size="giant"
     />
   );
 
   const displayNameElement = (
-    <h3 className="profileName px-3 sm:px-4 pt-2 leading-tight">
+    <h3 className="profileName  ">
       {profileRecord.displayName
         ? profileRecord.displayName
         : `@${props.profile.handle}`}
@@ -38,22 +38,21 @@ export const ProfileHeader = (props: {
   );
 
   const handleElement = profileRecord.displayName && (
-    <div
-      className={`profileHandle text-secondary ${props.popover ? "text-sm" : "text-sm"}  px-3 sm:px-4 truncate`}
-    >
+    <div className={`profileHandle text-secondary truncate text-sm`}>
       @{props.profile.handle}
     </div>
   );
 
   return (
     <div
-      className={`profileHeader flex flex-col relative pb-6`}
+      className={`profileHeader flex flex-col relative text-left`}
       style={{ wordBreak: "break-word" }}
       id="profile-header"
     >
-      {!props.popover && <ProfileLinks handle={props.profile.handle || ""} />}
       <div className="profileInfo flex flex-col gap-3">
-        <div className="profileNameAndHandle flex flex-col ">
+        <div
+          className={`profileNameAndHandle flex flex-row gap-4 pt-4 ${props.popover ? "px-4" : ""}`}
+        >
           {props.popover ? (
             <SpeedyLink className={"hover:no-underline!"} href={profileUrl}>
               {avatarElement}
@@ -61,27 +60,40 @@ export const ProfileHeader = (props: {
           ) : (
             avatarElement
           )}
-          {displayNameElement}
+          <div className="flex flex-col gap-0.5 leading-snug py-2 grow">
+            {props.popover ? (
+              displayNameElement
+            ) : (
+              <div className="flex gap-2 justify-between items-start">
+                {displayNameElement}
+                <ProfileLinks handle={props.profile.handle || ""} />
+              </div>
+            )}
 
-          {handleElement}
-          <KnownFollowers
-            viewer={props.profile.viewer}
-            did={props.profile.did}
-          />
-
-          <pre
-            className="profileDescription pt-1 px-3 sm:px-4 whitespace-pre-wrap"
-            style={{ fontFamily: "inherit" }}
-          >
-            {profileRecord.description
-              ? parseDescription(profileRecord.description)
-              : null}
-          </pre>
+            {handleElement}
+            <KnownFollowers
+              viewer={props.profile.viewer}
+              did={props.profile.did}
+            />
+          </div>
         </div>
 
-        <div className="profilePubCardContainer w-full overflow-x-scroll">
+        <pre
+          className={`profileDescription pt-1 whitespace-pre-wrap text-secondary  ${props.popover ? "px-3 sm:px-4" : ""}`}
+          style={{ fontFamily: "inherit" }}
+        >
+          {profileRecord.description
+            ? parseDescription(profileRecord.description)
+            : null}
+        </pre>
+
+        {/* On the profile page the scroller bleeds through the page's padding
+            so cards scroll edge to edge while resting aligned with the text. */}
+        <div
+          className={`profilePubCardContainer overflow-x-scroll ${props.popover ? "w-full" : "-mx-4 sm:-mx-6"}`}
+        >
           <div
-            className={`profilePubCards grid grid-flow-col  gap-2 mx-auto w-fit ${props.popover ? "auto-cols-[164px]" : "auto-cols-[164px] sm:auto-cols-[240px]"}`}
+            className={`profilePubCards grid grid-flow-col pb-4 gap-2 w-fit ${props.popover ? "px-4 auto-cols-[164px]" : "px-4 sm:px-6 auto-cols-[164px] sm:auto-cols-[240px]"}`}
           >
             {props.publications.map((p) => (
               <PublicationCard key={p.uri} record={p.record} uri={p.uri} />
@@ -95,7 +107,9 @@ export const ProfileHeader = (props: {
 
 const ProfileLinks = (props: { handle: string }) => {
   return (
-    <div className="profileLinks absolute sm:top-4 top-3 sm:right-4 right-3 flex flex-row gap-2">
+    // text-lg matches the name's h3, so 1lh is one line of the name and the
+    // icon centers on its first line even when the name wraps.
+    <div className="profileLinks shrink-0 text-lg h-[1lh] flex flex-row items-center gap-2">
       <a
         className="text-tertiary hover:text-accent-contrast hover:no-underline!"
         href={`https://bsky.app/profile/${props.handle}`}

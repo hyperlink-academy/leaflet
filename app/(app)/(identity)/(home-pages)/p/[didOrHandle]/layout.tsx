@@ -121,6 +121,7 @@ async function ProfilePageLayoutInner(props: {
       >
         <ProfileLayout>
           <ProfileHeader profile={profile} publications={publications || []} />
+          <hr className="border-border-light sm:mt-2 sm:mb-4 my-0 mb-3" />
           <ProfileTabs didOrHandle={params.didOrHandle} />
           <>{props.children}</>
         </ProfileLayout>

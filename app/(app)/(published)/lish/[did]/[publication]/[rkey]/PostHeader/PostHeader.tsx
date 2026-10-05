@@ -89,7 +89,6 @@ export function PostHeader(props: {
           />
           {!props.isCanvas && headerInteractions && (
             <Interactions
-              className="sm:mt-0 mt-1"
               showComments={props.preferences.showComments !== false}
               showMentions={props.preferences.showMentions !== false}
               showRecommends={props.preferences.showRecommends !== false}
@@ -137,53 +136,57 @@ export function PostByline(props: {
   const tagCount = props.hideTags ? 0 : tags.length;
 
   return (
-    <div className="flex flex-row gap-2 items-center">
-      {namedContributors.length > 0 ? (
-        <div className="flex flex-row flex-wrap items-center text-tertiary">
-          {namedContributors.map((c, i) => (
-            <Fragment key={c.did}>
-              {i > 0 && (
-                <span className="whitespace-pre">
-                  {bylineSeparator(i, namedContributors.length)}
+    <div className="overflow-x-clip min-w-0">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 -ml-[9px]">
+        {namedContributors.length > 0 ? (
+          <div className="pl-[9px] flex flex-row flex-wrap items-center text-tertiary">
+            {namedContributors.map((c, i) => (
+              <Fragment key={c.did}>
+                {i > 0 && (
+                  <span className="whitespace-pre">
+                    {bylineSeparator(i, namedContributors.length)}
+                  </span>
+                )}
+                <ProfilePopover
+                  didOrHandle={c.did}
+                  trigger={
+                    <span className="hover:underline">{bylineName(c)}</span>
+                  }
+                />
+              </Fragment>
+            ))}
+          </div>
+        ) : props.profile ? (
+          <div className="pl-[9px]">
+            <ProfilePopover
+              didOrHandle={props.profile.did}
+              trigger={
+                <span className="text-tertiary hover:underline">
+                  {props.profile.displayName || props.profile.handle}
                 </span>
-              )}
-              <ProfilePopover
-                didOrHandle={c.did}
-                trigger={
-                  <span className="hover:underline">{bylineName(c)}</span>
-                }
-              />
-            </Fragment>
-          ))}
-        </div>
-      ) : props.profile ? (
-        <ProfilePopover
-          didOrHandle={props.profile.did}
-          trigger={
-            <span className="text-tertiary hover:underline">
-              {props.profile.displayName || props.profile.handle}
-            </span>
-          }
-        />
-      ) : null}
-      {record.publishedAt ? (
-        <>
-          <Separator classname="h-4!" />
-          <p>
-            <time dateTime={record.publishedAt}>{formattedDate}</time>
-          </p>
-        </>
-      ) : null}
-      {tagCount > 0 && (
-        <>
-          <Separator classname="h-4!" />
-          {/* TagPopover reads this off context to open the tag wherever the
-              post's frame shows tags. */}
-          <DrawerThreadContext.Provider value={tagDrawerNav}>
-            <TagPopover tags={tags} />
-          </DrawerThreadContext.Provider>
-        </>
-      )}
+              }
+            />
+          </div>
+        ) : null}
+        {(record.publishedAt || tagCount > 0) && (
+          <div className="flex gap-2 items-center">
+            <Separator classname="h-4!" />
+            {record.publishedAt && (
+              <p>
+                <time dateTime={record.publishedAt}>{formattedDate}</time>
+              </p>
+            )}
+            {record.publishedAt && tagCount > 0 && (
+              <Separator classname="h-4!" />
+            )}
+            {tagCount > 0 && (
+              <DrawerThreadContext.Provider value={tagDrawerNav}>
+                <TagPopover tags={tags} />
+              </DrawerThreadContext.Provider>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

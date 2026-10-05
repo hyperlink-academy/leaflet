@@ -9,6 +9,7 @@ import { Tooltip } from "./Tooltip";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { BlueskyTiny } from "./Icons/BlueskyTiny";
 import { ArrowRightTiny } from "./Icons/ArrowRightTiny";
+import { DotLoader } from "./utils/DotLoader";
 
 export const ProfilePopover = (props: {
   trigger: React.ReactNode;
@@ -33,7 +34,7 @@ export const ProfilePopover = (props: {
 
   return (
     <Popover
-      className={`max-w-sm p-0! text-center ${props.className}`}
+      className={`max-w-[min(24rem,var(--radix-popover-content-available-width))] p-0! text-center ${props.className}`}
       trigger={
         <div
           className={`no-underline relative ${props.triggerClassName}`}
@@ -60,7 +61,7 @@ export const ProfilePopover = (props: {
       onOpenChange={setIsOpen}
     >
       {data?.profile ? (
-        <div>
+        <div className="min-h-0 overflow-y-auto">
           <ProfileHeader
             profile={data.profile}
             publications={data.publications}
@@ -70,9 +71,11 @@ export const ProfilePopover = (props: {
           <ProfileLinks handle={data.profile.handle} />
         </div>
       ) : isLoading || !data ? (
-        <div className="text-secondary p-4">Loading...</div>
+        <div className="text-secondary p-4">
+          <DotLoader />
+        </div>
       ) : (
-        <div className="text-secondary py-2 px-4">No profile found...</div>
+        <div className="text-secondary py-2 px-4">No profile found…</div>
       )}
     </Popover>
   );
@@ -92,7 +95,7 @@ const ProfileLinks = (props: { handle: string }) => {
             className={linkClassName}
           >
             <BlueskyTiny />
-            Bluesky
+            See On Bluesky
           </a>
         </div>
         <SpeedyLink

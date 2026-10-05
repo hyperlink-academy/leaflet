@@ -45,25 +45,36 @@ export const get_profile_data = makeRoute({
       });
     }
 
-    let profileReq = agent.app.bsky.actor
-      .getProfile({ actor: did })
-      .then(
-        (res) => res.data,
-        () => undefined,
-      );
+    let profileReq = agent.app.bsky.actor.getProfile({ actor: did }).then(
+      (res) => res.data,
+      () => undefined,
+    );
 
     let publicationsReq = supabase
       .from("publications")
       .select("*")
       .eq("identity_did", did);
 
-    let [profile, { data: rawPublications }] = await Promise.all([
-      profileReq,
-      publicationsReq,
-    ]);
+    let contributorPublicationsReq = supabase
+      .from("publication_contributors")
+      .select("publications!publication_contributors_publication_uri_fkey(*)")
+      .eq("contributor_did", did)
+      .eq("confirmed", true);
+
+    let [profile, { data: rawPublications }, { data: contributorRows }] =
+      await Promise.all([
+        profileReq,
+        publicationsReq,
+        contributorPublicationsReq,
+      ]);
 
     // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
-    const publications = deduplicateByUri(rawPublications || []);
+    const publications = deduplicateByUri([
+      ...(rawPublications || []),
+      ...(contributorRows || []).flatMap((r) =>
+        r.publications ? [r.publications] : [],
+      ),
+    ]);
 
     const normalizedPublications = publications
       .map(normalizePublicationRow)
