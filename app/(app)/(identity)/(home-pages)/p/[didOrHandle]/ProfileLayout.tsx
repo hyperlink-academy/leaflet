@@ -13,7 +13,7 @@ export function ProfileLayout(props: { children: React.ReactNode }) {
               ? "bg-transparent"
               : "overflow-y-auto h-full border border-border-light rounded-lg! container px-4 sm:px-6 sm:py-2 "
           }
-          max-w-md w-full
+          max-w-2xl! w-full
           flex flex-col
           text-center
     `}

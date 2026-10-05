@@ -11,6 +11,7 @@ import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/act
 import { SpeedyLink } from "components/SpeedyLink";
 import { ReactNode } from "react";
 import * as linkify from "linkifyjs";
+import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 
 export const ProfileHeader = (props: {
   profile: ProfileViewDetailed;
@@ -43,15 +44,19 @@ export const ProfileHeader = (props: {
     </div>
   );
 
+  console.log("viewer: " + props.profile.viewer);
+
+  console.log("did: " + props.profile.did);
+
   return (
     <div
       className={`profileHeader flex flex-col relative text-left`}
       style={{ wordBreak: "break-word" }}
       id="profile-header"
     >
-      <div className="profileInfo flex flex-col gap-3">
+      <div className="profileContent flex flex-col gap-3">
         <div
-          className={`profileNameAndHandle flex flex-row gap-4 pt-4 ${props.popover ? "px-4" : ""}`}
+          className={`profileInfo flex flex-row gap-4 pt-4 items-center ${props.popover ? "px-4" : ""}`}
         >
           {props.popover ? (
             <SpeedyLink className={"hover:no-underline!"} href={profileUrl}>
@@ -60,7 +65,7 @@ export const ProfileHeader = (props: {
           ) : (
             avatarElement
           )}
-          <div className="flex flex-col gap-0.5 leading-snug py-2 grow">
+          <div className="flex flex-col gap-0.5 leading-snug grow">
             {props.popover ? (
               displayNameElement
             ) : (
@@ -87,8 +92,6 @@ export const ProfileHeader = (props: {
             : null}
         </pre>
 
-        {/* On the profile page the scroller bleeds through the page's padding
-            so cards scroll edge to edge while resting aligned with the text. */}
         <div
           className={`profilePubCardContainer overflow-x-scroll ${props.popover ? "w-full" : "-mx-4 sm:-mx-6"}`}
         >
@@ -107,14 +110,12 @@ export const ProfileHeader = (props: {
 
 const ProfileLinks = (props: { handle: string }) => {
   return (
-    // text-lg matches the name's h3, so 1lh is one line of the name and the
-    // icon centers on its first line even when the name wraps.
     <div className="profileLinks shrink-0 text-lg h-[1lh] flex flex-row items-center gap-2">
       <a
         className="text-tertiary hover:text-accent-contrast hover:no-underline!"
         href={`https://bsky.app/profile/${props.handle}`}
       >
-        <BlueskyTiny />
+        <BlueskyLinkTiny />
       </a>
     </div>
   );
@@ -268,22 +269,28 @@ const KnownFollowers = (props: {
   viewer: ProfileViewDetailed["viewer"];
   did: string;
 }) => {
-  if (!props.viewer?.knownFollowers) return null;
-  let count = props.viewer.knownFollowers.count;
+  let known = props.viewer?.knownFollowers;
+  if (!known || known.count === 0) return null;
+  let shown = known.followers.slice(0, 3);
+  let others = known.count - shown.length;
 
   return (
-    <>
-      <div className="profileKnownFollowers sm:px-4 px-3 text-xs text-tertiary  italic">
-        Followed by{" "}
-        <a
-          className="hover:underline"
-          href={`https://bsky.app/profile/${props.did}/known-followers`}
-          target="_blank"
-        >
-          {props.viewer?.knownFollowers?.followers[0]?.displayName}{" "}
-          {count > 1 ? `and ${count - 1} other${count > 2 ? "s" : ""}` : ""}
-        </a>
-      </div>
-    </>
+    <a
+      className="profileKnownFollowers w-fit flex items-center gap-1 text-xs text-tertiary italic hover:underline"
+      href={`https://bsky.app/profile/${props.did}/known-followers`}
+      target="_blank"
+    >
+      <span className="flex -space-x-1">
+        {shown.map((f) => (
+          <Avatar
+            key={f.did}
+            src={f.avatar}
+            displayName={f.displayName || f.handle}
+            size="tiny"
+          />
+        ))}
+      </span>
+      Followed by {known.count} friends
+    </a>
   );
 };
