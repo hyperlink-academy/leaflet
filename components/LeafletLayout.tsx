@@ -1,10 +1,6 @@
 export const LeafletLayout = (props: {
   children: React.ReactNode;
   className?: string;
-  // In flow mode the layout does NOT create its own scroll container: it sizes
-  // to its content height so an ancestor (e.g. the publication edit layout) can
-  // be the single vertical scroller. See app/(app)/(identity)/lish/.../edit/layout.tsx.
-  flow?: boolean;
 }) => {
   return (
     <div
@@ -13,7 +9,7 @@ export const LeafletLayout = (props: {
         w-full relative
         mx-auto pwa-padding
         flex items-stretch
-        ${props.flow ? "" : "h-full grow"}`}
+        h-full grow`}
       id="page-carousel"
     >
       {/* if you adjust this padding, remember to adjust the negative margins on page in components/Pages/Page.tsx in pageScrollWrapper when card borders are hidden */}
@@ -24,7 +20,7 @@ export const LeafletLayout = (props: {
           flex gap-0
           py-2 sm:py-6
           no-scrollbar
-          ${props.flow ? "justify-center" : "h-full overflow-y-hidden overflow-x-scroll snap-x snap-mandatory"}
+          h-full overflow-y-hidden overflow-x-scroll snap-x snap-mandatory
           ${props.className}`}
       >
         {props.children}

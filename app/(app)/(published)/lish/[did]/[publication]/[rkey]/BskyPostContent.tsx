@@ -34,7 +34,8 @@ export function BskyPostContent(props: {
   replyOnClick?: (e: React.MouseEvent) => void;
   clientHost?: string;
   // The overlay that opens the thread is a button, which the editor's block
-  // mouse handlers skip, so it would make the post unselectable there.
+  // mouse handlers skip, so it would make the post unselectable there. The
+  // editor opens threads from the reply and quote counts instead.
   openThreadOnClick?: boolean;
   hasQuote?: {
     position: QuotePosition;
@@ -104,8 +105,8 @@ export function BskyPostContent(props: {
             displayName={post.author.displayName}
             handle={post.author.handle}
             createdAt={record.createdAt}
-          />
             url={props.linkTimestamp ? url : undefined}
+          />
 
           <div className={`bskyPostBody flex flex-col min-w-0 w-full`}>
             {props.hasQuote && (
@@ -374,11 +375,11 @@ export function PostInfo(props: {
   handle: string;
   createdAt: string;
   compact?: boolean;
-}) {
   url?: string;
+}) {
   const { displayName, handle, createdAt, compact = false } = props;
-
   const timestampClassName = `${compact ? "text-xs" : "text-sm"} text-tertiary shrink-0`;
+
   return (
     <div className="postInfo flex items-center gap-2 leading-tight w-full">
       <ProfilePopover

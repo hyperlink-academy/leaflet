@@ -26,7 +26,7 @@ import { useAddToHomeParam } from "./AddToHomeEffect";
 
 // Rendered inside the first bookend spacer, whose right edge is the first
 // page's left edge at any page width; `floating` keeps the old free-standing
-// box for layouts without spacers (full-page scroll, flow).
+// box for layouts without spacers (full-page scroll).
 export function LeafletSidebar(props: { floating?: boolean }) {
   let entity_set = useEntitySetContext();
   let { rootEntity } = useReplicache();

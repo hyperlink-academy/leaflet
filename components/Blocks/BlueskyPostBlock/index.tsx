@@ -15,6 +15,8 @@ import {
 } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/BskyPostContent";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { BlockSettings } from "../SettingsTriggerButton";
+import { DrawerThreadPageProvider } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/drawerThreadContext";
+import { useHostPostFrame } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/postFrame";
 import { BlockSettingOptions } from "../BlockSettingOptions";
 import { PlaceholderText } from "../PostSizeIcons";
 import {
@@ -29,6 +31,7 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
   let post = useEntity(props.entityID, "block/bluesky-post")?.data.value;
   let clientHost = useEntity(props.entityID, "bluesky-post/host")?.data.value;
   let viewFact = useEntity(props.entityID, "bluesky-post/view");
+  let hasDrawer = !!useHostPostFrame() && !props.preview;
 
   useEffect(() => {
     if (props.preview) return;
@@ -78,6 +81,33 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
       let postView = post.post as PostView;
       let resolved = resolveBskyPostView(postView, viewFact?.data.value);
 
+      let content =
+        resolved.view === "media" ? (
+          <BskyPostMediaContent
+            post={postView}
+            media={resolved.media}
+            parent={undefined}
+            className="text-sm text-secondary"
+            clientHost={clientHost}
+            openThreadOnClick={false}
+            replyEnabled={hasDrawer}
+            quoteEnabled={hasDrawer}
+          />
+        ) : (
+          <BskyPostContent
+            post={postView}
+            parent={undefined}
+            showBlueskyLink={true}
+            showEmbed={true}
+            avatarSize="large"
+            className="text-sm text-secondary  "
+            clientHost={clientHost}
+            openThreadOnClick={false}
+            replyEnabled={hasDrawer}
+            quoteEnabled={hasDrawer}
+          />
+        );
+
       return (
         <BlockLayout
           isSelected={!!isSelected}
@@ -94,26 +124,10 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
             )
           }
         >
-          {resolved.view === "media" ? (
-            <BskyPostMediaContent
-              post={postView}
-              media={resolved.media}
-              parent={undefined}
-              className="text-sm text-secondary"
-              clientHost={clientHost}
-              openThreadOnClick={false}
-            />
+          {hasDrawer ? (
+            <DrawerThreadPageProvider>{content}</DrawerThreadPageProvider>
           ) : (
-            <BskyPostContent
-              post={postView}
-              parent={undefined}
-              showBlueskyLink={true}
-              showEmbed={true}
-              avatarSize="large"
-              className="text-sm text-secondary  "
-              clientHost={clientHost}
-              openThreadOnClick={false}
-            />
+            content
           )}
         </BlockLayout>
       );

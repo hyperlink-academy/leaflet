@@ -45,8 +45,13 @@ export function usePostFrame(): PostFrame {
   return host ?? published;
 }
 
+// Null where nothing presents the content's secondary surfaces.
+export function useHostPostFrame() {
+  return useContext(PostFrameContext);
+}
+
 export function PostFrameProvider(props: {
-  value: PostFrame;
+  value: PostFrame | null;
   children: React.ReactNode;
 }) {
   return (

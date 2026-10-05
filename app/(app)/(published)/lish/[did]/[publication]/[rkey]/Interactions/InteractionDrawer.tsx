@@ -13,12 +13,13 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 import { GoBackTiny } from "components/Icons/GoBackTiny";
 import { DoubleArrowRightTiny } from "components/Icons/DoubleArrowRightTiny";
 import { ToggleGroup } from "components/ToggleGroup";
-import { useDocument } from "contexts/DocumentContext";
+import { useDocumentOptional } from "contexts/DocumentContext";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DrawerThread,
   DrawerThreadContext,
   drawerThreadKey,
+  isBskyThread,
 } from "./drawerThreadContext";
 import { useDrawerOpen } from "./useDrawerOpen";
 import { ThreadView } from "../ThreadPage";
@@ -30,24 +31,35 @@ import { MobileSheet } from "components/MobileSheet";
 import { RecommendsList } from "components/Interactions/RecommendsList";
 import { RecommendButton } from "components/Interactions/RecommendButton";
 
-export const InteractionDrawer = (props: {
+type DrawerProps = {
   showPageBackground: boolean | undefined;
   document_uri: string;
-  quotesAndMentions: { uri: string; link?: string }[];
-  commentsSlot: React.ReactNode;
-  did: string;
   pageId?: string;
-}) => {
+} & (
+  | {
+      quotesAndMentions: { uri: string; link?: string }[];
+      commentsSlot: React.ReactNode;
+      did: string;
+    }
+  // The host has no published document, so the drawer only shows Bluesky
+  // threads.
+  | { threadsOnly: true }
+);
+
+export const InteractionDrawer = (props: DrawerProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   let isMobile = useIsMobile();
 
-  // This component is mounted unconditionally (in PostPages) and reads the
-  // drawer state itself, so that on mobile the sheet can animate out on close
+  // This component is mounted unconditionally and reads the drawer state
+  // itself, so that on mobile the sheet can animate out on close
   // instead of being abruptly unmounted by its parent.
   let drawerState = useDrawerOpen(props.document_uri);
   let open =
     !!drawerState &&
-    (props.pageId ? drawerState.pageId === props.pageId : !drawerState.pageId);
+    (props.pageId
+      ? drawerState.pageId === props.pageId
+      : !drawerState.pageId) &&
+    (!("threadsOnly" in props) || isBskyThread(drawerState.thread));
 
   // Remember the last open tab and thread view so the content keeps rendering
   // them while the sheet plays its exit animation (drawerState is already null
@@ -101,18 +113,19 @@ export const InteractionDrawer = (props: {
   );
 };
 
-const InteractionDrawerContent = (props: {
-  showPageBackground: boolean | undefined;
-  document_uri: string;
-  quotesAndMentions: { uri: string; link?: string }[];
-  commentsSlot: React.ReactNode;
-  did: string;
-  pageId?: string;
-  tab: "comments" | "quotes";
-  thread: DrawerThread | undefined;
-}) => {
-  let { commentsCountByPage, recommendsCount } = useDocument();
-  let commentsCount = commentsCountByPage[props.pageId ?? ""] ?? 0;
+const InteractionDrawerContent = (
+  props: DrawerProps & {
+    tab: "comments" | "quotes";
+    thread: DrawerThread | undefined;
+  },
+) => {
+  let { quotesAndMentions, commentsSlot, did } =
+    "threadsOnly" in props
+      ? { quotesAndMentions: [], commentsSlot: null, did: "" }
+      : props;
+  let doc = useDocumentOptional();
+  let commentsCount = doc?.commentsCountByPage[props.pageId ?? ""] ?? 0;
+  let recommendsCount = doc?.recommendsCount ?? 0;
   let { threadStack } = useInteractionState(props.document_uri);
   const drawerNav = useMemo(
     () => ({
@@ -144,7 +157,7 @@ const InteractionDrawerContent = (props: {
   if (sspActiveTab === "quotes" && !sspMentionsAvailable)
     sspActiveTab = "comments";
 
-  const filteredQuotesAndMentions = props.quotesAndMentions.filter((q) => {
+  const filteredQuotesAndMentions = quotesAndMentions.filter((q) => {
     if (!q.link) return !props.pageId;
     const url = new URL(q.link);
     const quoteParam = url.pathname.split("/l-quote/")[1];
@@ -153,9 +166,11 @@ const InteractionDrawerContent = (props: {
     return quotePosition?.pageId === props.pageId;
   });
 
-  const commentsAvailable = props.commentsSlot != null;
+  const commentsAvailable = commentsSlot != null;
   const mentionsAvailable = filteredQuotesAndMentions.length > 0;
   const commentsAndMentionsAvailable = commentsAvailable && mentionsAvailable;
+  // With neither under it, the first thread is the drawer's top level.
+  const hasTabs = commentsAvailable || mentionsAvailable;
 
   // Resolve the active tab, falling back to whichever option is available.
   let activeTab: "comments" | "quotes" = props.tab;
@@ -221,17 +236,21 @@ const InteractionDrawerContent = (props: {
                 <button
                   className="text-tertiary hover:text-secondary shrink-0"
                   aria-label="Back to the top of the thread"
-                  onClick={() => popDrawerThreadToRoot(props.document_uri)}
+                  onClick={() =>
+                    popDrawerThreadToRoot(props.document_uri, hasTabs)
+                  }
                 >
                   <DoubleArrowRightTiny className="rotate-180" />
                 </button>
               )}
-              <button
-                className="flex items-center gap-1 text-tertiary hover:text-secondary font-bold text-sm"
-                onClick={() => popDrawerThread(props.document_uri)}
-              >
-                <GoBackTiny /> Back
-              </button>
+              {(threadStack.length >= 2 || hasTabs) && (
+                <button
+                  className="flex items-center gap-1 text-tertiary hover:text-secondary font-bold text-sm"
+                  onClick={() => popDrawerThread(props.document_uri)}
+                >
+                  <GoBackTiny /> Back
+                </button>
+              )}
             </div>
           ) : commentsAndMentionsAvailable ? (
             <ToggleGroup
@@ -291,11 +310,11 @@ const InteractionDrawerContent = (props: {
           />
         ) : activeTab === "quotes" ? (
           <DiscussionDrawerContent
-            did={props.did}
+            did={did}
             quotesAndMentions={filteredQuotesAndMentions}
           />
         ) : (
-          props.commentsSlot
+          commentsSlot
         )}
       </DrawerThreadContext.Provider>
     </>
