@@ -9,6 +9,7 @@ import {
 } from "components/PageSWRDataProvider";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { Combobox, ComboboxResult } from "components/Combobox";
+import { useIdentityData } from "components/IdentityProvider";
 
 type Props = {
   parent: string;
@@ -31,6 +32,7 @@ export const BlockCommandBar = ({
 
   let { rep, undoManager, rootEntity } = useReplicache();
   let entity_set = useEntitySetContext();
+  let { identity } = useIdentityData();
   let { data: pub } = useLeafletPublicationData();
   let publicationPage = useLeafletPublicationPage();
   let inPublicationEdit = !!publicationPage;
@@ -79,6 +81,7 @@ export const BlockCommandBar = ({
         props.parent === firstPage &&
         !hasMembersDelimiter);
 
+    const allowedForAccount = !command.atprotoOnly || !!identity?.atp_did;
     const allowedInPublication =
       !command.publicationOnly || !!pub?.publications;
     const hiddenOnPubPage =
@@ -93,6 +96,7 @@ export const BlockCommandBar = ({
       isVisible &&
       hasMembership &&
       allowedInPublication &&
+      allowedForAccount &&
       !hiddenOnPubPage &&
       !hiddenInPubPost &&
       allowedOnPage

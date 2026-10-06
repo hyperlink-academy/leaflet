@@ -25,6 +25,7 @@ import {
   PubLeafletBlocksPoll,
   PubLeafletBlocksPostsList,
   PubLeafletBlocksRecommendedPubs,
+  PubLeafletBlocksReply,
   PubLeafletBlocksSignup,
   PubLeafletBlocksPostHeader,
   PubLeafletBlocksText,
@@ -592,6 +593,16 @@ export async function processBlocksToPages(opts: {
       const block: $Typed<PubLeafletBlocksRecommendedPubs.Main> = {
         $type: "pub.leaflet.blocks.recommendedPubs",
         ...(compactFact && { compact: compactFact.data.value }),
+      };
+      return block;
+    },
+    reply: async (b) => {
+      const [buttonText] = scan.eav(b.entityID, "reply/button-text");
+      const [showTheme] = scan.eav(b.entityID, "reply/show-publication-theme");
+      const block: $Typed<PubLeafletBlocksReply.Main> = {
+        $type: "pub.leaflet.blocks.reply",
+        ...(buttonText?.data.value && { buttonText: buttonText.data.value }),
+        ...(showTheme?.data.value === false && { showPublicationTheme: false }),
       };
       return block;
     },

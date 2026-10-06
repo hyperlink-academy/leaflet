@@ -76,6 +76,7 @@ import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { MembersOnlyPaywall } from "./MembersOnlyPaywall";
 import { PublishedRecommendedPubs } from "./Blocks/PublishedRecommendedPubs";
+import { DocumentReplies } from "components/Blocks/ReplyBlock/DocumentReplies";
 import { PostHeader } from "./PostHeader/PostHeader";
 import { usePostHeaderBlockData } from "./PostHeader/postHeaderBlockContext";
 
@@ -472,6 +473,18 @@ export let Block = ({
           <PublishedRecommendedPubs
             publicationUri={currentPublicationUri}
             compact={block.compact}
+          />
+        </div>
+      );
+    },
+    "pub.leaflet.blocks.reply": (block) => {
+      if (!document || preview) return null;
+      return (
+        <div className={className} {...blockProps}>
+          <DocumentReplies
+            documentUri={document.uri}
+            buttonText={block.buttonText}
+            showThemes={block.showPublicationTheme !== false}
           />
         </div>
       );

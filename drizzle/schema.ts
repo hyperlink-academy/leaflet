@@ -620,6 +620,34 @@ export const publication_recommendations = pgTable("publication_recommendations"
 	}
 });
 
+export const document_replies = pgTable("document_replies", {
+	uri: text("uri").primaryKey().notNull(),
+	subject: text("subject").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	document: text("document").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	replier_did: text("replier_did").notNull(),
+	record: jsonb("record").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		document_idx: index("document_replies_document_idx").on(table.document),
+		document_replies_subject_document_key: unique("document_replies_subject_document_key").on(table.subject, table.document),
+	}
+});
+
+export const document_reply_visibility = pgTable("document_reply_visibility", {
+	uri: text("uri").notNull(),
+	subject: text("subject").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	reply: text("reply").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		uri_idx: index("document_reply_visibility_uri_idx").on(table.uri),
+		document_reply_visibility_pkey: primaryKey({ columns: [table.subject, table.reply], name: "document_reply_visibility_pkey"}),
+	}
+});
+
 export const publication_subscriptions = pgTable("publication_subscriptions", {
 	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
 	identity: text("identity").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),

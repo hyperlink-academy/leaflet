@@ -15,6 +15,8 @@ import {
   PubLeafletPollVote,
   PubLeafletPollDefinition,
   PubLeafletInteractionsRecommend,
+  PubLeafletInteractionsReply,
+  PubLeafletInteractionsReplyVisibility,
   SiteStandardDocument,
   SiteStandardPublication,
   SiteStandardGraphSubscription,
@@ -255,6 +257,8 @@ async function main() {
       ids.PubLeafletPollVote,
       ids.PubLeafletPollDefinition,
       ids.PubLeafletInteractionsRecommend,
+      ids.PubLeafletInteractionsReply,
+      ids.PubLeafletInteractionsReplyVisibility,
       ids.AppBskyActorProfile,
       "app.bsky.feed.post",
       ids.SiteStandardDocument,
@@ -503,6 +507,81 @@ async function handleEvent(evt: Event) {
           kind: "interaction",
           document: recommend.document,
         });
+    }
+  }
+  if (evt.collection === ids.PubLeafletInteractionsReply) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = PubLeafletInteractionsReply.validateRecord(evt.record);
+      if (!record.success) return;
+      let documentUri;
+      try {
+        documentUri = new AtUri(record.value.document);
+      } catch {
+        return;
+      }
+      // A repo may only submit its own documents as replies.
+      if (documentUri.host !== evt.did) return;
+      if (record.value.document === record.value.subject) return;
+      // Replies to (or with) documents we don't index fail the foreign keys
+      // and are dropped; a second submission of the same document fails the
+      // (subject, document) unique key.
+      let { error } = await supabase.from("document_replies").upsert({
+        uri: evt.uri.toString(),
+        subject: record.value.subject,
+        document: record.value.document,
+        replier_did: evt.did,
+        record: record.value as Json,
+      });
+      if (error) console.log("Error upserting reply:", error);
+    }
+    if (evt.event === "delete") {
+      await supabase
+        .from("document_replies")
+        .delete()
+        .eq("uri", evt.uri.toString());
+    }
+  }
+  if (evt.collection === ids.PubLeafletInteractionsReplyVisibility) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = PubLeafletInteractionsReplyVisibility.validateRecord(
+        evt.record,
+      );
+      if (!record.success) return;
+      let subjectUri;
+      try {
+        subjectUri = new AtUri(record.value.subject);
+      } catch {
+        return;
+      }
+      // Only the document's own repo moderates its replies, through the one
+      // record keyed like the document.
+      if (subjectUri.host !== evt.did || subjectUri.rkey !== evt.uri.rkey)
+        return;
+      // One row per allowed reply; replace the subject's rows wholesale so
+      // hidden replies don't linger.
+      await supabase
+        .from("document_reply_visibility")
+        .delete()
+        .eq("subject", record.value.subject);
+      let allowed = [...new Set(record.value.allowed)];
+      if (allowed.length > 0) {
+        // Upsert: the app writes these rows itself when the author accepts a
+        // reply, and may land one between the delete above and this insert.
+        let { error } = await supabase.from("document_reply_visibility").upsert(
+          allowed.map((reply) => ({
+            uri: evt.uri.toString(),
+            subject: record.value.subject,
+            reply,
+          })),
+        );
+        if (error) console.log("Error inserting reply visibility:", error);
+      }
+    }
+    if (evt.event === "delete") {
+      await supabase
+        .from("document_reply_visibility")
+        .delete()
+        .eq("uri", evt.uri.toString());
     }
   }
   if (evt.collection === ids.PubLeafletGraphRecommendations) {

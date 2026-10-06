@@ -1,3 +1,4 @@
+import { DEFAULT_REPLY_BUTTON_TEXT } from "components/Blocks/ReplyBlock/constants";
 import {
   Body,
   Column,
@@ -1547,6 +1548,20 @@ const BlockRenderer = ({
     "pub.leaflet.blocks.drawing": notSupported,
     "pub.leaflet.blocks.postsList": notSupported,
     "pub.leaflet.blocks.recommendedPubs": notSupported,
+    // Replies load and are submitted on the web; the email carries the
+    // button through to the post.
+    "pub.leaflet.blocks.reply": (block) => {
+      const url = blockUrl ?? postUrl;
+      if (!url) return null;
+      return (
+        <ButtonBlock
+          text={block.buttonText || DEFAULT_REPLY_BUTTON_TEXT}
+          url={url}
+          align="right"
+          theme={theme}
+        />
+      );
+    },
     "pub.leaflet.blocks.signup": notSupported,
     // The email has its own header; the block is nothing in the body.
     "pub.leaflet.blocks.postHeader": () => null,
@@ -2468,6 +2483,7 @@ const MiniBlock = ({
     "pub.leaflet.blocks.drawing": () => null,
     "pub.leaflet.blocks.postsList": () => null,
     "pub.leaflet.blocks.recommendedPubs": () => null,
+    "pub.leaflet.blocks.reply": () => null,
     "pub.leaflet.blocks.signup": () => null,
     "pub.leaflet.blocks.postHeader": () => null,
     "pub.leaflet.blocks.bskyPost": () => null,

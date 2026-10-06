@@ -1930,6 +1930,31 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksReply: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.reply',
+    defs: {
+      main: {
+        type: 'object',
+        description:
+          'Lets readers submit their own documents as replies to this one (pub.leaflet.interactions.reply) and shows the ones the author made visible (pub.leaflet.interactions.replyVisibility). Replies are resolved at render time rather than stored on the block.',
+        required: [],
+        properties: {
+          buttonText: {
+            type: 'string',
+            maxLength: 500,
+            maxGraphemes: 50,
+            description: 'Label for the button readers use to submit a reply.',
+          },
+          showPublicationTheme: {
+            type: 'boolean',
+            description:
+              "Render each reply in its own publication's theme. Defaults to true.",
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksSignup: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.signup',
@@ -2364,6 +2389,72 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletInteractionsReply: {
+    lexicon: 1,
+    id: 'pub.leaflet.interactions.reply',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'tid',
+        description:
+          "Submits one of the author's own documents as a reply to another document",
+        record: {
+          type: 'object',
+          required: ['subject', 'document', 'createdAt'],
+          properties: {
+            subject: {
+              type: 'string',
+              format: 'at-uri',
+              description: 'The document being replied to.',
+            },
+            document: {
+              type: 'string',
+              format: 'at-uri',
+              description:
+                'The reply: a document in the same repo as this record.',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
+  PubLeafletInteractionsReplyVisibility: {
+    lexicon: 1,
+    id: 'pub.leaflet.interactions.replyVisibility',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'any',
+        description:
+          "Declares which submitted replies are shown on a document. Lives in the document's repo, with a record key matching the document's.",
+        record: {
+          type: 'object',
+          required: ['subject', 'allowed'],
+          properties: {
+            subject: {
+              type: 'string',
+              format: 'at-uri',
+              description: 'The document whose replies this record moderates.',
+            },
+            allowed: {
+              type: 'array',
+              maxLength: 500,
+              description:
+                'The pub.leaflet.interactions.reply records shown on the document.',
+              items: {
+                type: 'string',
+                format: 'at-uri',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
   PubLeafletPagesCanvas: {
     lexicon: 1,
     id: 'pub.leaflet.pages.canvas',
@@ -2472,6 +2563,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.postsList',
               'lex:pub.leaflet.blocks.signup',
               'lex:pub.leaflet.blocks.recommendedPubs',
+              'lex:pub.leaflet.blocks.reply',
               'lex:pub.leaflet.blocks.membersOnlyDelimiter',
               'lex:pub.leaflet.blocks.postHeader',
               'lex:pub.leaflet.blocks.drawing',
@@ -2608,6 +2700,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.postsList',
               'lex:pub.leaflet.blocks.signup',
               'lex:pub.leaflet.blocks.recommendedPubs',
+              'lex:pub.leaflet.blocks.reply',
               'lex:pub.leaflet.blocks.membersOnlyDelimiter',
               'lex:pub.leaflet.blocks.postHeader',
               'lex:pub.leaflet.blocks.drawing',
@@ -3629,6 +3722,7 @@ export const ids = {
   PubLeafletBlocksPostHeader: 'pub.leaflet.blocks.postHeader',
   PubLeafletBlocksPostsList: 'pub.leaflet.blocks.postsList',
   PubLeafletBlocksRecommendedPubs: 'pub.leaflet.blocks.recommendedPubs',
+  PubLeafletBlocksReply: 'pub.leaflet.blocks.reply',
   PubLeafletBlocksSignup: 'pub.leaflet.blocks.signup',
   PubLeafletBlocksStandardSitePost: 'pub.leaflet.blocks.standardSitePost',
   PubLeafletBlocksStandardSitePublication:
@@ -3642,6 +3736,9 @@ export const ids = {
   PubLeafletGraphRecommendations: 'pub.leaflet.graph.recommendations',
   PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
   PubLeafletInteractionsRecommend: 'pub.leaflet.interactions.recommend',
+  PubLeafletInteractionsReply: 'pub.leaflet.interactions.reply',
+  PubLeafletInteractionsReplyVisibility:
+    'pub.leaflet.interactions.replyVisibility',
   PubLeafletPagesCanvas: 'pub.leaflet.pages.canvas',
   PubLeafletPagesLinearDocument: 'pub.leaflet.pages.linearDocument',
   PubLeafletPollDefinition: 'pub.leaflet.poll.definition',

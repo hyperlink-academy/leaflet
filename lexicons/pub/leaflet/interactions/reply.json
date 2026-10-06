@@ -1,0 +1,35 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.interactions.reply",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "tid",
+      "description": "Submits one of the author's own documents as a reply to another document",
+      "record": {
+        "type": "object",
+        "required": [
+          "subject",
+          "document",
+          "createdAt"
+        ],
+        "properties": {
+          "subject": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "The document being replied to."
+          },
+          "document": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "The reply: a document in the same repo as this record."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    }
+  }
+}

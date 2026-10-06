@@ -42,6 +42,7 @@ import { BlockMathSmall } from "components/Icons/BlockMathSmall";
 import { BlockCodeSmall } from "components/Icons/BlockCodeSmall";
 import { QuoteSmall } from "components/Icons/QuoteSmall";
 import { LockTiny } from "components/Icons/LockTiny";
+import { ReplySmall } from "components/Icons/ReplySmall";
 import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
 import { getPageBlocks } from "src/replicache/getBlocks";
 
@@ -113,6 +114,9 @@ type Command = {
   hiddenOnPublicationPage?: boolean;
   hiddenInPost?: boolean;
   publicationOnly?: boolean;
+  // Only offered to users with an atproto account: the feature lives in
+  // records on the author's PDS.
+  atprotoOnly?: boolean;
   // Only offered on canvas pages; linear documents render the equivalent
   // above their blocks already.
   canvasOnly?: boolean;
@@ -534,6 +538,18 @@ export const blockCommands: Command[] = [
     onSelect: async (rep, props) => {
       props.entityID && clearCommandSearchText(props.entityID);
       await createBlockWithType(rep, props, "recommended-pubs");
+    },
+  },
+  {
+    name: "Replies",
+    icon: <ReplySmall />,
+    type: "publication",
+    alternateNames: ["reply", "responses", "respond", "webmention"],
+    atprotoOnly: true,
+    hiddenOnPublicationPage: true,
+    onSelect: async (rep, props) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      await createBlockWithType(rep, props, "reply");
     },
   },
   {

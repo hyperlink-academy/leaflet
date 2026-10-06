@@ -479,6 +479,77 @@ export type Database = {
           },
         ]
       }
+      document_replies: {
+        Row: {
+          document: string
+          indexed_at: string
+          record: Json
+          replier_did: string
+          subject: string
+          uri: string
+        }
+        Insert: {
+          document: string
+          indexed_at?: string
+          record: Json
+          replier_did: string
+          subject: string
+          uri: string
+        }
+        Update: {
+          document?: string
+          indexed_at?: string
+          record?: Json
+          replier_did?: string
+          subject?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_replies_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "document_replies_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      document_reply_visibility: {
+        Row: {
+          indexed_at: string
+          reply: string
+          subject: string
+          uri: string
+        }
+        Insert: {
+          indexed_at?: string
+          reply: string
+          subject: string
+          uri: string
+        }
+        Update: {
+          indexed_at?: string
+          reply?: string
+          subject?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_reply_visibility_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       documents: {
         Row: {
           bsky_like_count: number

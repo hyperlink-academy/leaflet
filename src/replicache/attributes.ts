@@ -407,6 +407,17 @@ const RecommendedPubsBlockAttributes = {
   },
 } as const;
 
+const ReplyBlockAttributes = {
+  "reply/button-text": {
+    type: "string",
+    cardinality: "one",
+  },
+  "reply/show-publication-theme": {
+    type: "boolean",
+    cardinality: "one",
+  },
+} as const;
+
 const PostHeaderBlockAttributes = {
   "post-header/compact": {
     type: "boolean",
@@ -530,6 +541,7 @@ export const Attributes = {
   ...PollBlockAttributes,
   ...PostsListBlockAttributes,
   ...RecommendedPubsBlockAttributes,
+  ...ReplyBlockAttributes,
   ...PostHeaderBlockAttributes,
   ...DrawingBlockAttributes,
 };
@@ -616,6 +628,7 @@ export type Data<A extends keyof typeof Attributes> = {
       | "members-only-delimiter"
       | "posts-list"
       | "recommended-pubs"
+      | "reply"
       | "signup"
       | "image-gallery"
       | "post-header"

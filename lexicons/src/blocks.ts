@@ -553,6 +553,32 @@ export const PubLeafletBlocksRecommendedPubs: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksReply: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.reply",
+  defs: {
+    main: {
+      type: "object",
+      description:
+        "Lets readers submit their own documents as replies to this one (pub.leaflet.interactions.reply) and shows the ones the author made visible (pub.leaflet.interactions.replyVisibility). Replies are resolved at render time rather than stored on the block.",
+      required: [],
+      properties: {
+        buttonText: {
+          type: "string",
+          maxLength: 500,
+          maxGraphemes: 50,
+          description: "Label for the button readers use to submit a reply.",
+        },
+        showPublicationTheme: {
+          type: "boolean",
+          description:
+            "Render each reply in its own publication's theme. Defaults to true.",
+        },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksMembersOnlyDelimiter: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.membersOnlyDelimiter",
@@ -718,6 +744,7 @@ export const BlockLexicons = [
   PubLeafletBlocksPostsList,
   PubLeafletBlocksSignup,
   PubLeafletBlocksRecommendedPubs,
+  PubLeafletBlocksReply,
   PubLeafletBlocksMembersOnlyDelimiter,
   PubLeafletBlocksPostHeader,
   PubLeafletBlocksDrawing,
