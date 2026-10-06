@@ -114,7 +114,7 @@ export function DocumentReplies(props: {
         {props.action}
       </div>
     );
-    if (!loaded || !open)
+    if (!loaded || !open || loaded.replies.length === 0)
       return (
         <RepliesList
           replies={inEditor ? [] : data?.replies.filter((r) => r.visible) ?? []}

@@ -168,7 +168,7 @@ export default function RepliesTestPage() {
       <Case label="Published — reader, no replies, logged in">
         <RepliesList prompt={prompt} replies={[]} action={replyButton} />
       </Case>
-      <Case label="Published — author, no replies, closed">
+      <Case label="Published — author, no replies">
         <RepliesList
           prompt={prompt}
           replies={[]}
@@ -177,22 +177,6 @@ export default function RepliesTestPage() {
               replies={[]}
               canModerate
               open={false}
-              onToggle={() => {}}
-            />
-          }
-        />
-      </Case>
-      <Case label="Published — author, no replies, open">
-        <RepliesModeration
-          prompt={prompt}
-          replies={[]}
-          onAccept={() => {}}
-          onHide={() => {}}
-          action={
-            <RepliesStatusToggle
-              replies={[]}
-              canModerate
-              open
               onToggle={() => {}}
             />
           }

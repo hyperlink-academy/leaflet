@@ -100,8 +100,9 @@ function RepliesFooter(props: {
   );
 }
 
-// Summarizes a document's replies and opens the full list. `replies` is
-// undefined while they load.
+// Summarizes a document's replies and, once there are some, opens the full
+// list. `replies` is undefined while they load. Every state is as tall as the
+// button so the row never changes height.
 export function RepliesStatusToggle(props: {
   replies: DocumentReply[] | undefined;
   canModerate: boolean;
@@ -109,21 +110,18 @@ export function RepliesStatusToggle(props: {
   onToggle: () => void;
 }) {
   let total = props.replies?.length ?? 0;
+  if (total === 0)
+    return (
+      <div className="py-0.5 border border-transparent text-tertiary italic">
+        {props.replies ? "No replies yet" : "\u00a0"}
+      </div>
+    );
   let pending = props.replies?.filter((r) => !r.visible).length ?? 0;
-  let status = !props.replies
-    ? "Replies"
-    : total === 0
-      ? "No replies yet"
-      : props.canModerate && pending > 0
-        ? `${pending} pending · ${total - pending} visible`
-        : `${total} ${total === 1 ? "reply" : "replies"}`;
   return (
-    <ButtonSecondary
-      disabled={!props.replies}
-      aria-expanded={props.open}
-      onClick={props.onToggle}
-    >
-      {status}
+    <ButtonSecondary aria-expanded={props.open} onClick={props.onToggle}>
+      {props.canModerate && pending > 0
+        ? `${pending} pending · ${total - pending} visible`
+        : `${total} ${total === 1 ? "reply" : "replies"}`}
       <ArrowDownTiny className={props.open ? "rotate-180" : ""} />
     </ButtonSecondary>
   );
