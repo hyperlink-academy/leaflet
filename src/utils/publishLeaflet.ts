@@ -47,6 +47,7 @@ import {
 } from "src/utils/collectionHelpers";
 import { inngest } from "app/api/inngest/client";
 import { withPublishLock } from "src/utils/publishLock";
+import { cutPublishVersion } from "src/versioning/cutPublishVersion";
 import { loggedFetchHandler } from "src/utils/loggedFetchHandler";
 import { XRPCError } from "@atproto/xrpc";
 
@@ -558,6 +559,13 @@ async function publish({
         .in("id", entitiesToDelete);
     }
   }
+
+  await cutPublishVersion({
+    tokenId: leaflet_id,
+    rootEntity: root_entity,
+    authorDid: actorDid,
+    firstPublish: !existingDocUri,
+  });
 
   // GC publish-owned copies of gated images this publish no longer references
   // (all of them when the delimiter was removed). Best-effort — the publish

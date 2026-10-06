@@ -7,7 +7,11 @@ import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { storagePathFromSrc } from "src/utils/blobCleanup";
 
-export type VersionKind = "named" | "pre_restore";
+export type VersionKind =
+  | "named"
+  | "pre_restore"
+  | "publish"
+  | "publish_revision";
 
 export type SnapshotFact = Fact<Attribute>;
 
