@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { ButtonPrimary } from "components/Buttons";
 import { Popover } from "components/Popover";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
-import type { DocumentReply } from "actions/replies";
+import type { DocumentReply } from "src/documentReplies";
 import { DEFAULT_REPLY_BUTTON_TEXT } from "components/Blocks/ReplyBlock/constants";
 import {
   RepliesDraft,

@@ -4,9 +4,10 @@ import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { Radio } from "components/Checkbox";
 import { Input } from "components/Input";
 import { CloseTiny } from "components/Icons/CloseTiny";
+import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { StandardSitePostItemView } from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
 import { PublicationThemeWrapper } from "components/ThemeManager/PublicationThemeProvider";
-import type { DocumentReply } from "actions/replies";
+import type { DocumentReply } from "src/documentReplies";
 import { DEFAULT_REPLY_BUTTON_TEXT } from "./constants";
 
 export type ReplyCandidate = {
@@ -44,6 +45,35 @@ export function ReplyButtonTextInput(props: {
         if (e.key === "Enter") e.currentTarget.blur();
       }}
     />
+  );
+}
+
+// Summarizes a document's replies and opens the full list. `replies` is
+// undefined while they load.
+export function RepliesStatusToggle(props: {
+  replies: DocumentReply[] | undefined;
+  canModerate: boolean;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  let total = props.replies?.length ?? 0;
+  let pending = props.replies?.filter((r) => !r.visible).length ?? 0;
+  let status = !props.replies
+    ? "Replies"
+    : total === 0
+      ? "No replies yet"
+      : props.canModerate && pending > 0
+        ? `${pending} pending · ${total - pending} visible`
+        : `${total} ${total === 1 ? "reply" : "replies"}`;
+  return (
+    <ButtonSecondary
+      disabled={!props.replies}
+      aria-expanded={props.open}
+      onClick={props.onToggle}
+    >
+      {status}
+      <ArrowDownTiny className={props.open ? "rotate-180" : ""} />
+    </ButtonSecondary>
   );
 }
 

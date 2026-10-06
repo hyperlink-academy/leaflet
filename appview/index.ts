@@ -535,10 +535,18 @@ async function handleEvent(evt: Event) {
       if (error) console.log("Error upserting reply:", error);
     }
     if (evt.event === "delete") {
-      await supabase
+      let { data: reply } = await supabase
         .from("document_replies")
         .delete()
-        .eq("uri", evt.uri.toString());
+        .eq("uri", evt.uri.toString())
+        .select("subject")
+        .maybeSingle();
+      // Visible replies are server-rendered into the subject's pages.
+      if (reply && (await isInLeafletPublication(reply.subject)))
+        await notifyRevalidate({
+          kind: "interaction",
+          document: reply.subject,
+        });
     }
   }
   if (evt.collection === ids.PubLeafletInteractionsReplyVisibility) {
@@ -576,12 +584,21 @@ async function handleEvent(evt: Event) {
         );
         if (error) console.log("Error inserting reply visibility:", error);
       }
+      if (await isInLeafletPublication(record.value.subject))
+        await notifyRevalidate({
+          kind: "interaction",
+          document: record.value.subject,
+        });
     }
     if (evt.event === "delete") {
-      await supabase
+      let { data: rows } = await supabase
         .from("document_reply_visibility")
         .delete()
-        .eq("uri", evt.uri.toString());
+        .eq("uri", evt.uri.toString())
+        .select("subject");
+      let subject = rows?.[0]?.subject;
+      if (subject && (await isInLeafletPublication(subject)))
+        await notifyRevalidate({ kind: "interaction", document: subject });
     }
   }
   if (evt.collection === ids.PubLeafletGraphRecommendations) {

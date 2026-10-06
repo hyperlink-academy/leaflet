@@ -19,6 +19,7 @@ import type { PollData } from "app/(app)/(published)/lish/[did]/[publication]/[r
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import type { PubLeafletContent } from "lexicons/api";
+import type { DocumentReply } from "src/documentReplies";
 
 export type UnlockedPost = {
   pages: PubLeafletContent.Main["pages"];
@@ -26,6 +27,7 @@ export type UnlockedPost = {
   standardSitePostData: StandardSitePostData[];
   standardSitePublicationData: StandardSitePublicationData[];
   pollData: PollData[];
+  replyData: DocumentReply[];
 };
 
 // Companion to getPostPageData's unconditional gating: published pages render
@@ -87,8 +89,10 @@ export async function getUnlockedPost(
     standardSitePostData,
     standardSitePublicationData,
     pollData,
+    replyData,
   } = await collectAndFetchBlockResources({
     agent,
+    documentUri: document.uri,
     pages: pages as Parameters<
       typeof collectAndFetchBlockResources
     >[0]["pages"],
@@ -107,5 +111,6 @@ export async function getUnlockedPost(
       JSON.stringify(standardSitePublicationData),
     ),
     pollData,
+    replyData,
   };
 }

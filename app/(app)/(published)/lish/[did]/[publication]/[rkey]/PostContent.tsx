@@ -77,6 +77,7 @@ import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { MembersOnlyPaywall } from "./MembersOnlyPaywall";
 import { PublishedRecommendedPubs } from "./Blocks/PublishedRecommendedPubs";
 import { DocumentReplies } from "components/Blocks/ReplyBlock/DocumentReplies";
+import { useOptionalPostResources } from "./PostDataProvider";
 import { PostHeader } from "./PostHeader/PostHeader";
 import { usePostHeaderBlockData } from "./PostHeader/postHeaderBlockContext";
 
@@ -223,6 +224,7 @@ export let Block = ({
   let canOpenLightbox = !!openLightbox && !preview;
   let document = useDocumentOptional();
   let postHeaderData = usePostHeaderBlockData();
+  let replyData = useOptionalPostResources()?.replyData;
   let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
     style: {
@@ -483,6 +485,7 @@ export let Block = ({
         <div className={className} {...blockProps}>
           <DocumentReplies
             documentUri={document.uri}
+            initialReplies={replyData}
             buttonText={block.buttonText}
             showThemes={block.showPublicationTheme !== false}
           />

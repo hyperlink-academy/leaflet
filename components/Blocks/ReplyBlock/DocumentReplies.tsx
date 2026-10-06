@@ -17,8 +17,14 @@ import {
   withdrawReply,
   type ReplyError,
 } from "actions/replies";
+import type { DocumentReply } from "src/documentReplies";
 import { DEFAULT_REPLY_BUTTON_TEXT } from "./constants";
-import { RepliesList, RepliesModeration, ReplyPicker } from "./RepliesView";
+import {
+  RepliesList,
+  RepliesModeration,
+  RepliesStatusToggle,
+  ReplyPicker,
+} from "./RepliesView";
 
 const replyErrorMessages: Partial<Record<ReplyError["type"], string>> = {
   not_found: "We couldn't find that post. Is it published?",
@@ -57,27 +63,73 @@ function useReplyAction() {
 // Replies to a published document, for whoever is looking: the document's
 // author moderates them, everyone else reads the visible ones and can submit
 // their own. `action` replaces the reader's reply button (the editor passes
-// its editable label).
+// its editable label). `initialReplies` is the public list a cached page was
+// rendered with; a signed-in viewer's own view (moderation, pending
+// submissions) replaces it once their identity is known.
 export function DocumentReplies(props: {
   documentUri: string;
+  initialReplies?: DocumentReply[];
   buttonText?: string;
   showThemes?: boolean;
   action?: React.ReactNode;
 }) {
   let { identity, identityPending } = useIdentityData();
   let viewer = identity?.atp_did ?? null;
+  // An anonymous reader of a cached page has nothing to add to the public
+  // list it was rendered with.
+  let needsFetch = !identityPending && (!!viewer || !props.initialReplies);
   let { data, mutate } = useSWR(
-    identityPending ? null : ["document_replies", props.documentUri, viewer],
+    needsFetch ? ["document_replies", props.documentUri, viewer] : null,
     () => getDocumentReplies(props.documentUri),
+    {
+      fallbackData: props.initialReplies && {
+        isAuthor: false,
+        replies: props.initialReplies,
+      },
+    },
   );
   let [busy, setBusy] = useState(false);
+  let [open, setOpen] = useState(false);
   let run = useReplyAction();
 
-  // Until the viewer's role is known there's no telling which controls to
-  // show.
-  if (!data) return <RepliesList replies={[]} action={props.action} />;
+  // The editor and the document's owner get a status row of constant height
+  // in place of the reader's button, so nothing moves when replies load; the
+  // full list is behind its toggle.
+  let inEditor = props.action !== undefined;
+  let ownsDocument =
+    !!viewer && props.documentUri.startsWith(`at://${viewer}/`);
+  if (inEditor || ownsDocument) {
+    // On a published page `data` starts as the public list the page was
+    // rendered with, which isn't the owner's view of their replies.
+    let loaded = inEditor || data?.isAuthor ? data : undefined;
+    let controls = (
+      <div className="flex items-center gap-2">
+        <RepliesStatusToggle
+          replies={loaded?.replies}
+          canModerate={!!loaded?.isAuthor}
+          open={open}
+          onToggle={() => setOpen(!open)}
+        />
+        {props.action}
+      </div>
+    );
+    if (!loaded || !open)
+      return (
+        <RepliesList
+          replies={inEditor ? [] : data?.replies.filter((r) => r.visible) ?? []}
+          showThemes={props.showThemes}
+          action={controls}
+        />
+      );
+    if (!loaded.isAuthor)
+      return (
+        <RepliesList
+          replies={loaded.replies}
+          showThemes={props.showThemes}
+          action={controls}
+        />
+      );
 
-  if (data.isAuthor) {
     let setVisible = async (reply: string, visible: boolean) => {
       setBusy(true);
       let ok = await run(() =>
@@ -98,15 +150,16 @@ export function DocumentReplies(props: {
     };
     return (
       <RepliesModeration
-        replies={data.replies}
+        replies={loaded.replies}
         showThemes={props.showThemes}
         busy={busy}
         onAccept={(uri) => setVisible(uri, true)}
         onHide={(uri) => setVisible(uri, false)}
-        action={props.action}
+        action={controls}
       />
     );
   }
+  if (!data) return null;
 
   let label = props.buttonText || DEFAULT_REPLY_BUTTON_TEXT;
   return (
@@ -125,8 +178,8 @@ export function DocumentReplies(props: {
           );
       }}
       action={
-        props.action !== undefined ? (
-          props.action
+        identityPending ? (
+          <ButtonPrimary disabled>{label}</ButtonPrimary>
         ) : viewer ? (
           <ReplyButton
             label={label}
