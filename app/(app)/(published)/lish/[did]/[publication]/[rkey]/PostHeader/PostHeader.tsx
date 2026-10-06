@@ -21,6 +21,7 @@ import {
   bylineSeparator,
 } from "src/utils/byline";
 import { TagPopover } from "components/Interactions/InteractionsPreview";
+import { ReplyingTo } from "../ReplyingTo";
 
 // Re-export so existing importers of `BylineProfile` from this module keep
 // working. The serializable byline profile (subset of the profile cache shape)
@@ -53,6 +54,7 @@ export function PostHeader(props: {
   return (
     <PostHeaderLayout
       compact={props.compact}
+      below={<ReplyingTo targets={document.replyingTo} />}
       pubLink={
         <>
           {pub && (
@@ -198,6 +200,8 @@ export const PostHeaderLayout = (props: {
   postTitle: React.ReactNode | undefined;
   postDescription: React.ReactNode | undefined;
   postInfo: React.ReactNode;
+  // Rendered under the info row, inside the header.
+  below?: React.ReactNode;
   compact?: boolean;
 }) => {
   return (
@@ -227,6 +231,7 @@ export const PostHeaderLayout = (props: {
       >
         {props.postInfo}
       </div>
+      {props.below}
     </header>
   );
 };

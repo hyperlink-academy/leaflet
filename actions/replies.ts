@@ -216,7 +216,7 @@ export async function withdrawReply(
   // Read before the record goes: the appview may delete the row first.
   const { data: row } = await supabaseServerClient
     .from("document_replies")
-    .select("subject")
+    .select("subject, document")
     .eq("uri", replyUri)
     .maybeSingle();
   try {
@@ -233,8 +233,18 @@ export async function withdrawReply(
     .from("document_replies")
     .delete()
     .eq("uri", replyUri);
-  if (row) await revalidateDocumentPaths(row.subject, { neighbours: false });
+  if (row) await revalidateReply(row);
   return Ok(null);
+}
+
+// Both ends are server-rendered into cached pages: the subject lists its
+// visible replies, and an accepted reply says what it replies to.
+async function revalidateReply(reply: { subject: string; document?: string }) {
+  await Promise.all(
+    [reply.subject, reply.document].map(
+      (uri) => uri && revalidateDocumentPaths(uri, { neighbours: false }),
+    ),
+  );
 }
 
 // Shows or hides one reply on the viewer's own document. Which replies show
@@ -254,7 +264,7 @@ export async function setReplyVisible(args: {
   const [{ data: replyRows }, { data: allowedRows }] = await Promise.all([
     supabaseServerClient
       .from("document_replies")
-      .select("uri")
+      .select("uri, document")
       .eq("subject", args.subject)
       .limit(MAX_REPLIES),
     supabaseServerClient
@@ -321,7 +331,9 @@ export async function setReplyVisible(args: {
       });
     if (error) console.error("[replies] visibility row upsert failed", error);
   }
-  // Visible replies are server-rendered into the post's cached pages.
-  await revalidateDocumentPaths(args.subject, { neighbours: false });
+  await revalidateReply({
+    subject: args.subject,
+    document: replyRows?.find((r) => r.uri === args.reply)?.document,
+  });
   return Ok(null);
 }

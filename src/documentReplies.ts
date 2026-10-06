@@ -4,6 +4,9 @@ import {
   type StandardSitePostData,
 } from "app/api/rpc/[command]/get_standard_site_posts";
 import { supabaseServerClient } from "supabase/serverClient";
+import type { Json } from "supabase/database.types";
+import { getDocumentURL } from "src/utils/getPublicationURL";
+import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 
 export const MAX_REPLIES = 500;
 
@@ -77,4 +80,57 @@ export async function loadDocumentReplies(
       return post ? [{ ...reply, post }] : [];
     }),
   };
+}
+
+export type ReplyTarget = { uri: string; title: string; href: string };
+
+// A document's submissions as a reply, each with the document it replies to:
+// the embed getPostPageData selects.
+type ReplySubmission = {
+  uri: string;
+  subject: string;
+  documents: {
+    uri: string;
+    data: Json;
+    documents_in_publications: {
+      publications: { uri: string; record: Json | null } | null;
+    }[];
+  } | null;
+};
+
+// The documents that show a document as an accepted reply.
+export async function acceptedReplyTargets(
+  submissions: ReplySubmission[],
+): Promise<ReplyTarget[]> {
+  if (submissions.length === 0) return [];
+  const { data: allowedRows } = await supabaseServerClient
+    .from("document_reply_visibility")
+    .select("reply")
+    .in(
+      "subject",
+      submissions.map((r) => r.subject),
+    )
+    .in(
+      "reply",
+      submissions.map((r) => r.uri),
+    );
+  const allowed = new Set((allowedRows ?? []).map((r) => r.reply));
+
+  return submissions.flatMap((row) => {
+    const subject = row.documents;
+    if (!allowed.has(row.uri) || !subject) return [];
+    const record = normalizeDocumentRecord(subject.data, subject.uri);
+    if (!record) return [];
+    return [
+      {
+        uri: subject.uri,
+        title: record.title || "Untitled",
+        href: getDocumentURL(
+          record,
+          subject.uri,
+          subject.documents_in_publications[0]?.publications,
+        ),
+      },
+    ];
+  });
 }

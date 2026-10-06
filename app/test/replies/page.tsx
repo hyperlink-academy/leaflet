@@ -4,6 +4,7 @@ import { ButtonPrimary } from "components/Buttons";
 import { Popover } from "components/Popover";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import type { DocumentReply } from "src/documentReplies";
+import { ReplyingTo } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/ReplyingTo";
 import {
   DEFAULT_REPLY_BUTTON_TEXT,
   DEFAULT_REPLY_PROMPT_TEXT,
@@ -225,6 +226,27 @@ export default function RepliesTestPage() {
           onAccept={() => {}}
           onHide={() => {}}
         />
+      </Case>
+      <Case label="Reply post — banner under its header">
+        <div className="px-3 sm:px-4 pt-2 sm:pt-3 pb-5">
+          <div className="text-sm font-bold text-accent-contrast">
+            Maya's Notes
+          </div>
+          <h1 className="text-2xl font-bold leading-tight">On Slow Software</h1>
+          <div className="pt-3 text-sm text-tertiary flex justify-between">
+            <span>Maya Okafor · Oct 3</span>
+            <span>2 comments · 5 recommends</span>
+          </div>
+          <ReplyingTo
+            targets={[
+              {
+                uri: "at://did:plc:author/site.standard.document/d",
+                title: "In Praise of Slow Software",
+                href: "https://example.com/slow-software",
+              },
+            ]}
+          />
+        </div>
       </Case>
       <Case label="Reader — reply picker popover">
         <RepliesList
