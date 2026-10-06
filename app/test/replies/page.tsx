@@ -4,12 +4,17 @@ import { ButtonPrimary } from "components/Buttons";
 import { Popover } from "components/Popover";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import type { DocumentReply } from "src/documentReplies";
-import { DEFAULT_REPLY_BUTTON_TEXT } from "components/Blocks/ReplyBlock/constants";
+import {
+  DEFAULT_REPLY_BUTTON_TEXT,
+  DEFAULT_REPLY_PROMPT_TEXT,
+} from "components/Blocks/ReplyBlock/constants";
 import {
   RepliesDraft,
   RepliesList,
   RepliesModeration,
+  RepliesStatusToggle,
   ReplyButtonTextInput,
+  ReplyPromptTextInput,
   ReplyPicker,
   type ReplyCandidate,
 } from "components/Blocks/ReplyBlock/RepliesView";
@@ -118,13 +123,18 @@ function Case(props: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2" data-case={props.label}>
       <div className="text-sm font-bold text-tertiary">{props.label}</div>
-      <div className="opaque-container p-3 sm:p-4">{props.children}</div>
+      <div className="block-border p-2 sm:p-3">{props.children}</div>
     </div>
   );
 }
 
 export default function RepliesTestPage() {
   let [buttonText, setButtonText] = useState("Write a response");
+  let [promptText, setPromptText] = useState("");
+  let prompt = promptText || DEFAULT_REPLY_PROMPT_TEXT;
+  let editablePrompt = (
+    <ReplyPromptTextInput value={promptText} onCommit={setPromptText} />
+  );
   let label = buttonText || DEFAULT_REPLY_BUTTON_TEXT;
   let replyButton = <ButtonPrimary>{label}</ButtonPrimary>;
   let editableButton = (
@@ -133,18 +143,20 @@ export default function RepliesTestPage() {
   return (
     <div className="mx-auto w-full max-w-[656px] p-4 flex flex-col gap-6 pb-[420px]">
       <Case label="Editor — draft (button text is editable in place)">
-        <RepliesDraft action={editableButton} />
+        <RepliesDraft prompt={editablePrompt} action={editableButton} />
       </Case>
       <Case label="Editor — published (moderation + editable button)">
         <RepliesModeration
           replies={REPLIES}
           onAccept={() => {}}
           onHide={() => {}}
+          prompt={editablePrompt}
           action={editableButton}
         />
       </Case>
       <Case label="Published — reader, no replies, logged out">
         <RepliesList
+          prompt={prompt}
           replies={[]}
           action={
             <ButtonPrimary>
@@ -153,14 +165,53 @@ export default function RepliesTestPage() {
           }
         />
       </Case>
+      <Case label="Published — reader, no replies, logged in">
+        <RepliesList prompt={prompt} replies={[]} action={replyButton} />
+      </Case>
+      <Case label="Published — author, no replies, closed">
+        <RepliesList
+          prompt={prompt}
+          replies={[]}
+          action={
+            <RepliesStatusToggle
+              replies={[]}
+              canModerate
+              open={false}
+              onToggle={() => {}}
+            />
+          }
+        />
+      </Case>
+      <Case label="Published — author, no replies, open">
+        <RepliesModeration
+          prompt={prompt}
+          replies={[]}
+          onAccept={() => {}}
+          onHide={() => {}}
+          action={
+            <RepliesStatusToggle
+              replies={[]}
+              canModerate
+              open
+              onToggle={() => {}}
+            />
+          }
+        />
+      </Case>
       <Case label="Published — reader, logged in">
-        <RepliesList replies={VISIBLE} action={replyButton} />
+        <RepliesList prompt={prompt} replies={VISIBLE} action={replyButton} />
       </Case>
       <Case label="Published — reader, submissions shown with themes">
-        <RepliesList replies={VISIBLE} showThemes action={replyButton} />
+        <RepliesList
+          prompt={prompt}
+          replies={VISIBLE}
+          showThemes
+          action={replyButton}
+        />
       </Case>
       <Case label="Published — author, submissions shown with themes">
         <RepliesModeration
+          prompt={prompt}
           replies={REPLIES}
           showThemes
           onAccept={() => {}}
@@ -169,6 +220,7 @@ export default function RepliesTestPage() {
       </Case>
       <Case label="Published — reader who has a reply pending">
         <RepliesList
+          prompt={prompt}
           replies={[...VISIBLE, MINE]}
           action={replyButton}
           onWithdraw={() => {}}
@@ -176,16 +228,23 @@ export default function RepliesTestPage() {
       </Case>
       <Case label="Published — author">
         <RepliesModeration
+          prompt={prompt}
           replies={REPLIES}
           onAccept={() => {}}
           onHide={() => {}}
         />
       </Case>
       <Case label="Published — author, nothing submitted yet">
-        <RepliesModeration replies={[]} onAccept={() => {}} onHide={() => {}} />
+        <RepliesModeration
+          prompt={prompt}
+          replies={[]}
+          onAccept={() => {}}
+          onHide={() => {}}
+        />
       </Case>
       <Case label="Reader — reply picker popover">
         <RepliesList
+          prompt={prompt}
           replies={VISIBLE.slice(0, 1)}
           action={
             <Popover asChild defaultOpen align="end" trigger={replyButton}>

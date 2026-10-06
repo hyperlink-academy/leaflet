@@ -5,9 +5,16 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useIsBlockSelected } from "src/useUIState";
 import { documentHasReplyBlock } from "src/utils/documentHasReplyBlock";
 import { BlockProps, BlockLayout } from "../Block";
-import { DEFAULT_REPLY_BUTTON_TEXT } from "./constants";
+import {
+  DEFAULT_REPLY_BUTTON_TEXT,
+  DEFAULT_REPLY_PROMPT_TEXT,
+} from "./constants";
 import { DocumentReplies } from "./DocumentReplies";
-import { RepliesDraft, ReplyButtonTextInput } from "./RepliesView";
+import {
+  RepliesDraft,
+  ReplyButtonTextInput,
+  ReplyPromptTextInput,
+} from "./RepliesView";
 import { BlockSettings } from "../SettingsTriggerButton";
 import { ToggleWithLabel } from "components/Toggle";
 
@@ -17,6 +24,8 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();
   let buttonText =
     useEntity(props.entityID, "reply/button-text")?.data.value ?? "";
+  let promptText =
+    useEntity(props.entityID, "reply/prompt-text")?.data.value ?? "";
   let showThemes =
     useEntity(props.entityID, "reply/show-publication-theme")?.data.value !==
     false;
@@ -46,10 +55,26 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
       </ButtonPrimary>
     );
 
+  let prompt =
+    permissions.write && !props.preview ? (
+      <ReplyPromptTextInput
+        value={promptText}
+        onCommit={(value) =>
+          rep?.mutate.assertFact({
+            entity: props.entityID,
+            attribute: "reply/prompt-text",
+            data: { type: "string", value },
+          })
+        }
+      />
+    ) : (
+      promptText || DEFAULT_REPLY_PROMPT_TEXT
+    );
+
   return (
     <BlockLayout
       isSelected={!!isSelected}
-      className="replyBlock border-none! p-0! rounded-none! overflow-visible!"
+      className="replyBlock"
       extraOptions={
         !props.preview ? (
           <BlockSettings label="Replies" className="w-xs">
@@ -73,10 +98,11 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
         <DocumentReplies
           documentUri={documentUri}
           showThemes={showThemes}
+          prompt={prompt}
           action={button}
         />
       ) : (
-        <RepliesDraft action={button} />
+        <RepliesDraft prompt={prompt} action={button} />
       )}
     </BlockLayout>
   );

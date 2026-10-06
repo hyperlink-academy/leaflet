@@ -71,6 +71,7 @@ export function DocumentReplies(props: {
   initialReplies?: DocumentReply[];
   buttonText?: string;
   showThemes?: boolean;
+  prompt?: React.ReactNode;
   action?: React.ReactNode;
 }) {
   let { identity, identityPending } = useIdentityData();
@@ -118,6 +119,7 @@ export function DocumentReplies(props: {
         <RepliesList
           replies={inEditor ? [] : data?.replies.filter((r) => r.visible) ?? []}
           showThemes={props.showThemes}
+          prompt={props.prompt}
           action={controls}
         />
       );
@@ -126,6 +128,7 @@ export function DocumentReplies(props: {
         <RepliesList
           replies={loaded.replies}
           showThemes={props.showThemes}
+          prompt={props.prompt}
           action={controls}
         />
       );
@@ -152,6 +155,7 @@ export function DocumentReplies(props: {
       <RepliesModeration
         replies={loaded.replies}
         showThemes={props.showThemes}
+        prompt={props.prompt}
         busy={busy}
         onAccept={(uri) => setVisible(uri, true)}
         onHide={(uri) => setVisible(uri, false)}
@@ -166,6 +170,7 @@ export function DocumentReplies(props: {
     <RepliesList
       replies={data.replies}
       showThemes={props.showThemes}
+      prompt={props.prompt}
       onWithdraw={async (uri) => {
         if (await run(() => withdrawReply(uri)))
           await mutate(

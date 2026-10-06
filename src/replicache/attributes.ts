@@ -412,6 +412,10 @@ const ReplyBlockAttributes = {
     type: "string",
     cardinality: "one",
   },
+  "reply/prompt-text": {
+    type: "string",
+    cardinality: "one",
+  },
   "reply/show-publication-theme": {
     type: "boolean",
     cardinality: "one",

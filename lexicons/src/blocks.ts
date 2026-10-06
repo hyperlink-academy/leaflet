@@ -569,6 +569,13 @@ export const PubLeafletBlocksReply: LexiconDoc = {
           maxGraphemes: 50,
           description: "Label for the button readers use to submit a reply.",
         },
+        promptText: {
+          type: "string",
+          maxLength: 3000,
+          maxGraphemes: 300,
+          description:
+            "Text inviting readers to reply, shown beside the button.",
+        },
         showPublicationTheme: {
           type: "boolean",
           description:

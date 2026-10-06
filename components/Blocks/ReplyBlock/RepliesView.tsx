@@ -8,7 +8,10 @@ import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { StandardSitePostItemView } from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
 import { PublicationThemeWrapper } from "components/ThemeManager/PublicationThemeProvider";
 import type { DocumentReply } from "src/documentReplies";
-import { DEFAULT_REPLY_BUTTON_TEXT } from "./constants";
+import {
+  DEFAULT_REPLY_BUTTON_TEXT,
+  DEFAULT_REPLY_PROMPT_TEXT,
+} from "./constants";
 
 export type ReplyCandidate = {
   // at-uri of one of the viewer's own documents
@@ -18,33 +21,82 @@ export type ReplyCandidate = {
   publication?: { name: string };
 };
 
+// Local draft of a committed string: one undo step per edit rather than per
+// keystroke.
+function useCommittedText(value: string, onCommit: (text: string) => void) {
+  let [text, setText] = useState(value);
+  let [committed, setCommitted] = useState(value);
+  if (value !== committed) {
+    setCommitted(value);
+    setText(value);
+  }
+  return {
+    value: text,
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setText(e.currentTarget.value),
+    onBlur: () => text !== value && onCommit(text),
+    onKeyDown: (
+      e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+    ) => {
+      // The selected block's window-level key handlers treat keys in an
+      // empty input as block commands (Backspace deletes the block).
+      e.stopPropagation();
+      if (e.key === "Enter") e.currentTarget.blur();
+    },
+  };
+}
+
 export function ReplyButtonTextInput(props: {
   value: string;
   onCommit: (text: string) => void;
 }) {
-  let [text, setText] = useState(props.value);
-  let [committed, setCommitted] = useState(props.value);
-  if (props.value !== committed) {
-    setCommitted(props.value);
-    setText(props.value);
-  }
   return (
     <Input
       aria-label="Reply button text"
       className="max-w-full min-w-24 px-2 py-0.5 rounded-md bg-accent-1 border border-accent-1 text-accent-2 font-bold text-center placeholder:text-accent-2 placeholder:opacity-60 outline-2 outline-transparent outline-offset-1 focus:outline-accent-1 hover:outline-accent-1 [field-sizing:content]"
       placeholder={DEFAULT_REPLY_BUTTON_TEXT}
       maxLength={50}
-      value={text}
-      onChange={(e) => setText(e.currentTarget.value)}
-      // One undo step per edit rather than per keystroke.
-      onBlur={() => text !== props.value && props.onCommit(text)}
-      onKeyDown={(e) => {
-        // The selected block's window-level key handlers treat keys in an
-        // empty input as block commands (Backspace deletes the block).
-        e.stopPropagation();
-        if (e.key === "Enter") e.currentTarget.blur();
-      }}
+      {...useCommittedText(props.value, props.onCommit)}
     />
+  );
+}
+
+export function ReplyPromptTextInput(props: {
+  value: string;
+  onCommit: (text: string) => void;
+}) {
+  let input = useCommittedText(props.value, props.onCommit);
+  let shared = "[grid-area:1/1] whitespace-pre-wrap wrap-anywhere";
+  return (
+    <div className="grid">
+      {/* Sizes the textarea to its text, or to the placeholder it shows. */}
+      <div aria-hidden className={`${shared} invisible`}>
+        {input.value || DEFAULT_REPLY_PROMPT_TEXT}{" "}
+      </div>
+      <textarea
+        aria-label="Reply prompt text"
+        className={`${shared} resize-none overflow-hidden bg-transparent outline-none placeholder:text-tertiary`}
+        rows={1}
+        placeholder={DEFAULT_REPLY_PROMPT_TEXT}
+        maxLength={300}
+        {...input}
+      />
+    </div>
+  );
+}
+
+// Under the replies: the author's prompt to readers, then whatever acts on
+// the block. Stacked so the prompt wraps the same whatever the controls are.
+function RepliesFooter(props: {
+  prompt?: React.ReactNode;
+  action?: React.ReactNode;
+}) {
+  if (!props.prompt && !props.action) return null;
+  return (
+    <div className="flex flex-col gap-2">
+      {props.prompt && <div className="text-secondary">{props.prompt}</div>}
+      {props.action && <div className="place-self-end">{props.action}</div>}
+    </div>
   );
 }
 
@@ -77,7 +129,10 @@ export function RepliesStatusToggle(props: {
   );
 }
 
-export function RepliesDraft(props: { action?: React.ReactNode }) {
+export function RepliesDraft(props: {
+  prompt?: React.ReactNode;
+  action?: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-2">
       <div className="light-container text-sm italic text-tertiary text-center p-3 sm:p-4">
@@ -85,7 +140,7 @@ export function RepliesDraft(props: { action?: React.ReactNode }) {
         Readers can submit their own posts as replies. You choose which ones
         appear here.
       </div>
-      {props.action && <div className="place-self-end">{props.action}</div>}
+      <RepliesFooter prompt={props.prompt} action={props.action} />
     </div>
   );
 }
@@ -114,6 +169,7 @@ function ReplyPost(props: {
 export function RepliesList(props: {
   replies: DocumentReply[];
   showThemes?: boolean;
+  prompt?: React.ReactNode;
   action?: React.ReactNode;
   onWithdraw?: (uri: string) => void;
 }) {
@@ -146,7 +202,7 @@ export function RepliesList(props: {
           ))}
         </div>
       )}
-      {props.action && <div className="place-self-end">{props.action}</div>}
+      <RepliesFooter prompt={props.prompt} action={props.action} />
     </div>
   );
 }
@@ -226,6 +282,7 @@ export function RepliesModeration(props: {
   busy?: boolean;
   onAccept: (uri: string) => void;
   onHide: (uri: string) => void;
+  prompt?: React.ReactNode;
   action?: React.ReactNode;
 }) {
   let pending = props.replies.filter((r) => !r.visible);
@@ -285,7 +342,7 @@ export function RepliesModeration(props: {
           {section("Visible", visible)}
         </div>
       )}
-      {props.action && <div className="place-self-end">{props.action}</div>}
+      <RepliesFooter prompt={props.prompt} action={props.action} />
     </div>
   );
 }

@@ -77,6 +77,7 @@ import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { MembersOnlyPaywall } from "./MembersOnlyPaywall";
 import { PublishedRecommendedPubs } from "./Blocks/PublishedRecommendedPubs";
 import { DocumentReplies } from "components/Blocks/ReplyBlock/DocumentReplies";
+import { DEFAULT_REPLY_PROMPT_TEXT } from "components/Blocks/ReplyBlock/constants";
 import { useOptionalPostResources } from "./PostDataProvider";
 import { PostHeader } from "./PostHeader/PostHeader";
 import { usePostHeaderBlockData } from "./PostHeader/postHeaderBlockContext";
@@ -483,12 +484,15 @@ export let Block = ({
       if (!document || preview) return null;
       return (
         <div className={className} {...blockProps}>
-          <DocumentReplies
-            documentUri={document.uri}
-            initialReplies={replyData}
-            buttonText={block.buttonText}
-            showThemes={block.showPublicationTheme !== false}
-          />
+          <div className="replyBlock block-border w-full p-2 sm:p-3">
+            <DocumentReplies
+              documentUri={document.uri}
+              initialReplies={replyData}
+              buttonText={block.buttonText}
+              prompt={block.promptText || DEFAULT_REPLY_PROMPT_TEXT}
+              showThemes={block.showPublicationTheme !== false}
+            />
+          </div>
         </div>
       );
     },

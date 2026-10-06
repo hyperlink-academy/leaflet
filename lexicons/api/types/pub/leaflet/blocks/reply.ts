@@ -19,6 +19,8 @@ export interface Main {
   $type?: 'pub.leaflet.blocks.reply'
   /** Label for the button readers use to submit a reply. */
   buttonText?: string
+  /** Text inviting readers to reply, shown beside the button. */
+  promptText?: string
   /** Render each reply in its own publication's theme. Defaults to true. */
   showPublicationTheme?: boolean
 }
