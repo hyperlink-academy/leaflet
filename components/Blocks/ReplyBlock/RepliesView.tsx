@@ -66,7 +66,7 @@ export function ReplyPromptTextInput(props: {
   onCommit: (text: string) => void;
 }) {
   let input = useCommittedText(props.value, props.onCommit);
-  let shared = "[grid-area:1/1] whitespace-pre-wrap wrap-anywhere";
+  let shared = `[grid-area:1/1] whitespace-pre-wrap wrap-anywhere ${PROMPT_CLASS}`;
   return (
     <div className="grid">
       {/* Sizes the textarea to its text, or to the placeholder it shows. */}
@@ -75,7 +75,7 @@ export function ReplyPromptTextInput(props: {
       </div>
       <textarea
         aria-label="Reply prompt text"
-        className={`${shared} resize-none overflow-hidden bg-transparent outline-none placeholder:text-tertiary`}
+        className={`${shared} w-full resize-none overflow-hidden bg-transparent outline-none placeholder:text-tertiary`}
         rows={1}
         placeholder={DEFAULT_REPLY_PROMPT_TEXT}
         maxLength={300}
@@ -85,17 +85,25 @@ export function ReplyPromptTextInput(props: {
   );
 }
 
-// Under the replies: the author's prompt to readers, then whatever acts on
-// the block. Stacked so the prompt wraps the same whatever the controls are.
-function RepliesFooter(props: {
+const PROMPT_CLASS = "text-xl font-bold text-center text-primary";
+
+// Above the replies: the author's prompt to readers as a heading, with
+// whatever acts on the block centered under it.
+function RepliesHeader(props: {
   prompt?: React.ReactNode;
   action?: React.ReactNode;
 }) {
   if (!props.prompt && !props.action) return null;
   return (
-    <div className="flex flex-col gap-2">
-      {props.prompt && <div className="text-secondary">{props.prompt}</div>}
-      {props.action && <div className="place-self-end">{props.action}</div>}
+    <div className="flex flex-col items-center gap-2 pt-1">
+      {props.prompt && (
+        <h2 className={`w-full ${PROMPT_CLASS}`}>{props.prompt}</h2>
+      )}
+      {props.action && (
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {props.action}
+        </div>
+      )}
     </div>
   );
 }
@@ -132,13 +140,13 @@ export function RepliesDraft(props: {
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-5">
+      <RepliesHeader prompt={props.prompt} action={props.action} />
       <div className="light-container text-sm italic text-tertiary text-center p-3 sm:p-4">
         <div className="text-base font-bold">Replies open when you publish</div>
         Readers can submit their own posts as replies. You choose which ones
         appear here.
       </div>
-      <RepliesFooter prompt={props.prompt} action={props.action} />
     </div>
   );
 }
@@ -173,7 +181,8 @@ export function RepliesList(props: {
 }) {
   let { onWithdraw } = props;
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-5">
+      <RepliesHeader prompt={props.prompt} action={props.action} />
       {props.replies.length > 0 && (
         <div className="flex flex-col gap-2">
           {props.replies.map((reply) => (
@@ -200,7 +209,6 @@ export function RepliesList(props: {
           ))}
         </div>
       )}
-      <RepliesFooter prompt={props.prompt} action={props.action} />
     </div>
   );
 }
@@ -325,7 +333,8 @@ export function RepliesModeration(props: {
     );
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-5">
+      <RepliesHeader prompt={props.prompt} action={props.action} />
       {props.replies.length === 0 ? (
         <div className="light-container text-sm italic text-tertiary text-center p-3">
           No one has replied yet. Submissions will show up here for you to
@@ -340,7 +349,6 @@ export function RepliesModeration(props: {
           {section("Visible", visible)}
         </div>
       )}
-      <RepliesFooter prompt={props.prompt} action={props.action} />
     </div>
   );
 }
