@@ -20,9 +20,9 @@ import {
 import type { DocumentReply } from "src/documentReplies";
 import { DEFAULT_REPLY_BUTTON_TEXT } from "./constants";
 import {
+  PendingRepliesToggle,
   RepliesList,
   RepliesModeration,
-  RepliesStatusToggle,
   ReplyPicker,
 } from "./RepliesView";
 
@@ -92,10 +92,22 @@ export function DocumentReplies(props: {
   let [busy, setBusy] = useState(false);
   let [open, setOpen] = useState(false);
   let run = useReplyAction();
+  let withdraw = async (uri: string) => {
+    if (await run(() => withdrawReply(uri)))
+      await mutate(
+        (current) =>
+          current && {
+            ...current,
+            replies: current.replies.filter((r) => r.uri !== uri),
+          },
+        { revalidate: false },
+      );
+  };
 
-  // The editor and the document's owner get a status row of constant height
-  // in place of the reader's button, so nothing moves when replies load; the
-  // full list is behind its toggle.
+  let label = props.buttonText || DEFAULT_REPLY_BUTTON_TEXT;
+  // The editor and the document's owner keep the reply button (the author can
+  // reply with a post of their own) and get a toggle for the replies still
+  // waiting on them.
   let inEditor = props.action !== undefined;
   let ownsDocument =
     !!viewer && props.documentUri.startsWith(`at://${viewer}/`);
@@ -103,32 +115,41 @@ export function DocumentReplies(props: {
     // On a published page `data` starts as the public list the page was
     // rendered with, which isn't the owner's view of their replies.
     let loaded = inEditor || data?.isAuthor ? data : undefined;
+    let pending = loaded?.isAuthor
+      ? loaded.replies.filter((r) => !r.visible).length
+      : 0;
+    // Once the last pending reply is dealt with the toggle goes away; the
+    // next one to arrive should start closed.
+    if (open && pending === 0) setOpen(false);
     let controls = (
-      <div className="flex items-center gap-2">
-        <RepliesStatusToggle
-          replies={loaded?.replies}
-          canModerate={!!loaded?.isAuthor}
+      <>
+        {props.action ?? (
+          <ReplyButton
+            label={label}
+            documentUri={props.documentUri}
+            onSubmitted={() => mutate()}
+          />
+        )}
+        <PendingRepliesToggle
+          pending={pending}
           open={open}
           onToggle={() => setOpen(!open)}
         />
-        {props.action}
-      </div>
+      </>
     );
-    if (!loaded || !open || loaded.replies.length === 0)
+    if (!loaded || !loaded.isAuthor)
       return (
         <RepliesList
-          replies={inEditor ? [] : data?.replies.filter((r) => r.visible) ?? []}
+          replies={
+            loaded
+              ? loaded.replies
+              : inEditor
+                ? []
+                : data?.replies.filter((r) => r.visible) ?? []
+          }
           showThemes={props.showThemes}
           prompt={props.prompt}
-          action={controls}
-        />
-      );
-    if (!loaded.isAuthor)
-      return (
-        <RepliesList
-          replies={loaded.replies}
-          showThemes={props.showThemes}
-          prompt={props.prompt}
+          onWithdraw={withdraw}
           action={controls}
         />
       );
@@ -155,33 +176,24 @@ export function DocumentReplies(props: {
       <RepliesModeration
         replies={loaded.replies}
         showThemes={props.showThemes}
+        showPending={open}
         prompt={props.prompt}
         busy={busy}
         onAccept={(uri) => setVisible(uri, true)}
         onHide={(uri) => setVisible(uri, false)}
+        onWithdraw={withdraw}
         action={controls}
       />
     );
   }
   if (!data) return null;
 
-  let label = props.buttonText || DEFAULT_REPLY_BUTTON_TEXT;
   return (
     <RepliesList
       replies={data.replies}
       showThemes={props.showThemes}
       prompt={props.prompt}
-      onWithdraw={async (uri) => {
-        if (await run(() => withdrawReply(uri)))
-          await mutate(
-            (current) =>
-              current && {
-                ...current,
-                replies: current.replies.filter((r) => r.uri !== uri),
-              },
-            { revalidate: false },
-          );
-      }}
+      onWithdraw={withdraw}
       action={
         identityPending ? (
           <ButtonPrimary disabled>{label}</ButtonPrimary>

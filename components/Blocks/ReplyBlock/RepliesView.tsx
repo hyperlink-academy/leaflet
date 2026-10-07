@@ -108,28 +108,17 @@ function RepliesHeader(props: {
   );
 }
 
-// Summarizes a document's replies and, once there are some, opens the full
-// list. `replies` is undefined while they load. Every state is as tall as the
-// button so the row never changes height.
-export function RepliesStatusToggle(props: {
-  replies: DocumentReply[] | undefined;
-  canModerate: boolean;
+// Opens the replies the author hasn't accepted yet; nothing when there are
+// none.
+export function PendingRepliesToggle(props: {
+  pending: number;
   open: boolean;
   onToggle: () => void;
 }) {
-  let total = props.replies?.length ?? 0;
-  if (total === 0)
-    return (
-      <div className="py-0.5 border border-transparent text-tertiary italic">
-        {props.replies ? "No replies yet" : "\u00a0"}
-      </div>
-    );
-  let pending = props.replies?.filter((r) => !r.visible).length ?? 0;
+  if (props.pending === 0) return null;
   return (
     <ButtonSecondary aria-expanded={props.open} onClick={props.onToggle}>
-      {props.canModerate && pending > 0
-        ? `${pending} pending · ${total - pending} visible`
-        : `${total} ${total === 1 ? "reply" : "replies"}`}
+      {props.pending} pending
       <ArrowDownTiny className={props.open ? "rotate-180" : ""} />
     </ButtonSecondary>
   );
@@ -172,6 +161,24 @@ function ReplyPost(props: {
   );
 }
 
+// A reply with whatever acts on it in its top-right corner.
+function ReplyRow(props: {
+  reply: DocumentReply;
+  showTheme?: boolean;
+  control?: React.ReactNode;
+}) {
+  return (
+    <div className="relative transparent-container overflow-hidden">
+      <ReplyPost post={props.reply.post} showTheme={props.showTheme} />
+      {props.control && (
+        <div className="absolute top-2 right-3 z-[2] flex items-center gap-2 text-sm text-tertiary">
+          {props.control}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function RepliesList(props: {
   replies: DocumentReply[];
   showThemes?: boolean;
@@ -186,26 +193,27 @@ export function RepliesList(props: {
       {props.replies.length > 0 && (
         <div className="flex flex-col gap-2">
           {props.replies.map((reply) => (
-            <div
+            <ReplyRow
               key={reply.uri}
-              className="relative transparent-container overflow-hidden"
-            >
-              <ReplyPost post={reply.post} showTheme={props.showThemes} />
-              {!reply.visible && (
-                <div className="absolute top-2 right-3 z-[2] flex items-center gap-2 text-sm text-tertiary">
-                  <span className="italic">Pending approval</span>
-                  {onWithdraw && (
-                    <button
-                      aria-label="Withdraw reply"
-                      className="hover:text-accent-contrast"
-                      onClick={() => onWithdraw(reply.uri)}
-                    >
-                      <CloseTiny />
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+              reply={reply}
+              showTheme={props.showThemes}
+              control={
+                !reply.visible && (
+                  <>
+                    <span className="italic">Pending approval</span>
+                    {onWithdraw && (
+                      <button
+                        aria-label="Withdraw reply"
+                        className="hover:text-accent-contrast"
+                        onClick={() => onWithdraw(reply.uri)}
+                      >
+                        <CloseTiny />
+                      </button>
+                    )}
+                  </>
+                )
+              }
+            />
           ))}
         </div>
       )}
@@ -281,72 +289,87 @@ export function ReplyPicker(props: {
   );
 }
 
+// The author's view: visible replies, each with a way to hide it, and the
+// pending ones behind `showPending`.
 export function RepliesModeration(props: {
   replies: DocumentReply[];
   showThemes?: boolean;
+  showPending: boolean;
   // A visibility change is being published
   busy?: boolean;
   onAccept: (uri: string) => void;
   onHide: (uri: string) => void;
+  // The author replied with a post of their own
+  onWithdraw: (uri: string) => void;
   prompt?: React.ReactNode;
   action?: React.ReactNode;
 }) {
   let pending = props.replies.filter((r) => !r.visible);
   let visible = props.replies.filter((r) => r.visible);
-
-  let section = (label: string, items: DocumentReply[]) =>
-    items.length > 0 && (
-      <div className="flex flex-col gap-1">
-        <div className="px-3 text-sm font-bold text-tertiary uppercase">
-          {label} ({items.length})
-        </div>
-        {items.map((reply) => (
-          <div
-            key={reply.uri}
-            className={`flex items-center gap-2 pr-3 ${props.showThemes ? "pl-2" : ""}`}
-          >
-            <div className="relative grow min-w-0 rounded-md overflow-hidden">
-              <ReplyPost post={reply.post} showTheme={props.showThemes} />
-            </div>
-            <div className="w-16 shrink-0 flex justify-end">
-              {reply.visible ? (
-                <ButtonSecondary
-                  compact
-                  disabled={props.busy}
-                  onClick={() => props.onHide(reply.uri)}
-                >
-                  Hide
-                </ButtonSecondary>
-              ) : (
-                <ButtonPrimary
-                  compact
-                  disabled={props.busy}
-                  onClick={() => props.onAccept(reply.uri)}
-                >
-                  Accept
-                </ButtonPrimary>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+  let withdraw = (reply: DocumentReply) =>
+    reply.mine && (
+      <button
+        aria-label="Withdraw reply"
+        className="hover:text-accent-contrast"
+        disabled={props.busy}
+        onClick={() => props.onWithdraw(reply.uri)}
+      >
+        <CloseTiny />
+      </button>
     );
-
   return (
     <div className="flex flex-col gap-5">
       <RepliesHeader prompt={props.prompt} action={props.action} />
-      {props.replies.length === 0 ? (
+      {props.replies.length === 0 && (
         <div className="light-container text-sm italic text-tertiary text-center p-3">
           No one has replied yet. Submissions will show up here for you to
           accept.
         </div>
-      ) : (
-        <div className="light-container flex flex-col gap-2 py-2">
-          {section("Pending", pending)}
-          {pending.length > 0 && visible.length > 0 && (
-            <hr className="border-border-light" />
-          )}
-          {section("Visible", visible)}
+      )}
+      {props.showPending && pending.length > 0 && (
+        <div className="light-container flex flex-col gap-2 p-2">
+          {pending.map((reply) => (
+            <ReplyRow
+              key={reply.uri}
+              reply={reply}
+              showTheme={props.showThemes}
+              control={
+                <>
+                  <ButtonPrimary
+                    compact
+                    disabled={props.busy}
+                    onClick={() => props.onAccept(reply.uri)}
+                  >
+                    Accept
+                  </ButtonPrimary>
+                  {withdraw(reply)}
+                </>
+              }
+            />
+          ))}
+        </div>
+      )}
+      {visible.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {visible.map((reply) => (
+            <ReplyRow
+              key={reply.uri}
+              reply={reply}
+              showTheme={props.showThemes}
+              control={
+                <>
+                  <ButtonSecondary
+                    compact
+                    disabled={props.busy}
+                    onClick={() => props.onHide(reply.uri)}
+                  >
+                    Hide
+                  </ButtonSecondary>
+                  {withdraw(reply)}
+                </>
+              }
+            />
+          ))}
         </div>
       )}
     </div>
