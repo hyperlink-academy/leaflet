@@ -22,6 +22,8 @@ import {
 } from "./ImageGalleryBlock/ImageGalleryLightbox";
 import { getPostImageEntities } from "./ImageGalleryBlock/getPostImages";
 import { useCanOpenLightbox } from "./ImageGalleryBlock/useCanOpenLightbox";
+import { addGalleryImages } from "./ImageGalleryBlock/addGalleryImages";
+import { useBlockImagePaste } from "./useBlockImagePaste";
 
 export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let { rep, undoManager } = useReplicache();
@@ -129,6 +131,30 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     });
   };
 
+  const handleImageFiles = async (files: File[]) => {
+    let images = files.filter((f) => f.type.startsWith("image/"));
+    if (images.length === 0 || !rep) return;
+    if (images.length === 1) return handleImageUpload(images[0]);
+    await undoManager.withUndoGroup(() =>
+      rep.mutate.assertFact({
+        entity: props.entityID,
+        attribute: "block/type",
+        data: { type: "block-type-union", value: "image-gallery" },
+      }),
+    );
+    await addGalleryImages(rep, {
+      galleryEntity: props.entityID,
+      permission_set: entity_set.set,
+      files: images,
+    });
+  };
+
+  useBlockImagePaste(
+    props.entityID,
+    !image && !props.preview && !!isSelected && entity_set.permissions.write,
+    handleImageFiles,
+  );
+
   if (!image) {
     if (!entity_set.permissions.write) return null;
     return (
@@ -151,13 +177,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
           onDrop={async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            const files = e.dataTransfer.files;
-            if (files && files.length > 0) {
-              const file = files[0];
-              if (file.type.startsWith("image/")) {
-                await handleImageUpload(file);
-              }
-            }
+            await handleImageFiles(Array.from(e.dataTransfer.files));
           }}
         >
           <div className="flex gap-2">
@@ -170,10 +190,9 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             className="h-0 w-0 hidden"
             type="file"
             accept="image/*"
+            multiple
             onChange={async (e) => {
-              let file = e.currentTarget.files?.[0];
-              if (!file) return;
-              await handleImageUpload(file);
+              await handleImageFiles(Array.from(e.currentTarget.files ?? []));
             }}
           />
         </label>

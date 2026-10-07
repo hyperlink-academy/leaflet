@@ -1086,24 +1086,28 @@ const addGalleryImage: Mutation<{
   imageEntity: string;
   permission_set: string;
   factID: string;
+  position?: string;
 }> = async (args, ctx) => {
   await ctx.createEntity({
     entityID: args.imageEntity,
     permission_set: args.permission_set,
   });
 
-  let children = await ctx.scanIndex.eav(args.galleryEntity, "gallery/image");
-  let lastChild = children.toSorted(byPosition)[children.length - 1];
+  let position = args.position;
+  if (!position) {
+    let children = await ctx.scanIndex.eav(
+      args.galleryEntity,
+      "gallery/image",
+    );
+    let lastChild = children.toSorted(byPosition)[children.length - 1];
+    position = generateKeyBetween(lastChild?.data.position || null, null);
+  }
 
   await ctx.assertFact({
     entity: args.galleryEntity,
     id: args.factID,
     attribute: "gallery/image",
-    data: {
-      type: "ordered-reference",
-      value: args.imageEntity,
-      position: generateKeyBetween(lastChild?.data.position || null, null),
-    },
+    data: { type: "ordered-reference", value: args.imageEntity, position },
   });
 };
 

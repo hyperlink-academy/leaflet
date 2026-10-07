@@ -31,6 +31,7 @@ import { resolveCopiedFootnoteRefs } from "src/utils/paste/resolveCopiedFootnote
 import { renderFootnoteDefHTML } from "src/utils/renderFootnoteDefHTML";
 import { scanIndex } from "src/replicache/utils";
 import { groupCanvasBlock } from "src/utils/groupCanvasBlock";
+import { addGalleryImages } from "../ImageGalleryBlock/addGalleryImages";
 
 export const useHandlePaste = (
   entityID: string,
@@ -99,6 +100,75 @@ export const useHandlePaste = (
         ? generateKeyBetween(null, null)
         : position;
       const pasteNextPosition = groupEntity ? null : nextPosition;
+
+      let imageFiles = Array.from(e.clipboardData.items)
+        .filter((item) => item.kind === "file" && item.type.includes("image"))
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => !!file);
+      let htmlIsOnlyImages =
+        !textHTML ||
+        parsePasteHTMLToElements(textHTML).every((el) => el.tagName === "IMG");
+      if (imageFiles.length > 1 && htmlIsOnlyImages) {
+        const intoEmptyBlock = editorState.editor.doc.textContent.length === 0;
+        const entity = intoEmptyBlock ? propsRef.current.entityID : v7();
+        (async () => {
+          if (!intoEmptyBlock)
+            await rep.mutate.createEntity([
+              { entityID: entity, permission_set: entity_set.set },
+            ]);
+          await undoManager.withUndoGroup(async () => {
+            if (intoEmptyBlock) {
+              await rep.mutate.assertFact({
+                entity,
+                attribute: "block/type",
+                data: { type: "block-type-union", value: "image-gallery" },
+              });
+              await rep.mutate.retractAttribute({
+                entity,
+                attribute: "block/text",
+              });
+            } else {
+              await prepareParent?.();
+              await rep.mutate.assertFact([
+                {
+                  entity: groupEntity ?? parent,
+                  id: v7(),
+                  attribute: "card/block",
+                  data: {
+                    type: "ordered-reference",
+                    value: entity,
+                    position: generateKeyBetween(
+                      pastePosition,
+                      pasteNextPosition,
+                    ),
+                  },
+                },
+                {
+                  entity,
+                  attribute: "block/type",
+                  data: { type: "block-type-union", value: "image-gallery" },
+                },
+              ]);
+            }
+          });
+          if (groupEntity && !intoEmptyBlock)
+            focusBlock(
+              {
+                entityID: propsRef.current.entityID,
+                type: propsRef.current.type,
+                parent: groupEntity,
+              },
+              { type: "end" },
+            );
+          await addGalleryImages(rep, {
+            galleryEntity: entity,
+            permission_set: entity_set.set,
+            files: imageFiles,
+          });
+        })().catch(() => {});
+        e.preventDefault();
+        return true;
+      }
       // if there is no html, but there is text, convert the text to markdown
       let xml = new DOMParser().parseFromString(textHTML, "text/html");
       if ((!textHTML || !xml.children.length) && text) {

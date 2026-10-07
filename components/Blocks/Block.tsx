@@ -106,10 +106,17 @@ export const Block = memo(function Block(
   // mouse events, keyboard events and longPress, and setting AreYouSure state
   // and shared styling like padding and flex for list layouting
   let mouseHandlers = useBlockMouseHandlers(props);
+  let focused = useUIState(
+    (s) =>
+      s.focusedEntity?.entityType === "block" &&
+      s.focusedEntity.entityID === props.entityID,
+  );
   let handleDrop = useHandleDrop({
     parent: props.parent,
     position: props.position,
     nextPosition: props.nextPosition,
+    galleryEntity:
+      props.type === "image-gallery" && focused ? props.entityID : undefined,
   });
   let entity_set = useEntitySetContext();
   let isMobile = useIsMobile();
@@ -143,11 +150,6 @@ export const Block = memo(function Block(
   );
 
   let selected = useIsBlockSelected(props.entityID);
-  let focused = useUIState(
-    (s) =>
-      s.focusedEntity?.entityType === "block" &&
-      s.focusedEntity.entityID === props.entityID,
-  );
   let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
 
   let alignmentStyle =

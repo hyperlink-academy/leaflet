@@ -4,9 +4,9 @@ import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps, BlockLayout } from "../Block";
 import { useIsBlockSelected } from "src/useUIState";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { addImage } from "src/utils/addImage";
 import { useState } from "react";
-import { v7 } from "uuid";
+import { addGalleryImages } from "./addGalleryImages";
+import { useBlockImagePaste } from "../useBlockImagePaste";
 
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 
@@ -23,7 +23,7 @@ import { ImageGalleryOptions, EditGalleryImages } from "./ImageGalleryOptions";
 import { useCanOpenLightbox } from "./useCanOpenLightbox";
 
 export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
-  let { rep, undoManager } = useReplicache();
+  let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
   let isSelected = useIsBlockSelected(props.entityID);
 
@@ -43,29 +43,18 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
 
   const handleFiles = async (files: File[]) => {
     if (!rep) return;
-    await undoManager.withUndoGroup(async () => {
-      for (let file of files) {
-        if (!file.type.startsWith("image/")) continue;
-        let imageEntity = v7();
-        await rep.mutate.addGalleryImage({
-          galleryEntity: props.entityID,
-          imageEntity,
-          factID: v7(),
-          permission_set: entity_set.set,
-        });
-        if (file.name)
-          await rep.mutate.assertFact({
-            entity: imageEntity,
-            attribute: "image/name",
-            data: { type: "string", value: file.name },
-          });
-        await addImage(file, rep, {
-          entityID: imageEntity,
-          attribute: "block/image",
-        });
-      }
+    await addGalleryImages(rep, {
+      galleryEntity: props.entityID,
+      permission_set: entity_set.set,
+      files,
     });
   };
+
+  useBlockImagePaste(
+    props.entityID,
+    !props.preview && !!isSelected && entity_set.permissions.write,
+    handleFiles,
+  );
 
   let { clickOpensLightbox } = useCanOpenLightbox({
     entityID: props.entityID,
