@@ -273,8 +273,8 @@ export function ReplyPicker(props: {
         </>
       )}
       <div className="flex items-center justify-between gap-2 pt-1">
-        <div className="text-sm text-tertiary">
-          Shown once the author approves it
+        <div className="text-sm text-tertiary whitespace-nowrap">
+          Shown after author approval
         </div>
         <ButtonPrimary
           disabled={!canSubmit || props.submitting}
