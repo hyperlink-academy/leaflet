@@ -78,6 +78,7 @@ import { MembersOnlyPaywall } from "./MembersOnlyPaywall";
 import { PublishedRecommendedPubs } from "./Blocks/PublishedRecommendedPubs";
 import { DocumentReplies } from "components/Blocks/ReplyBlock/DocumentReplies";
 import { DEFAULT_REPLY_PROMPT_TEXT } from "components/Blocks/ReplyBlock/constants";
+import { DocumentQuestions } from "components/Blocks/QuestionsBlock/DocumentQuestions";
 import { useOptionalPostResources } from "./PostDataProvider";
 import { PostHeader } from "./PostHeader/PostHeader";
 import { usePostHeaderBlockData } from "./PostHeader/postHeaderBlockContext";
@@ -225,7 +226,9 @@ export let Block = ({
   let canOpenLightbox = !!openLightbox && !preview;
   let document = useDocumentOptional();
   let postHeaderData = usePostHeaderBlockData();
-  let replyData = useOptionalPostResources()?.replyData;
+  let postResources = useOptionalPostResources();
+  let replyData = postResources?.replyData;
+  let questionData = postResources?.questionData;
   let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
     style: {
@@ -491,6 +494,23 @@ export let Block = ({
               buttonText={block.buttonText}
               prompt={block.promptText || DEFAULT_REPLY_PROMPT_TEXT}
               showThemes={block.showPublicationTheme !== false}
+            />
+          </div>
+        </div>
+      );
+    },
+    "pub.leaflet.blocks.questions": (block) => {
+      if (!document || preview) return null;
+      return (
+        <div className={className} {...blockProps}>
+          <div
+            id="questions"
+            className="questionsBlock block-border w-full p-2 sm:p-3"
+          >
+            <DocumentQuestions
+              documentUri={document.uri}
+              initialQuestions={questionData}
+              buttonText={block.buttonText}
             />
           </div>
         </div>

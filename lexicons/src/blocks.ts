@@ -586,6 +586,27 @@ export const PubLeafletBlocksReply: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksQuestions: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.questions",
+  defs: {
+    main: {
+      type: "object",
+      description:
+        "Lets readers ask the author public questions (pub.leaflet.interactions.question) and shows the ones the author has answered (pub.leaflet.interactions.answer). Questions are resolved at render time rather than stored on the block.",
+      required: [],
+      properties: {
+        buttonText: {
+          type: "string",
+          maxLength: 500,
+          maxGraphemes: 50,
+          description: "Label for the button readers use to submit a question.",
+        },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksMembersOnlyDelimiter: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.membersOnlyDelimiter",
@@ -752,6 +773,7 @@ export const BlockLexicons = [
   PubLeafletBlocksSignup,
   PubLeafletBlocksRecommendedPubs,
   PubLeafletBlocksReply,
+  PubLeafletBlocksQuestions,
   PubLeafletBlocksMembersOnlyDelimiter,
   PubLeafletBlocksPostHeader,
   PubLeafletBlocksDrawing,

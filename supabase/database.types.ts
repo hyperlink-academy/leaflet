@@ -550,6 +550,80 @@ export type Database = {
           },
         ]
       }
+      document_questions: {
+        Row: {
+          asker_did: string
+          cid: string
+          indexed_at: string
+          record: Json
+          subject: string
+          uri: string
+        }
+        Insert: {
+          asker_did: string
+          cid: string
+          indexed_at?: string
+          record: Json
+          subject: string
+          uri: string
+        }
+        Update: {
+          asker_did?: string
+          cid?: string
+          indexed_at?: string
+          record?: Json
+          subject?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_questions_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      document_question_answers: {
+        Row: {
+          indexed_at: string
+          question: string
+          record: Json
+          subject: string
+          uri: string
+        }
+        Insert: {
+          indexed_at?: string
+          question: string
+          record: Json
+          subject: string
+          uri: string
+        }
+        Update: {
+          indexed_at?: string
+          question?: string
+          record?: Json
+          subject?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_question_answers_question_fkey"
+            columns: ["question"]
+            isOneToOne: true
+            referencedRelation: "document_questions"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "document_question_answers_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       documents: {
         Row: {
           bsky_like_count: number

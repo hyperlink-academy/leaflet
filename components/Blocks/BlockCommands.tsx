@@ -43,6 +43,7 @@ import { BlockCodeSmall } from "components/Icons/BlockCodeSmall";
 import { QuoteSmall } from "components/Icons/QuoteSmall";
 import { LockTiny } from "components/Icons/LockTiny";
 import { ReplySmall } from "components/Icons/ReplySmall";
+import { HelpSmall } from "components/Icons/HelpSmall";
 import { REPLIES_ENTITLEMENT_KEY } from "src/entitlements";
 import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
 import { getPageBlocks } from "src/replicache/getBlocks";
@@ -124,6 +125,9 @@ type Command = {
   // above their blocks already.
   canvasOnly?: boolean;
   hiddenOnCanvas?: boolean;
+  // Not offered inside a question's answer, whose published form renders
+  // only self-contained blocks.
+  hiddenInAnswer?: boolean;
   // Only shown when the publication has paid memberships enabled, the current
   // page is the post's first page, and no delimiter exists yet (gating is
   // computed against the served first page, and one delimiter is enough).
@@ -307,6 +311,7 @@ export const blockCommands: Command[] = [
   },
   {
     name: "Poll",
+    hiddenInAnswer: true,
     icon: <BlockPollSmall />,
     type: "block",
     onSelect: async (rep, props, um) => {
@@ -377,6 +382,7 @@ export const blockCommands: Command[] = [
   },
   {
     name: "Code",
+    hiddenInAnswer: true,
     icon: <BlockCodeSmall />,
     type: "block",
     hiddenInPublication: false,
@@ -396,6 +402,7 @@ export const blockCommands: Command[] = [
   // EVENT STUFF
   {
     name: "Date and Time",
+    hiddenInAnswer: true,
     icon: <BlockCalendarSmall />,
     type: "event",
     hiddenInPublication: true,
@@ -409,6 +416,7 @@ export const blockCommands: Command[] = [
 
   {
     name: "New Page",
+    hiddenInAnswer: true,
     icon: <BlockDocPageSmall />,
     type: "page",
     hiddenOnPublicationPage: true,
@@ -450,6 +458,7 @@ export const blockCommands: Command[] = [
   },
   {
     name: "New Canvas",
+    hiddenInAnswer: true,
     icon: <BlockCanvasPageSmall />,
     type: "page",
     hiddenOnPublicationPage: true,
@@ -490,6 +499,7 @@ export const blockCommands: Command[] = [
   },
   {
     name: "Drawing",
+    hiddenInAnswer: true,
     icon: <BlockEmbeddedCanvasSmall />,
     type: "page",
     alternateNames: ["sketch", "diagram", "canvas"],
@@ -522,6 +532,7 @@ export const blockCommands: Command[] = [
   },
   {
     name: "Post List",
+    hiddenInAnswer: true,
     icon: <PostListSmall />,
     type: "publication",
     alternateNames: ["posts", "archive", "feed", "listing"],
@@ -534,6 +545,7 @@ export const blockCommands: Command[] = [
   },
   {
     name: "Recommended Pubs",
+    hiddenInAnswer: true,
     icon: <RecommendFilledSmall />,
     type: "publication",
     alternateNames: ["recommendations", "recommended", "publications", "pubs"],
@@ -545,6 +557,7 @@ export const blockCommands: Command[] = [
   },
   {
     name: "Replies",
+    hiddenInAnswer: true,
     icon: <ReplySmall />,
     type: "publication",
     alternateNames: ["reply", "responses", "respond", "webmention"],
@@ -557,7 +570,22 @@ export const blockCommands: Command[] = [
     },
   },
   {
+    name: "Questions",
+    hiddenInAnswer: true,
+    icon: <HelpSmall />,
+    type: "publication",
+    alternateNames: ["question", "ask", "q&a", "ama", "answers"],
+    atprotoOnly: true,
+    entitlement: REPLIES_ENTITLEMENT_KEY,
+    hiddenOnPublicationPage: true,
+    onSelect: async (rep, props) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      await createBlockWithType(rep, props, "questions");
+    },
+  },
+  {
     name: "Post Title",
+    hiddenInAnswer: true,
     icon: <BlockPostHeaderSmall />,
     type: "publication",
     alternateNames: ["header", "metadata", "byline", "post header"],
@@ -571,6 +599,7 @@ export const blockCommands: Command[] = [
   },
   {
     name: "Subscribe Form",
+    hiddenInAnswer: true,
     icon: <BlockMailboxSmall />,
     type: "publication",
     alternateNames: ["subscribe", "newsletter", "email", "signup"],
@@ -582,6 +611,7 @@ export const blockCommands: Command[] = [
   },
   {
     name: "Paywall",
+    hiddenInAnswer: true,
     icon: <LockTiny />,
     type: "publication",
     alternateNames: ["members", "membership", "members only", "premium"],

@@ -1562,6 +1562,8 @@ const BlockRenderer = ({
         />
       );
     },
+    // Questions are asked and answered on the web.
+    "pub.leaflet.blocks.questions": () => null,
     "pub.leaflet.blocks.signup": notSupported,
     // The email has its own header; the block is nothing in the body.
     "pub.leaflet.blocks.postHeader": () => null,
@@ -2484,6 +2486,7 @@ const MiniBlock = ({
     "pub.leaflet.blocks.postsList": () => null,
     "pub.leaflet.blocks.recommendedPubs": () => null,
     "pub.leaflet.blocks.reply": () => null,
+    "pub.leaflet.blocks.questions": () => null,
     "pub.leaflet.blocks.signup": () => null,
     "pub.leaflet.blocks.postHeader": () => null,
     "pub.leaflet.blocks.bskyPost": () => null,

@@ -81,3 +81,72 @@ export const PubLeafletInteractionsReplyVisibility: LexiconDoc = {
     },
   },
 };
+
+export const PubLeafletInteractionsQuestion: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.interactions.question",
+  defs: {
+    main: {
+      type: "record",
+      key: "tid",
+      description:
+        "A public question asked of a document's author, shown on the document once the author answers it (pub.leaflet.interactions.answer)",
+      record: {
+        type: "object",
+        required: ["subject", "plaintext", "createdAt"],
+        properties: {
+          subject: {
+            type: "string",
+            format: "at-uri",
+            description: "The document the question is asked on.",
+          },
+          plaintext: {
+            type: "string",
+            maxLength: 10000,
+            maxGraphemes: 1000,
+          },
+          facets: {
+            type: "array",
+            items: { type: "ref", ref: "pub.leaflet.richtext.facet" },
+          },
+          createdAt: { type: "string", format: "datetime" },
+        },
+      },
+    },
+  },
+};
+
+export const PubLeafletInteractionsAnswer: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.interactions.answer",
+  defs: {
+    main: {
+      type: "record",
+      key: "any",
+      description:
+        "The author's answer to a pub.leaflet.interactions.question, written in the repo that owns the question's subject document. One record per question.",
+      record: {
+        type: "object",
+        required: ["question", "document", "content", "createdAt"],
+        properties: {
+          question: {
+            type: "ref",
+            ref: "com.atproto.repo.strongRef",
+            description: "The question being answered.",
+          },
+          document: {
+            type: "string",
+            format: "at-uri",
+            description: "The document the question was asked on.",
+          },
+          content: {
+            type: "ref",
+            ref: "pub.leaflet.pages.linearDocument",
+            description: "The answer's blocks.",
+          },
+          createdAt: { type: "string", format: "datetime" },
+        },
+      },
+    },
+  },
+};

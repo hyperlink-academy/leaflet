@@ -14,6 +14,8 @@ import { MentionNotification } from "./MentionNotification";
 import { CommentMentionNotification } from "./CommentMentionNotification";
 import { RecommendNotification } from "./RecommendNotification";
 import { PostReplyNotification } from "./PostReplyNotification";
+import { PostQuestionNotification } from "./PostQuestionNotification";
+import { QuestionAnsweredNotification } from "./QuestionAnsweredNotification";
 import { NewMemberNotification } from "./NewMemberNotification";
 import { GroupedNotification } from "./GroupedNotification";
 import { EmptyState } from "components/EmptyState";
@@ -155,6 +157,12 @@ function renderNotification(n: HydratedNotification) {
   }
   if (n.type === "post_reply") {
     return <PostReplyNotification key={n.id} {...n} />;
+  }
+  if (n.type === "post_question") {
+    return <PostQuestionNotification key={n.id} {...n} />;
+  }
+  if (n.type === "question_answered") {
+    return <QuestionAnsweredNotification key={n.id} {...n} />;
   }
   if (n.type === "new_member") {
     return <NewMemberNotification key={n.id} {...n} />;

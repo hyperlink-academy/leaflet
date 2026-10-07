@@ -6,8 +6,7 @@ import { Popover } from "components/Popover";
 import { LoginModal } from "components/LoginButton";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { useIdentityData } from "components/IdentityProvider";
-import { useToaster } from "components/Toast";
-import { actionErrorContent } from "components/OAuthError";
+import { useActionToast } from "components/useActionToast";
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
 import {
   getDocumentReplies,
@@ -18,6 +17,7 @@ import {
   type ReplyError,
 } from "actions/replies";
 import type { DocumentReply } from "src/documentReplies";
+import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { DEFAULT_REPLY_BUTTON_TEXT } from "./constants";
 import {
   PendingRepliesToggle,
@@ -32,33 +32,6 @@ const replyErrorMessages: Partial<Record<ReplyError["type"], string>> = {
   same_post: "A post can't reply to itself.",
   replies_closed: "This post isn't taking replies.",
 };
-
-// Runs a reply action and toasts its failure, thrown or returned.
-function useReplyAction() {
-  let toaster = useToaster();
-  return async <T,>(
-    action: () => Promise<
-      { ok: true; value: T } | { ok: false; error: ReplyError }
-    >,
-  ) => {
-    let error: ReplyError;
-    try {
-      let result = await action();
-      if (result.ok) return true;
-      error = result.error;
-    } catch {
-      error = { type: "failed" };
-    }
-    toaster({
-      content: actionErrorContent(
-        error,
-        replyErrorMessages[error.type] ?? "Oh no! Something went wrong!",
-      ),
-      type: "error",
-    });
-    return false;
-  };
-}
 
 // Replies to a published document, for whoever is looking: the document's
 // author moderates them, everyone else reads the visible ones and can submit
@@ -91,7 +64,7 @@ export function DocumentReplies(props: {
   );
   let [busy, setBusy] = useState(false);
   let [open, setOpen] = useState(false);
-  let run = useReplyAction();
+  let run = useActionToast<ReplyError>(replyErrorMessages);
   let withdraw = async (uri: string) => {
     if (await run(() => withdrawReply(uri)))
       await mutate(
@@ -109,8 +82,7 @@ export function DocumentReplies(props: {
   // reply with a post of their own) and get a toggle for the replies still
   // waiting on them.
   let inEditor = props.action !== undefined;
-  let ownsDocument =
-    !!viewer && props.documentUri.startsWith(`at://${viewer}/`);
+  let ownsDocument = !!viewer && isDocumentOwner(props.documentUri, viewer);
   if (inEditor || ownsDocument) {
     // On a published page `data` starts as the public list the page was
     // rendered with, which isn't the owner's view of their replies.
@@ -254,7 +226,7 @@ function ReplyPickerForViewer(props: {
     () => getReplyCandidates(),
   );
   let [submitting, setSubmitting] = useState(false);
-  let run = useReplyAction();
+  let run = useActionToast<ReplyError>(replyErrorMessages);
   return (
     <ReplyPicker
       candidates={(candidates ?? [])

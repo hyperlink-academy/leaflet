@@ -25,6 +25,7 @@ import { type Profile } from "src/identity";
 import { PostInfo } from "../../BskyPostContent";
 import { Avatar } from "components/Avatar";
 import { EmptyState } from "components/EmptyState";
+import { ComposerPlaceholder } from "components/FacetedTextComposer";
 
 export type Comment = {
   record: Json;
@@ -43,14 +44,6 @@ const CommentBox = dynamic(
   { ssr: false, loading: () => <ComposerPlaceholder /> },
 );
 
-// Same footprint as the composer (input + toolbar row) so the list below
-// doesn't jump while the viewer's identity or the editor chunk is loading.
-const ComposerPlaceholder = () => (
-  <div className="flex flex-col grow">
-    <div className="border input-with-border min-h-32 px-2 py-[6px]" />
-    <div className="pt-1 h-[30px]" />
-  </div>
-);
 export function CommentsDrawerContent(props: {
   document_uri: string;
   comments: Comment[];

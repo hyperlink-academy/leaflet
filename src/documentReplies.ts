@@ -1,9 +1,9 @@
-import { AtUri } from "@atproto/syntax";
 import {
   get_standard_site_posts,
   type StandardSitePostData,
 } from "app/api/rpc/[command]/get_standard_site_posts";
 import { supabaseServerClient } from "supabase/serverClient";
+import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import type { Json } from "supabase/database.types";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
@@ -25,13 +25,6 @@ export type DocumentReplies = {
   replies: DocumentReply[];
 };
 
-export function isDocumentOwner(documentUri: string, did: string) {
-  try {
-    return new AtUri(documentUri).host === did;
-  } catch {
-    return false;
-  }
-}
 
 // Readers get the replies the author made visible plus their own
 // submissions; the author gets everything, pending included. A null viewer

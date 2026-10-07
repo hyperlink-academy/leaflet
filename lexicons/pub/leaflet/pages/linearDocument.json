@@ -57,6 +57,7 @@
             "pub.leaflet.blocks.signup",
             "pub.leaflet.blocks.recommendedPubs",
             "pub.leaflet.blocks.reply",
+            "pub.leaflet.blocks.questions",
             "pub.leaflet.blocks.membersOnlyDelimiter",
             "pub.leaflet.blocks.postHeader",
             "pub.leaflet.blocks.drawing"

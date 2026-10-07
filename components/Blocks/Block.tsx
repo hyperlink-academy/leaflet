@@ -51,6 +51,7 @@ import { MembersOnlyDelimiterBlock } from "./MembersOnlyDelimiterBlock";
 import { PostsListBlock } from "./PostsListBlock";
 import { RecommendedPubsBlock } from "./RecommendedPubsBlock";
 import { ReplyBlock } from "./ReplyBlock";
+import { QuestionsBlock } from "./QuestionsBlock";
 import { SubscribeBlock } from "./SubscribeBlock";
 import { PostHeaderBlock } from "./PostHeaderBlock";
 import { deepEquals } from "src/utils/deepEquals";
@@ -459,6 +460,7 @@ const BlockTypeComponents: {
   "posts-list": PostsListBlock,
   "recommended-pubs": RecommendedPubsBlock,
   reply: ReplyBlock,
+  questions: QuestionsBlock,
   signup: SubscribeBlock,
   "post-header": PostHeaderBlock,
   group: GroupBlock,

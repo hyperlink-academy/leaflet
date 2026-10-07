@@ -75,6 +75,7 @@ export async function loadPostPage({
     standardSitePublicationData,
     pollData,
     replyData,
+    questionData,
     prerenderedCodeBlocks,
   } = await collectAndFetchBlockResources({
     agent,
@@ -108,6 +109,7 @@ export async function loadPostPage({
       ) as typeof standardSitePublicationData,
       pollData,
       replyData,
+      questionData,
     },
     prerenderedCodeBlocks,
   };

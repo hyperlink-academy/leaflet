@@ -3,7 +3,8 @@ import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { ButtonPrimary } from "components/Buttons";
 import { useEntity, useReplicache } from "src/replicache";
 import { useIsBlockSelected } from "src/useUIState";
-import { documentHasReplyBlock } from "src/utils/documentHasReplyBlock";
+import { documentHasBlock } from "src/utils/documentHasBlock";
+import { ids } from "lexicons/api/lexicons";
 import { BlockProps, BlockLayout } from "../Block";
 import {
   DEFAULT_REPLY_BUTTON_TEXT,
@@ -35,7 +36,8 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
   // Readers can only reply once the published document carries the block, so
   // a block added since the last publish is still a draft.
   let isPublished =
-    !!normalizedDocument && documentHasReplyBlock(normalizedDocument);
+    !!normalizedDocument &&
+    documentHasBlock(normalizedDocument, ids.PubLeafletBlocksReply);
 
   let button =
     permissions.write && !props.preview ? (

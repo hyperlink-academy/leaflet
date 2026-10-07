@@ -11,6 +11,8 @@ import {
   PubLeafletInteractionsRecommend,
   PubLeafletInteractionsReply,
   PubLeafletInteractionsReplyVisibility,
+  PubLeafletInteractionsQuestion,
+  PubLeafletInteractionsAnswer,
 } from "./interactions";
 import { PubLeafletPublicationPage } from "./publicationPage";
 
@@ -39,6 +41,8 @@ export const PubLeafletAuthFullPermissions: LexiconDoc = {
             PubLeafletInteractionsRecommend.id,
             PubLeafletInteractionsReply.id,
             PubLeafletInteractionsReplyVisibility.id,
+            PubLeafletInteractionsQuestion.id,
+            PubLeafletInteractionsAnswer.id,
             PubLeafletPublicationPage.id,
           ],
         },

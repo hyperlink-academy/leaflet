@@ -24,6 +24,10 @@ import { extractCodeBlocks } from "./extractCodeBlocks";
 import { fetchPollData, type PollData } from "./fetchPollData";
 import { fetchBskyPosts } from "src/utils/fetchBskyPosts";
 import { loadDocumentReplies, type DocumentReply } from "src/documentReplies";
+import {
+  loadDocumentQuestions,
+  type DocumentQuestion,
+} from "src/documentQuestions";
 
 type Page =
   | PubLeafletPagesLinearDocument.Main
@@ -52,11 +56,26 @@ export async function collectAndFetchBlockResources({
   pollData: PollData[];
   // The replies anyone can see, for a document carrying a reply block.
   replyData: DocumentReply[];
+  // The answered questions, for a document carrying a questions block.
+  questionData: DocumentQuestion[];
   prerenderedCodeBlocks: Map<string, string>;
 }> {
-  const allBlocks: PubLeafletPagesLinearDocument.Block[] = pages.flatMap(
+  const pageBlocks: PubLeafletPagesLinearDocument.Block[] = pages.flatMap(
     (p) => pageBlocksInOrder(p).map((b) => b.block),
   );
+  const hasQuestionsBlock = pageBlocks.some(
+    (b) => b.block.$type === ids.PubLeafletBlocksQuestions,
+  );
+  const questionData =
+    documentUri && hasQuestionsBlock
+      ? (await loadDocumentQuestions(documentUri, null)).questions
+      : [];
+  // Published answers render through the same block renderer, so their
+  // embeds are fetched alongside the post's.
+  const allBlocks = [
+    ...pageBlocks,
+    ...questionData.flatMap((q) => q.answer?.content.blocks ?? []),
+  ];
 
   const bskyPostBlocks = extractBlocksByType<
     $Typed<PubLeafletBlocksBskyPost.Main>
@@ -140,6 +159,7 @@ export async function collectAndFetchBlockResources({
     standardSitePublicationData,
     pollData,
     replyData,
+    questionData,
     prerenderedCodeBlocks,
   };
 }

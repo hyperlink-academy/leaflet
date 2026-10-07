@@ -4,12 +4,12 @@ import { AtUri } from "@atproto/syntax";
 import { TID } from "@atproto/common";
 import { v7 } from "uuid";
 import {
-  AtpBaseClient,
   PubLeafletInteractionsReply,
   PubLeafletInteractionsReplyVisibility,
 } from "lexicons/api";
 import { ids } from "lexicons/api/lexicons";
-import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
+import { OAuthSessionError } from "src/atproto-oauth";
+import { agentFor, notAuthenticated } from "src/utils/agentFor";
 import { getAuthIdentity } from "src/auth";
 import { Err, Ok, Result } from "src/result";
 import {
@@ -17,14 +17,14 @@ import {
   pingIdentityToUpdateNotification,
 } from "src/notifications";
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
-import { documentHasReplyBlock } from "src/utils/documentHasReplyBlock";
+import { documentHasBlock } from "src/utils/documentHasBlock";
 import {
   normalizeDocumentRecord,
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
 import { resolveStandardSitePostUrl } from "src/utils/resolveStandardSitePostUrl";
+import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import {
-  isDocumentOwner,
   loadDocumentReplies,
   MAX_REPLIES,
   type DocumentReplies,
@@ -79,19 +79,6 @@ export type ReplyError =
     }
   | OAuthSessionError;
 
-const notAuthenticated: OAuthSessionError = {
-  type: "oauth_session_expired",
-  message: "Not authenticated",
-  did: "",
-};
-
-async function agentFor(did: string) {
-  const sessionResult = await restoreOAuthSession(did);
-  if (!sessionResult.ok) return sessionResult;
-  const session = sessionResult.value;
-  return Ok(new AtpBaseClient(session.fetchHandler.bind(session)));
-}
-
 // Submits one of the viewer's own documents, given by at-uri or by its public
 // URL, as a reply to `subject`. Submitting the same document twice is a no-op.
 export async function submitReply(args: {
@@ -135,7 +122,10 @@ export async function submitReply(args: {
     subjectDoc.data,
     subjectDoc.uri,
   );
-  if (!subjectRecord || !documentHasReplyBlock(subjectRecord))
+  if (
+    !subjectRecord ||
+    !documentHasBlock(subjectRecord, ids.PubLeafletBlocksReply)
+  )
     return Err({ type: "replies_closed" });
   if (existing) return Ok({ uri: existing.uri });
 

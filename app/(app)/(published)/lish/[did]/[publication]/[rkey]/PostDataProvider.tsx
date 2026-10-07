@@ -12,6 +12,7 @@ import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_si
 import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import type { PollData } from "./fetchPollData";
 import type { DocumentReply } from "src/documentReplies";
+import type { DocumentQuestion } from "src/documentQuestions";
 
 export type PostResources = {
   pages: PubLeafletContent.Main["pages"];
@@ -20,6 +21,7 @@ export type PostResources = {
   standardSitePublicationData: StandardSitePublicationData[];
   pollData: PollData[];
   replyData: DocumentReply[];
+  questionData: DocumentQuestion[];
 };
 
 export type UnlockStatus = "idle" | "loading" | "error";

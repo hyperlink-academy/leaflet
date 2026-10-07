@@ -648,6 +648,34 @@ export const document_reply_visibility = pgTable("document_reply_visibility", {
 	}
 });
 
+export const document_questions = pgTable("document_questions", {
+	uri: text("uri").primaryKey().notNull(),
+	subject: text("subject").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	asker_did: text("asker_did").notNull(),
+	cid: text("cid").notNull(),
+	record: jsonb("record").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		subject_idx: index("document_questions_subject_idx").on(table.subject),
+	}
+});
+
+export const document_question_answers = pgTable("document_question_answers", {
+	uri: text("uri").primaryKey().notNull(),
+	question: text("question").notNull().references(() => document_questions.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	subject: text("subject").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	record: jsonb("record").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		subject_idx: index("document_question_answers_subject_idx").on(table.subject),
+		document_question_answers_question_key: unique("document_question_answers_question_key").on(table.question),
+	}
+});
+
 export const publication_subscriptions = pgTable("publication_subscriptions", {
 	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
 	identity: text("identity").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),

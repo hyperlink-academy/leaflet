@@ -9,8 +9,9 @@ export const PRO_ENTITLEMENT_KEY = "publication_analytics";
 // can be rolled out to specific users while it's still being built.
 const PAYMENTS_ENTITLEMENT_KEY = "payments";
 
-// Gates adding the reply block to a post while the feature is rolled out to
-// specific authors. Readers of a post that carries the block need nothing.
+// Gates adding the reply and questions blocks to a post while the features
+// are rolled out to specific authors. Readers of a post that carries a block
+// need nothing.
 export const REPLIES_ENTITLEMENT_KEY = "post_replies";
 
 // Keys the app currently checks, surfaced as suggestions in the admin UI.

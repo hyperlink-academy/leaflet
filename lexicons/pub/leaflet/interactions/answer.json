@@ -1,0 +1,41 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.interactions.answer",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "any",
+      "description": "The author's answer to a pub.leaflet.interactions.question, written in the repo that owns the question's subject document. One record per question.",
+      "record": {
+        "type": "object",
+        "required": [
+          "question",
+          "document",
+          "content",
+          "createdAt"
+        ],
+        "properties": {
+          "question": {
+            "type": "ref",
+            "ref": "com.atproto.repo.strongRef",
+            "description": "The question being answered."
+          },
+          "document": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "The document the question was asked on."
+          },
+          "content": {
+            "type": "ref",
+            "ref": "pub.leaflet.pages.linearDocument",
+            "description": "The answer's blocks."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    }
+  }
+}

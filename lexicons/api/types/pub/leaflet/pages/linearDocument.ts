@@ -34,6 +34,7 @@ import type * as PubLeafletBlocksPostsList from '../blocks/postsList'
 import type * as PubLeafletBlocksSignup from '../blocks/signup'
 import type * as PubLeafletBlocksRecommendedPubs from '../blocks/recommendedPubs'
 import type * as PubLeafletBlocksReply from '../blocks/reply'
+import type * as PubLeafletBlocksQuestions from '../blocks/questions'
 import type * as PubLeafletBlocksMembersOnlyDelimiter from '../blocks/membersOnlyDelimiter'
 import type * as PubLeafletBlocksPostHeader from '../blocks/postHeader'
 import type * as PubLeafletBlocksDrawing from '../blocks/drawing'
@@ -86,6 +87,7 @@ export interface Block {
     | $Typed<PubLeafletBlocksSignup.Main>
     | $Typed<PubLeafletBlocksRecommendedPubs.Main>
     | $Typed<PubLeafletBlocksReply.Main>
+    | $Typed<PubLeafletBlocksQuestions.Main>
     | $Typed<PubLeafletBlocksMembersOnlyDelimiter.Main>
     | $Typed<PubLeafletBlocksPostHeader.Main>
     | $Typed<PubLeafletBlocksDrawing.Main>

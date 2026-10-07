@@ -407,6 +407,24 @@ const RecommendedPubsBlockAttributes = {
   },
 } as const;
 
+const QuestionsBlockAttributes = {
+  "questions/button-text": {
+    type: "string",
+    cardinality: "one",
+  },
+  // The author's answer drafts: entities holding a linear block list under
+  // card/block, kept in the leaflet but never published with the document.
+  "questions/answer": {
+    type: "reference",
+    cardinality: "many",
+  },
+  // at-uri of the pub.leaflet.interactions.question an answer entity answers
+  "answer/question": {
+    type: "string",
+    cardinality: "one",
+  },
+} as const;
+
 const ReplyBlockAttributes = {
   "reply/button-text": {
     type: "string",
@@ -546,6 +564,7 @@ export const Attributes = {
   ...PostsListBlockAttributes,
   ...RecommendedPubsBlockAttributes,
   ...ReplyBlockAttributes,
+  ...QuestionsBlockAttributes,
   ...PostHeaderBlockAttributes,
   ...DrawingBlockAttributes,
 };
@@ -633,6 +652,7 @@ export type Data<A extends keyof typeof Attributes> = {
       | "posts-list"
       | "recommended-pubs"
       | "reply"
+      | "questions"
       | "signup"
       | "image-gallery"
       | "post-header"

@@ -1911,6 +1911,27 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksQuestions: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.questions',
+    defs: {
+      main: {
+        type: 'object',
+        description:
+          'Lets readers ask the author public questions (pub.leaflet.interactions.question) and shows the ones the author has answered (pub.leaflet.interactions.answer). Questions are resolved at render time rather than stored on the block.',
+        required: [],
+        properties: {
+          buttonText: {
+            type: 'string',
+            maxLength: 500,
+            maxGraphemes: 50,
+            description:
+              'Label for the button readers use to submit a question.',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksRecommendedPubs: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.recommendedPubs',
@@ -2371,6 +2392,82 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletInteractionsAnswer: {
+    lexicon: 1,
+    id: 'pub.leaflet.interactions.answer',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'any',
+        description:
+          "The author's answer to a pub.leaflet.interactions.question, written in the repo that owns the question's subject document. One record per question.",
+        record: {
+          type: 'object',
+          required: ['question', 'document', 'content', 'createdAt'],
+          properties: {
+            question: {
+              type: 'ref',
+              ref: 'lex:com.atproto.repo.strongRef',
+              description: 'The question being answered.',
+            },
+            document: {
+              type: 'string',
+              format: 'at-uri',
+              description: 'The document the question was asked on.',
+            },
+            content: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.pages.linearDocument',
+              description: "The answer's blocks.",
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
+  PubLeafletInteractionsQuestion: {
+    lexicon: 1,
+    id: 'pub.leaflet.interactions.question',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'tid',
+        description:
+          "A public question asked of a document's author, shown on the document once the author answers it (pub.leaflet.interactions.answer)",
+        record: {
+          type: 'object',
+          required: ['subject', 'plaintext', 'createdAt'],
+          properties: {
+            subject: {
+              type: 'string',
+              format: 'at-uri',
+              description: 'The document the question is asked on.',
+            },
+            plaintext: {
+              type: 'string',
+              maxLength: 10000,
+              maxGraphemes: 1000,
+            },
+            facets: {
+              type: 'array',
+              items: {
+                type: 'ref',
+                ref: 'lex:pub.leaflet.richtext.facet',
+              },
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
   PubLeafletInteractionsRecommend: {
     lexicon: 1,
     id: 'pub.leaflet.interactions.recommend',
@@ -2571,6 +2668,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.signup',
               'lex:pub.leaflet.blocks.recommendedPubs',
               'lex:pub.leaflet.blocks.reply',
+              'lex:pub.leaflet.blocks.questions',
               'lex:pub.leaflet.blocks.membersOnlyDelimiter',
               'lex:pub.leaflet.blocks.postHeader',
               'lex:pub.leaflet.blocks.drawing',
@@ -2708,6 +2806,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.signup',
               'lex:pub.leaflet.blocks.recommendedPubs',
               'lex:pub.leaflet.blocks.reply',
+              'lex:pub.leaflet.blocks.questions',
               'lex:pub.leaflet.blocks.membersOnlyDelimiter',
               'lex:pub.leaflet.blocks.postHeader',
               'lex:pub.leaflet.blocks.drawing',
@@ -3728,6 +3827,7 @@ export const ids = {
   PubLeafletBlocksPoll: 'pub.leaflet.blocks.poll',
   PubLeafletBlocksPostHeader: 'pub.leaflet.blocks.postHeader',
   PubLeafletBlocksPostsList: 'pub.leaflet.blocks.postsList',
+  PubLeafletBlocksQuestions: 'pub.leaflet.blocks.questions',
   PubLeafletBlocksRecommendedPubs: 'pub.leaflet.blocks.recommendedPubs',
   PubLeafletBlocksReply: 'pub.leaflet.blocks.reply',
   PubLeafletBlocksSignup: 'pub.leaflet.blocks.signup',
@@ -3742,6 +3842,8 @@ export const ids = {
   PubLeafletDocument: 'pub.leaflet.document',
   PubLeafletGraphRecommendations: 'pub.leaflet.graph.recommendations',
   PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
+  PubLeafletInteractionsAnswer: 'pub.leaflet.interactions.answer',
+  PubLeafletInteractionsQuestion: 'pub.leaflet.interactions.question',
   PubLeafletInteractionsRecommend: 'pub.leaflet.interactions.recommend',
   PubLeafletInteractionsReply: 'pub.leaflet.interactions.reply',
   PubLeafletInteractionsReplyVisibility:

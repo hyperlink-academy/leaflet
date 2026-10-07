@@ -740,6 +740,12 @@ const removeBlock: Mutation<
     let [type] = await ctx.scanIndex.eav(block.blockEntity, "block/type");
     if (type?.data.value === "group")
       await removeDescendants(block.blockEntity, ctx);
+    if (type?.data.value === "questions")
+      for (let answer of await ctx.scanIndex.eav(
+        block.blockEntity,
+        "questions/answer",
+      ))
+        await removeAnswer(answer.data.value, ctx);
     let [image] = await ctx.scanIndex.eav(block.blockEntity, "block/image");
     await ctx.runOnServer(async ({ supabase }) => {
       if (image) await enqueueBlobCleanup(supabase, image.data.src);
@@ -765,6 +771,11 @@ const removeBlock: Mutation<
       await removeBlock({ blockEntity: block.parent }, ctx);
   }
 };
+
+async function removeAnswer(answerEntity: string, ctx: MutationContext) {
+  await removeDescendants(answerEntity, ctx);
+  await ctx.deleteEntity(answerEntity);
+}
 
 async function removeDescendants(entity: string, ctx: MutationContext) {
   for (let child of await ctx.scanIndex.eav(entity, "card/block")) {
@@ -945,6 +956,65 @@ const createDraft: Mutation<{
     },
     ctx,
   );
+};
+
+// Starts the author's answer to a question: an entity under the questions
+// block holding the answer's blocks, seeded with one text block.
+const createQuestionAnswer: Mutation<{
+  blockEntity: string;
+  answerEntity: string;
+  answerFactID: string;
+  question: string;
+  permission_set: string;
+  firstBlockEntity: string;
+  firstBlockFactID: string;
+}> = async (args, ctx) => {
+  let existing = await ctx.scanIndex.eav(args.blockEntity, "questions/answer");
+  for (let answer of existing) {
+    let [question] = await ctx.scanIndex.eav(
+      answer.data.value,
+      "answer/question",
+    );
+    if (question?.data.value === args.question) return;
+  }
+  await ctx.createEntity({
+    entityID: args.answerEntity,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    id: args.answerFactID,
+    entity: args.blockEntity,
+    attribute: "questions/answer",
+    data: { type: "reference", value: args.answerEntity },
+  });
+  await ctx.assertFact({
+    entity: args.answerEntity,
+    attribute: "answer/question",
+    data: { type: "string", value: args.question },
+  });
+  await addBlock(
+    {
+      factID: args.firstBlockFactID,
+      permission_set: args.permission_set,
+      newEntityID: args.firstBlockEntity,
+      type: "text",
+      parent: args.answerEntity,
+      position: "a0",
+    },
+    ctx,
+  );
+};
+
+// Drops an answer the author decided not to publish (or edit): the entity,
+// its blocks, and the block's reference to it.
+const discardQuestionAnswer: Mutation<{
+  blockEntity: string;
+  answerEntity: string;
+}> = async (args, ctx) => {
+  let refs = await ctx.scanIndex.eav(args.blockEntity, "questions/answer");
+  for (let ref of refs)
+    if (ref.data.value === args.answerEntity) await ctx.retractFact(ref.id);
+  await removeAnswer(args.answerEntity, ctx);
 };
 
 const archiveDraft: Mutation<{
@@ -1526,6 +1596,8 @@ export const mutations = {
   archiveDraft,
   toggleTodoState,
   createDraft,
+  createQuestionAnswer,
+  discardQuestionAnswer,
   createEntity,
   addPollOption,
   removePollOption,

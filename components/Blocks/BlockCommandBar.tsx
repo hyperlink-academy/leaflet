@@ -50,6 +50,7 @@ export const BlockCommandBar = ({
     (b) => b.type === "members-only-delimiter",
   );
   let isCanvas = useEntity(props.parent, "page/type")?.data.value === "canvas";
+  let inAnswer = !!useEntity(props.parent, "answer/question");
 
   // This clears '/' AND anything typed after it
   const clearCommandSearchText = () => {
@@ -91,9 +92,9 @@ export const BlockCommandBar = ({
     const hiddenOnPubPage =
       !!command.hiddenOnPublicationPage && inPublicationEdit;
     const hiddenInPubPost = !!command.hiddenInPost && !inPublicationEdit;
-    const allowedOnPage = isCanvas
-      ? !command.hiddenOnCanvas
-      : !command.canvasOnly;
+    const allowedOnPage =
+      (isCanvas ? !command.hiddenOnCanvas : !command.canvasOnly) &&
+      !(inAnswer && command.hiddenInAnswer);
 
     return (
       matchesSearch &&

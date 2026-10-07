@@ -17,6 +17,8 @@ import {
   PubLeafletInteractionsRecommend,
   PubLeafletInteractionsReply,
   PubLeafletInteractionsReplyVisibility,
+  PubLeafletInteractionsQuestion,
+  PubLeafletInteractionsAnswer,
   SiteStandardDocument,
   SiteStandardPublication,
   SiteStandardGraphSubscription,
@@ -35,6 +37,7 @@ import { stripThemeWithoutType } from "src/utils/stripThemeWithoutType";
 import { pageHasMembersDelimiter } from "src/membership";
 import { MAIN_SITE_URL } from "src/utils/customDomain";
 import { tombstoneComment } from "src/comments/tombstoneComment";
+import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import type { AppviewRevalidateEvent } from "app/api/appview_revalidate/route";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
@@ -259,6 +262,8 @@ async function main() {
       ids.PubLeafletInteractionsRecommend,
       ids.PubLeafletInteractionsReply,
       ids.PubLeafletInteractionsReplyVisibility,
+      ids.PubLeafletInteractionsQuestion,
+      ids.PubLeafletInteractionsAnswer,
       ids.AppBskyActorProfile,
       "app.bsky.feed.post",
       ids.SiteStandardDocument,
@@ -599,6 +604,76 @@ async function handleEvent(evt: Event) {
       let subject = rows?.[0]?.subject;
       if (subject && (await isInLeafletPublication(subject)))
         await notifyRevalidate({ kind: "interaction", document: subject });
+    }
+  }
+  if (evt.collection === ids.PubLeafletInteractionsQuestion) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = PubLeafletInteractionsQuestion.validateRecord(evt.record);
+      if (!record.success) return;
+      // Questions on documents we don't index fail the foreign key and are
+      // dropped.
+      let { error } = await supabase.from("document_questions").upsert({
+        uri: evt.uri.toString(),
+        subject: record.value.subject,
+        asker_did: evt.did,
+        cid: evt.cid.toString(),
+        record: record.value as Json,
+      });
+      if (error) console.log("Error upserting question:", error);
+    }
+    if (evt.event === "delete") {
+      let { data: question } = await supabase
+        .from("document_questions")
+        .delete()
+        .eq("uri", evt.uri.toString())
+        .select("subject")
+        .maybeSingle();
+      // An answered question was server-rendered into the subject's pages.
+      if (question && (await isInLeafletPublication(question.subject)))
+        await notifyRevalidate({
+          kind: "interaction",
+          document: question.subject,
+        });
+    }
+  }
+  if (evt.collection === ids.PubLeafletInteractionsAnswer) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = PubLeafletInteractionsAnswer.validateRecord(evt.record);
+      if (!record.success) return;
+      // Only the repo owning the question's subject document answers it.
+      let { data: question } = await supabase
+        .from("document_questions")
+        .select("subject")
+        .eq("uri", record.value.question.uri)
+        .maybeSingle();
+      if (!question || question.subject !== record.value.document) return;
+      if (!isDocumentOwner(question.subject, evt.did)) return;
+      // A question has one answer: a second record for it is dropped.
+      let { error } = await supabase.from("document_question_answers").upsert({
+        uri: evt.uri.toString(),
+        question: record.value.question.uri,
+        subject: question.subject,
+        record: record.value as Json,
+      });
+      if (error) console.log("Error upserting answer:", error);
+      else if (await isInLeafletPublication(question.subject))
+        await notifyRevalidate({
+          kind: "interaction",
+          document: question.subject,
+        });
+    }
+    if (evt.event === "delete") {
+      let { data: answer } = await supabase
+        .from("document_question_answers")
+        .delete()
+        .eq("uri", evt.uri.toString())
+        .select("subject")
+        .maybeSingle();
+      if (answer && (await isInLeafletPublication(answer.subject)))
+        await notifyRevalidate({
+          kind: "interaction",
+          document: answer.subject,
+        });
     }
   }
   if (evt.collection === ids.PubLeafletGraphRecommendations) {

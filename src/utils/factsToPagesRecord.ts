@@ -26,6 +26,7 @@ import {
   PubLeafletBlocksPostsList,
   PubLeafletBlocksRecommendedPubs,
   PubLeafletBlocksReply,
+  PubLeafletBlocksQuestions,
   PubLeafletBlocksSignup,
   PubLeafletBlocksPostHeader,
   PubLeafletBlocksText,
@@ -605,6 +606,14 @@ export async function processBlocksToPages(opts: {
         ...(buttonText?.data.value && { buttonText: buttonText.data.value }),
         ...(promptText?.data.value && { promptText: promptText.data.value }),
         ...(showTheme?.data.value === false && { showPublicationTheme: false }),
+      };
+      return block;
+    },
+    questions: async (b) => {
+      const [buttonText] = scan.eav(b.entityID, "questions/button-text");
+      const block: $Typed<PubLeafletBlocksQuestions.Main> = {
+        $type: "pub.leaflet.blocks.questions",
+        ...(buttonText?.data.value && { buttonText: buttonText.data.value }),
       };
       return block;
     },
