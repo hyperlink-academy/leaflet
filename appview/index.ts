@@ -37,6 +37,7 @@ import { stripThemeWithoutType } from "src/utils/stripThemeWithoutType";
 import { pageHasMembersDelimiter } from "src/membership";
 import { MAIN_SITE_URL } from "src/utils/customDomain";
 import { tombstoneComment } from "src/comments/tombstoneComment";
+import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import type { AppviewRevalidateEvent } from "app/api/appview_revalidate/route";
 
@@ -422,6 +423,8 @@ async function handleEvent(evt: Event) {
         document: record.value.subject,
         record: record.value as Json,
       });
+      if (!error)
+        await broadcastDocumentEvent(supabase, "comment", record.value.subject);
       // Comment counts are server-rendered into post pages and listings.
       if (await isInLeafletPublication(record.value.subject))
         await notifyRevalidate({
@@ -431,6 +434,8 @@ async function handleEvent(evt: Event) {
     }
     if (evt.event === "delete") {
       let comment = await tombstoneComment(supabase, evt.uri.toString());
+      if (comment?.document)
+        await broadcastDocumentEvent(supabase, "comment", comment.document);
       if (comment?.document && (await isInLeafletPublication(comment.document)))
         await notifyRevalidate({
           kind: "interaction",
@@ -538,6 +543,8 @@ async function handleEvent(evt: Event) {
         record: record.value as Json,
       });
       if (error) console.log("Error upserting reply:", error);
+      else
+        await broadcastDocumentEvent(supabase, "reply", record.value.subject);
     }
     if (evt.event === "delete") {
       let { data: reply } = await supabase
@@ -546,6 +553,7 @@ async function handleEvent(evt: Event) {
         .eq("uri", evt.uri.toString())
         .select("subject")
         .maybeSingle();
+      if (reply) await broadcastDocumentEvent(supabase, "reply", reply.subject);
       // Visible replies are server-rendered into the subject's pages.
       if (reply && (await isInLeafletPublication(reply.subject)))
         await notifyRevalidate({
@@ -589,6 +597,11 @@ async function handleEvent(evt: Event) {
         );
         if (error) console.log("Error inserting reply visibility:", error);
       }
+      await broadcastDocumentEvent(
+        supabase,
+        "reply_visibility",
+        record.value.subject,
+      );
       if (await isInLeafletPublication(record.value.subject))
         await notifyRevalidate({
           kind: "interaction",
@@ -602,6 +615,8 @@ async function handleEvent(evt: Event) {
         .eq("uri", evt.uri.toString())
         .select("subject");
       let subject = rows?.[0]?.subject;
+      if (subject)
+        await broadcastDocumentEvent(supabase, "reply_visibility", subject);
       if (subject && (await isInLeafletPublication(subject)))
         await notifyRevalidate({ kind: "interaction", document: subject });
     }
@@ -620,6 +635,12 @@ async function handleEvent(evt: Event) {
         record: record.value as Json,
       });
       if (error) console.log("Error upserting question:", error);
+      else
+        await broadcastDocumentEvent(
+          supabase,
+          "question",
+          record.value.subject,
+        );
     }
     if (evt.event === "delete") {
       let { data: question } = await supabase
@@ -628,6 +649,8 @@ async function handleEvent(evt: Event) {
         .eq("uri", evt.uri.toString())
         .select("subject")
         .maybeSingle();
+      if (question)
+        await broadcastDocumentEvent(supabase, "question", question.subject);
       // An answered question was server-rendered into the subject's pages.
       if (question && (await isInLeafletPublication(question.subject)))
         await notifyRevalidate({
@@ -656,11 +679,14 @@ async function handleEvent(evt: Event) {
         record: record.value as Json,
       });
       if (error) console.log("Error upserting answer:", error);
-      else if (await isInLeafletPublication(question.subject))
-        await notifyRevalidate({
-          kind: "interaction",
-          document: question.subject,
-        });
+      else {
+        await broadcastDocumentEvent(supabase, "answer", question.subject);
+        if (await isInLeafletPublication(question.subject))
+          await notifyRevalidate({
+            kind: "interaction",
+            document: question.subject,
+          });
+      }
     }
     if (evt.event === "delete") {
       let { data: answer } = await supabase
@@ -669,6 +695,8 @@ async function handleEvent(evt: Event) {
         .eq("uri", evt.uri.toString())
         .select("subject")
         .maybeSingle();
+      if (answer)
+        await broadcastDocumentEvent(supabase, "answer", answer.subject);
       if (answer && (await isInLeafletPublication(answer.subject)))
         await notifyRevalidate({
           kind: "interaction",

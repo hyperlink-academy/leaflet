@@ -12,18 +12,21 @@ import { getDocumentURL } from "src/utils/getPublicationURL";
 import type { Comment } from "./Comments";
 import { prefetchQuotesData } from "./Quotes";
 import { decodeQuotePosition } from "src/utils/quotePosition";
+import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 
-type DocumentInteractionsData = {
+export type DocumentInteractionsData = {
   comments: Comment[];
   quotesAndMentions: { uri: string; link?: string }[];
   document: NormalizedDocument | null;
   publication: NormalizedPublication | null;
 };
 
-const discussionKey = (document_uri: string) =>
+export const discussionKey = (document_uri: string) =>
   ["doc_interactions", document_uri] as const;
-const fetchDiscussion = (document_uri: string) =>
-  callRPC("get_document_interactions", { document_uri });
+export const fetchDiscussion = async (document_uri: string) =>
+  (await callRPC("get_document_interactions", {
+    document_uri,
+  })) as unknown as DocumentInteractionsData | undefined;
 
 // The mentions that belong to one page of a document: the main page when
 // `pageId` is undefined.
@@ -48,10 +51,9 @@ export async function prefetchDocumentDiscussion(
   document_uri: string,
   pageId?: string,
 ) {
-  const res = await preload(discussionKey(document_uri), () =>
+  const data = await preload(discussionKey(document_uri), () =>
     fetchDiscussion(document_uri),
   );
-  const data = res as unknown as DocumentInteractionsData | undefined;
   prefetchQuotesData(
     filterQuotesForPage(data?.quotesAndMentions ?? [], pageId),
   );
@@ -69,7 +71,10 @@ export function useDocumentDiscussionData(
   const swr = useSWR(enabled ? discussionKey(document_uri) : null, () =>
     fetchDiscussion(document_uri),
   );
-  const data = swr.data as unknown as DocumentInteractionsData | undefined;
+  useDocumentEvents(enabled ? document_uri : null, ["comment"], () =>
+    swr.mutate(),
+  );
+  const data = swr.data;
 
   let did = "";
   try {

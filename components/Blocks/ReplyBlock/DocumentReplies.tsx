@@ -17,6 +17,7 @@ import {
   type ReplyError,
 } from "actions/replies";
 import type { DocumentReply } from "src/documentReplies";
+import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { DEFAULT_REPLY_BUTTON_TEXT } from "./constants";
 import {
@@ -50,8 +51,10 @@ export function DocumentReplies(props: {
   let { identity, identityPending } = useIdentityData();
   let viewer = identity?.atp_did ?? null;
   // An anonymous reader of a cached page has nothing to add to the public
-  // list it was rendered with.
-  let needsFetch = !identityPending && (!!viewer || !props.initialReplies);
+  // list it was rendered with, until something happens to it.
+  let [changed, setChanged] = useState(false);
+  let needsFetch =
+    !identityPending && (!!viewer || !props.initialReplies || changed);
   let { data, mutate } = useSWR(
     needsFetch ? ["document_replies", props.documentUri, viewer] : null,
     () => getDocumentReplies(props.documentUri),
@@ -62,6 +65,10 @@ export function DocumentReplies(props: {
       },
     },
   );
+  useDocumentEvents(props.documentUri, ["reply", "reply_visibility"], () => {
+    setChanged(true);
+    mutate();
+  });
   let [busy, setBusy] = useState(false);
   let [open, setOpen] = useState(false);
   let run = useActionToast<ReplyError>(replyErrorMessages);

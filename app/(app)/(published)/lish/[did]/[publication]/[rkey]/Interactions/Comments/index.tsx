@@ -6,6 +6,9 @@ import { Json } from "supabase/database.types";
 import { PubLeafletComment } from "lexicons/api";
 import { BaseTextBlock } from "../../Blocks/BaseTextBlock";
 import { Fragment, useMemo, useState } from "react";
+import useSWR from "swr";
+import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
+import { discussionKey, fetchDiscussion } from "../useDocumentDiscussionData";
 import { CollapsibleReplies } from "components/CollapsibleReplies";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
@@ -60,8 +63,19 @@ export function CommentsDrawerContent(props: {
   // Callers (e.g. the discussion modal) can pin the page explicitly; otherwise
   // fall back to the page tracked in the shared interaction state.
   let pageId = props.pageId ?? statePageId;
+  // The list the page was rendered with stands until a comment lands while
+  // it's open; from then on the fetched list replaces it.
+  let [changed, setChanged] = useState(false);
+  let live = useSWR(changed ? discussionKey(props.document_uri) : null, () =>
+    fetchDiscussion(props.document_uri),
+  );
+  useDocumentEvents(props.document_uri, ["comment"], () => {
+    setChanged(true);
+    live.mutate();
+  });
+  let serverComments = live.data?.comments ?? props.comments;
   let comments = useMemo(() => {
-    let filtered = props.comments.filter(
+    let filtered = serverComments.filter(
       (c) => (c.record as PubLeafletComment.Record)?.onPage === pageId,
     );
     // A locally posted comment can also arrive in props once the page
@@ -79,7 +93,7 @@ export function CommentsDrawerContent(props: {
         return { ...c, record: editedComments[c.uri], edited: true };
       return c;
     });
-  }, [props.comments, localComments, deletedComments, editedComments, pageId]);
+  }, [serverComments, localComments, deletedComments, editedComments, pageId]);
   let topLevel = useMemo(
     () =>
       comments

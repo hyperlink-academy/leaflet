@@ -32,6 +32,7 @@ import type { Attribute } from "src/replicache/attributes";
 import { processBlocksToPages } from "src/utils/factsToPagesRecord";
 import { makePublishUploadHooks } from "src/utils/publishHelpers";
 import { revalidateDocumentPaths } from "src/utils/revalidatePublication";
+import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 
@@ -126,6 +127,7 @@ export async function askQuestion(args: {
     return Err({ type: "failed" });
   }
 
+  await broadcastDocumentEvent(supabaseServerClient, "question", args.subject);
   const subjectOwner = new AtUri(args.subject).host;
   if (subjectOwner !== did)
     await notify(subjectOwner, {
@@ -175,6 +177,8 @@ export async function withdrawQuestion(
     .from("document_questions")
     .delete()
     .eq("uri", questionUri);
+  if (row)
+    await broadcastDocumentEvent(supabaseServerClient, "question", row.subject);
   // An answered question was server-rendered into the post's pages.
   if (row?.document_question_answers)
     await revalidateDocumentPaths(row.subject, { neighbours: false });
@@ -285,6 +289,7 @@ export async function publishAnswer(args: {
       question_uri: questionUri,
       document_uri: subject,
     });
+  await broadcastDocumentEvent(supabaseServerClient, "answer", subject);
   // The post's page lists its answered questions.
   await revalidateDocumentPaths(subject, { neighbours: false });
   return Ok({ uri });

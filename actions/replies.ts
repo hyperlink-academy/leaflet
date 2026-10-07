@@ -30,6 +30,7 @@ import {
   type DocumentReplies,
 } from "src/documentReplies";
 import { revalidateDocumentPaths } from "src/utils/revalidatePublication";
+import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 
@@ -170,6 +171,7 @@ export async function submitReply(args: {
     return winner ? Ok({ uri: winner.uri }) : Err({ type: "failed" });
   }
 
+  await broadcastDocumentEvent(supabaseServerClient, "reply", args.subject);
   const subjectOwner = new AtUri(args.subject).host;
   if (subjectOwner !== did) {
     const notification: Notification = {
@@ -223,7 +225,10 @@ export async function withdrawReply(
     .from("document_replies")
     .delete()
     .eq("uri", replyUri);
-  if (row) await revalidateReply(row);
+  if (row) {
+    await broadcastDocumentEvent(supabaseServerClient, "reply", row.subject);
+    await revalidateReply(row);
+  }
   return Ok(null);
 }
 
@@ -321,6 +326,11 @@ export async function setReplyVisible(args: {
       });
     if (error) console.error("[replies] visibility row upsert failed", error);
   }
+  await broadcastDocumentEvent(
+    supabaseServerClient,
+    "reply_visibility",
+    args.subject,
+  );
   await revalidateReply({
     subject: args.subject,
     document: replyRows?.find((r) => r.uri === args.reply)?.document,

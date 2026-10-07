@@ -16,6 +16,7 @@ import {
   type QuestionError,
 } from "actions/questions";
 import type { DocumentQuestion } from "src/documentQuestions";
+import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 import { ComposerPlaceholder } from "components/FacetedTextComposer";
 import {
   QuestionComposer,
@@ -61,8 +62,10 @@ export function DocumentQuestions(props: {
   let { identity, identityPending } = useIdentityData();
   let viewer = identity?.atp_did ?? null;
   // An anonymous reader of a cached page has nothing to add to the public
-  // list it was rendered with.
-  let needsFetch = !identityPending && (!!viewer || !props.initialQuestions);
+  // list it was rendered with, until something happens to it.
+  let [changed, setChanged] = useState(false);
+  let needsFetch =
+    !identityPending && (!!viewer || !props.initialQuestions || changed);
   let { data, mutate } = useSWR(
     needsFetch ? ["document_questions", props.documentUri, viewer] : null,
     () => getDocumentQuestions(props.documentUri),
@@ -73,6 +76,10 @@ export function DocumentQuestions(props: {
       },
     },
   );
+  useDocumentEvents(props.documentUri, ["question", "answer"], () => {
+    setChanged(true);
+    mutate();
+  });
   // Questions whose inline answer editor is open (editor only), and whether
   // opening it started the draft
   let [editing, setEditing] = useState<Record<string, { fresh: boolean }>>({});

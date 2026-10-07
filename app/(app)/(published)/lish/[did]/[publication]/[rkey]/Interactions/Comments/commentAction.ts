@@ -3,10 +3,7 @@
 import { AtpBaseClient, PubLeafletComment } from "lexicons/api";
 import { getAuthIdentity } from "src/auth";
 import { PubLeafletRichtextFacet } from "lexicons/api";
-import {
-  restoreOAuthSession,
-  OAuthSessionError,
-} from "src/atproto-oauth";
+import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { TID } from "@atproto/common";
 import { AtUri, lexToJson, Un$Typed } from "@atproto/api";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -22,6 +19,7 @@ import {
   isPublicationCollection,
 } from "src/utils/collectionHelpers";
 import { tombstoneComment } from "src/comments/tombstoneComment";
+import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
 import { trackUserEvent } from "src/activeUserAnalytics";
 
 type PublishCommentResult =
@@ -92,6 +90,7 @@ export async function publishComment(args: {
       } as unknown as Json,
     })
     .select();
+  await broadcastDocumentEvent(supabaseServerClient, "comment", args.document);
   trackUserEvent(identity, "comment", {
     document: args.document,
     record_uri: uri.toString(),
@@ -127,7 +126,9 @@ export async function publishComment(args: {
     await supabaseServerClient.from("notifications").insert(notifications);
 
     // Ping all unique recipients
-    const uniqueRecipients = [...new Set(notifications.map((n) => n.recipient))];
+    const uniqueRecipients = [
+      ...new Set(notifications.map((n) => n.recipient)),
+    ];
     await Promise.all(
       uniqueRecipients.map((r) => pingIdentityToUpdateNotification(r)),
     );
@@ -247,6 +248,11 @@ export async function updateComment(args: {
       ],
     })
     .eq("uri", args.uri);
+  await broadcastDocumentEvent(
+    supabaseServerClient,
+    "comment",
+    previous.subject,
+  );
   return { success: true, record: stored };
 }
 
@@ -268,7 +274,13 @@ export async function deleteComment(args: {
 
   // Cached pages are revalidated by the appview when the delete event lands,
   // like publishing; revalidating here would refresh the page mid-action.
-  await tombstoneComment(supabaseServerClient, args.uri);
+  let comment = await tombstoneComment(supabaseServerClient, args.uri);
+  if (comment?.document)
+    await broadcastDocumentEvent(
+      supabaseServerClient,
+      "comment",
+      comment.document,
+    );
   return { success: true };
 }
 
@@ -342,7 +354,11 @@ function createCommentMentionNotifications(
             });
           }
         } catch (error) {
-          console.error("Failed to parse AT-URI for mention:", feature.atURI, error);
+          console.error(
+            "Failed to parse AT-URI for mention:",
+            feature.atURI,
+            error,
+          );
         }
       }
     }
