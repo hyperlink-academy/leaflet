@@ -273,7 +273,7 @@ export const PubLeafletBlocksImageGallery: LexiconDoc = {
         },
         format: {
           type: "string",
-          knownValues: ["grid", "carousel", "strip"],
+          knownValues: ["grid", "carousel", "strip", "masonry"],
         },
         gap: {
           type: "integer",
@@ -282,7 +282,7 @@ export const PubLeafletBlocksImageGallery: LexiconDoc = {
         maxWidth: {
           type: "integer",
           description:
-            "Max width per image in grid view (px); drives how many columns fit.",
+            "Max width per image in grid and masonry views (px); drives how many columns fit.",
         },
       },
     },

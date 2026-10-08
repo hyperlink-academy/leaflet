@@ -678,7 +678,7 @@ export type Data<A extends keyof typeof Attributes> = {
   };
   "gallery-format-union": {
     type: "gallery-format-union";
-    value: "grid" | "carousel" | "strip";
+    value: "grid" | "carousel" | "strip" | "masonry";
   };
   "posts-list-view-union": {
     type: "posts-list-view-union";

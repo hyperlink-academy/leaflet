@@ -218,7 +218,7 @@ const galleryImage = (
 });
 
 const galleryBlock = (
-  format: "grid" | "carousel" | "strip",
+  format: "grid" | "carousel" | "strip" | "masonry",
   images: PubLeafletBlocksImageGallery.Image[],
 ): PubLeafletPagesLinearDocument.Block => ({
   $type: "pub.leaflet.pages.linearDocument#block",
@@ -667,6 +667,14 @@ const defaultProps: PostEmailProps = {
       galleryImage(500, 500, "3"),
       galleryImage(600, 400, "4"),
       galleryImage(600, 300, "5"),
+    ]),
+    galleryBlock("masonry", [
+      galleryImage(600, 400, "1"),
+      galleryImage(400, 600, "2"),
+      galleryImage(500, 500, "3"),
+      galleryImage(400, 700, "4"),
+      galleryImage(600, 300, "5"),
+      galleryImage(600, 450, "6"),
     ]),
     galleryBlock("strip", [
       galleryImage(1200, 800, "1"),
@@ -2654,11 +2662,12 @@ const ImageGalleryEmailBlock = ({
     );
   }
 
-  // Grid (the default format). The web grid cover-crops each row's cells to
-  // the tallest image, which needs object-fit — unreliable in mail clients.
-  // Instead each email row is "justified": every cell's width share is
-  // proportional to its image's aspect ratio, so all images in a row render
-  // at the same height uncropped. Column count mirrors the web's math with
+  // Masonry, and grid (the default format). Each row is "justified": every
+  // cell's width share is proportional to its image's aspect ratio, so all
+  // images in a row render at the same height uncropped — the same layout as
+  // the web masonry. The web grid instead cover-crops each row's cells to the
+  // tallest image, which needs object-fit — unreliable in mail clients — so
+  // email grid falls back to masonry. Column count mirrors the web's math with
   // the email's fixed content width standing in for the measured container.
   const maxWidth = block.maxWidth ?? GALLERY_DEFAULT_MAX_WIDTH;
   const columns = Math.max(

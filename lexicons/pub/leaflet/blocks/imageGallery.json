@@ -20,7 +20,8 @@
           "knownValues": [
             "grid",
             "carousel",
-            "strip"
+            "strip",
+            "masonry"
           ]
         },
         "gap": {
@@ -29,7 +30,7 @@
         },
         "maxWidth": {
           "type": "integer",
-          "description": "Max width per image in grid view (px); drives how many columns fit."
+          "description": "Max width per image in grid and masonry views (px); drives how many columns fit."
         }
       }
     },

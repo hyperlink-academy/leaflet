@@ -6,6 +6,10 @@ import { byPosition } from "src/replicache/mutations";
 import { scanIndex } from "src/replicache/utils";
 import { prepareImage } from "src/utils/addImage";
 
+// Each image is decoded before its slot is added, so a file that fails to
+// decode is just skipped. Writes skip undo history so callers can close their
+// undo group around the gallery's creation without waiting on uploads; undoing
+// the gallery while these are in flight just lands them on the detached gallery.
 export async function addGalleryImages(
   rep: Replicache<ReplicacheMutators>,
   args: { galleryEntity: string; permission_set: string; files: File[] },

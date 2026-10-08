@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useUIState } from "src/useUIState";
 
+// Non-text blocks have no editable element to receive a paste, so listen on the
+// window while the block is the focused one.
 export function useBlockImagePaste(
   entityID: string,
   enabled: boolean,

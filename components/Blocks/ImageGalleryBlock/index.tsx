@@ -10,8 +10,14 @@ import { useBlockImagePaste } from "../useBlockImagePaste";
 
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 
-import { DEFAULT_GAP, DEFAULT_FORMAT, DEFAULT_MAX_WIDTH } from "./shared";
+import {
+  DEFAULT_GAP,
+  DEFAULT_FORMAT,
+  DEFAULT_MAX_WIDTH,
+  useGalleryAspectRatios,
+} from "./shared";
 import { ImageGalleryGrid } from "./ImageGalleryGrid";
+import { ImageGalleryMasonry } from "./ImageGalleryMasonry";
 import { ImageGalleryStrip } from "./ImageGalleryStrip";
 import { ImageGalleryCarousel } from "./ImageGalleryCarousel";
 import {
@@ -40,6 +46,7 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
   let [lightboxAltExpanded, setLightboxAltExpanded] = useState(false);
 
   let imageEntities = imageFacts.map((f) => f.data.value);
+  let aspectRatios = useGalleryAspectRatios(imageEntities);
 
   const handleFiles = async (files: File[]) => {
     if (!rep) return;
@@ -112,6 +119,22 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
       {format === "carousel" ? (
         <ImageGalleryCarousel
           count={imageEntities.length}
+          renderItem={(i, classes) => (
+            <EditorGalleryImageItem
+              entityID={imageEntities[i]}
+              editable={editable}
+              selected={!!isSelected}
+              onClick={() => openLightbox(i)}
+              onSeeMoreAlt={() => openLightboxWithAlt(i)}
+              {...classes}
+            />
+          )}
+        />
+      ) : format === "masonry" ? (
+        <ImageGalleryMasonry
+          aspectRatios={aspectRatios}
+          gap={gap}
+          maxWidth={maxWidth}
           renderItem={(i, classes) => (
             <EditorGalleryImageItem
               entityID={imageEntities[i]}
