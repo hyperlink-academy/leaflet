@@ -124,7 +124,9 @@ export function Blocks(props: {
       // block count (378ms/60 keystrokes at 3000 blocks, vs 156ms as flow-root).
       // flow-root rather than plain block so the first block's margin can't
       // collapse out through the container's top edge.
-      className={`blocks w-full flow-root outline-hidden ${props.group ? `h-fit ${canvasBlockEdges}` : `pt-2 sm:pt-3 ${areFootnotes ? "h-fit" : "min-h-full"}`}`}
+      // A group is sized to its blocks, so the two-line placeholder's hint
+      // would hang out below it.
+      className={`blocks w-full flow-root outline-hidden ${props.group ? `h-fit ${canvasBlockEdges} [&_.placeholderHint]:hidden` : `pt-2 sm:pt-3 ${areFootnotes ? "h-fit" : "min-h-full"}`}`}
     >
       {visibleBlocks.map((f, index, arr) => {
         let nextBlock = arr[index + 1];

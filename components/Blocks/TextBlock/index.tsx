@@ -388,7 +388,7 @@ const TextBlockOverlays = (
               : props.headingLevel === 1
                 ? "Title"
                 : "write something…"}
-          <div className=" text-xs font-normal">
+          <div className="placeholderHint text-xs font-normal">
             or type &quot;/&quot; to add a block
           </div>
         </div>
