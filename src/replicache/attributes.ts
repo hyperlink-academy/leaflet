@@ -412,6 +412,11 @@ const QuestionsBlockAttributes = {
     type: "string",
     cardinality: "one",
   },
+  // "anyone" | "follows" | "followers"; see pub.leaflet.blocks.questions
+  "questions/audience": {
+    type: "string",
+    cardinality: "one",
+  },
   // The author's answer drafts: entities holding a linear block list under
   // card/block, kept in the leaflet but never published with the document.
   "questions/answer": {

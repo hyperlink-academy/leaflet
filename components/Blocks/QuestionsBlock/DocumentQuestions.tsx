@@ -16,6 +16,7 @@ import {
   type QuestionError,
 } from "actions/questions";
 import type { DocumentQuestion } from "src/documentQuestions";
+import type { QuestionsAudience } from "src/questionsAudience";
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 import { ComposerPlaceholder } from "components/FacetedTextComposer";
 import {
@@ -37,6 +38,8 @@ const questionErrorMessages: Partial<Record<QuestionError["type"], string>> = {
   not_found: "We couldn't find that post.",
   empty: "Write a question first.",
   questions_closed: "This post isn't taking questions.",
+  not_follows: "Only people the author follows can ask here.",
+  not_follower: "Only the author's followers can ask here.",
 };
 
 // Questions on a published document, for whoever is looking: the document's
@@ -50,6 +53,7 @@ export function DocumentQuestions(props: {
   documentUri: string;
   initialQuestions?: DocumentQuestion[];
   buttonText?: string;
+  audience?: QuestionsAudience;
   editor?: {
     // The questions block entity, whose answer drafts hang off it
     blockEntity: string;
@@ -105,12 +109,23 @@ export function DocumentQuestions(props: {
   };
   if (props.editor) {
     let editor = props.editor;
-    if (!data) return <QuestionComposerPreview action={editor.action} />;
+    if (!data)
+      return (
+        <QuestionComposerPreview
+          action={editor.action}
+          audience={props.audience}
+        />
+      );
     let isAuthor = data.isAuthor;
     return (
       <QuestionsModeration
         questions={data.questions}
-        header={<QuestionComposerPreview action={editor.action} />}
+        header={
+          <QuestionComposerPreview
+            action={editor.action}
+            audience={props.audience}
+          />
+        }
         renderAnswer={(q) =>
           editing[q.uri] ? (
             <AnswerEditor
@@ -174,6 +189,7 @@ export function DocumentQuestions(props: {
           <QuestionComposer
             draftKey={`question:${props.documentUri}`}
             submitLabel={props.buttonText}
+            audience={props.audience}
             onSubmit={ask}
           />
         ) : (

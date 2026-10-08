@@ -8,6 +8,8 @@ import type {
 import { getProfiles, type Profile } from "src/identity";
 import { supabaseServerClient } from "supabase/serverClient";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
+import { AtpAgent } from "@atproto/api";
+import type { QuestionsAudience } from "src/questionsAudience";
 
 const MAX_QUESTIONS = 500;
 
@@ -92,4 +94,26 @@ export async function loadDocumentQuestions(
       };
     }),
   };
+}
+
+// Whether `asker` may ask the author of `subject` under the block's audience,
+// checked against the Bluesky follow graph when the question is asked.
+export async function canAskQuestion(
+  subject: string,
+  asker: string,
+  audience: QuestionsAudience,
+): Promise<boolean> {
+  if (audience === "anyone") return true;
+  const author = new AtUri(subject).host;
+  if (author === asker) return true;
+  const agent = new AtpAgent({ service: "https://public.api.bsky.app" });
+  const res = await agent.app.bsky.graph.getRelationships({
+    actor: author,
+    others: [asker],
+  });
+  const rel = res.data.relationships.find(
+    (r) => r.$type === "app.bsky.graph.defs#relationship",
+  ) as { following?: string; followedBy?: string } | undefined;
+  if (!rel) return false;
+  return audience === "follows" ? !!rel.following : !!rel.followedBy;
 }

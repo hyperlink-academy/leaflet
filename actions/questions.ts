@@ -4,6 +4,7 @@ import { AtUri } from "@atproto/syntax";
 import { TID } from "@atproto/common";
 import { v7 } from "uuid";
 import {
+  PubLeafletBlocksQuestions,
   PubLeafletInteractionsAnswer,
   PubLeafletInteractionsQuestion,
   PubLeafletPagesLinearDocument,
@@ -19,10 +20,12 @@ import {
   Notification,
   pingIdentityToUpdateNotification,
 } from "src/notifications";
-import { documentHasBlock } from "src/utils/documentHasBlock";
+import { findDocumentBlock } from "src/utils/documentHasBlock";
+import { questionsAudience } from "src/questionsAudience";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import {
   answerRkey,
+  canAskQuestion,
   loadDocumentQuestions,
   type DocumentQuestions,
 } from "src/documentQuestions";
@@ -51,7 +54,14 @@ export async function getDocumentQuestions(
 
 export type QuestionError =
   | {
-      type: "not_found" | "empty" | "questions_closed" | "not_owner" | "failed";
+      type:
+        | "not_found"
+        | "empty"
+        | "questions_closed"
+        | "not_follows"
+        | "not_follower"
+        | "not_owner"
+        | "failed";
     }
   | OAuthSessionError;
 
@@ -78,11 +88,22 @@ export async function askQuestion(args: {
     subjectDoc.data,
     subjectDoc.uri,
   );
-  if (
-    !subjectRecord ||
-    !documentHasBlock(subjectRecord, ids.PubLeafletBlocksQuestions)
-  )
-    return Err({ type: "questions_closed" });
+  const questionsBlock =
+    subjectRecord &&
+    findDocumentBlock(subjectRecord, ids.PubLeafletBlocksQuestions);
+  if (!questionsBlock) return Err({ type: "questions_closed" });
+  const audience = questionsAudience(
+    (questionsBlock as PubLeafletBlocksQuestions.Main).audience,
+  );
+  try {
+    if (!(await canAskQuestion(args.subject, did, audience)))
+      return Err({
+        type: audience === "follows" ? "not_follows" : "not_follower",
+      });
+  } catch (e) {
+    console.error("[questions] follow check failed", e);
+    return Err({ type: "failed" });
+  }
 
   const agent = await agentFor(did);
   if (!agent.ok) return Err(agent.error);

@@ -15,6 +15,10 @@ import {
 import type { DocumentQuestion } from "src/documentQuestions";
 import { ReplyButtonTextInput } from "../ReplyBlock/RepliesView";
 import { DEFAULT_QUESTIONS_BUTTON_TEXT } from "./constants";
+import {
+  questionsAudienceNotice,
+  type QuestionsAudience,
+} from "src/questionsAudience";
 
 export function QuestionsButtonTextInput(props: {
   value: string;
@@ -29,7 +33,11 @@ export function QuestionsButtonTextInput(props: {
   );
 }
 
-export function PublicQuestionNotice(props: { defaultOpen?: boolean }) {
+export function PublicQuestionNotice(props: {
+  defaultOpen?: boolean;
+  audience?: QuestionsAudience;
+}) {
+  let restriction = questionsAudienceNotice(props.audience ?? "anyone");
   return (
     <Popover
       asChild
@@ -49,14 +57,23 @@ export function PublicQuestionNotice(props: { defaultOpen?: boolean }) {
     >
       Questions are public. Yours is posted to your account, where anyone can
       see it, and appears here if the author answers it.
+      {restriction && <div className="pt-2">{restriction}</div>}
     </Popover>
   );
+}
+
+// The restriction readers see beside the composer, if there is one
+function AudienceNotice(props: { audience?: QuestionsAudience }) {
+  let restriction = questionsAudienceNotice(props.audience ?? "anyone");
+  if (!restriction) return null;
+  return <span className="text-sm text-tertiary italic">{restriction}</span>;
 }
 
 export function QuestionComposer(props: {
   draftKey: string | null;
   submitLabel?: string;
   autoFocus?: boolean;
+  audience?: QuestionsAudience;
   onSubmit: (text: FacetedText) => Promise<boolean>;
 }) {
   return (
@@ -66,20 +83,29 @@ export function QuestionComposer(props: {
       inputClassName="min-h-20!"
       submitLabel={props.submitLabel || DEFAULT_QUESTIONS_BUTTON_TEXT}
       onSubmit={props.onSubmit}
-      trailing={<PublicQuestionNotice />}
+      trailing={
+        <>
+          <AudienceNotice audience={props.audience} />
+          <PublicQuestionNotice audience={props.audience} />
+        </>
+      }
     />
   );
 }
 
 // The editor shows readers' input without taking questions.
-export function QuestionComposerPreview(props: { action: React.ReactNode }) {
+export function QuestionComposerPreview(props: {
+  action: React.ReactNode;
+  audience?: QuestionsAudience;
+}) {
   return (
     <div className="flex flex-col grow">
       <div className="commentInput border input-with-border min-h-20 px-2 py-[6px] text-tertiary italic">
         Readers write their question here…
       </div>
       <div className="flex justify-end items-center gap-2 pt-1">
-        <PublicQuestionNotice />
+        <AudienceNotice audience={props.audience} />
+        <PublicQuestionNotice audience={props.audience} />
         {props.action}
       </div>
     </div>
@@ -110,10 +136,16 @@ export function SignInToAsk(props: {
   );
 }
 
-export function QuestionsDraft(props: { action: React.ReactNode }) {
+export function QuestionsDraft(props: {
+  action: React.ReactNode;
+  audience?: QuestionsAudience;
+}) {
   return (
     <div className="flex flex-col gap-3">
-      <QuestionComposerPreview action={props.action} />
+      <QuestionComposerPreview
+        action={props.action}
+        audience={props.audience}
+      />
       <div className="light-container text-sm italic text-tertiary text-center p-3 sm:p-4">
         <div className="text-base font-bold">
           Questions open when you publish

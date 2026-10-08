@@ -1928,6 +1928,12 @@ export const schemaDict = {
             description:
               'Label for the button readers use to submit a question.',
           },
+          audience: {
+            type: 'string',
+            knownValues: ['anyone', 'follows', 'followers'],
+            description:
+              'Who may ask: anyone, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a question is asked.',
+          },
         },
       },
     },

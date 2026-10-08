@@ -1,4 +1,5 @@
 "use client";
+import { questionsAudience } from "src/questionsAudience";
 import {
   blockSpacingClassName,
   type SpacingKind,
@@ -511,6 +512,7 @@ export let Block = ({
               documentUri={document.uri}
               initialQuestions={questionData}
               buttonText={block.buttonText}
+              audience={questionsAudience(block.audience)}
             />
           </div>
         </div>

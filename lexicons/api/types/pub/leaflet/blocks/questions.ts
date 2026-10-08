@@ -19,6 +19,8 @@ export interface Main {
   $type?: 'pub.leaflet.blocks.questions'
   /** Label for the button readers use to submit a question. */
   buttonText?: string
+  /** Who may ask: anyone, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a question is asked. */
+  audience?: 'anyone' | 'follows' | 'followers' | (string & {})
 }
 
 const hashMain = 'main'

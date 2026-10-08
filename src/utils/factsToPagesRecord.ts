@@ -3,6 +3,7 @@ import * as base64 from "base64-js";
 import { $Typed, UnicodeString } from "@atproto/api";
 import { BlobRef } from "@atproto/lexicon";
 import { DEFAULT_PAGE_LINK_DISPLAY } from "src/utils/pageLinkDisplay";
+import { isQuestionsAudience } from "src/questionsAudience";
 
 import {
   PubLeafletBlocksBlockquote,
@@ -611,9 +612,14 @@ export async function processBlocksToPages(opts: {
     },
     questions: async (b) => {
       const [buttonText] = scan.eav(b.entityID, "questions/button-text");
+      const [audience] = scan.eav(b.entityID, "questions/audience");
       const block: $Typed<PubLeafletBlocksQuestions.Main> = {
         $type: "pub.leaflet.blocks.questions",
         ...(buttonText?.data.value && { buttonText: buttonText.data.value }),
+        ...(isQuestionsAudience(audience?.data.value) &&
+          audience.data.value !== "anyone" && {
+            audience: audience.data.value,
+          }),
       };
       return block;
     },
