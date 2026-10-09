@@ -1,7 +1,11 @@
 "use client";
 import { useMemo, useState } from "react";
 import { PubLeafletBlocksImageGallery } from "lexicons/api";
-import { blobRefToSrc, POST_BODY_IMAGE_WIDTH } from "src/utils/blobRefToSrc";
+import {
+  blobRefToSrc,
+  LIGHTBOX_IMAGE_WIDTH,
+  POST_BODY_IMAGE_WIDTH,
+} from "src/utils/blobRefToSrc";
 import { ReadOnlyAltText } from "components/Blocks/ReadOnlyAltText";
 import {
   DEFAULT_FORMAT,
@@ -31,7 +35,9 @@ export function PublishedImageGallery(props: {
         src: blobRefToSrc(i.image.ref, did, undefined, {
           width: POST_BODY_IMAGE_WIDTH,
         }),
-        fullSrc: blobRefToSrc(i.image.ref, did),
+        fullSrc: blobRefToSrc(i.image.ref, did, undefined, {
+          width: LIGHTBOX_IMAGE_WIDTH,
+        }),
         mimeType: i.image.mimeType,
         videoSrc:
           i.image.mimeType === "image/gif"

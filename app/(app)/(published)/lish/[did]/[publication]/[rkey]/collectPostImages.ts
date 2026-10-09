@@ -10,6 +10,7 @@ import {
   blobRefCid,
   blobRefToSrc,
   POST_BODY_IMAGE_WIDTH,
+  LIGHTBOX_IMAGE_WIDTH,
 } from "src/utils/blobRefToSrc";
 import { GalleryImage } from "components/Blocks/ImageGalleryBlock/shared";
 import { pageBlocksInOrder } from "src/utils/pageBlocksInOrder";
@@ -39,7 +40,9 @@ export function collectPostImages(
         src: blobRefToSrc(block.image.ref, did, undefined, {
           width: POST_BODY_IMAGE_WIDTH,
         }),
-        fullSrc: blobRefToSrc(block.image.ref, did),
+        fullSrc: blobRefToSrc(block.image.ref, did, undefined, {
+          width: LIGHTBOX_IMAGE_WIDTH,
+        }),
         alt: block.alt || "",
         width: block.aspectRatio?.width ?? 0,
         height: block.aspectRatio?.height ?? 0,
@@ -51,7 +54,9 @@ export function collectPostImages(
           src: blobRefToSrc(i.image.ref, did, undefined, {
             width: POST_BODY_IMAGE_WIDTH,
           }),
-          fullSrc: blobRefToSrc(i.image.ref, did),
+          fullSrc: blobRefToSrc(i.image.ref, did, undefined, {
+            width: LIGHTBOX_IMAGE_WIDTH,
+          }),
           alt: i.alt || "",
           width: i.aspectRatio.width,
           height: i.aspectRatio.height,
@@ -72,10 +77,10 @@ export function collectPostImages(
     walkBlock({ block: item.content });
     (item.children ?? []).forEach((child) => walkListItem(child, ordered));
     let otherKind = ordered
-      ? ((item as PubLeafletBlocksOrderedList.ListItem).unorderedListChildren
-          ?.children ?? [])
-      : ((item as PubLeafletBlocksUnorderedList.ListItem).orderedListChildren
-          ?.children ?? []);
+      ? (item as PubLeafletBlocksOrderedList.ListItem).unorderedListChildren
+          ?.children ?? []
+      : (item as PubLeafletBlocksUnorderedList.ListItem).orderedListChildren
+          ?.children ?? [];
     otherKind.forEach((child) => walkListItem(child, !ordered));
   };
 

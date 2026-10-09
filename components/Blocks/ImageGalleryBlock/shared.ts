@@ -13,8 +13,7 @@ export const DEFAULT_MAX_WIDTH = 300;
 // components only ever see this shape.
 export type GalleryImage = {
   src: string;
-  // Untransformed source for the lightbox, when `src` is a downscaled display
-  // variant.
+  // Larger source for the lightbox, when `src` is a downscaled display variant.
   fullSrc?: string;
   // Canonical storage URL from the fact (editor only) — the key upload status
   // is tracked under, even while `src` is the local object URL.

@@ -69,6 +69,23 @@ function LightboxContent(props: {
   let [current, setCurrent] = useState(props.initialIndex);
   let count = props.count;
 
+  // Slides mount once they're adjacent to the current one and then stay
+  // mounted, so opening the lightbox doesn't fetch every image at once.
+  let [mounted, setMounted] = useState(
+    () =>
+      new Set([
+        props.initialIndex - 1,
+        props.initialIndex,
+        props.initialIndex + 1,
+      ]),
+  );
+  useEffect(() => {
+    let near = [current - 1, current, current + 1];
+    setMounted((m) =>
+      near.every((i) => m.has(i)) ? m : new Set([...m, ...near]),
+    );
+  }, [current]);
+
   // Jump to the opened image on mount, without a scroll animation.
   useEffect(() => {
     let el = scrollRef.current;
@@ -118,7 +135,7 @@ function LightboxContent(props: {
             <AltExpandedContext.Provider
               value={props.altExpanded && i === props.initialIndex}
             >
-              {props.renderSlide(i)}
+              {mounted.has(i) && props.renderSlide(i)}
             </AltExpandedContext.Provider>
           </div>
         ))}
@@ -166,11 +183,35 @@ function LightboxContent(props: {
 // Presentational slide shared by editor and published lightboxes.
 export function LightboxSlide(props: { image: GalleryImage }) {
   let { image } = props;
+  let [loadedFullSrc, setLoadedFullSrc] = useState<string | null>(null);
+
+  // Show the display-size `src` (usually already in the browser cache from the
+  // post body) until the larger version has finished downloading.
+  useEffect(() => {
+    let fullSrc = image.fullSrc;
+    if (!fullSrc || fullSrc === image.src) return;
+    let preload = new Image();
+    preload.onload = () => setLoadedFullSrc(fullSrc);
+    preload.src = fullSrc;
+    return () => {
+      preload.onload = null;
+    };
+  }, [image.fullSrc, image.src]);
+
+  // Pinning the box to the original's dimensions keeps it from resizing when
+  // the larger version swaps in.
+  let hasSize = image.width > 0 && image.height > 0;
   return (
     <div className="flex-1 h-full w-full flex flex-col gap-3 min-h-0 justify-center items-center px-4 sm:px-8">
       <img
         alt={image.alt}
-        src={image.fullSrc ?? image.src}
+        src={
+          loadedFullSrc && loadedFullSrc === image.fullSrc
+            ? loadedFullSrc
+            : image.src
+        }
+        width={hasSize ? image.width : undefined}
+        height={hasSize ? image.height : undefined}
         className=" min-h-0 max-w-full object-contain"
         onClick={(e) => e.stopPropagation()}
       />

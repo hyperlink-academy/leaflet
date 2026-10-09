@@ -62,8 +62,11 @@ export const COVER_THUMBNAIL_WIDTH = { large: 800, medium: 360 };
 
 // Display width for images rendered inline in a post body: the ~600px content
 // column at retina density (see the ladder in supabase/imageSizes.js).
-// Lightboxes load the untransformed blob instead.
 export const POST_BODY_IMAGE_WIDTH = 1200;
+
+// Lightboxes request the top of the ladder rather than the untransformed blob,
+// which can be a multi-megabyte camera original.
+export const LIGHTBOX_IMAGE_WIDTH = 2000;
 
 // Shared transform for publication icons rendered into emails.
 export const EMAIL_ICON_TRANSFORM = { width: 360, format: "email" } as const;
