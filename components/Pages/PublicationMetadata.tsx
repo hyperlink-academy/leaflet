@@ -11,6 +11,7 @@ import { uploadCoverImage } from "src/utils/uploadCoverImage";
 import { CoverImageTiny } from "components/Icons/CoverImageTiny";
 import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { Separator } from "components/Layout";
+import { ReplyingTo, useReplyTarget } from "components/Pages/ReplyingTo";
 import { AtUri } from "@atproto/syntax";
 import {
   getBasePublicationURL,
@@ -36,7 +37,7 @@ export const PublicationMetadata = (props: {
   noInteractions?: boolean;
   compact?: boolean;
 }) => {
-  let { rep, permission_token } = useReplicache();
+  let { rep, permission_token, rootEntity } = useReplicache();
   let leaflet_id = permission_token.id;
   let {
     data: pub,
@@ -61,8 +62,13 @@ export const PublicationMetadata = (props: {
   );
   let publishedAt = normalizedDocument?.publishedAt;
   let scheduledPublishAt = useLeafletScheduledPublishAt();
+  let standaloneReplyTo = useEntity(rootEntity, "root/reply-to")?.data.value;
+  let replyTarget = useReplyTarget(pub?.reply_to ?? standaloneReplyTo);
 
-  if (!pub) return null;
+  if (!pub)
+    return replyTarget ? (
+      <ReplyingTo target={replyTarget} className="pb-2" />
+    ) : null;
 
   if (typeof title !== "string") {
     title = pub?.title || "";
@@ -92,6 +98,7 @@ export const PublicationMetadata = (props: {
           <div className="font-bold text-tertiary px-1 h-[20px] text-sm flex place-items-center bg-border-light rounded-md ">
             DRAFT
           </div>
+          <ReplyingTo target={replyTarget} />
         </div>
       }
       postTitle={

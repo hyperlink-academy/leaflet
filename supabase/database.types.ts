@@ -954,6 +954,7 @@ export type Database = {
           leaflet: string
           preferences: Json | null
           publication: string
+          reply_to: string | null
           scheduled_publish_at: string | null
           scheduled_publish_data: Json | null
           tags: string[] | null
@@ -968,6 +969,7 @@ export type Database = {
           leaflet: string
           preferences?: Json | null
           publication: string
+          reply_to?: string | null
           scheduled_publish_at?: string | null
           scheduled_publish_data?: Json | null
           tags?: string[] | null
@@ -982,6 +984,7 @@ export type Database = {
           leaflet?: string
           preferences?: Json | null
           publication?: string
+          reply_to?: string | null
           scheduled_publish_at?: string | null
           scheduled_publish_data?: Json | null
           tags?: string[] | null

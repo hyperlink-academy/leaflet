@@ -1,38 +1,33 @@
 "use server";
 
 import { AtUri } from "@atproto/syntax";
-import { TID } from "@atproto/common";
-import { v7 } from "uuid";
-import {
-  PubLeafletInteractionsReply,
-  PubLeafletInteractionsReplyVisibility,
-} from "lexicons/api";
+import { PubLeafletInteractionsReplyVisibility } from "lexicons/api";
 import { ids } from "lexicons/api/lexicons";
 import { OAuthSessionError } from "src/atproto-oauth";
 import { agentFor, notAuthenticated } from "src/utils/agentFor";
 import { getAuthIdentity } from "src/auth";
 import { Err, Ok, Result } from "src/result";
-import {
-  Notification,
-  pingIdentityToUpdateNotification,
-} from "src/notifications";
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
-import { documentHasBlock } from "src/utils/documentHasBlock";
 import {
   normalizeDocumentRecord,
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
 import { resolveStandardSitePostUrl } from "src/utils/resolveStandardSitePostUrl";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
+import { isLeafletManagedPublication } from "src/utils/isLeafletManagedPublication";
+import { createPublicationDraft } from "./createPublicationDraft";
+import { createNewLeaflet } from "./createNewLeaflet";
 import {
+  createReplyRecord,
+  getReplyTarget as loadReplyTarget,
   loadDocumentReplies,
+  subjectAcceptsReplies,
   MAX_REPLIES,
   type DocumentReplies,
 } from "src/documentReplies";
 import { revalidateDocumentPaths } from "src/utils/revalidatePublication";
 import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
 import { supabaseServerClient } from "supabase/serverClient";
-import { Json } from "supabase/database.types";
 
 export async function getDocumentReplies(
   subject: string,
@@ -41,15 +36,22 @@ export async function getDocumentReplies(
   return loadDocumentReplies(subject, identity?.atp_did ?? null);
 }
 
-// The viewer's own recent documents, offered as things to reply with.
+// The viewer's own recent documents, offered as things to reply with, plus
+// the Leaflet publications they could write a new one in.
 export async function getReplyCandidates() {
   const identity = await getAuthIdentity();
-  if (!identity?.atp_did) return [];
-  const { data: rows } = await supabaseServerClient.rpc("get_profile_posts", {
-    p_did: identity.atp_did,
-    p_limit: 30,
-  });
-  return deduplicateByUriOrdered(rows ?? []).flatMap((row) => {
+  if (!identity?.atp_did) return { candidates: [], publications: [] };
+  const [{ data: rows }, { data: publications }] = await Promise.all([
+    supabaseServerClient.rpc("get_profile_posts", {
+      p_did: identity.atp_did,
+      p_limit: 30,
+    }),
+    supabaseServerClient
+      .from("publications")
+      .select("uri, name, record")
+      .eq("identity_did", identity.atp_did),
+  ]);
+  const candidates = deduplicateByUriOrdered(rows ?? []).flatMap((row) => {
     const record = normalizeDocumentRecord(row.data, row.uri);
     if (!record?.title) return [];
     return [
@@ -66,6 +68,39 @@ export async function getReplyCandidates() {
       },
     ];
   });
+  return {
+    candidates,
+    publications: (publications ?? []).filter(isLeafletManagedPublication),
+  };
+}
+
+// Starts a draft, in one of the viewer's publications or as a looseleaf, that
+// will be submitted as a reply to `subject` when it's first published.
+export async function createReplyDraft(args: {
+  subject: string;
+  // Null for a looseleaf
+  publication_uri: string | null;
+}): Promise<Result<{ leaflet: string }, ReplyError>> {
+  const identity = await getAuthIdentity();
+  if (!identity?.atp_did) return Err(notAuthenticated);
+  if (!(await subjectAcceptsReplies(args.subject)))
+    return Err({ type: "replies_closed" });
+  const leaflet = args.publication_uri
+    ? await createPublicationDraft(args.publication_uri, "doc", {
+        replyTo: args.subject,
+      })
+    : await createNewLeaflet({
+        pageType: "doc",
+        redirectUser: false,
+        replyTo: args.subject,
+        analytics: { kind: "reply_looseleaf" },
+      });
+  if (!leaflet) return Err({ type: "not_owner" });
+  return Ok({ leaflet });
+}
+
+export async function getReplyTarget(subject: string) {
+  return loadReplyTarget(subject);
 }
 
 export type ReplyError =
@@ -101,89 +136,17 @@ export async function submitReply(args: {
   if (!isDocumentOwner(document, did)) return Err({ type: "not_your_post" });
   if (document === args.subject) return Err({ type: "same_post" });
 
-  const findExisting = () =>
-    supabaseServerClient
-      .from("document_replies")
-      .select("uri")
-      .eq("subject", args.subject)
-      .eq("document", document)
-      .maybeSingle();
-  const [{ data: docs }, { data: existing }] = await Promise.all([
-    supabaseServerClient
-      .from("documents")
-      .select("uri, data")
-      .in("uri", [document, args.subject]),
-    findExisting(),
-  ]);
-  const subjectDoc = docs?.find((d) => d.uri === args.subject);
-  if (!subjectDoc || docs?.length !== 2) return Err({ type: "not_found" });
-  // Without this anyone could notify the author of a post that never asked
-  // for replies.
-  const subjectRecord = normalizeDocumentRecord(
-    subjectDoc.data,
-    subjectDoc.uri,
-  );
-  if (
-    !subjectRecord ||
-    !documentHasBlock(subjectRecord, ids.PubLeafletBlocksReply)
-  )
+  if (!(await subjectAcceptsReplies(args.subject)))
     return Err({ type: "replies_closed" });
-  if (existing) return Ok({ uri: existing.uri });
 
   const agent = await agentFor(did);
   if (!agent.ok) return Err(agent.error);
-
-  const record: PubLeafletInteractionsReply.Record = {
-    $type: "pub.leaflet.interactions.reply",
+  return createReplyRecord({
+    did,
     subject: args.subject,
     document,
-    createdAt: new Date().toISOString(),
-  };
-  const collection = ids.PubLeafletInteractionsReply;
-  const rkey = TID.nextStr();
-  const uri = AtUri.make(did, collection, rkey).toString();
-  try {
-    await agent.value.com.atproto.repo.createRecord({
-      repo: did,
-      collection,
-      rkey,
-      record,
-      validate: false,
-    });
-  } catch (e) {
-    console.error("[replies] createRecord failed", e);
-    return Err({ type: "failed" });
-  }
-  const { error } = await supabaseServerClient.from("document_replies").upsert({
-    uri,
-    subject: args.subject,
-    document,
-    replier_did: did,
-    record: record as unknown as Json,
+    agent: agent.value,
   });
-  if (error) {
-    // A concurrent submission of the same document won the
-    // (subject, document) key; drop this duplicate record.
-    await agent.value.com.atproto.repo
-      .deleteRecord({ repo: did, collection, rkey })
-      .catch(() => {});
-    const { data: winner } = await findExisting();
-    return winner ? Ok({ uri: winner.uri }) : Err({ type: "failed" });
-  }
-
-  await broadcastDocumentEvent(supabaseServerClient, "reply", args.subject);
-  const subjectOwner = new AtUri(args.subject).host;
-  if (subjectOwner !== did) {
-    const notification: Notification = {
-      id: v7(),
-      recipient: subjectOwner,
-      data: { type: "post_reply", reply_uri: uri, document_uri: args.subject },
-    };
-    await supabaseServerClient.from("notifications").insert(notification);
-    await pingIdentityToUpdateNotification(subjectOwner);
-  }
-
-  return Ok({ uri });
 }
 
 export async function withdrawReply(

@@ -7,6 +7,14 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { StandardSitePostItemView } from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
 import { PublicationThemeWrapper } from "components/ThemeManager/PublicationThemeProvider";
+import { mainSiteAuthBase } from "src/utils/customDomain";
+import { PubIcon } from "components/ActionBar/Publications";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { AtUri } from "@atproto/syntax";
+import type { Json } from "supabase/database.types";
+import { DotLoader } from "components/utils/DotLoader";
+import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import type { DocumentReply } from "src/documentReplies";
 import {
   DEFAULT_REPLY_BUTTON_TEXT,
@@ -223,14 +231,39 @@ export function RepliesList(props: {
   );
 }
 
+export type ReplyPublication = {
+  uri: string;
+  name: string;
+  record: Json | null;
+};
+
+const MAX_REPLY_CANDIDATES = 3;
+
 export function ReplyPicker(props: {
   candidates: ReplyCandidate[];
+  // The viewer's publications, to start a new reply post in. Undefined while
+  // still loading, so the empty-state prompt doesn't flash.
+  publications?: ReplyPublication[];
   submitting?: boolean;
   onSubmit: (reply: { uri: string } | { url: string }) => void;
+  // Start a draft in the chosen publication, or a looseleaf for null
+  onCreateDraft: (publication_uri: string | null) => Promise<void>;
 }) {
   let [url, setUrl] = useState("");
   let [selected, setSelected] = useState<string | null>(null);
+  let [choosingPublication, setChoosingPublication] = useState(false);
   let canSubmit = !!url.trim() || !!selected;
+  let publications = props.publications ?? [];
+
+  if (choosingPublication)
+    return (
+      <ReplyPublicationSelector
+        publications={publications}
+        onBack={() => setChoosingPublication(false)}
+        onCreateDraft={props.onCreateDraft}
+      />
+    );
+
   return (
     <div className="flex flex-col gap-2 w-full sm:w-80 py-1">
       <div className="font-bold text-secondary">
@@ -248,8 +281,8 @@ export function ReplyPicker(props: {
       {props.candidates.length > 0 && (
         <>
           <div className="text-sm text-tertiary">or pick a recent post</div>
-          <div className="flex flex-col gap-2 max-h-56 overflow-y-auto">
-            {props.candidates.map((c) => (
+          <div className="flex flex-col gap-2">
+            {props.candidates.slice(0, MAX_REPLY_CANDIDATES).map((c) => (
               <Radio
                 key={c.uri}
                 name="reply-candidate"
@@ -274,6 +307,20 @@ export function ReplyPicker(props: {
           </div>
         </>
       )}
+      {props.publications && (
+        <ButtonSecondary
+          compact
+          className="w-fit"
+          onClick={() => setChoosingPublication(true)}
+        >
+          Write a new post
+        </ButtonSecondary>
+      )}
+      {props.publications && publications.length === 0 && (
+        <a className="text-sm" href={`${mainSiteAuthBase()}/lish/createPub`}>
+          Don't have a blog yet? Start one with Leaflet!
+        </a>
+      )}
       <div className="flex items-center justify-between gap-2 pt-1">
         <div className="text-sm text-tertiary whitespace-nowrap">
           Shown after author approval
@@ -285,6 +332,79 @@ export function ReplyPicker(props: {
           }
         >
           {props.submitting ? "Submitting…" : "Submit"}
+        </ButtonPrimary>
+      </div>
+    </div>
+  );
+}
+
+const LOOSELEAF = "looseleaf";
+
+export function ReplyPublicationSelector(props: {
+  publications: ReplyPublication[];
+  onBack: () => void;
+  onCreateDraft: (publication_uri: string | null) => Promise<void>;
+}) {
+  let [selected, setSelected] = useState<string | null>(
+    props.publications.length === 0 ? LOOSELEAF : null,
+  );
+  let [creating, setCreating] = useState(false);
+  let optionClass = (uri: string) =>
+    `flex gap-2 items-center menuItem font-bold text-secondary ${selected === uri ? "bg-[var(--accent-light)]! outline! outline-offset-1! outline-accent-contrast!" : ""}`;
+  return (
+    <div className="flex flex-col gap-2 w-full sm:w-80 py-1">
+      <div className="font-bold text-secondary">Write your reply as…</div>
+      <div className="flex flex-col gap-1 max-h-56 overflow-y-auto">
+        <button
+          className={optionClass(LOOSELEAF)}
+          onClick={() => setSelected(LOOSELEAF)}
+        >
+          <LooseLeafSmall className="shrink-0" />
+          <span className="truncate">Looseleaf</span>
+        </button>
+        {props.publications.length > 0 && (
+          <hr className="border-border-light border-dashed" />
+        )}
+        {props.publications.map((p) => {
+          let record = normalizePublicationRecord(p.record);
+          return (
+            <button
+              key={p.uri}
+              className={optionClass(p.uri)}
+              onClick={() => setSelected(p.uri)}
+            >
+              <PubIcon
+                icon={
+                  record?.icon
+                    ? blobRefToSrc(record.icon.ref, new AtUri(p.uri).host)
+                    : undefined
+                }
+                pubName={p.name}
+              />
+              <span className="truncate">{p.name}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex items-center justify-between gap-2 pt-1">
+        <ButtonSecondary compact onClick={props.onBack} disabled={creating}>
+          Back
+        </ButtonSecondary>
+        <ButtonPrimary
+          disabled={!selected || creating}
+          onClick={async () => {
+            if (!selected) return;
+            setCreating(true);
+            try {
+              await props.onCreateDraft(
+                selected === LOOSELEAF ? null : selected,
+              );
+            } finally {
+              setCreating(false);
+            }
+          }}
+        >
+          {creating ? <DotLoader /> : "Start writing"}
         </ButtonPrimary>
       </div>
     </div>

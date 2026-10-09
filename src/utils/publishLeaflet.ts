@@ -47,6 +47,7 @@ import {
 } from "src/utils/collectionHelpers";
 import { inngest } from "app/api/inngest/client";
 import { withPublishLock } from "src/utils/publishLock";
+import { createReplyRecord } from "src/documentReplies";
 import { cutPublishVersion } from "src/versioning/cutPublishVersion";
 import { loggedFetchHandler } from "src/utils/loggedFetchHandler";
 import { XRPCError } from "@atproto/xrpc";
@@ -571,6 +572,26 @@ async function publish({
   // (all of them when the delimiter was removed). Best-effort — the publish
   // itself has already succeeded.
   if (gatedImages) await gatedImages.removeStale().catch(console.error);
+
+  // A draft started from another post's reply block submits itself as a
+  // reply once it's published. Best-effort: the post is already live, and
+  // the author can still submit it by hand from the reply block.
+  const replyTo: string | undefined = publication_uri
+    ? draft?.reply_to
+    : scanIndexLocal(facts).eav(root_entity, "root/reply-to")[0]?.data.value;
+  if (!existingDocUri && replyTo) {
+    const reply = await createReplyRecord({
+      did: credentialSession.did!,
+      subject: replyTo,
+      document: result.uri,
+      agent,
+    }).catch((e) => {
+      console.error("[publish] reply record failed", e);
+      return null;
+    });
+    if (reply && !reply.ok)
+      console.error("[publish] reply record failed", reply.error);
+  }
 
   // Create notifications for mentions (only on first publish)
   if (!existingDocUri) {

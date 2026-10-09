@@ -8,7 +8,9 @@ import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { useIdentityData } from "components/IdentityProvider";
 import { useActionToast } from "components/useActionToast";
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
+import { mainSiteAuthBase } from "src/utils/customDomain";
 import {
+  createReplyDraft,
   getDocumentReplies,
   getReplyCandidates,
   setReplyVisible,
@@ -228,15 +230,22 @@ function ReplyPickerForViewer(props: {
   onSubmitted: () => void;
 }) {
   let { identity } = useIdentityData();
-  let { data: candidates } = useSWR(
-    ["reply_candidates", identity?.atp_did],
-    () => getReplyCandidates(),
+  let { data } = useSWR(["reply_candidates", identity?.atp_did], () =>
+    getReplyCandidates(),
   );
   let [submitting, setSubmitting] = useState(false);
   let run = useActionToast<ReplyError>(replyErrorMessages);
   return (
     <ReplyPicker
-      candidates={(candidates ?? [])
+      publications={data?.publications}
+      onCreateDraft={async (publication_uri) => {
+        let result = await run(() =>
+          createReplyDraft({ subject: props.documentUri, publication_uri }),
+        );
+        if (!result) return;
+        window.location.assign(`${mainSiteAuthBase()}/${result.value.leaflet}`);
+      }}
+      candidates={(data?.candidates ?? [])
         .filter((c) => c.uri !== props.documentUri)
         .map((c) => ({
           uri: c.uri,

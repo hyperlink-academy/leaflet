@@ -22,6 +22,8 @@ export type PublicationMetadata = {
   doc: string | null;
   /** Set when this draft only goes out as an email, never published. */
   email_only?: boolean;
+  /** The post this draft answers; it's submitted as a reply on first publish. */
+  reply_to?: string | null;
   publications: {
     identity_did: string;
     name: string;

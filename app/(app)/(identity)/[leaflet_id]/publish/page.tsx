@@ -9,6 +9,7 @@ import { isUuid } from "src/utils/isUuid";
 import { redirect } from "next/navigation";
 import { scheduledPostIneligibleReason } from "src/scheduledPosts/eligibility";
 import type { ScheduledPost } from "src/scheduledPosts/types";
+import { getReplyTarget } from "src/documentReplies";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -141,6 +142,19 @@ export default async function PublishLeafletPage(props: Props) {
     data.leaflets_in_publications.length > 0 ||
     data.leaflets_to_documents.length > 0;
 
+  let replyTo: string | null =
+    data.leaflets_in_publications[0]?.reply_to ?? null;
+  if (!replyTo && data.leaflets_in_publications.length === 0) {
+    let { data: fact } = await supabaseServerClient
+      .from("facts")
+      .select("data")
+      .eq("entity", rootEntity)
+      .eq("attribute", "root/reply-to")
+      .maybeSingle();
+    replyTo = (fact?.data as { value?: string } | null)?.value ?? null;
+  }
+  let replyTarget = replyTo ? await getReplyTarget(replyTo) : null;
+
   let scheduling = await loadSchedulingOptions({
     leaflet_id,
     publication_uri: publication?.uri,
@@ -170,6 +184,7 @@ export default async function PublishLeafletPage(props: Props) {
         entitiesToDelete={entitiesToDelete}
         hasDraft={hasDraft}
         scheduling={scheduling}
+        replyTarget={replyTarget}
       />
     </ReplicacheProvider>
   );

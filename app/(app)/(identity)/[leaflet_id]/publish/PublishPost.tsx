@@ -25,6 +25,7 @@ import { EditorState } from "prosemirror-state";
 import { TagSelector } from "components/Tags";
 import { latestSendAt } from "src/emailPosts/types";
 import { PublishingTo } from "./PublishingTo";
+import type { ReplyTarget } from "src/documentReplies";
 import {
   cancelScheduledPost,
   saveScheduledPost,
@@ -77,6 +78,9 @@ type Props = {
     existing: ScheduledPost | null;
     ineligibleReason: ScheduledPostIneligibleReason | null;
   };
+  // Set when this draft answers another post and publishing submits it as a
+  // reply.
+  replyTarget?: ReplyTarget | null;
 };
 
 type PublishState =
@@ -396,6 +400,18 @@ const PublishPostForm = (
                 publication_uri={props.publication_uri}
                 record={props.pubRecord}
               />
+              {props.replyTarget && (
+                <div className="flex justify-between gap-4">
+                  <div className="text-tertiary whitespace-nowrap">Replying to</div>
+                  <a
+                    href={props.replyTarget.href}
+                    target="_blank"
+                    className="font-bold text-secondary truncate"
+                  >
+                    {props.replyTarget.title}
+                  </a>
+                </div>
+              )}
               <hr className="border-border-light" />
 
               <BackdateOptions

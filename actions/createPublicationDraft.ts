@@ -7,7 +7,7 @@ import { isConfirmedContributor } from "src/contributorPermissions";
 export async function createPublicationDraft(
   publication_uri: string,
   pageType: "canvas" | "doc" = "doc",
-  options: { emailOnly?: boolean } = {},
+  options: { emailOnly?: boolean; replyTo?: string } = {},
 ) {
   let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) return null;
@@ -34,14 +34,13 @@ export async function createPublicationDraft(
     analytics: { kind: "publication_draft", publication: publication_uri },
   });
 
-  await supabaseServerClient
-    .from("leaflets_in_publications")
-    .insert({
-      publication: publication_uri,
-      leaflet: newLeaflet,
-      doc: null,
-      email_only: !!options.emailOnly,
-    });
+  await supabaseServerClient.from("leaflets_in_publications").insert({
+    publication: publication_uri,
+    leaflet: newLeaflet,
+    doc: null,
+    email_only: !!options.emailOnly,
+    reply_to: options.replyTo ?? null,
+  });
 
   // If a contributor created the draft, automatically add them as a draft
   // contributor so it shows up on their dashboard.

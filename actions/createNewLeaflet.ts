@@ -15,6 +15,7 @@ export async function createNewLeaflet({
   addToHomepage = true,
   analytics,
   canvasPostHeader,
+  replyTo,
 }: {
   pageType: "canvas" | "doc";
   redirectUser: boolean;
@@ -24,6 +25,7 @@ export async function createNewLeaflet({
   addToHomepage?: boolean;
   analytics?: { kind: string; publication?: string };
   canvasPostHeader?: boolean;
+  replyTo?: string;
 }) {
   let auth_token = (await cookies()).get("auth_token")?.value;
   trackDocumentCreated(analytics ?? { kind: pageType });
@@ -37,6 +39,14 @@ export async function createNewLeaflet({
         attribute: "theme/page-leaflet-watermark",
         data: { type: "boolean", value: true },
       },
+      ...(replyTo
+        ? [
+            {
+              attribute: "root/reply-to",
+              data: { type: "string", value: replyTo },
+            },
+          ]
+        : []),
     ],
     // Resolves auth_token → identity in the same round trip and inserts
     // nothing when the token is missing/invalid.
