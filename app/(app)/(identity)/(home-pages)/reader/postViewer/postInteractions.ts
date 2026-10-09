@@ -1,13 +1,19 @@
 import type { Post } from "actions/reader/getReaderFeed";
 import { mergePreferences } from "src/utils/mergePreferences";
+import { hasLeafletContent } from "lexicons/src/normalize";
 
-// Same availability logic as the feed card (PostListing).
+// Shared by the feed card (PostListing) and the reader's post viewer.
 export function getPostInteractions(post: Post) {
   let mergedPrefs = mergePreferences(
     post.documents.data?.preferences,
     post.publication?.pubRecord?.preferences,
   );
-  let showComments = mergedPrefs.showComments !== false;
+  // Third-party posts render in an iframe of their own site, which has no way
+  // to show or moderate Leaflet comments, so they take none.
+  let showComments =
+    mergedPrefs.showComments !== false &&
+    !!post.documents.data &&
+    hasLeafletContent(post.documents.data);
   return {
     showComments,
     showMentions: mergedPrefs.showMentions !== false,

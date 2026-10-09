@@ -20,7 +20,7 @@ import { useReaderPostViewer, type ReaderPanel } from "src/useReaderPostViewer";
 import { prefetchReaderPost } from "src/readerPost";
 import { preload } from "swr";
 import { checkUrlFrameable } from "actions/checkUrlFrameable";
-import { mergePreferences } from "src/utils/mergePreferences";
+import { getPostInteractions } from "app/(app)/(identity)/(home-pages)/reader/postViewer/postInteractions";
 import { ExternalLinkTiny } from "./Icons/ExternalLinkTiny";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 import { RecommendButton } from "./Interactions/RecommendButton";
@@ -84,20 +84,13 @@ export const PostListing = (
     ? pubRecord?.theme?.showPageBackground
     : postRecord.theme?.showPageBackground ?? true;
 
-  let mergedPrefs = mergePreferences(
-    postRecord?.preferences,
-    pubRecord?.preferences,
-  );
-
-  let quotes =
-    props.documents.mentionsCount ??
-    props.documents.document_mentions_in_bsky?.[0]?.count ??
-    0;
-  let comments =
-    mergedPrefs.showComments === false
-      ? 0
-      : props.documents.comments_on_documents?.[0]?.count || 0;
-  let recommends = props.documents.recommends_on_documents?.[0]?.count || 0;
+  let {
+    quotesCount: quotes,
+    commentsCount: comments,
+    recommendsCount: recommends,
+    showComments,
+    showMentions,
+  } = getPostInteractions(props);
   let tags = (postRecord?.tags as string[] | undefined) || [];
 
   let namedContributors = namedBylineProfiles(props.contributors);
@@ -180,8 +173,8 @@ export const PostListing = (
         commentsCount={comments}
         recommendsCount={recommends}
         tags={tags}
-        showComments={mergedPrefs.showComments !== false}
-        showMentions={mergedPrefs.showMentions !== false}
+        showComments={showComments}
+        showMentions={showMentions}
         documentUri={props.documents.uri}
         document={postRecord}
         publication={pubRecord}
