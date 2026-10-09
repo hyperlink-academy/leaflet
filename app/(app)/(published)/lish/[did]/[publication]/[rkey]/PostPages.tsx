@@ -72,11 +72,7 @@ function PageRenderer({
 
   if (isCanvas) {
     return (
-      <CanvasPage
-        {...sharedProps}
-        blocks={(page as PubLeafletPagesCanvas.Main).blocks || []}
-        pages={sharedProps.allPages}
-      />
+      <CanvasPage {...sharedProps} page={page} pages={sharedProps.allPages} />
     );
   }
 
@@ -84,6 +80,7 @@ function PageRenderer({
     <LinearDocumentPage
       {...sharedProps}
       blocks={(page as PubLeafletPagesLinearDocument.Main).blocks || []}
+      pageTheme={page.theme}
     />
   );
 }
@@ -169,9 +166,11 @@ export function PostPages({
       !firstPageIsCanvas,
   };
 
+  let loneCanvas = firstPageIsCanvas && openPageIds.length === 0 && !drawer;
+
   return (
     <GlobalImageLightbox did={did}>
-      {!sharedProps.fullPageScroll && <BookendSpacer />}
+      {!sharedProps.fullPageScroll && <BookendSpacer shrink={loneCanvas} />}
 
       <PageRenderer
         page={firstPage}
@@ -277,7 +276,7 @@ export function PostPages({
         );
       })}
 
-      {!sharedProps.fullPageScroll && <BookendSpacer />}
+      {!sharedProps.fullPageScroll && <BookendSpacer shrink={loneCanvas} />}
     </GlobalImageLightbox>
   );
 }

@@ -15,6 +15,11 @@ import { write_records_to_pds } from "./functions/write_records_to_pds";
 import { delete_records_from_pds } from "./functions/delete_records_from_pds";
 import { sync_document_metadata } from "./functions/sync_document_metadata";
 import { send_post_broadcast } from "./functions/send_post_broadcast";
+import {
+  send_email_post,
+  send_email_post_on_subscribe,
+} from "./functions/send_email_post";
+import { publish_scheduled_post } from "./functions/publish_scheduled_post";
 import { cleanup_deleted_blobs } from "./functions/cleanup_deleted_blobs";
 
 export const { GET, POST, PUT } = serve({
@@ -33,6 +38,9 @@ export const { GET, POST, PUT } = serve({
     delete_records_from_pds,
     sync_document_metadata,
     send_post_broadcast,
+    send_email_post,
+    send_email_post_on_subscribe,
+    publish_scheduled_post,
     cleanup_deleted_blobs,
   ],
 });

@@ -22,8 +22,15 @@ import { addShortcut } from "src/shortcuts";
 import { useHandleDrop } from "./useHandleDrop";
 import { listDndPages } from "./ListDndState";
 import { useFootnoteContext } from "components/Footnotes/FootnoteContext";
+import { canvasBlockEdges } from "src/utils/blockSpacing";
 
-export function Blocks(props: { entityID: string }) {
+// `group` renders a canvas block group's children: the same linear block
+// list, without the click-to-append area below it.
+export function Blocks(props: {
+  entityID: string;
+  group?: boolean;
+  preview?: boolean;
+}) {
   let zoomedBlock = useUIState((s) => s.zoomedBlocks[props.entityID]);
   let isPageFocused = useIsPageFocused(props.entityID);
   let pageBlocks = useBlocks(props.entityID);
@@ -92,13 +99,14 @@ export function Blocks(props: { entityID: string }) {
   // Make this page a drop target for list items dragged from any open page
   // (the DndContext lives in ListDndProvider, above all pages).
   useEffect(() => {
+    if (props.preview) return;
     listDndPages.set(props.entityID, {
       pageID: props.entityID,
       blocks: visibleBlocks,
       zoomDepth,
     });
     return () => void listDndPages.delete(props.entityID);
-  }, [props.entityID, visibleBlocks, zoomDepth]);
+  }, [props.entityID, props.preview, visibleBlocks, zoomDepth]);
 
   let { footnotes } = useFootnoteContext();
 
@@ -116,7 +124,7 @@ export function Blocks(props: { entityID: string }) {
       // block count (378ms/60 keystrokes at 3000 blocks, vs 156ms as flow-root).
       // flow-root rather than plain block so the first block's margin can't
       // collapse out through the container's top edge.
-      className={`blocks w-full flow-root outline-hidden ${areFootnotes ? "h-fit" : "min-h-full"}`}
+      className={`blocks w-full flow-root outline-hidden ${props.group ? `h-fit ${canvasBlockEdges}` : `pt-2 sm:pt-3 ${areFootnotes ? "h-fit" : "min-h-full"}`}`}
     >
       {visibleBlocks.map((f, index, arr) => {
         let nextBlock = arr[index + 1];
@@ -128,6 +136,7 @@ export function Blocks(props: { entityID: string }) {
         return (
           <Block
             pageType="doc"
+            preview={props.preview}
             {...f}
             key={f.entityID}
             entityID={f.entityID}
@@ -143,20 +152,24 @@ export function Blocks(props: { entityID: string }) {
           />
         );
       })}
-      <NewBlockButton
-        lastBlock={lastRootBlock || null}
-        unfoldOnAppend={unfoldOnAppend}
-        entityID={zoomedBlock ?? props.entityID}
-      />
+      {!props.preview && (!props.group || !lastRootBlock) && (
+        <NewBlockButton
+          lastBlock={lastRootBlock || null}
+          unfoldOnAppend={unfoldOnAppend}
+          entityID={zoomedBlock ?? props.entityID}
+        />
+      )}
 
-      <BlockListBottom
-        trailingBlock={trailingBlock}
-        unfoldToReachTrailing={unfoldToReachTrailing}
-        lastRootBlock={lastRootBlock || undefined}
-        unfoldOnAppend={unfoldOnAppend}
-        entityID={zoomedBlock ?? props.entityID}
-        areFootnotes={areFootnotes}
-      />
+      {!props.group && (
+        <BlockListBottom
+          trailingBlock={trailingBlock}
+          unfoldToReachTrailing={unfoldToReachTrailing}
+          lastRootBlock={lastRootBlock || undefined}
+          unfoldOnAppend={unfoldOnAppend}
+          entityID={zoomedBlock ?? props.entityID}
+          areFootnotes={areFootnotes}
+        />
+      )}
     </div>
   );
 }

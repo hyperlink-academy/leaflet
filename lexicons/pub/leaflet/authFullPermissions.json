@@ -24,6 +24,10 @@
             "pub.leaflet.graph.subscription",
             "pub.leaflet.graph.recommendations",
             "pub.leaflet.interactions.recommend",
+            "pub.leaflet.interactions.reply",
+            "pub.leaflet.interactions.replyVisibility",
+            "pub.leaflet.interactions.question",
+            "pub.leaflet.interactions.answer",
             "pub.leaflet.publicationPage"
           ]
         }

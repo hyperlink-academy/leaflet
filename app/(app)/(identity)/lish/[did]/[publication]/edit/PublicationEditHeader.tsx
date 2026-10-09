@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SpeedyLink } from "components/SpeedyLink";
 import { GoToArrowLined } from "components/Icons/GoToArrowLined";
 import { publishPublicationPages } from "actions/publishPublicationPages";
@@ -18,13 +18,18 @@ import {
 } from "components/ThemeManager/ThemeProvider";
 import { PubThemePickerPanel } from "components/ThemeManager/PubThemeSetter";
 import { useDraftPubThemeState } from "components/ThemeManager/PubDraftThemeSetter";
+import { useRouter } from "next/navigation";
+import type { CreateFlow } from "./PublicationDraftEditor";
+import { CustomizeTutorialTooltip } from "./CustomizeTutorialTooltip";
 
 type Status = "idle" | "publishing" | "success";
 
 export function PublicationEditHeader(props: {
   did: string;
   publicationName: string;
+  createFlow?: CreateFlow;
 }) {
+  let router = useRouter();
   let { data, mutate } = usePublicationData();
   let publicationUri = data?.publication?.uri;
   let publicationUrl = useNormalizedPublicationRecord()?.url;
@@ -32,6 +37,11 @@ export function PublicationEditHeader(props: {
   let toaster = useToaster();
 
   let dashboardHref = `/lish/${props.did}/${props.publicationName}/dashboard`;
+  let createdHref = `/lish/${props.did}/${props.publicationName}/created`;
+
+  useEffect(() => {
+    if (props.createFlow) router.prefetch(createdHref);
+  }, [props.createFlow, createdHref, router]);
 
   async function handlePublish() {
     if (!publicationUri || status === "publishing") return;
@@ -41,6 +51,10 @@ export function PublicationEditHeader(props: {
         publication_uri: publicationUri,
       });
       if (result.success) {
+        if (props.createFlow) {
+          router.push(createdHref);
+          return;
+        }
         setStatus("success");
         mutate();
         setTimeout(() => setStatus("idle"), 2000);
@@ -87,6 +101,8 @@ export function PublicationEditHeader(props: {
       <DotLoader className="h-[21px]!" />
     ) : status === "success" ? (
       "Published!"
+    ) : props.createFlow ? (
+      "Save and Continue"
     ) : (
       <div className="flex gap-[6px]">
         Update<span className="sm:block hidden "> Publication</span>
@@ -95,19 +111,30 @@ export function PublicationEditHeader(props: {
 
   return (
     <div className="publicationEditHeader bg-accent-1 text-accent-2 px-4 pt-4 pb-2 flex items-center justify-between gap-2 shrink-0">
-      <SpeedyLink
-        href={dashboardHref}
-        className="flex flex-col text-accent-2 hover:no-underline! leading-none"
-        aria-label="Back to dashboard "
-      >
-        <div className="flex items-center gap-1  font-bold text-sm">
-          <GoToArrowLined className="rotate-180" />
-          Back <span className="sm:block hidden">to Dashboard</span>
-        </div>
-        <div className="pl-5 text-xs">Draft autosaves</div>
-      </SpeedyLink>
+      {props.createFlow ? (
+        <SpeedyLink
+          href={createdHref}
+          className="flex items-center gap-1 font-bold text-sm text-accent-2 hover:no-underline! leading-none"
+        >
+          Do this later
+        </SpeedyLink>
+      ) : (
+        <SpeedyLink
+          href={dashboardHref}
+          className="flex flex-col text-accent-2 hover:no-underline! leading-none"
+          aria-label="Back to dashboard "
+        >
+          <div className="flex items-center gap-1  font-bold text-sm">
+            <GoToArrowLined className="rotate-180" />
+            Back <span className="sm:block hidden">to Dashboard</span>
+          </div>
+          <div className="pl-5 text-xs">Draft autosaves</div>
+        </SpeedyLink>
+      )}
       <div className="flex items-center gap-2 shrink-0">
-        <PubThemePopover />
+        <CustomizeTutorialTooltip target="theme">
+          <PubThemePopover />
+        </CustomizeTutorialTooltip>
         <button
           type="button"
           onClick={handlePublish}

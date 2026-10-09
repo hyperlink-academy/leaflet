@@ -13,12 +13,16 @@ export async function createPublicationDraftLeaflet(args: {
   did: string;
   description?: string;
   theme?: PubLeafletPublication.Theme;
+  postsListView?: "small" | "medium" | "chapter";
 }): Promise<string> {
   const firstBlocks: DefaultBlockSpec[] = [
     ...(args.description
-      ? [{ type: "text" as const, content: args.description }]
+      ? [{ type: "text" as const, content: args.description }, "text" as const]
       : []),
-    "posts-list",
+    args.postsListView
+      ? { type: "posts-list" as const, view: args.postsListView }
+      : ("posts-list" as const),
+    "text",
     "signup",
   ];
 
@@ -27,7 +31,10 @@ export async function createPublicationDraftLeaflet(args: {
     firstBlocks,
     rootFacts: themeFacts(args.theme, args.did),
     pageFacts: [
-      { attribute: "page/type", data: { type: "page-type-union", value: "doc" } },
+      {
+        attribute: "page/type",
+        data: { type: "page-type-union", value: "doc" },
+      },
       { attribute: "page/route", data: { type: "string", value: "/" } },
       { attribute: "page/title", data: { type: "string", value: "Home" } },
     ],

@@ -479,6 +479,151 @@ export type Database = {
           },
         ]
       }
+      document_replies: {
+        Row: {
+          document: string
+          indexed_at: string
+          record: Json
+          replier_did: string
+          subject: string
+          uri: string
+        }
+        Insert: {
+          document: string
+          indexed_at?: string
+          record: Json
+          replier_did: string
+          subject: string
+          uri: string
+        }
+        Update: {
+          document?: string
+          indexed_at?: string
+          record?: Json
+          replier_did?: string
+          subject?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_replies_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "document_replies_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      document_reply_visibility: {
+        Row: {
+          indexed_at: string
+          reply: string
+          subject: string
+          uri: string
+        }
+        Insert: {
+          indexed_at?: string
+          reply: string
+          subject: string
+          uri: string
+        }
+        Update: {
+          indexed_at?: string
+          reply?: string
+          subject?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_reply_visibility_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      document_questions: {
+        Row: {
+          asker_did: string
+          cid: string
+          indexed_at: string
+          record: Json
+          subject: string
+          uri: string
+        }
+        Insert: {
+          asker_did: string
+          cid: string
+          indexed_at?: string
+          record: Json
+          subject: string
+          uri: string
+        }
+        Update: {
+          asker_did?: string
+          cid?: string
+          indexed_at?: string
+          record?: Json
+          subject?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_questions_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      document_question_answers: {
+        Row: {
+          indexed_at: string
+          question: string
+          record: Json
+          subject: string
+          uri: string
+        }
+        Insert: {
+          indexed_at?: string
+          question: string
+          record: Json
+          subject: string
+          uri: string
+        }
+        Update: {
+          indexed_at?: string
+          question?: string
+          record?: Json
+          subject?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_question_answers_question_fkey"
+            columns: ["question"]
+            isOneToOne: true
+            referencedRelation: "document_questions"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "document_question_answers_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       documents: {
         Row: {
           bsky_like_count: number
@@ -579,6 +724,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_render_images: {
+        Row: {
+          created_at: string
+          key: string
+          spec: Json
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          spec: Json
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          spec?: Json
+        }
+        Relationships: []
       }
       email_subscriptions_to_entity: {
         Row: {
@@ -716,6 +879,7 @@ export type Database = {
           id: string
           interface_state: Json | null
           metadata: Json | null
+          tutorial: boolean
         }
         Insert: {
           atp_did?: string | null
@@ -725,6 +889,7 @@ export type Database = {
           id?: string
           interface_state?: Json | null
           metadata?: Json | null
+          tutorial?: boolean
         }
         Update: {
           atp_did?: string | null
@@ -734,6 +899,7 @@ export type Database = {
           id?: string
           interface_state?: Json | null
           metadata?: Json | null
+          tutorial?: boolean
         }
         Relationships: [
           {
@@ -784,6 +950,7 @@ export type Database = {
           cover_image: string | null
           description: string
           doc: string | null
+          email_only: boolean
           leaflet: string
           preferences: Json | null
           publication: string
@@ -797,6 +964,7 @@ export type Database = {
           cover_image?: string | null
           description?: string
           doc?: string | null
+          email_only?: boolean
           leaflet: string
           preferences?: Json | null
           publication: string
@@ -810,6 +978,7 @@ export type Database = {
           cover_image?: string | null
           description?: string
           doc?: string | null
+          email_only?: boolean
           leaflet?: string
           preferences?: Json | null
           publication?: string
@@ -1293,6 +1462,87 @@ export type Database = {
           },
         ]
       }
+      publication_email_posts: {
+        Row: {
+          audience: string
+          byline_dids: string[]
+          created_at: string
+          created_by: string
+          description: string
+          error: string | null
+          id: string
+          image_paths: string[]
+          leaflet: string
+          pages: Json
+          publication: string
+          revision: number
+          send_at: string | null
+          send_mode: string
+          sent_at: string | null
+          status: string
+          subscriber_count: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: string
+          byline_dids?: string[]
+          created_at?: string
+          created_by: string
+          description?: string
+          error?: string | null
+          id?: string
+          image_paths?: string[]
+          leaflet: string
+          pages: Json
+          publication: string
+          revision?: number
+          send_at?: string | null
+          send_mode: string
+          sent_at?: string | null
+          status: string
+          subscriber_count?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: string
+          byline_dids?: string[]
+          created_at?: string
+          created_by?: string
+          description?: string
+          error?: string | null
+          id?: string
+          image_paths?: string[]
+          leaflet?: string
+          pages?: Json
+          publication?: string
+          revision?: number
+          send_at?: string | null
+          send_mode?: string
+          sent_at?: string | null
+          status?: string
+          subscriber_count?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_email_posts_leaflet_fkey"
+            columns: ["leaflet"]
+            isOneToOne: true
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_email_posts_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       publication_email_subscriber_events: {
         Row: {
           event_type: string
@@ -1576,6 +1826,7 @@ export type Database = {
         Row: {
           confirmation_code: string | null
           created_at: string
+          embed_redirect_url: string | null
           enabled: boolean
           publication: string
           reply_to_email: string | null
@@ -1585,6 +1836,7 @@ export type Database = {
         Insert: {
           confirmation_code?: string | null
           created_at?: string
+          embed_redirect_url?: string | null
           enabled?: boolean
           publication: string
           reply_to_email?: string | null
@@ -1594,6 +1846,7 @@ export type Database = {
         Update: {
           confirmation_code?: string | null
           created_at?: string
+          embed_redirect_url?: string | null
           enabled?: boolean
           publication?: string
           reply_to_email?: string | null
@@ -1734,6 +1987,69 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "publication_recommendations_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      publication_scheduled_posts: {
+        Row: {
+          bsky_post: Json | null
+          created_at: string
+          created_by: string
+          error: string | null
+          id: string
+          leaflet: string
+          publication: string
+          publish_at: string
+          revision: number
+          send_email: boolean
+          show_in_discover: boolean
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          bsky_post?: Json | null
+          created_at?: string
+          created_by: string
+          error?: string | null
+          id?: string
+          leaflet: string
+          publication: string
+          publish_at: string
+          revision?: number
+          send_email?: boolean
+          show_in_discover?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          bsky_post?: Json | null
+          created_at?: string
+          created_by?: string
+          error?: string | null
+          id?: string
+          leaflet?: string
+          publication?: string
+          publish_at?: string
+          revision?: number
+          send_email?: boolean
+          show_in_discover?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_scheduled_posts_leaflet_fkey"
+            columns: ["leaflet"]
+            isOneToOne: true
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_scheduled_posts_publication_fkey"
             columns: ["publication"]
             isOneToOne: false
             referencedRelation: "publications"

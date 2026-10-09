@@ -47,10 +47,12 @@ export async function generateMetadata(props: {
 
 type Props = {
   params: Promise<{ did: string; publication: string }>;
+  searchParams: Promise<{ create?: string }>;
 };
 
 export default async function PublicationEditPage(props: Props) {
   let params = await props.params;
+  let { create } = await props.searchParams;
   let did = decodeURIComponent(params.did);
   let publicationName = decodeURIComponent(params.publication);
 
@@ -119,6 +121,10 @@ export default async function PublicationEditPage(props: Props) {
   const fonts = extractFontsFromFacts(initialFacts as any, rootEntity);
 
   let uri = new AtUri(publication.uri);
+  let createFlow =
+    create === "true"
+      ? { tutorial: identity.publications.length <= 1 }
+      : undefined;
 
   return (
     <PublicationSWRDataProvider
@@ -147,6 +153,7 @@ export default async function PublicationEditPage(props: Props) {
             newsletterMode={
               !!publication.publication_newsletter_settings?.enabled
             }
+            createFlow={createFlow}
           />
         </PageSWRDataProvider>
       </React.Fragment>

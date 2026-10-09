@@ -4,19 +4,17 @@ import {
   PubLeafletPagesCanvas,
   PubLeafletBlocksCode,
 } from "lexicons/api";
+import { pageBlocksInOrder } from "src/utils/pageBlocksInOrder";
 import { codeToHtml, bundledLanguagesInfo, bundledThemesInfo } from "shiki";
 
+// Keyed by the block's rendered index path (see pageBlocksInOrder), which is
+// what PostContent and CanvasPage look prerendered code up by.
 export async function extractCodeBlocks(
-  blocks: PubLeafletPagesLinearDocument.Block[] | PubLeafletPagesCanvas.Block[],
+  page: PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main,
 ): Promise<Map<string, string>> {
   const codeBlocks = new Map<string, string>();
 
-  // Process all blocks (works for both linear and canvas)
-  for (let i = 0; i < blocks.length; i++) {
-    const block = blocks[i];
-    const currentIndex = [i];
-    const indexKey = currentIndex.join(".");
-
+  for (const { block, index } of pageBlocksInOrder(page)) {
     if (PubLeafletBlocksCode.isMain(block.block)) {
       let { language, syntaxHighlightingTheme } = block.block;
       const lang =
@@ -26,7 +24,7 @@ export async function extractCodeBlocks(
         "github-light";
 
       const html = await codeToHtml(block.block.plaintext, { lang, theme });
-      codeBlocks.set(indexKey, html);
+      codeBlocks.set(index.join("."), html);
     }
   }
 

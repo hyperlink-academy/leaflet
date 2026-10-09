@@ -1,5 +1,9 @@
 "use client";
 import {
+  blockSpacingClassName,
+  type SpacingKind,
+} from "src/utils/blockSpacing";
+import {
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
   PubLeafletBlocksUnorderedList,
@@ -29,9 +33,11 @@ import {
   blobRefToSrc,
   POST_BODY_IMAGE_WIDTH,
 } from "src/utils/blobRefToSrc";
+import { snapToImageWidth } from "supabase/imageSizes";
 import { srcDocSandbox } from "src/utils/srcDocSandbox";
 import { TextBlock } from "./Blocks/TextBlock";
 import { StaticMathBlock } from "./Blocks/StaticMathBlock";
+import { InkSvg } from "components/Blocks/DrawingBlock/InkSvg";
 import { PubCodeBlock } from "./Blocks/PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { PubBlueskyPostBlock } from "./Blocks/PublishBskyPostBlock";
@@ -48,6 +54,10 @@ import {
 } from "components/ThemeManager/PublicationThemeProvider";
 import { useStandardSitePublication } from "components/StandardSitePublicationDataProvider";
 import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
+import { CanvasBlocks } from "./CanvasBlockContent";
+import { PublishedPageThemeProvider } from "components/ThemeManager/PublishedPageThemeProvider";
+import { ScaledCanvas } from "components/Blocks/ScaledCanvas";
+import { ReadOnlyAltText } from "components/Blocks/ReadOnlyAltText";
 import { PublishedImageGallery } from "./Blocks/PublishedImageGallery";
 import { PublishedImageBlock } from "./Blocks/PublishedImageBlock";
 import { useOpenImageLightbox } from "./GlobalImageLightbox";
@@ -66,6 +76,10 @@ import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { MembersOnlyPaywall } from "./MembersOnlyPaywall";
 import { PublishedRecommendedPubs } from "./Blocks/PublishedRecommendedPubs";
+import { DocumentReplies } from "components/Blocks/ReplyBlock/DocumentReplies";
+import { DEFAULT_REPLY_PROMPT_TEXT } from "components/Blocks/ReplyBlock/constants";
+import { DocumentQuestions } from "components/Blocks/QuestionsBlock/DocumentQuestions";
+import { useOptionalPostResources } from "./PostDataProvider";
 import { PostHeader } from "./PostHeader/PostHeader";
 import { usePostHeaderBlockData } from "./PostHeader/postHeaderBlockContext";
 
@@ -184,8 +198,11 @@ export let Block = ({
   postsListData,
   isFirst,
   isLast,
+  canvasWidth,
 }: {
   pageId?: string;
+  /** Canvas px the block is laid out at; requests images sized for it. */
+  canvasWidth?: number;
   preview?: boolean;
   index: number[];
   block: PubLeafletPagesLinearDocument.Block;
@@ -209,6 +226,9 @@ export let Block = ({
   let canOpenLightbox = !!openLightbox && !preview;
   let document = useDocumentOptional();
   let postHeaderData = usePostHeaderBlockData();
+  let postResources = useOptionalPostResources();
+  let replyData = postResources?.replyData;
+  let questionData = postResources?.questionData;
   let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
     style: {
@@ -242,34 +262,30 @@ export let Block = ({
   )
     alignment = "text-center justify-center";
 
-  let isHeading = PubLeafletBlocksHeader.isMain(b.block);
-
-  // Headers carry a level-based top margin so they read as a new section,
-  // matching the editor (components/Blocks/Block.tsx). Tightened to mt-1 after
-  // another heading, and dropped entirely right after a horizontal rule.
-  let topMargin: string;
-  if (PubLeafletBlocksHeader.isMain(b.block)) {
-    let prevBlock = previousBlock?.block;
-    topMargin = isFirst
-      ? "mt-1 sm:mt-2"
-      : PubLeafletBlocksHorizontalRule.isMain(prevBlock)
-        ? ""
-        : PubLeafletBlocksHeader.isMain(prevBlock)
-          ? "mt-1"
-          : { 1: "mt-5 sm:mt-6", 2: "mt-4 sm:mt-5", 3: "mt-2 sm:mt-3" }[
-              b.block.level ?? 1
-            ] ?? "mt-2 sm:mt-3";
-  } else {
-    topMargin = isFirst ? "mt-0" : "mt-1";
-  }
-
+  let previousKind = previousBlock && spacingKind(previousBlock.block);
   let className = `
     postBlockWrapper
-    min-h-7
-    ${topMargin} ${isLast ? "mb-3 sm:mb-4" : isHeading ? "mb-0!" : "mb-2"}
-    ${isList && "isListItem mb-0! "}
+    ${blockSpacingClassName({
+      kind: spacingKind(b.block),
+      headingLevel: PubLeafletBlocksHeader.isMain(b.block)
+        ? b.block.level
+        : undefined,
+      previous: previousKind,
+      isFirst: !!isFirst,
+      isLast: !!isLast,
+      isListItem: isList,
+    })}
+    ${isList && "isListItem"}
     ${alignment}
     `;
+
+  // A list item's top margin sits inside its flex row, so unlike a paragraph's
+  // it can't collapse into the previous block's bottom margin; pull the list up
+  // by that margin so it spaces like the editor's list rows.
+  let listPullUp =
+    previousKind && previousKind !== "heading" && previousKind !== "list"
+      ? "-mt-1"
+      : "";
 
   const handlers: BlockHandlers<React.ReactNode> = {
     "pub.leaflet.blocks.page": (block) => {
@@ -282,6 +298,9 @@ export let Block = ({
       return (
         <PublishedPageLinkBlock
           blocks={page.blocks}
+          theme={page.theme}
+          canvasBackground={isCanvas ? page.background : undefined}
+          canvasPattern={isCanvas ? page.pattern : undefined}
           pageId={id}
           parentPageId={pageId}
           did={did}
@@ -294,6 +313,35 @@ export let Block = ({
         />
       );
     },
+    "pub.leaflet.blocks.embeddedCanvas": (block) => {
+      let page = pages.find((p) => p.id === block.id);
+      if (!PubLeafletPagesCanvas.isMain(page) || !page.width || !page.height)
+        return;
+      let size = { width: page.width, height: page.height };
+      return (
+        <PublishedPageThemeProvider theme={page.theme} key={block.id}>
+          <div className={`relative ${className}`} {...blockProps}>
+            <div className="w-full block-border overflow-clip bg-bg-page">
+              <ScaledCanvas size={size} alt={block.alt}>
+                <CanvasBlocks
+                  blocks={page.blocks}
+                  background={page.background}
+                  pattern={page.pattern}
+                  size={size}
+                  did={did}
+                  bskyPostData={bskyPostData}
+                  standardSitePostData={standardSitePostData}
+                  pollData={pollData}
+                  pages={pages}
+                  preview
+                />
+              </ScaledCanvas>
+            </div>
+            {block.alt && <ReadOnlyAltText alt={block.alt} />}
+          </div>
+        </PublishedPageThemeProvider>
+      );
+    },
     "pub.leaflet.blocks.bskyPost": (block) => {
       let uri = block.postRef.uri;
       let post = bskyPostData.find((p) => p.uri === uri);
@@ -304,6 +352,7 @@ export let Block = ({
           className={className}
           pageId={pageId}
           clientHost={block.clientHost}
+          view={block.view}
         />
       );
     },
@@ -434,6 +483,39 @@ export let Block = ({
         </div>
       );
     },
+    "pub.leaflet.blocks.reply": (block) => {
+      if (!document || preview) return null;
+      return (
+        <div className={className} {...blockProps}>
+          <div className="replyBlock block-border w-full p-2 sm:p-3">
+            <DocumentReplies
+              documentUri={document.uri}
+              initialReplies={replyData}
+              buttonText={block.buttonText}
+              prompt={block.promptText || DEFAULT_REPLY_PROMPT_TEXT}
+              showThemes={block.showPublicationTheme !== false}
+            />
+          </div>
+        </div>
+      );
+    },
+    "pub.leaflet.blocks.questions": (block) => {
+      if (!document || preview) return null;
+      return (
+        <div className={className} {...blockProps}>
+          <div
+            id="questions"
+            className="questionsBlock block-border w-full p-2 sm:p-3"
+          >
+            <DocumentQuestions
+              documentUri={document.uri}
+              initialQuestions={questionData}
+              buttonText={block.buttonText}
+            />
+          </div>
+        </div>
+      );
+    },
     "pub.leaflet.blocks.postsList": (block) => {
       if (!postsListData) return null;
       const view = resolvePostsListView(block.view);
@@ -484,10 +566,17 @@ export let Block = ({
       );
     },
     "pub.leaflet.blocks.button": (block) => {
+      let fullWidth =
+        b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignJustify";
       return (
         <div className={`flex ${alignment} ${className}`} {...blockProps}>
-          <a href={block.url} target="_blank" rel="noopener noreferrer">
-            <ButtonPrimary role="link" type="submit">
+          <a
+            href={block.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={fullWidth ? "w-full" : undefined}
+          >
+            <ButtonPrimary role="link" type="submit" fullWidth={fullWidth}>
               {block.text}
             </ButtonPrimary>
           </a>
@@ -496,7 +585,7 @@ export let Block = ({
     },
     "pub.leaflet.blocks.unorderedList": (block) => {
       return (
-        <ul className="-ml-px sm:ml-[9px] pb-2">
+        <ul className={`pb-2 ${listPullUp}`}>
           {block.children.map((child, i) => (
             <ListItem
               pollData={pollData}
@@ -518,7 +607,7 @@ export let Block = ({
     },
     "pub.leaflet.blocks.orderedList": (block) => {
       return (
-        <ol className="-ml-px sm:ml-[9px] pb-2" start={block.startIndex || 1}>
+        <ol className={`pb-2 ${listPullUp}`} start={block.startIndex || 1}>
           {block.children.map((child, i) => (
             <OrderedListItem
               pollData={pollData}
@@ -539,6 +628,18 @@ export let Block = ({
         </ol>
       );
     },
+    "pub.leaflet.blocks.drawing": (block) => (
+      <div className="w-full">
+        <InkSvg
+          viewBox={block.viewBox}
+          strokes={block.strokes.map((stroke, i) => ({
+            id: String(i),
+            stroke,
+          }))}
+          fills={block.fills?.map((fill, i) => ({ id: String(i), fill }))}
+        />
+      </div>
+    ),
     "pub.leaflet.blocks.math": (block) => {
       return <StaticMathBlock block={block} />;
     },
@@ -600,10 +701,19 @@ export let Block = ({
       );
     },
     "pub.leaflet.blocks.image": (block) => {
+      // A canvas block has a fixed width and the zoom layer is rasterized at
+      // 1 canvas px per CSS px, so a body-column-sized image only costs
+      // decode time (the first zoom-out decodes every image on the page).
       let src = blobRefToSrc(block.image.ref, did, undefined, {
-        width: POST_BODY_IMAGE_WIDTH,
+        width: canvasWidth
+          ? snapToImageWidth(Math.ceil(canvasWidth * 2))
+          : POST_BODY_IMAGE_WIDTH,
       });
       let cid = blobRefCid(block.image.ref);
+      let videoSrc =
+        block.image.mimeType === "image/gif"
+          ? blobRefToSrc(block.image.ref, did, undefined, { format: "mp4" })
+          : undefined;
       let isFullBleed = block.fullBleed;
       let prevIsFullBleed =
         previousBlock?.block &&
@@ -633,6 +743,8 @@ export let Block = ({
             height={block.aspectRatio?.height}
             width={block.aspectRatio?.width}
             displayWidth={block.width}
+            mimeType={block.image.mimeType}
+            videoSrc={videoSrc}
             isFullBleed={isFullBleed}
             className={className}
             // The first block of a page is the one image plausibly above the
@@ -661,7 +773,7 @@ export let Block = ({
       return (
         // all this margin stuff is a highly unfortunate hack so that the border-l on blockquote is the height of just the text rather than the height of the block, which includes padding.
         <blockquote
-          className={`blockquote whitespace-pre-wrap py-0! mb-2! ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-3! pt-3!" : "mt-1!"}`}
+          className={`blockquote whitespace-pre-wrap py-0! ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) && !isList ? "pt-3!" : ""}`}
           {...blockProps}
         >
           <TextBlock
@@ -723,7 +835,11 @@ export let Block = ({
         preview || !slug ? (
           children
         ) : (
-          <a href={href} className="no-underline text-inherit cursor-pointer">
+          <a
+            href={href}
+            data-canvas-passive
+            className="no-underline text-inherit cursor-pointer"
+          >
             {children}
           </a>
         );
@@ -877,6 +993,27 @@ function PublishedIframeBlock(props: {
   );
 }
 
+function spacingKind(
+  block: PubLeafletPagesLinearDocument.Block["block"],
+): SpacingKind {
+  if (PubLeafletBlocksHeader.isMain(block)) return "heading";
+  if (PubLeafletBlocksBlockquote.isMain(block)) return "blockquote";
+  if (PubLeafletBlocksHorizontalRule.isMain(block)) return "horizontal-rule";
+  if (
+    PubLeafletBlocksUnorderedList.isMain(block) ||
+    PubLeafletBlocksOrderedList.isMain(block)
+  )
+    return "list";
+  return "other";
+}
+
+// Mirrors the editor's ListMarker: each level indents by --list-marker-width
+// (38px) past its parent's text, whose marker column is 32px plus the li's 8px
+// gap, and a checkbox widens only its own row, not its children's.
+function nestedListIndent(parentIsChecklist: boolean) {
+  return parentIsChecklist ? "-ml-[22px]" : "-ml-[2px]";
+}
+
 function ListItem(props: {
   index: number[];
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
@@ -890,8 +1027,9 @@ function ListItem(props: {
   pageId?: string;
   footnoteIndexMap?: Map<string, number>;
 }) {
+  let isChecklist = props.item.checked !== undefined;
   let children = props.item.children?.length ? (
-    <ul className="-ml-[7px] sm:ml-[7px]">
+    <ul className={nestedListIndent(isChecklist)}>
       {props.item.children.map((child, index) => (
         <ListItem
           pages={props.pages}
@@ -911,7 +1049,7 @@ function ListItem(props: {
     </ul>
   ) : null;
   let orderedChildren = props.item.orderedListChildren?.children?.length ? (
-    <ol className="-ml-[7px] sm:ml-[7px]">
+    <ol className={nestedListIndent(isChecklist)}>
       {props.item.orderedListChildren.children.map((child, index) => (
         <OrderedListItem
           pages={props.pages}
@@ -931,7 +1069,6 @@ function ListItem(props: {
       ))}
     </ol>
   ) : null;
-  let isChecklist = props.item.checked !== undefined;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
       {/* One box for the marker and the checkbox, so the li's gap only
@@ -940,9 +1077,11 @@ function ListItem(props: {
           the first text line; mt-1 stands in for the top margin the published
           renderer puts on the content block instead of the row. */}
       <div className="flex shrink-0">
-        <div
-          className={`listMarker shrink-0 mx-3 z-1 mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
-        />
+        <div className="flex justify-end w-8 shrink-0">
+          <div
+            className={`listMarker shrink-0 mr-3 z-1 mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
+          />
+        </div>
         {isChecklist && (
           <div
             className={`shrink-0 flex items-center h-3 mt-1 pt-[12px] pr-2 ${props.item.checked ? "text-accent-contrast" : "text-border"}`}
@@ -988,8 +1127,9 @@ function OrderedListItem(props: {
 }) {
   const calculatedIndex =
     (props.startIndex || 1) + props.index[props.index.length - 1];
+  let isChecklist = props.item.checked !== undefined;
   let children = props.item.children?.length ? (
-    <ol className="-ml-[7px] sm:ml-[7px]">
+    <ol className={nestedListIndent(isChecklist)}>
       {props.item.children.map((child, index) => (
         <OrderedListItem
           pages={props.pages}
@@ -1010,7 +1150,7 @@ function OrderedListItem(props: {
     </ol>
   ) : null;
   let unorderedChildren = props.item.unorderedListChildren?.children?.length ? (
-    <ul className="-ml-[7px] sm:ml-[7px]">
+    <ul className={nestedListIndent(isChecklist)}>
       {props.item.unorderedListChildren.children.map((child, index) => (
         <ListItem
           pages={props.pages}
@@ -1029,11 +1169,10 @@ function OrderedListItem(props: {
       ))}
     </ul>
   ) : null;
-  let isChecklist = props.item.checked !== undefined;
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
       <div className="flex shrink-0">
-        <div className="listMarker shrink-0 ml-2 z-1 mt-[4px]">
+        <div className="listMarker shrink-0 w-8 text-right z-1 mt-[4px]">
           {calculatedIndex}.
         </div>
         {isChecklist && (

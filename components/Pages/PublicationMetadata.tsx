@@ -1,6 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
-import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import {
+  useLeafletPublicationData,
+  useLeafletScheduledPublishAt,
+} from "components/PageSWRDataProvider";
 import { useRef, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { localImages } from "src/utils/addImage";
@@ -25,6 +28,7 @@ import { PostHeaderLayout } from "app/(app)/(published)/lish/[did]/[publication]
 import { Backdater } from "./Backdater";
 import { RecommendEmptyTiny } from "components/Icons/RecommendTiny";
 import { mergePreferences } from "src/utils/mergePreferences";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { DraftContributorSelector } from "./DraftContributorSelector";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 
@@ -56,6 +60,7 @@ export const PublicationMetadata = (props: {
     normalizedPublication?.preferences,
   );
   let publishedAt = normalizedDocument?.publishedAt;
+  let scheduledPublishAt = useLeafletScheduledPublishAt();
 
   if (!pub) return null;
 
@@ -119,36 +124,48 @@ export const PublicationMetadata = (props: {
       }
       postInfo={
         <>
-          <div className="flex gap-1 items-center">
-            {pub.publications && leaflet_id && (
-              <>
-                <DraftContributorSelector leaflet_id={leaflet_id} />
-              </>
-            )}
-            {pub.doc ? (
-              <div className="flex gap-2 items-center">
-                <p className="text-sm text-tertiary">
-                  Published{" "}
-                  {publishedAt && (
-                    <Backdater publishedAt={publishedAt} docURI={pub.doc} />
-                  )}
-                </p>
-
-                <Link
-                  target="_blank"
-                  className="text-sm"
-                  href={
-                    pub.publications
-                      ? `${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`
-                      : `/p/${new AtUri(pub.doc).host}/${new AtUri(pub.doc).rkey}`
-                  }
-                >
-                  View
-                </Link>
+          {/* The status drops to its own line as a unit when the byline is too
+              long to share one. It leads with a separator; the row is shifted
+              left by the separator plus gap and clipped, so that separator is
+              hidden whenever the status starts a line. */}
+          <div className="overflow-x-clip min-w-0">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 -ml-[9px]">
+              {/* empty:hidden because DraftContributorSelector can render nothing */}
+              <div className="pl-[9px] empty:hidden">
+                {pub.publications && leaflet_id && (
+                  <DraftContributorSelector leaflet_id={leaflet_id} />
+                )}
               </div>
-            ) : (
-              <p>Draft</p>
-            )}
+              <div className="flex gap-2 items-center">
+                <Separator classname="h-4!" />
+                {pub.doc ? (
+                  <>
+                    <p className="text-sm text-tertiary">
+                      Published{" "}
+                      {publishedAt && (
+                        <Backdater publishedAt={publishedAt} docURI={pub.doc} />
+                      )}
+                    </p>
+
+                    <Link
+                      target="_blank"
+                      className="text-sm"
+                      href={
+                        pub.publications
+                          ? `${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`
+                          : `/p/${new AtUri(pub.doc).host}/${new AtUri(pub.doc).rkey}`
+                      }
+                    >
+                      View
+                    </Link>
+                  </>
+                ) : scheduledPublishAt ? (
+                  <ScheduledLabel publishAt={scheduledPublishAt} />
+                ) : (
+                  <p>Draft</p>
+                )}
+              </div>
+            </div>
           </div>
           {!props.noInteractions && (
             <div className="flex gap-2 text-border items-center">
@@ -183,6 +200,17 @@ export const PublicationMetadata = (props: {
       }
     />
   );
+};
+
+// Date-only: this renders on the server too, where the viewer's clock time
+// isn't known.
+const ScheduledLabel = (props: { publishAt: string }) => {
+  let date = useLocalizedDate(props.publishAt, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return <p>Scheduled for {date}</p>;
 };
 
 const TextField = ({

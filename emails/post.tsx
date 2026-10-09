@@ -1,3 +1,4 @@
+import { DEFAULT_REPLY_BUTTON_TEXT } from "components/Blocks/ReplyBlock/constants";
 import {
   Body,
   Column,
@@ -13,7 +14,7 @@ import {
   dracula,
 } from "@react-email/components";
 import type { PrismLanguage } from "@react-email/code-block";
-import { UnicodeString, type AppBskyFeedDefs } from "@atproto/api";
+import { UnicodeString, type $Typed, type AppBskyFeedDefs } from "@atproto/api";
 import React, { Fragment, type CSSProperties } from "react";
 import {
   PubLeafletBlocksBlockquote,
@@ -38,6 +39,7 @@ import {
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { matchBlock, type BlockHandlers } from "src/utils/blockDispatch";
 import { canvasBlockOrder } from "src/utils/canvasBlockOrder";
+import { canvasBlockBlocks } from "src/utils/pageBlocksInOrder";
 import { normalizePageLinkDisplay } from "src/utils/pageLinkDisplay";
 import { pageRecordTextBlocks } from "src/utils/pageRecordTextBlocks";
 import { atUriToUrl, didToBlueskyUrl } from "src/utils/mentionUtils";
@@ -64,24 +66,23 @@ import {
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import { supabaseServerClient } from "supabase/serverClient";
+import type { EmailRenderImage } from "src/emailRender/spec";
 
-/**
- * A document page in the shape both send paths already have on hand: the
- * broadcast's lexicon record pages and the preview's processBlocksToPages
- * output both carry an id plus a typed block list.
- */
-export type PostEmailPage = {
-  id: string;
-  type: "doc" | "canvas";
-  blocks: PubLeafletPagesLinearDocument.Block[] | PubLeafletPagesCanvas.Block[];
-};
+/** A document page as both the broadcast's record and the preview's draft conversion produce it. */
+export type PostEmailPage =
+  | $Typed<PubLeafletPagesLinearDocument.Main>
+  | $Typed<PubLeafletPagesCanvas.Main>;
 
 type PostEmailProps = {
   publicationName: string;
   publicationUrl: string;
   postTitle: string;
   postDescription?: string;
-  postUrl: string;
+  /**
+   * The post on the web. Omitted for email-only posts, which have no web page:
+   * the title, blocks and footer then render without links out to it.
+   */
+  postUrl?: string;
   authorName?: string;
   publishedAtLabel?: string;
   blocks: PubLeafletPagesLinearDocument.Block[];
@@ -137,6 +138,17 @@ type PostEmailProps = {
    * footer, matching the web renderer.
    */
   currentPublicationUri?: string;
+  /**
+   * The post's first page is a canvas, which has no linear body: the email
+   * shows it as the `root` render image between "See full post" buttons.
+   */
+  canvasPost?: boolean;
+  /**
+   * Canvases pre-rendered to images, by the ids
+   * collectEmailRenderTargets assigns. Anything missing falls back to its
+   * HTML rendering.
+   */
+  renderImages?: Record<string, EmailRenderImage>;
 };
 
 const drawerUrl = (base: string, drawer: "quotes" | "comments") => {
@@ -177,7 +189,10 @@ const facet = (
   features,
 });
 
-const bskyPostBlock = (rkey: string): PubLeafletPagesLinearDocument.Block => ({
+const bskyPostBlock = (
+  rkey: string,
+  view?: "media",
+): PubLeafletPagesLinearDocument.Block => ({
   $type: "pub.leaflet.pages.linearDocument#block",
   block: {
     $type: "pub.leaflet.blocks.bskyPost",
@@ -185,6 +200,7 @@ const bskyPostBlock = (rkey: string): PubLeafletPagesLinearDocument.Block => ({
       uri: `at://did:plc:preview/app.bsky.feed.post/${rkey}`,
       cid: "preview",
     },
+    view,
   },
 });
 
@@ -202,7 +218,7 @@ const galleryImage = (
 });
 
 const galleryBlock = (
-  format: "grid" | "carousel" | "strip",
+  format: "grid" | "carousel" | "strip" | "masonry",
   images: PubLeafletBlocksImageGallery.Image[],
 ): PubLeafletPagesLinearDocument.Block => ({
   $type: "pub.leaflet.pages.linearDocument#block",
@@ -627,6 +643,8 @@ const defaultProps: PostEmailProps = {
     bskyPostBlock("external"),
     bskyPostBlock("quote"),
     bskyPostBlock("video"),
+    bskyPostBlock("image", "media"),
+    bskyPostBlock("video", "media"),
     bskyPostBlock("labeled"),
     bskyPostBlock("optout"),
     // No fixture post for this URI — exercises the deleted/unfetched fallback.
@@ -650,6 +668,14 @@ const defaultProps: PostEmailProps = {
       galleryImage(600, 400, "4"),
       galleryImage(600, 300, "5"),
     ]),
+    galleryBlock("masonry", [
+      galleryImage(600, 400, "1"),
+      galleryImage(400, 600, "2"),
+      galleryImage(500, 500, "3"),
+      galleryImage(400, 700, "4"),
+      galleryImage(600, 300, "5"),
+      galleryImage(600, 450, "6"),
+    ]),
     galleryBlock("strip", [
       galleryImage(1200, 800, "1"),
       galleryImage(1200, 600, "2"),
@@ -670,8 +696,8 @@ const defaultProps: PostEmailProps = {
   ],
   pages: [
     {
+      $type: "pub.leaflet.pages.linearDocument",
       id: "preview-subpage",
-      type: "doc",
       blocks: [
         headingBlock("A sub-page with a title", 2),
         textBlock(
@@ -691,8 +717,8 @@ const defaultProps: PostEmailProps = {
       ],
     },
     {
+      $type: "pub.leaflet.pages.canvas",
       id: "preview-canvas",
-      type: "canvas",
       blocks: [
         {
           $type: "pub.leaflet.pages.canvas#block",
@@ -896,59 +922,79 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                                   {byline}
                                 </ReactEmailText>
                               </Column>
-                              <Column style={{ width: 12 }} />
-                              <Column
-                                style={{ width: 16, verticalAlign: "middle" }}
-                              >
-                                <Link
-                                  href={drawerUrl(p.postUrl, "quotes")}
-                                  style={accentLink}
-                                >
-                                  <Img
-                                    width={16}
-                                    height={16}
-                                    src={makeEmailIconUrl(
-                                      p.assetsBaseUrl,
-                                      "quote",
-                                      theme.accentBackground,
-                                    )}
-                                    alt="See quotes"
-                                  />
-                                </Link>
-                              </Column>
-                              <Column style={{ width: 8 }} />
-                              <Column
-                                style={{ width: 16, verticalAlign: "middle" }}
-                              >
-                                <Link
-                                  href={drawerUrl(p.postUrl, "comments")}
-                                  style={accentLink}
-                                >
-                                  <Img
-                                    width={16}
-                                    height={16}
-                                    src={makeEmailIconUrl(
-                                      p.assetsBaseUrl,
-                                      "comment",
-                                      theme.accentBackground,
-                                    )}
-                                    alt="See comments"
-                                  />
-                                </Link>
-                              </Column>
+                              {p.postUrl ? (
+                                <>
+                                  <Column style={{ width: 12 }} />
+                                  <Column
+                                    style={{
+                                      width: 16,
+                                      verticalAlign: "middle",
+                                    }}
+                                  >
+                                    <Link
+                                      href={drawerUrl(p.postUrl, "quotes")}
+                                      style={accentLink}
+                                    >
+                                      <Img
+                                        width={16}
+                                        height={16}
+                                        src={makeEmailIconUrl(
+                                          p.assetsBaseUrl,
+                                          "quote",
+                                          theme.accentBackground,
+                                        )}
+                                        alt="See quotes"
+                                      />
+                                    </Link>
+                                  </Column>
+                                  <Column style={{ width: 8 }} />
+                                  <Column
+                                    style={{
+                                      width: 16,
+                                      verticalAlign: "middle",
+                                    }}
+                                  >
+                                    <Link
+                                      href={drawerUrl(p.postUrl, "comments")}
+                                      style={accentLink}
+                                    >
+                                      <Img
+                                        width={16}
+                                        height={16}
+                                        src={makeEmailIconUrl(
+                                          p.assetsBaseUrl,
+                                          "comment",
+                                          theme.accentBackground,
+                                        )}
+                                        alt="See comments"
+                                      />
+                                    </Link>
+                                  </Column>
+                                </>
+                              ) : null}
                             </Row>
                           </Section>
+                        ) : null}
+
+                        {p.canvasPost ? (
+                          <CanvasPostBody
+                            image={p.renderImages?.root}
+                            postUrl={p.postUrl}
+                            postTitle={p.postTitle}
+                            theme={theme}
+                          />
                         ) : null}
 
                         {p.blocks.map((b, i) => (
                           <BlockRenderer
                             key={i}
+                            renderImages={p.renderImages}
                             block={b.block}
                             alignment={b.alignment}
                             // Matches the published page's block anchor id
                             // (PostContent renders each root-page block with
                             // id={index}), so emails can deep-link to a block.
-                            blockUrl={`${p.postUrl}#${i}`}
+                            blockUrl={p.postUrl && `${p.postUrl}#${i}`}
                             did={p.did}
                             assetsBaseUrl={p.assetsBaseUrl}
                             theme={theme}
@@ -990,21 +1036,23 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                           style={{ width: "100%", minWidth: "100%" }}
                         >
                           <tbody>
-                            <tr>
-                              <td align="center" style={{ paddingTop: 16 }}>
-                                <Link
-                                  href={p.postUrl}
-                                  style={{
-                                    ...accentLink,
-                                    fontWeight: "bold",
-                                    fontSize: 14,
-                                    lineHeight: "20px",
-                                  }}
-                                >
-                                  Read in Browser
-                                </Link>
-                              </td>
-                            </tr>
+                            {p.postUrl ? (
+                              <tr>
+                                <td align="center" style={{ paddingTop: 16 }}>
+                                  <Link
+                                    href={p.postUrl}
+                                    style={{
+                                      ...accentLink,
+                                      fontWeight: "bold",
+                                      fontSize: 14,
+                                      lineHeight: "20px",
+                                    }}
+                                  >
+                                    Read in Browser
+                                  </Link>
+                                </td>
+                              </tr>
+                            ) : null}
                             <tr>
                               <td
                                 align="center"
@@ -1200,6 +1248,7 @@ const BlockRenderer = ({
   standardSitePosts,
   standardSitePublications,
   currentPublicationUri,
+  renderImages,
 }: {
   block: PubLeafletPagesLinearDocument.Block["block"];
   alignment?: string;
@@ -1207,13 +1256,14 @@ const BlockRenderer = ({
   assetsBaseUrl: string;
   theme: EmailTheme;
   colors: ResolvedColors;
-  postUrl: string;
+  postUrl?: string;
   blockUrl?: string;
   pages?: PostEmailPage[];
   bskyPosts?: Record<string, AppBskyFeedDefs.PostView>;
   standardSitePosts?: Record<string, StandardSitePostData>;
   standardSitePublications?: Record<string, StandardSitePublicationData>;
   currentPublicationUri?: string;
+  renderImages?: Record<string, EmailRenderImage>;
 }) => {
   const notSupported = () => (
     <BlockNotSupported theme={theme} colors={colors} postUrl={postUrl} />
@@ -1347,6 +1397,9 @@ const BlockRenderer = ({
         text={block.text}
         url={block.url}
         align={resolveBlockAlignment(alignment)}
+        fullWidth={
+          alignment === "lex:pub.leaflet.pages.linearDocument#textAlignJustify"
+        }
         theme={theme}
       />
     ),
@@ -1391,6 +1444,7 @@ const BlockRenderer = ({
         <BskyPostEmailBlock
           post={post}
           clientHost={block.clientHost}
+          view={block.view}
           theme={theme}
           colors={colors}
           assetsBaseUrl={assetsBaseUrl}
@@ -1470,8 +1524,27 @@ const BlockRenderer = ({
       return (
         <PageLinkEmailBlock
           page={page}
+          image={renderImages?.[`preview:${block.id}`]}
           compact={normalizePageLinkDisplay(block.display) === "compact"}
-          href={pageUrl(postUrl, block.id)}
+          href={postUrl && pageUrl(postUrl, block.id)}
+          did={did}
+          theme={theme}
+          colors={colors}
+          assetsBaseUrl={assetsBaseUrl}
+        />
+      );
+    },
+    "pub.leaflet.blocks.embeddedCanvas": (block) => {
+      const page = pages?.find((p) => p.id === block.id);
+      if (!PubLeafletPagesCanvas.isMain(page) || !page.width || !page.height)
+        return null;
+      return (
+        <EmbeddedCanvasEmailBlock
+          image={renderImages?.[`embed:${block.id}`]}
+          blocks={page.blocks}
+          size={{ width: page.width, height: page.height }}
+          alt={block.alt}
+          href={blockUrl ?? postUrl}
           did={did}
           theme={theme}
           colors={colors}
@@ -1480,8 +1553,25 @@ const BlockRenderer = ({
       );
     },
     "pub.leaflet.blocks.poll": notSupported,
+    "pub.leaflet.blocks.drawing": notSupported,
     "pub.leaflet.blocks.postsList": notSupported,
     "pub.leaflet.blocks.recommendedPubs": notSupported,
+    // Replies load and are submitted on the web; the email carries the
+    // button through to the post.
+    "pub.leaflet.blocks.reply": (block) => {
+      const url = blockUrl ?? postUrl;
+      if (!url) return null;
+      return (
+        <ButtonBlock
+          text={block.buttonText || DEFAULT_REPLY_BUTTON_TEXT}
+          url={url}
+          align="right"
+          theme={theme}
+        />
+      );
+    },
+    // Questions are asked and answered on the web.
+    "pub.leaflet.blocks.questions": () => null,
     "pub.leaflet.blocks.signup": notSupported,
     // The email has its own header; the block is nothing in the body.
     "pub.leaflet.blocks.postHeader": () => null,
@@ -1827,6 +1917,7 @@ const CANVAS_WIDTH = 1272;
 // (Gmail, Outlook) still get a thumbnail — only the 4° tilt is lost there.
 const PageLinkEmailBlock = ({
   page,
+  image,
   compact,
   href,
   did,
@@ -1835,14 +1926,15 @@ const PageLinkEmailBlock = ({
   assetsBaseUrl,
 }: {
   page: PostEmailPage;
+  image?: EmailRenderImage;
   compact?: boolean;
-  href: string;
+  href?: string;
   did: string;
   theme: EmailTheme;
   colors: ResolvedColors;
   assetsBaseUrl: string;
 }) => {
-  const isCanvas = page.type === "canvas";
+  const isCanvas = PubLeafletPagesCanvas.isMain(page);
   const cellLinkStyle: CSSProperties = {
     color: "inherit",
     display: "block",
@@ -1918,13 +2010,21 @@ const PageLinkEmailBlock = ({
       <div
         style={{
           ...cardStyle,
-          height: isCanvas ? PAGE_LINK_CANVAS_HEIGHT : PAGE_LINK_DOC_HEIGHT,
+          height: image
+            ? undefined
+            : isCanvas
+              ? PAGE_LINK_CANVAS_HEIGHT
+              : PAGE_LINK_DOC_HEIGHT,
         }}
       >
-        {isCanvas ? (
+        {isCanvas && image ? (
+          <Link href={href} style={cellLinkStyle}>
+            <RenderedImage image={image} alt="Canvas page preview" />
+          </Link>
+        ) : isCanvas ? (
           <Link href={href} style={{ ...cellLinkStyle, height: "100%" }}>
             <CanvasThumbnail
-              blocks={page.blocks as PubLeafletPagesCanvas.Block[]}
+              blocks={page.blocks}
               did={did}
               theme={theme}
               colors={colors}
@@ -1943,7 +2043,7 @@ const PageLinkEmailBlock = ({
                 }}
               >
                 <DocLinkLines
-                  blocks={page.blocks as PubLeafletPagesLinearDocument.Block[]}
+                  blocks={page.blocks}
                   theme={theme}
                   assetsBaseUrl={assetsBaseUrl}
                 />
@@ -1960,7 +2060,7 @@ const PageLinkEmailBlock = ({
                 style={{ ...cellLinkStyle, height: PAGE_LINK_DOC_HEIGHT }}
               >
                 <DocThumbnail
-                  blocks={page.blocks as PubLeafletPagesLinearDocument.Block[]}
+                  blocks={page.blocks}
                   did={did}
                   theme={theme}
                   colors={colors}
@@ -2086,24 +2186,31 @@ const DocThumbnail = ({
 // sorted top-to-bottom, left-to-right for that reason).
 const CanvasThumbnail = ({
   blocks,
+  size,
   did,
   theme,
   colors,
   assetsBaseUrl,
 }: {
   blocks: PubLeafletPagesCanvas.Block[];
+  // An embedded canvas: its whole fixed-size canvas fit to the card width.
+  size?: { width: number; height: number };
   did: string;
   theme: EmailTheme;
   colors: ResolvedColors;
   assetsBaseUrl: string;
 }) => {
   const cardWidth = theme.pageWidth - CARD_HORIZONTAL_PADDING;
-  const scale = (cardWidth - 36) / CANVAS_WIDTH;
+  const scale = size
+    ? (cardWidth - 2) / size.width
+    : (cardWidth - 36) / CANVAS_WIDTH;
   const sorted = [...blocks].sort(canvasBlockOrder);
   return (
     <div
       style={{
-        height: PAGE_LINK_CANVAS_HEIGHT,
+        height: size
+          ? Math.round(size.height * scale)
+          : PAGE_LINK_CANVAS_HEIGHT,
         overflow: "hidden",
         position: "relative",
         width: "100%",
@@ -2124,17 +2231,123 @@ const CanvasThumbnail = ({
             width: canvasBlock.width * scale,
           }}
         >
-          <MiniBlock
-            block={canvasBlock.block}
-            scale={scale}
+          {canvasBlockBlocks(canvasBlock, i).map((b, j) => (
+            <MiniBlock
+              key={j}
+              block={b.block.block}
+              scale={scale}
+              did={did}
+              theme={theme}
+              colors={colors}
+              assetsBaseUrl={assetsBaseUrl}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// The editor and web show an embedded canvas whole, scaled to the body width; here
+// its blocks are re-rendered at that scale, like a canvas page link.
+const EmbeddedCanvasEmailBlock = ({
+  image,
+  blocks,
+  size,
+  alt,
+  href,
+  did,
+  theme,
+  colors,
+  assetsBaseUrl,
+}: {
+  image?: EmailRenderImage;
+  blocks: PubLeafletPagesCanvas.Block[];
+  size: { width: number; height: number };
+  alt?: string;
+  href?: string;
+  did: string;
+  theme: EmailTheme;
+  colors: ResolvedColors;
+  assetsBaseUrl: string;
+}) => (
+  <Section style={{ margin: BLOCK_MARGIN, minWidth: "100%" }}>
+    <div
+      style={{
+        backgroundColor: theme.pageBackground,
+        border: `1px solid ${colors.borderLight}`,
+        borderRadius: 8,
+        overflow: "hidden",
+        width: "100%",
+      }}
+    >
+      <Link
+        href={href}
+        role={alt ? "img" : undefined}
+        aria-label={alt || undefined}
+        title={alt || undefined}
+        style={{ color: "inherit", display: "block", textDecoration: "none" }}
+      >
+        {image ? (
+          <RenderedImage image={image} alt={alt || "Canvas"} />
+        ) : (
+          <CanvasThumbnail
+            blocks={blocks}
+            size={size}
             did={did}
             theme={theme}
             colors={colors}
             assetsBaseUrl={assetsBaseUrl}
           />
-        </div>
-      ))}
+        )}
+      </Link>
     </div>
+  </Section>
+);
+
+const RenderedImage = ({
+  image,
+  alt,
+}: {
+  image: EmailRenderImage;
+  alt: string;
+}) => (
+  <Img
+    src={image.src}
+    alt={alt}
+    style={{ display: "block", height: "auto", width: "100%" }}
+  />
+);
+
+// A canvas post's body: the canvas as one image, with buttons out to the
+// post above and below it, since an image is all of the canvas email can show.
+const CanvasPostBody = ({
+  image,
+  postUrl,
+  postTitle,
+  theme,
+}: {
+  image?: EmailRenderImage;
+  postUrl?: string;
+  postTitle: string;
+  theme: EmailTheme;
+}) => {
+  const button = postUrl ? (
+    <ButtonBlock text="See full post" url={postUrl} theme={theme} />
+  ) : null;
+  // An email-only post has no page to link to, so it needs something in
+  // place of the canvas.
+  if (!image) return button ?? <BlockNotSupported theme={theme} />;
+  return (
+    <>
+      {button}
+      <Section style={{ margin: BLOCK_MARGIN, minWidth: "100%" }}>
+        <Link href={postUrl} style={{ display: "block" }}>
+          <RenderedImage image={image} alt={postTitle} />
+        </Link>
+      </Section>
+      {button}
+    </>
   );
 };
 
@@ -2275,9 +2488,13 @@ const MiniBlock = ({
     "pub.leaflet.blocks.iframe": () => null,
     "pub.leaflet.blocks.html": () => null,
     "pub.leaflet.blocks.page": () => null,
+    "pub.leaflet.blocks.embeddedCanvas": () => null,
     "pub.leaflet.blocks.poll": () => null,
+    "pub.leaflet.blocks.drawing": () => null,
     "pub.leaflet.blocks.postsList": () => null,
     "pub.leaflet.blocks.recommendedPubs": () => null,
+    "pub.leaflet.blocks.reply": () => null,
+    "pub.leaflet.blocks.questions": () => null,
     "pub.leaflet.blocks.signup": () => null,
     "pub.leaflet.blocks.postHeader": () => null,
     "pub.leaflet.blocks.bskyPost": () => null,
@@ -2347,7 +2564,7 @@ const ImageGalleryEmailBlock = ({
   block: PubLeafletBlocksImageGallery.Main;
   did: string;
   assetsBaseUrl: string;
-  href: string;
+  href?: string;
   theme: EmailTheme;
   colors: ResolvedColors;
 }) => {
@@ -2445,11 +2662,12 @@ const ImageGalleryEmailBlock = ({
     );
   }
 
-  // Grid (the default format). The web grid cover-crops each row's cells to
-  // the tallest image, which needs object-fit — unreliable in mail clients.
-  // Instead each email row is "justified": every cell's width share is
-  // proportional to its image's aspect ratio, so all images in a row render
-  // at the same height uncropped. Column count mirrors the web's math with
+  // Masonry, and grid (the default format). Each row is "justified": every
+  // cell's width share is proportional to its image's aspect ratio, so all
+  // images in a row render at the same height uncropped — the same layout as
+  // the web masonry. The web grid instead cover-crops each row's cells to the
+  // tallest image, which needs object-fit — unreliable in mail clients — so
+  // email grid falls back to masonry. Column count mirrors the web's math with
   // the email's fixed content width standing in for the measured container.
   const maxWidth = block.maxWidth ?? GALLERY_DEFAULT_MAX_WIDTH;
   const columns = Math.max(
@@ -2551,11 +2769,13 @@ const ButtonBlock = ({
   text,
   url,
   align = "center",
+  fullWidth = false,
   theme = defaultEmailTheme,
 }: {
   text: string;
   url: string;
   align?: "left" | "center" | "right";
+  fullWidth?: boolean;
   theme?: EmailTheme;
 }) => {
   // Bulletproof button: table-based so Outlook (which ignores padding on
@@ -2572,6 +2792,7 @@ const ButtonBlock = ({
         cellPadding={0}
         cellSpacing={0}
         border={0}
+        width={fullWidth ? "100%" : undefined}
         style={{ borderCollapse: "separate" }}
       >
         <tbody>
@@ -2671,25 +2892,27 @@ const BlockNotSupported = ({
       >
         This media isn't supported in email...
       </ReactEmailText>
-      <ReactEmailText
-        style={{
-          fontSize: 14,
-          lineHeight: 1.4,
-          margin: "4px 0 0",
-          textAlign: "center",
-        }}
-      >
-        <Link
-          href={postUrl}
+      {postUrl ? (
+        <ReactEmailText
           style={{
-            color: theme.accentBackground,
-            fontWeight: "bold",
-            textDecoration: "none",
+            fontSize: 14,
+            lineHeight: 1.4,
+            margin: "4px 0 0",
+            textAlign: "center",
           }}
         >
-          See full post
-        </Link>
-      </ReactEmailText>
+          <Link
+            href={postUrl}
+            style={{
+              color: theme.accentBackground,
+              fontWeight: "bold",
+              textDecoration: "none",
+            }}
+          >
+            See full post
+          </Link>
+        </ReactEmailText>
+      ) : null}
     </Section>
   );
 };

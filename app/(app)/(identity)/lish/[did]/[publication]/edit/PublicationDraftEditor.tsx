@@ -23,6 +23,12 @@ import {
 import { usePublicationNavEntries } from "./usePublicationNavEntries";
 import { PublicationEditMobileFooter } from "./PublicationEditMobileFooter";
 import { FoldStateProvider } from "components/FoldStateProvider";
+import {
+  CustomizeTutorialTooltip,
+  useActivateCustomizeTutorial,
+} from "./CustomizeTutorialTooltip";
+
+export type CreateFlow = { tutorial: boolean };
 
 export function PublicationDraftEditor(props: {
   token: PermissionToken;
@@ -33,8 +39,10 @@ export function PublicationDraftEditor(props: {
   publicationRecord: NormalizedPublication | null;
   publicationUri: string;
   newsletterMode: boolean;
+  createFlow?: CreateFlow;
 }) {
   let record = props.publicationRecord;
+  useActivateCustomizeTutorial(!!props.createFlow?.tutorial);
   const iconUrl = record?.icon
     ? blobRefToSrc(record.icon.ref, props.did)
     : undefined;
@@ -58,6 +66,7 @@ export function PublicationDraftEditor(props: {
               <PublicationEditHeader
                 did={props.did}
                 publicationName={props.publicationName}
+                createFlow={props.createFlow}
               />
               <div className="pubWrapper publicationScrollContainer editorScrollRoot flex flex-col grow min-h-0 bg-bg-page rounded-t-lg overflow-y-auto ">
                 <DraftLeafletBackground
@@ -196,7 +205,9 @@ function PublicationDraftEditorContent(props: {
               selectedPage={currentPage}
               onSelectPage={setSelectedPage}
             />
-            <div className="spacer h-3" />
+            <CustomizeTutorialTooltip target="content" className="spacer h-3">
+              {null}
+            </CustomizeTutorialTooltip>
           </>
         }
       />

@@ -9,6 +9,7 @@ import type { Attribute } from "src/replicache/attributes";
 import { YJSFragmentToString } from "src/utils/yjsFragmentToString";
 import { Leaflet } from "./Leaflet";
 import { scanIndexLocal } from "src/replicache/utils";
+import { getPageReadingOrder } from "src/replicache/getBlocks";
 
 import { PageSWRDataProvider } from "components/PageSWRDataProvider";
 import { getPollData } from "actions/pollActions";
@@ -92,45 +93,13 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   let scan = scanIndexLocal(initialFacts);
   let firstPage =
     scan.eav(rootEntity, "root/page")[0]?.data.value || rootEntity;
-  let pageType = scan.eav(firstPage, "page/type")[0]?.data.value || "doc";
-  let firstBlock, secondBlock;
-  if (pageType === "canvas") {
-    [firstBlock, secondBlock] = scan
-      .eav(firstPage, "canvas/block")
-      .map((b) => {
-        let type = scan.eav(b.data.value, "block/type");
-        if (!type[0]) return null;
-        return {
-          ...b.data,
-          type: type[0].data.value,
-        };
-      })
-      .filter((b) => b !== null)
-      .filter((b) => b.type === "text" || b.type === "heading")
-      .sort((a, b) => {
-        if (a.position.y === b.position.y) {
-          return a.position.x - b.position.x;
-        }
-        return a.position.y - b.position.y;
-      });
-  } else {
-    [firstBlock, secondBlock] = scan
-      .eav(firstPage, "card/block")
-      .map((b) => {
-        let type = scan.eav(b.data.value, "block/type");
-        return {
-          ...b.data,
-          type: type[0]?.data.value,
-        };
-      })
-
-      .filter((b) => b.type === "text" || b.type === "heading")
-      .sort((a, b) => (a.position > b.position ? 1 : -1));
-  }
+  let [firstBlock, secondBlock] = getPageReadingOrder(scan, firstPage).filter(
+    (b) => b.type === "text" || b.type === "heading",
+  );
   let metadata: Metadata = { title: "Untitled Leaflet", description: " " };
 
   let titleFact = initialFacts.find(
-    (f) => f.entity === firstBlock?.value && f.attribute === "block/text",
+    (f) => f.entity === firstBlock?.entityID && f.attribute === "block/text",
   ) as Fact<"block/text"> | undefined;
   if (titleFact) {
     let doc = new Y.Doc();
@@ -141,7 +110,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   }
 
   let descriptionFact = initialFacts.find(
-    (f) => f.entity === secondBlock?.value && f.attribute === "block/text",
+    (f) => f.entity === secondBlock?.entityID && f.attribute === "block/text",
   ) as Fact<"block/text"> | undefined;
   if (descriptionFact) {
     let doc = new Y.Doc();

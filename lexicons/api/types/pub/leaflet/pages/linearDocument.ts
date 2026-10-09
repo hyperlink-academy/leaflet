@@ -9,6 +9,7 @@ import {
   is$typed as _is$typed,
   type OmitKey,
 } from '../../../../util'
+import type * as PubLeafletThemePage from '../theme/page'
 import type * as PubLeafletBlocksIframe from '../blocks/iframe'
 import type * as PubLeafletBlocksHtml from '../blocks/html'
 import type * as PubLeafletBlocksText from '../blocks/text'
@@ -26,13 +27,17 @@ import type * as PubLeafletBlocksBskyPost from '../blocks/bskyPost'
 import type * as PubLeafletBlocksStandardSitePost from '../blocks/standardSitePost'
 import type * as PubLeafletBlocksStandardSitePublication from '../blocks/standardSitePublication'
 import type * as PubLeafletBlocksPage from '../blocks/page'
+import type * as PubLeafletBlocksEmbeddedCanvas from '../blocks/embeddedCanvas'
 import type * as PubLeafletBlocksPoll from '../blocks/poll'
 import type * as PubLeafletBlocksButton from '../blocks/button'
 import type * as PubLeafletBlocksPostsList from '../blocks/postsList'
 import type * as PubLeafletBlocksSignup from '../blocks/signup'
 import type * as PubLeafletBlocksRecommendedPubs from '../blocks/recommendedPubs'
+import type * as PubLeafletBlocksReply from '../blocks/reply'
+import type * as PubLeafletBlocksQuestions from '../blocks/questions'
 import type * as PubLeafletBlocksMembersOnlyDelimiter from '../blocks/membersOnlyDelimiter'
 import type * as PubLeafletBlocksPostHeader from '../blocks/postHeader'
+import type * as PubLeafletBlocksDrawing from '../blocks/drawing'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -42,6 +47,7 @@ export interface Main {
   $type?: 'pub.leaflet.pages.linearDocument'
   id?: string
   blocks: Block[]
+  theme?: PubLeafletThemePage.Main
 }
 
 const hashMain = 'main'
@@ -74,13 +80,17 @@ export interface Block {
     | $Typed<PubLeafletBlocksStandardSitePost.Main>
     | $Typed<PubLeafletBlocksStandardSitePublication.Main>
     | $Typed<PubLeafletBlocksPage.Main>
+    | $Typed<PubLeafletBlocksEmbeddedCanvas.Main>
     | $Typed<PubLeafletBlocksPoll.Main>
     | $Typed<PubLeafletBlocksButton.Main>
     | $Typed<PubLeafletBlocksPostsList.Main>
     | $Typed<PubLeafletBlocksSignup.Main>
     | $Typed<PubLeafletBlocksRecommendedPubs.Main>
+    | $Typed<PubLeafletBlocksReply.Main>
+    | $Typed<PubLeafletBlocksQuestions.Main>
     | $Typed<PubLeafletBlocksMembersOnlyDelimiter.Main>
     | $Typed<PubLeafletBlocksPostHeader.Main>
+    | $Typed<PubLeafletBlocksDrawing.Main>
     | { $type: string }
   alignment?:
     | 'lex:pub.leaflet.pages.linearDocument#textAlignLeft'

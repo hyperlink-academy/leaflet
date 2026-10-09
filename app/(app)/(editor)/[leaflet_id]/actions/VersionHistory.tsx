@@ -196,7 +196,13 @@ function VersionRow(props: {
       <div className=" menuItem px-3! flex flex-col gap-0! leading-snug min-w-0">
         <div className="font-bold truncate">
           {version.name ||
-            (version.kind === "pre_restore" ? "Backup before restore" : date)}
+            (version.kind === "pre_restore"
+              ? "Backup before restore"
+              : version.kind === "publish"
+                ? "Published"
+                : version.kind === "publish_revision"
+                  ? "Published Revision"
+                  : date)}
         </div>
         <div
           className="text-tertiary font-normal italic text-sm truncate"

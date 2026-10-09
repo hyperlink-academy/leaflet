@@ -6,6 +6,15 @@ import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { getAuthIdentity } from "src/auth";
 import { ids } from "lexicons/api/lexicons";
 import { LIVE_MEMBERSHIP_STATUSES } from "src/membership";
+import { isEmailPostFinal, type EmailPostSummary } from "src/emailPosts/types";
+
+export type EmailDraft = {
+  leaflet: string;
+  title: string;
+  description: string;
+  archived: boolean;
+  email: EmailPostSummary | null;
+};
 
 export type GetPublicationDataReturnType = Awaited<
   ReturnType<(typeof get_publication_data)["handler"]>
@@ -58,11 +67,13 @@ export const get_publication_data = makeRoute({
           permission_tokens(*,
             permission_token_rights(*),
             custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*),
-            leaflet_contributors(contributor_did, created_at)
+            leaflet_contributors(contributor_did, created_at),
+            publication_scheduled_posts(id, publish_at, status, error)
          )
         ),
         publication_contributors(contributor_did, confirmed, created_at),
-        publication_pages(*)`,
+        publication_pages(*),
+        publication_email_posts(id, leaflet, title, description, send_mode, send_at, audience, status, subscriber_count, sent_at, error, updated_at)`,
         )
         .or(
           `name.eq."${publication_name}", uri.eq."${pubLeafletUri}", uri.eq."${siteStandardUri}"`,
@@ -90,7 +101,15 @@ export const get_publication_data = makeRoute({
           (c) => c.contributor_did === viewerDid && c.confirmed,
         ));
     if (!canAccess) {
-      return { result: { publication: null, documents: [], drafts: [] } };
+      return {
+        result: {
+          publication: null,
+          documents: [],
+          drafts: [],
+          emailDrafts: [] as EmailDraft[],
+          emailPosts: [] as EmailPostSummary[],
+        },
+      };
     }
 
     // Pre-normalize documents from documents_in_publications
@@ -119,10 +138,37 @@ export const get_publication_data = makeRoute({
       })
       .filter((d): d is NonNullable<typeof d> => d !== null);
 
-    // Pre-filter drafts (leaflets without published documents, not archived)
+    const emailPosts = (publication?.publication_email_posts ??
+      []) as EmailPostSummary[];
+    const emailByLeaflet = new Map(emailPosts.map((e) => [e.leaflet, e]));
+
+    // Email-only drafts, with their send if one's been set up. An archived one
+    // stays listed while its email is still going out.
+    const emailDrafts: EmailDraft[] = (
+      publication?.leaflets_in_publications || []
+    )
+      .filter((l) => l.email_only && !l.documents)
+      .map((l) => ({
+        leaflet: l.leaflet,
+        title: l.title,
+        description: l.description,
+        archived: !!l.archived,
+        email: emailByLeaflet.get(l.leaflet) ?? null,
+      }))
+      .filter(
+        (d) => !d.archived || (d.email && !isEmailPostFinal(d.email.status)),
+      );
+
+    // Pre-filter drafts (leaflets without published documents, not email-only,
+    // not archived). A scheduled draft stays listed even when archived, since
+    // it's still going to publish.
     const drafts = (publication?.leaflets_in_publications || [])
-      .filter((l) => !l.documents)
-      .filter((l) => !(l as { archived?: boolean }).archived)
+      .filter((l) => !l.documents && !l.email_only)
+      .filter(
+        (l) =>
+          !(l as { archived?: boolean }).archived ||
+          !!l.permission_tokens?.publication_scheduled_posts,
+      )
       .map((l) => ({
         leaflet: l.leaflet,
         title: l.title,
@@ -136,6 +182,8 @@ export const get_publication_data = makeRoute({
         publication,
         documents,
         drafts,
+        emailDrafts,
+        emailPosts,
       },
     };
   },

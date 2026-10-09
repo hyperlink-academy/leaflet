@@ -7,6 +7,8 @@ import { createYjsText } from "src/utils/createYjsText";
 import { scanIndexLocal } from "src/replicache/utils";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
+import { getPageReadingOrder } from "src/replicache/getBlocks";
+import { canvasBlockOrder } from "src/utils/canvasBlockOrder";
 
 const COPY_SUFFIX = " (Copy)";
 const COPY_BLOCK_TEXT = "Copy";
@@ -34,30 +36,14 @@ export function markTitleBlockAsCopy(
   if (!page) return facts;
 
   const isCanvas = scan.eav(page, "page/type")[0]?.data.value === "canvas";
-  const canvasBlocks = isCanvas
-    ? scan.eav(page, "canvas/block").sort((a, b) => {
-        if (a.data.position.y === b.data.position.y)
-          return a.data.position.x - b.data.position.x;
-        return a.data.position.y - b.data.position.y;
-      })
-    : [];
-  const cardBlocks = isCanvas
-    ? []
-    : scan.eav(page, "card/block").sort((a, b) => {
-        if (a.data.position === b.data.position) return a.id > b.id ? 1 : -1;
-        return a.data.position > b.data.position ? 1 : -1;
-      });
+  const firstBlock = getPageReadingOrder(scan, page)[0];
 
-  const firstBlock = (isCanvas ? canvasBlocks[0] : cardBlocks[0])?.data.value;
-  const firstBlockType = firstBlock
-    ? scan.eav(firstBlock, "block/type")[0]?.data.value
-    : undefined;
-
-  if (firstBlockType === "text" || firstBlockType === "heading") {
-    const text = scan.eav(firstBlock!, "block/text")[0];
+  if (firstBlock?.type === "text" || firstBlock?.type === "heading") {
+    const text = scan.eav(firstBlock.entityID, "block/text")[0];
     // An empty title block reads as the marker on its own rather than as a
     // stray leading space.
-    if (!text) return [...facts, blockTextFact(firstBlock!, COPY_BLOCK_TEXT)];
+    if (!text)
+      return [...facts, blockTextFact(firstBlock.entityID, COPY_BLOCK_TEXT)];
     return facts.map((f) =>
       f.id === text.id
         ? { ...f, data: { ...text.data, value: append(text.data.value) } }
@@ -87,13 +73,16 @@ export function markTitleBlockAsCopy(
         data: {
           type: "ordered-reference",
           value: newBlock,
-          position: generateKeyBetween(null, cardBlocks[0]?.data.position),
+          position: generateKeyBetween(null, firstBlock?.position),
         },
       },
     ];
 
   // Nothing on a canvas is "first", so the marker takes the topmost block's
   // spot and everything else slides down to make room for it.
+  const canvasBlocks = scan
+    .eav(page, "canvas/block")
+    .sort((a, b) => canvasBlockOrder(a.data.position, b.data.position));
   const topmost = canvasBlocks[0]?.data.position ?? { x: 8, y: 12 };
   const topStackOrder =
     canvasBlocks

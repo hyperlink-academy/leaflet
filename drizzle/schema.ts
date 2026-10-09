@@ -262,6 +262,7 @@ export const identities = pgTable("identities", {
 	atp_did: text("atp_did"),
 	interface_state: jsonb("interface_state"),
 	metadata: jsonb("metadata"),
+	tutorial: boolean("tutorial").default(true).notNull(),
 },
 (table) => {
 	return {
@@ -462,6 +463,7 @@ export const publication_newsletter_settings = pgTable("publication_newsletter_s
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updated_at: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	confirmation_code: text("confirmation_code"),
+	embed_redirect_url: text("embed_redirect_url"),
 },
 (table) => {
 	return {
@@ -615,6 +617,62 @@ export const publication_recommendations = pgTable("publication_recommendations"
 		uri_idx: index("publication_recommendations_uri_idx").on(table.uri),
 		recommendation_idx: index("publication_recommendations_recommendation_idx").on(table.recommendation),
 		publication_recommendations_pkey: primaryKey({ columns: [table.publication, table.recommendation], name: "publication_recommendations_pkey"}),
+	}
+});
+
+export const document_replies = pgTable("document_replies", {
+	uri: text("uri").primaryKey().notNull(),
+	subject: text("subject").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	document: text("document").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	replier_did: text("replier_did").notNull(),
+	record: jsonb("record").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		document_idx: index("document_replies_document_idx").on(table.document),
+		document_replies_subject_document_key: unique("document_replies_subject_document_key").on(table.subject, table.document),
+	}
+});
+
+export const document_reply_visibility = pgTable("document_reply_visibility", {
+	uri: text("uri").notNull(),
+	subject: text("subject").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	reply: text("reply").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		uri_idx: index("document_reply_visibility_uri_idx").on(table.uri),
+		document_reply_visibility_pkey: primaryKey({ columns: [table.subject, table.reply], name: "document_reply_visibility_pkey"}),
+	}
+});
+
+export const document_questions = pgTable("document_questions", {
+	uri: text("uri").primaryKey().notNull(),
+	subject: text("subject").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	asker_did: text("asker_did").notNull(),
+	cid: text("cid").notNull(),
+	record: jsonb("record").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		subject_idx: index("document_questions_subject_idx").on(table.subject),
+	}
+});
+
+export const document_question_answers = pgTable("document_question_answers", {
+	uri: text("uri").primaryKey().notNull(),
+	question: text("question").notNull().references(() => document_questions.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	subject: text("subject").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	record: jsonb("record").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		subject_idx: index("document_question_answers_subject_idx").on(table.subject),
+		document_question_answers_question_key: unique("document_question_answers_question_key").on(table.question),
 	}
 });
 

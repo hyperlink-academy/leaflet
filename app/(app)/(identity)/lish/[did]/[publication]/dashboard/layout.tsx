@@ -17,6 +17,7 @@ import { AnalyticsSmall } from "components/Icons/AnalyticsSmall";
 import { SubscribersSmall } from "components/Icons/SubscribersSmall";
 import { PublishSmall } from "components/Icons/PublishSmall";
 import { ArchiveSmall } from "components/Icons/ArchiveSmall";
+import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -92,6 +93,11 @@ export default async function PublicationDashboardLayout(props: {
     return <PubNotFound />;
   }
 
+  let showEmailsTab =
+    publication_data.emailDrafts.length > 0 ||
+    publication_data.emailPosts.length > 0 ||
+    !!publication.publication_newsletter_settings?.enabled;
+
   let uri = new AtUri(publication.uri);
   let baseHref = `/lish/${params.did}/${params.publication}/dashboard`;
 
@@ -105,7 +111,7 @@ export default async function PublicationDashboardLayout(props: {
         <DashboardShell
           id={publication.uri}
           publication={publication.uri}
-          pageTitle={<PageTitle pageTitle={record.name} showBackButton />}
+          pageTitle={<PageTitle pageTitle={record.name} showHomeButton />}
           actions={
             <>
               <Actions publication={publication.uri} />
@@ -121,9 +127,17 @@ export default async function PublicationDashboardLayout(props: {
           tabs={{
             Drafts: { href: baseHref, icon: <ArchiveSmall /> },
             Published: { href: `${baseHref}/posts`, icon: <PublishSmall /> },
+            ...(showEmailsTab
+              ? {
+                  Emails: {
+                    href: `${baseHref}/emails`,
+                    icon: <BlockMailboxSmall />,
+                  },
+                }
+              : {}),
             ...(isOwner
               ? {
-                  Subs: {
+                  Subscribers: {
                     href: `${baseHref}/subs`,
                     icon: <SubscribersSmall />,
                   },

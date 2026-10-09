@@ -112,10 +112,12 @@ export const ListToolbar = (props: { onClose: () => void }) => {
         }
         onClick={async () => {
           if (!rep) return;
-          let [sortedSelection, visibleSiblings] = await getSortedSelection(rep);
+          let [, visibleSiblings] = await getSortedSelection(rep);
+          // A block alone on a canvas has no siblings but itself.
+          let blocks = await getSelectedOrFocusedBlocks(rep);
           await multiSelectOutdent(
-            sortedSelection,
-            visibleSiblings,
+            blocks,
+            visibleSiblings.length ? visibleSiblings : blocks,
             rep,
             undoManager,
           );

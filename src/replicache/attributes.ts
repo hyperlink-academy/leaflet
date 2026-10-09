@@ -65,6 +65,24 @@ const PageAttributes = {
     type: "canvas-pattern-union",
     cardinality: "one",
   },
+  "canvas/mobile-view": {
+    type: "canvas-mobile-view-union",
+    cardinality: "one",
+  },
+  "canvas/lock-viewer-zoom": {
+    type: "boolean",
+    cardinality: "one",
+  },
+  // Set on an embedded canvas's page: the canvas is bounded to this area
+  // instead of being 1272px wide and growing with its content.
+  "canvas/fixed-width": {
+    type: "number",
+    cardinality: "one",
+  },
+  "canvas/fixed-height": {
+    type: "number",
+    cardinality: "one",
+  },
 } as const;
 
 const BlockAttributes = {
@@ -272,6 +290,10 @@ const BlueskyPostBlockAttributes = {
     type: "string",
     cardinality: "one",
   },
+  "bluesky-post/view": {
+    type: "bluesky-post-view-union",
+    cardinality: "one",
+  },
 } as const;
 
 const ButtonBlockAttributes = {
@@ -385,6 +407,39 @@ const RecommendedPubsBlockAttributes = {
   },
 } as const;
 
+const QuestionsBlockAttributes = {
+  "questions/button-text": {
+    type: "string",
+    cardinality: "one",
+  },
+  // The author's answer drafts: entities holding a linear block list under
+  // card/block, kept in the leaflet but never published with the document.
+  "questions/answer": {
+    type: "reference",
+    cardinality: "many",
+  },
+  // at-uri of the pub.leaflet.interactions.question an answer entity answers
+  "answer/question": {
+    type: "string",
+    cardinality: "one",
+  },
+} as const;
+
+const ReplyBlockAttributes = {
+  "reply/button-text": {
+    type: "string",
+    cardinality: "one",
+  },
+  "reply/prompt-text": {
+    type: "string",
+    cardinality: "one",
+  },
+  "reply/show-publication-theme": {
+    type: "boolean",
+    cardinality: "one",
+  },
+} as const;
+
 const PostHeaderBlockAttributes = {
   "post-header/compact": {
     type: "boolean",
@@ -479,6 +534,19 @@ const ThemeAttributes = {
   },
 } as const;
 
+// A drawing's strokes live in their own drawing space; the view box is the
+// part of it the block shows, scaled to the canvas block's width.
+const DrawingBlockAttributes = {
+  "drawing/stroke": {
+    type: "ink-stroke",
+    cardinality: "many",
+  },
+  "drawing/view-box": {
+    type: "view-box",
+    cardinality: "one",
+  },
+} as const;
+
 export const Attributes = {
   ...RootAttributes,
   ...PageAttributes,
@@ -495,7 +563,10 @@ export const Attributes = {
   ...PollBlockAttributes,
   ...PostsListBlockAttributes,
   ...RecommendedPubsBlockAttributes,
+  ...ReplyBlockAttributes,
+  ...QuestionsBlockAttributes,
   ...PostHeaderBlockAttributes,
+  ...DrawingBlockAttributes,
 };
 export type Attributes = typeof Attributes;
 export type Attribute = keyof Attributes;
@@ -580,13 +651,26 @@ export type Data<A extends keyof typeof Attributes> = {
       | "members-only-delimiter"
       | "posts-list"
       | "recommended-pubs"
+      | "reply"
+      | "questions"
       | "signup"
       | "image-gallery"
-      | "post-header";
+      | "post-header"
+      // An inline, fixed-size canvas: block/card points at its canvas page.
+      | "embedded-canvas"
+      // A canvas-only container whose card/block children form a linear
+      // document, positioned on the canvas as a single block.
+      | "group"
+      // Canvas-only freehand ink.
+      | "drawing";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";
     value: "dot" | "grid" | "plain";
+  };
+  "canvas-mobile-view-union": {
+    type: "canvas-mobile-view-union";
+    value: "unconstrained" | "left" | "center";
   };
   "list-style-union": {
     type: "list-style-union";
@@ -594,7 +678,7 @@ export type Data<A extends keyof typeof Attributes> = {
   };
   "gallery-format-union": {
     type: "gallery-format-union";
-    value: "grid" | "carousel" | "strip";
+    value: "grid" | "carousel" | "strip" | "masonry";
   };
   "posts-list-view-union": {
     type: "posts-list-view-union";
@@ -604,11 +688,31 @@ export type Data<A extends keyof typeof Attributes> = {
     type: "standard-site-post-size-union";
     value: "large" | "medium" | "small";
   };
+  "bluesky-post-view-union": {
+    type: "bluesky-post-view-union";
+    value: "full" | "media";
+  };
   "page-link-display-union": {
     type: "page-link-display-union";
     value: "full" | "compact";
   };
   color: { type: "color"; value: string };
+  "ink-stroke": {
+    type: "ink-stroke";
+    value: {
+      // Flattened x, y, pressure triples; pressure runs 0 to 1000.
+      points: number[];
+      color: string;
+      size: number;
+      simulatePressure?: boolean;
+      // Flattened x, y pairs.
+      fill?: { points: number[]; color: string };
+    };
+  };
+  "view-box": {
+    type: "view-box";
+    value: { x: number; y: number; width: number; height: number };
+  };
 }[(typeof Attributes)[A]["type"]];
 export type FilterAttributes<F extends Partial<Attributes[keyof Attributes]>> =
   {

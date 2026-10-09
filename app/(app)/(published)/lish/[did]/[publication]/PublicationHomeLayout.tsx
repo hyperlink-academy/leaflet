@@ -11,6 +11,7 @@ import { PublicationNav, type PublicationNavPage } from "./PublicationNav";
 import { SubscribeSuccessPrefetch } from "components/Subscribe/useSubscribeSuccessData";
 import { SpeedyLink } from "components/SpeedyLink";
 import type { WordmarkData } from "src/utils/wordmark";
+import { CanvasPageArea } from "src/canvasZoom/CanvasPageScroll";
 
 export function PublicationHomeLayout(props: {
   showPageBackground: boolean;
@@ -23,6 +24,7 @@ export function PublicationHomeLayout(props: {
   subscribe: SubscribeData;
   children: React.ReactNode;
   pageWidth?: number;
+  canvasPage?: boolean;
 }) {
   let { ref } = usePreserveScroll<HTMLDivElement>(
     props.subscribe.publicationUri,
@@ -79,9 +81,17 @@ export function PublicationHomeLayout(props: {
         publicationUri={props.subscribe.publicationUri}
       />
       {header}
-      <main className="pubContent sm:max-w-(--page-width-units) w-full mx-auto pb-5 px-1">
-        {props.children}
-      </main>
+      {props.canvasPage ? (
+        <CanvasPageArea
+          className={`publicationContent sm:max-w-(--page-width-units) mx-auto flex flex-col items-center ${props.showPageBackground ? "" : "pt-3"}`}
+        >
+          {props.children}
+        </CanvasPageArea>
+      ) : (
+        <main className="publicationContent sm:max-w-(--page-width-units) w-full mx-auto pb-5 px-1">
+          {props.children}
+        </main>
+      )}
       {/* Always-rendered plain link so crawlers can reach every post through
           the archive, which infinite scroll otherwise hides past the first
           batch. Built off publicationUrl like the nav tabs, so it resolves on
@@ -101,7 +111,8 @@ export function PublicationHomeLayout(props: {
       <div className="pubWrapper flex flex-col sm:py-6 h-full max-w-(--page-width-units) mx-auto px-0 py-2">
         <div
           ref={ref}
-          className="pubContentScroll publicationScrollContainer overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] border border-border rounded-lg flex flex-col max-w-full w-[10000px]"
+          // A classic scrollbar would narrow the canvas and zoom it out.
+          className={`pubContentScroll publicationScrollContainer overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] border border-border rounded-lg flex flex-col max-w-full w-[10000px] ${props.canvasPage ? "no-scrollbar" : ""}`}
         >
           {inner}
         </div>

@@ -5,8 +5,7 @@ import {
   mutateIdentityData,
 } from "components/IdentityProvider";
 import type { CustomDomain } from "./DomainTab";
-import { UnassignButton } from "./UnassignButton";
-import { DeleteDomainButton } from "./DeleteDomainButton";
+import { AssignedDomainMenu } from "./AssignedDomainMenu";
 import { preconnect } from "react-dom";
 
 export function PublicationDomain(props: { domain: CustomDomain }) {
@@ -30,8 +29,9 @@ export function PublicationDomain(props: { domain: CustomDomain }) {
           - {pubName}
         </div>
       </a>
-      <UnassignButton
+      <AssignedDomainMenu
         domain={domain}
+        unlinkLabel="Unlink from publication"
         linkedItem={pubName}
         onUnassign={async () => {
           mutateIdentityData(mutateIdentity, (draft) => {
@@ -43,8 +43,6 @@ export function PublicationDomain(props: { domain: CustomDomain }) {
           await removeDomainAssignment({ domain });
         }}
       />
-
-      <DeleteDomainButton domain={domain} />
     </div>
   );
 }

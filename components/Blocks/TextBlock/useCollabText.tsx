@@ -60,8 +60,33 @@ export async function flushPendingTextWrites() {
   await Promise.all(pending.map((write) => write()));
 }
 
+// The doc each text entity was last bound to, kept briefly past unmount. A
+// block that moves in the tree (e.g. into a canvas group) remounts on a fresh
+// doc, and its block/text subscription hasn't delivered on that first render —
+// text typed since page load isn't in the initial facts — so it would render
+// empty and then apply its text mid-render. The new mount seeds from the old
+// doc instead.
+const recentDocs = new Map<string, Y.Doc>();
+const docMounts = new WeakMap<Y.Doc, number>();
+
 export function useYJSValue(entityID: string) {
-  const [ydoc] = useState(() => new Y.Doc());
+  const [ydoc] = useState(() => {
+    let doc = new Y.Doc();
+    let recent = recentDocs.get(entityID);
+    if (recent) Y.applyUpdate(doc, Y.encodeStateAsUpdate(recent));
+    return doc;
+  });
+  useEffect(() => {
+    recentDocs.set(entityID, ydoc);
+    docMounts.set(ydoc, (docMounts.get(ydoc) ?? 0) + 1);
+    return () => {
+      docMounts.set(ydoc, docMounts.get(ydoc)! - 1);
+      setTimeout(() => {
+        if (docMounts.get(ydoc) === 0 && recentDocs.get(entityID) === ydoc)
+          recentDocs.delete(entityID);
+      }, 2000);
+    };
+  }, [entityID, ydoc]);
   const docStateFromReplicache = useEntity(entityID, "block/text");
   let rep = useReplicache();
   let realtime = useYjsRealtime();

@@ -6,10 +6,8 @@ import { prosemirrorToYDoc } from "y-prosemirror";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { isPageLinkDisplay } from "src/utils/pageLinkDisplay";
-import {
-  multiBlockSchema,
-  schema,
-} from "components/Blocks/TextBlock/schema";
+import { isBskyPostView } from "src/utils/bskyPostView";
+import { multiBlockSchema, schema } from "components/Blocks/TextBlock/schema";
 import type { Fact } from "src/replicache";
 import type { FactInput } from "src/replicache/mutations";
 import type { FilterAttributes } from "src/replicache/attributes";
@@ -184,6 +182,8 @@ function buildBlockFromHTML(
   let finalType: BlockType = baseType;
   if (isMath) finalType = "math";
   else if (isBlueskyPost) finalType = "bluesky-post";
+  else if (isCardPaste && child.getAttribute("data-type") === "embedded-canvas")
+    finalType = "embedded-canvas";
 
   const entityID = v7();
   const facts: FactInput[] = [];
@@ -370,6 +370,14 @@ function buildBlockFromHTML(
         // Malformed bluesky-post payload — leave as a bare bluesky-post block.
       }
     }
+    const view = child.getAttribute("data-view");
+    if (isBskyPostView(view)) {
+      facts.push({
+        entity: entityID,
+        attribute: "bluesky-post/view",
+        data: { type: "bluesky-post-view-union", value: view },
+      });
+    }
   }
 
   // Card paste — recreate nested entities and remap references.
@@ -427,6 +435,13 @@ function buildBlockFromHTML(
         });
       }
     }
+    const alt = child.getAttribute("data-alt");
+    if (alt)
+      facts.push({
+        entity: entityID,
+        attribute: "image/alt",
+        data: { type: "string", value: alt },
+      });
     const display = child.getAttribute("data-display");
     if (isPageLinkDisplay(display)) {
       facts.push({
@@ -476,6 +491,7 @@ function buildBlockFromHTML(
         );
         nestedTopLevel.forEach((nb, i) => {
           facts.push({
+            id: v7(),
             entity: entityID,
             attribute: "card/block",
             data: {

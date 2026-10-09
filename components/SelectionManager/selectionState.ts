@@ -4,6 +4,7 @@ import { ReplicacheMutators } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import {
   filterBlocksForZoom,
+  getCanvasBlock,
   getPageBlocks,
   isBlockHidden,
 } from "src/replicache/getBlocks";
@@ -24,13 +25,21 @@ export const getViewBlocks = (
 // Toolbar actions run against the selection, but the toolbar is also shown for
 // a block that has focus without ever having been selected (e.g. focused
 // programmatically after a block is created), so fall back to that block.
+// Blocks placed on a canvas have no siblings to be sorted among, so they are
+// looked up one by one.
 export const getSelectedOrFocusedBlocks = async (
   rep: Replicache<ReplicacheMutators>,
 ) => {
   let [sortedBlocks] = await getSortedSelection(rep);
   if (sortedBlocks.length > 0) return sortedBlocks;
-  let focused = useUIState.getState().focusedEntity;
+  let { selectedBlocks, focusedEntity: focused } = useUIState.getState();
+  let canvasBlocks = selectedBlocks.flatMap(
+    (b) => getCanvasBlock(rep, b.parent, b.entityID) ?? [],
+  );
+  if (canvasBlocks.length > 0) return canvasBlocks;
   if (!focused || focused.entityType !== "block") return [];
+  let canvasBlock = getCanvasBlock(rep, focused.parent, focused.entityID);
+  if (canvasBlock) return [canvasBlock];
   return getViewBlocks(rep, focused.parent).filter(
     (s) => s.entityID === focused.entityID,
   );

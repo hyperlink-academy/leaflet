@@ -1,61 +1,21 @@
 import { JSDOM } from "jsdom";
-import { v7 } from "uuid";
 import {
-  buildBlocksFromPasteHTML,
-  type BuiltBlock,
-} from "src/utils/paste/htmlToBlocks";
-import type { FactInput } from "src/replicache/mutations";
+  contentBuilder,
+  escapeHtml,
+  stringFact as string,
+  type Card as BlockCard,
+  type ConvertedContent,
+  type ImportImage,
+} from "src/import/content";
 import { resolveGhostUrl } from "./parseGhostExport";
 
-export type ImportImage = {
-  entityID: string;
-  url: string;
-  // Ghost's rendered <img> carries the intrinsic size, which lets a preview
-  // reserve the right aspect ratio before the bytes are fetched.
-  width: number | null;
-  height: number | null;
-};
-
-export type ConvertedContent = {
-  blocks: BuiltBlock[];
-  extraEntities: string[];
-  images: ImportImage[];
-};
-
-// The paste pipeline (src/utils/paste) is written against browser globals.
-// Node has none, so they're installed from a jsdom window for the duration of
-// a synchronous conversion and removed again — leaving `document` defined on
-// the server would trip libraries that use it to detect a browser.
-let sharedDom: JSDOM | undefined;
-export function withDomGlobals<T>(fn: () => T): T {
-  const g = globalThis as Record<string, unknown>;
-  if (typeof g.document !== "undefined") return fn();
-  sharedDom ??= new JSDOM("");
-  const w = sharedDom.window as unknown as Record<string, unknown>;
-  const names = ["DOMParser", "document", "Node", "HTMLElement", "Element"];
-  for (const n of names) g[n] = w[n];
-  try {
-    return fn();
-  } finally {
-    for (const n of names) delete g[n];
-  }
-}
-
-type Card = {
-  type: BuiltBlock["type"];
-  facts: Array<{ attribute: string; data: unknown }>;
-  image?: Omit<ImportImage, "entityID">;
-};
+type Card = BlockCard & { image?: Omit<ImportImage, "entityID"> };
 type Segment = { kind: "html"; html: string } | ({ kind: "card" } & Card);
 
 const ELEMENT_NODE = 1;
 const TEXT_NODE = 3;
 const COMMENT_NODE = 8;
 
-const string = (attribute: string, value: string) => ({
-  attribute,
-  data: { type: "string", value },
-});
 const size = (v: string | null): number | null => {
   const n = Number(v);
   return n > 0 ? n : null;
@@ -65,10 +25,6 @@ function need(el: Element, selector: string): Element {
   if (!found) throw new Error(`Ghost card has no <${selector}>`);
   return found;
 }
-function escapeHtml(s: string) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
 function imageCard(img: Element): Card {
   const url = img.getAttribute("src");
   if (!url) throw new Error("Image without a src");
@@ -255,50 +211,13 @@ export function ghostHtmlToBlocks(
     p.replaceWith(img);
   }
 
-  const content: ConvertedContent = {
-    blocks: [],
-    extraEntities: [],
-    images: [],
-  };
+  const builder = contentBuilder(opts.parent);
   for (const seg of segmentGhostBody(doc.body, doc)) {
-    if (seg.kind === "html") {
-      const result = withDomGlobals(() =>
-        // Only the ids of extra entities are used; they join the leaflet's
-        // entity set on insert.
-        buildBlocksFromPasteHTML(seg.html, {
-          parent: opts.parent,
-          permission_set: "",
-        }),
-      );
-      content.blocks.push(...result.blocks);
-      content.extraEntities.push(
-        ...result.extraEntities.map((e) => e.entityID),
-      );
-      content.images.push(
-        ...result.imageTasks.map((t) => ({
-          entityID: t.entityID,
-          url: t.url,
-          width: null,
-          height: null,
-        })),
-      );
-    } else {
-      const entityID = v7();
-      content.blocks.push({
-        entityID,
-        parent: opts.parent,
-        type: seg.type,
-        facts: [
-          {
-            entity: entityID,
-            attribute: "block/type",
-            data: { type: "block-type-union", value: seg.type },
-          },
-          ...seg.facts.map((f) => ({ ...f, entity: entityID })),
-        ] as FactInput[],
-      });
-      if (seg.image) content.images.push({ entityID, ...seg.image });
+    if (seg.kind === "html") builder.html(seg.html);
+    else {
+      const entityID = builder.card(seg);
+      if (seg.image) builder.image({ entityID, ...seg.image });
     }
   }
-  return content;
+  return builder.finish();
 }

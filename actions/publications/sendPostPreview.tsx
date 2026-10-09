@@ -1,29 +1,22 @@
 "use server";
 
 import { render } from "@react-email/render";
-import { BlobRef } from "@atproto/lexicon";
 import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { getCurrentDeploymentDomain } from "src/utils/getCurrentDeploymentDomain";
 import { Ok, Err, type Result } from "src/result";
 import { EMAIL_REGEX } from "src/utils/confirmationEmail";
-import { processBlocksToPages } from "src/utils/factsToPagesRecord";
-import type { Fact } from "src/replicache";
-import type { Attribute } from "src/replicache/attributes";
-import { normalizePublicationRecord } from "src/utils/normalizeRecords";
-import {
-  buildFromHeader,
-  resolveFromDomain,
-  resolveReplyToEmail,
-} from "src/utils/newsletterSender";
-import { PubLeafletPagesLinearDocument } from "lexicons/api";
 import { hydrateBskyPostBlocks } from "src/utils/fetchBskyPosts";
 import { fetchStandardSiteBlockData } from "src/utils/fetchStandardSiteBlockData";
 import { PostEmail } from "emails/post";
-import { emailPropsFromPublication } from "emails/fromPublication";
-import { getProfiles } from "src/identity";
-import { toBylineProfiles, formatBylineProfiles } from "src/utils/byline";
 import { isConfirmedContributor } from "src/contributorPermissions";
+import { draftContributorDids, draftPagesForEmail } from "src/emailPosts/draft";
+import {
+  emailAuthorName,
+  emailBodyFromPages,
+  resolveBroadcastSender,
+} from "src/emailPosts/broadcast";
+import { prepareEmailRenderImages } from "src/emailRender/render";
 
 type SendPreviewError =
   | "unauthorized"
@@ -43,6 +36,8 @@ export async function sendPostPreview(args: {
   title: string;
   description?: string;
   to: string;
+  // Previews an email-only post, which has no web page to link to.
+  emailOnly?: boolean;
 }): Promise<Result<null, SendPreviewError>> {
   const identity = await getAuthIdentity();
   if (!identity?.atp_did) return Err("unauthorized");
@@ -65,83 +60,33 @@ export async function sendPostPreview(args: {
     (await isConfirmedContributor(args.publication_uri, identity.atp_did));
   if (!isContributor) return Err("unauthorized");
 
-  const settings = publication.publication_newsletter_settings;
-  if (!settings?.enabled) {
-    return Err("newsletter_not_enabled");
-  }
+  const sender = resolveBroadcastSender(publication);
+  if (!sender.ok) return Err(sender.error);
+  const { pubRecord, pubProps, fromHeader, replyToEmail } = sender.value;
 
-  const { data: factsData } = await supabaseServerClient.rpc("get_facts", {
-    root: args.root_entity,
-  });
-  const facts = (factsData as unknown as Fact<Attribute>[]) || [];
-
-  // Preview runs on drafts before the document is published, so we can't
-  // upload image blobs or poll records to the PDS here. The email template
-  // detects an http(s) $link and uses it as a direct image URL; polls
-  // render as "unsupported" in preview.
-  const { pages } = await processBlocksToPages({
-    facts,
-    root_entity: args.root_entity,
-    hooks: {
-      uploadImage: async (src) =>
-        ({ ref: { $link: src }, mimeType: "image/*", size: 0 }) as unknown as BlobRef,
-      uploadPoll: null,
-    },
-  });
-  const firstPage = pages[0];
-  const blocks =
-    firstPage?.type === "doc"
-      ? (firstPage.blocks as PubLeafletPagesLinearDocument.Block[])
-      : [];
+  const { pages: draftPages } = await draftPagesForEmail(args.root_entity);
+  const { blocks, pages, rootCanvas } = emailBodyFromPages(draftPages);
   const bskyPosts = await hydrateBskyPostBlocks(blocks);
   const { standardSitePosts, standardSitePublications } =
     await fetchStandardSiteBlockData(blocks);
 
-  const pubRecord = normalizePublicationRecord(publication.record);
-  const pubProps = emailPropsFromPublication(pubRecord);
-  const fromDomain = resolveFromDomain(
-    pubRecord?.url,
-    publication.publication_domains?.[0]?.domain,
-  );
-  if (!fromDomain) return Err("no_from_address");
-  const fromHeader = buildFromHeader(pubRecord?.name, fromDomain);
-  const replyToEmail = resolveReplyToEmail(settings);
-
   const assetsBaseUrl = await getCurrentDeploymentDomain();
+  const renderImages = await prepareEmailRenderImages({
+    body: { blocks, pages, rootCanvas },
+    authorDid: identity.atp_did,
+    publicationUri: args.publication_uri,
+    pubRecord,
+    assetsBaseUrl,
+  });
 
-  // Resolve the draft's contributors (if any) for the byline. The published
-  // `contributors` field doesn't exist yet at preview time, so we read the
-  // draft's `leaflet_contributors`. Fall back to the current user's handle
-  // (previous behavior) when there are no contributors.
-  let authorName: string | undefined =
-    (await getProfiles([identity.atp_did])).get(identity.atp_did)?.handle ??
-    undefined;
-  if (args.leaflet_id) {
-    // Verify the leaflet actually belongs to this publication before reading
-    // its contributors, so a client can't pass an arbitrary leaflet_id and
-    // leak another draft's contributor list.
-    const { data: leafletInPub } = await supabaseServerClient
-      .from("leaflets_in_publications")
-      .select("leaflet")
-      .eq("publication", args.publication_uri)
-      .eq("leaflet", args.leaflet_id)
-      .maybeSingle();
-    const { data: contributorRows } = leafletInPub
-      ? await supabaseServerClient
-          .from("leaflet_contributors")
-          .select("contributor_did")
-          .eq("leaflet", args.leaflet_id)
-          .order("created_at", { ascending: true })
-      : { data: [] };
-    const contributorDids =
-      contributorRows?.map((c) => c.contributor_did) ?? [];
-    if (contributorDids.length > 0) {
-      const profiles = await getProfiles(contributorDids);
-      authorName =
-        formatBylineProfiles(toBylineProfiles(contributorDids, profiles)) ??
-        authorName;
-    }
-  }
+  // The published `contributors` field doesn't exist yet at preview time, so
+  // the byline comes from the draft's `leaflet_contributors`.
+  const authorName = await emailAuthorName(
+    identity.atp_did,
+    args.leaflet_id
+      ? await draftContributorDids(args.publication_uri, args.leaflet_id)
+      : [],
+  );
 
   let html: string;
   try {
@@ -150,7 +95,7 @@ export async function sendPostPreview(args: {
         ...pubProps,
         postTitle: args.title || "(untitled)",
         postDescription: args.description,
-        postUrl: pubProps.publicationUrl,
+        postUrl: args.emailOnly ? undefined : pubProps.publicationUrl,
         authorName,
         publishedAtLabel: new Date().toLocaleDateString("en-US", {
           month: "short",
@@ -159,6 +104,8 @@ export async function sendPostPreview(args: {
         }),
         blocks,
         pages,
+        canvasPost: !!rootCanvas,
+        renderImages,
         bskyPosts,
         standardSitePosts,
         standardSitePublications,

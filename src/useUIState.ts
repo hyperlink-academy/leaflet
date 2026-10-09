@@ -1,6 +1,7 @@
 import type { Block } from "components/Blocks/Block";
 import { create } from "zustand";
 import { combine } from "zustand/middleware";
+import { pageOfParent } from "src/utils/blockGroups";
 
 type SelectedBlock = Pick<Block, "entityID" | "parent">;
 
@@ -132,11 +133,13 @@ const selectionEntry = (block: SelectedBlock): SelectedBlock => ({
 export const useIsBlockSelected = (entityID: string) =>
   useUIState((s) => s.selectedBlocks.some((b) => b.entityID === entityID));
 
+// A block inside a canvas group focuses both the group and its canvas.
 export const useIsPageFocused = (entityID: string) =>
   useUIState((s) =>
     s.focusedEntity?.entityType === "page"
       ? s.focusedEntity.entityID === entityID
-      : s.focusedEntity?.parent === entityID,
+      : s.focusedEntity?.parent === entityID ||
+        pageOfParent(s.focusedEntity?.parent) === entityID,
   );
 
 export const isZoomedBlockRoot = (entity: string) =>

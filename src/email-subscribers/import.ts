@@ -145,7 +145,8 @@ export function parseCsv(text: string): string[][] {
 // Decide whether a row represents someone who should NOT receive email.
 // Ghost-style exports encode this in `subscriber_type` and
 // `metadata.subscribed_to_emails`; a populated `unsubscription_date` is also
-// treated as a hard opt-out. Returns the reason (which selects the opt-out
+// treated as a hard opt-out. Substack's email_list CSV marks people who
+// turned email off with `email_disabled`. Returns the reason (which selects the opt-out
 // event type) or null for an active subscriber.
 function deriveOptOut(extras: Record<string, string>): OptOutReason | null {
   const type = (extras["subscriber_type"] ?? "").trim().toLowerCase();
@@ -157,11 +158,13 @@ function deriveOptOut(extras: Record<string, string>): OptOutReason | null {
     .trim()
     .toLowerCase();
   const unsubDate = (extras["unsubscription_date"] ?? "").trim();
+  const emailDisabled = (extras["email_disabled"] ?? "").trim().toLowerCase();
 
   if (type === "undeliverable") return "undeliverable";
   if (type === "unsubscribed") return "unsubscribed";
   if (subscribedToEmails === "false") return "unsubscribed";
   if (unsubDate.length > 0) return "unsubscribed";
+  if (emailDisabled === "true") return "unsubscribed";
   return null;
 }
 

@@ -1,10 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type {
-  ClientStateNotFoundResponse,
-  PullResponseOKV1,
-  ReadonlyJSONValue,
-} from "replicache";
+import type { PullResponseOKV1, ReadonlyJSONValue } from "replicache";
 import type { Database } from "supabase/database.types";
 import {
   buildExtras,
@@ -75,14 +71,19 @@ export async function fetchPullData(
 // The full CVR pull: resolve the base CVR the cookie points at, fetch the
 // client view, diff, and store the advanced CVR. Cookies we can't parse
 // (legacy Date.now() numbers, null first pulls) and cookies whose CVR is
-// gone from the store both get the legacy full-snapshot response.
+// gone from the store both get the legacy full-snapshot response. Any
+// failure propagates: Replicache answers a ClientStateNotFound response by
+// disabling the client group and reloading the page, which discards every
+// unpushed mutation, and client groups are never garbage collected here, so
+// that response is never right; a thrown error becomes a non-200 the puller
+// reports as such, and Replicache retries.
 export async function computePull(
   supabase: SupabaseClient<Database>,
   store: CVRStore,
   pullRequest: { cookie: unknown; clientGroupID: string },
   token_id: string,
   now: number,
-): Promise<PullResponseOKV1 | ClientStateNotFoundResponse> {
+): Promise<PullResponseOKV1> {
   let cookie = parseCVRCookie(pullRequest.cookie);
   let storeKey = `${token_id}:${pullRequest.clientGroupID}`;
   try {
@@ -109,13 +110,7 @@ export async function computePull(
     if (nextCVR) await store.set(storeKey, { id: nextCVRID, ...nextCVR });
     return response;
   } catch (e) {
-    // The legacy handler returned ClientStateNotFound whenever the pull_data
-    // RPC errored (e.g. a malformed token id); Replicache then resets the
-    // client, which also cleanly recovers the (structurally impossible)
-    // unhydrated-changed-fact error from buildPullResponse. Preserve that
-    // rather than surfacing a 500 the puller would hand to Replicache as a
-    // garbage response.
     console.log(e);
-    return { error: "ClientStateNotFound" };
+    throw e;
   }
 }

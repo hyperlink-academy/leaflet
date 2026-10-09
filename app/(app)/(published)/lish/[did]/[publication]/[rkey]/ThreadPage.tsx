@@ -29,7 +29,7 @@ import {
 } from "./PostLinks";
 import { Tabs } from "components/Tabs";
 import { CollapsibleReplies } from "components/CollapsibleReplies";
-import { useDocument } from "contexts/DocumentContext";
+import { useDocumentOptional } from "contexts/DocumentContext";
 import { QuoteContent } from "./Interactions/Quotes";
 import {
   decodeQuotePosition,
@@ -159,18 +159,21 @@ function ThreadContent(props: {
   // the main post to the top (which would hide the header).
   const inDrawer = useContext(DrawerThreadContext) !== null;
 
-  // Compute document URLs for leaflet link detection
-  const {
-    uri: docUri,
-    normalizedDocument,
-    normalizedPublication,
-  } = useDocument();
-  const docAtUri = useMemo(() => new AtUri(docUri), [docUri]);
-  const docDid = docAtUri.host;
+  // Compute document URLs for leaflet link detection. A thread opened from the
+  // editor has no published document to link back to.
+  const doc = useDocumentOptional();
+  const docDid = useMemo(() => (doc ? new AtUri(doc.uri).host : ""), [doc]);
 
   const documentUrls = useMemo(
-    () => getDocumentUrls(normalizedDocument, docUri, normalizedPublication),
-    [docUri, normalizedDocument, normalizedPublication],
+    () =>
+      doc
+        ? getDocumentUrls(
+            doc.normalizedDocument,
+            doc.uri,
+            doc.normalizedPublication,
+          )
+        : [],
+    [doc],
   );
 
   // Scroll the main post into view when the thread loads
@@ -673,6 +676,7 @@ function ReplyPostContent(props: {
         parent={page}
         showEmbed={!docLink?.isEmbed}
         showBlueskyLink={false}
+        linkTimestamp
         quoteEnabled
         replyEnabled
         replyOnClick={

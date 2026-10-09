@@ -35,6 +35,7 @@ import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { GridSmall } from "components/Icons/GridSmall";
 import { CarouselSmall } from "components/Icons/CarouselSmall";
 import { StripSmall } from "components/Icons/StripSmall";
+import { MasonrySmall } from "components/Icons/MasonrySmall";
 
 import { GalleryFormat, useGalleryImage } from "./shared";
 import { ButtonPrimary } from "components/Buttons";
@@ -65,6 +66,7 @@ export function ImageGalleryOptions(props: {
               { value: "grid", Icon: GridSmall },
               { value: "carousel", Icon: CarouselSmall },
               { value: "strip", Icon: StripSmall },
+              { value: "masonry", Icon: MasonrySmall },
             ] as { value: GalleryFormat; Icon: typeof GridSmall }[]
           ).map(({ value, Icon }) => {
             let selected = props.format === value;
@@ -87,13 +89,13 @@ export function ImageGalleryOptions(props: {
             );
           })}
         </div>
-        {props.format === "strip" || props.format === "grid" ? (
+        {props.format !== "carousel" ? (
           <>
             <hr className="border-border-light " />
             <GapControl entityID={props.entityID} gap={props.gap} />
           </>
         ) : null}
-        {props.format === "grid" && (
+        {(props.format === "grid" || props.format === "masonry") && (
           <>
             <hr className="border-border-light " />
 

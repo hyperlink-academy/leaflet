@@ -204,9 +204,11 @@ export function popDrawerThread(document_uri: string) {
 }
 
 // Jump all the way back out of the thread navigation, to the drawer's top
-// level (the comments/mentions tabs).
-export function popDrawerThreadToRoot(document_uri: string) {
-  setInteractionState(document_uri, { threadStack: [] });
+// level: the comments/mentions tabs, or the first thread when there are none.
+export function popDrawerThreadToRoot(document_uri: string, hasTabs: boolean) {
+  setInteractionState(document_uri, (s) => ({
+    threadStack: hasTabs ? [] : s.threadStack.slice(0, 1),
+  }));
 }
 
 export const Interactions = (props: {

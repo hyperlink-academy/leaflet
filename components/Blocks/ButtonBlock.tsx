@@ -14,6 +14,20 @@ import { ButtonPrimary } from "components/Buttons";
 import { BlockButtonSmall } from "components/Icons/BlockButtonSmall";
 import { CheckTiny } from "components/Icons/CheckTiny";
 import { LinkSmall } from "components/Icons/LinkSmall";
+import { ToggleGroup } from "components/ToggleGroup";
+import {
+  AlignCenterSmall,
+  AlignJustifiedSmall,
+  AlignLeftSmall,
+  AlignRightSmall,
+} from "components/Toolbar/TextAlignmentToolbar";
+import { BlockSettings } from "./SettingsTriggerButton";
+
+// Without a scheme the link would resolve relative to the post.
+const normalizeButtonUrl = (url: string) =>
+  url.startsWith("http") || url.startsWith("mailto") || url.startsWith("tel:")
+    ? url
+    : `https://${url}`;
 
 export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();
@@ -36,6 +50,11 @@ export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
       borderOnHover
       hasAlignment={alignment !== "justify"}
       className={`p-0! rounded-md! border-none!`}
+      extraOptions={
+        !props.preview ? (
+          <ButtonBlockOptions entityID={props.entityID} />
+        ) : undefined
+      }
     >
       <a
         href={url?.data.value}
@@ -81,13 +100,7 @@ const ButtonBlockSettings = (props: BlockProps) => {
         });
       }
 
-      // if no valid url prefix, default to https
-      if (
-        !urlValue.startsWith("http") &&
-        !urlValue.startsWith("mailto") &&
-        !urlValue.startsWith("tel:")
-      )
-        url = `https://${urlValue}`;
+      url = normalizeButtonUrl(urlValue);
 
       // these mutations = simpler subset of addLinkBlock
       if (!rep) return;
@@ -254,3 +267,119 @@ const ButtonBlockSettings = (props: BlockProps) => {
     </div>
   );
 };
+
+type Alignment = "left" | "center" | "right" | "justify";
+
+function ButtonBlockOptions(props: { entityID: string }) {
+  let { rep } = useReplicache();
+  let smoker = useSmoker();
+  let text = useEntity(props.entityID, "button/text")?.data.value ?? "";
+  let url = useEntity(props.entityID, "button/url")?.data.value ?? "";
+  let alignment: Alignment =
+    useEntity(props.entityID, "block/text-alignment")?.data.value ?? "center";
+
+  // Drafts are committed on blur/Enter so each edit is one undo step.
+  let [textDraft, setTextDraft] = useState(text);
+  let [urlDraft, setUrlDraft] = useState(url);
+  useEffect(() => setTextDraft(text), [text]);
+  useEffect(() => setUrlDraft(url), [url]);
+
+  let commitText = () => {
+    if (textDraft === text) return;
+    if (!textDraft.trim()) {
+      setTextDraft(text);
+      return;
+    }
+    rep?.mutate.assertFact({
+      entity: props.entityID,
+      attribute: "button/text",
+      data: { type: "string", value: textDraft },
+    });
+  };
+
+  let commitUrl = (e: { currentTarget: Element }) => {
+    if (urlDraft === url) return;
+    if (!urlDraft || !isUrl(urlDraft)) {
+      let rect = e.currentTarget.getBoundingClientRect();
+      smoker({
+        error: true,
+        text: urlDraft ? "invalid url!" : "missing url!",
+        position: { y: rect.top, x: rect.left + 12 },
+      });
+      setUrlDraft(url);
+      return;
+    }
+    rep?.mutate.assertFact({
+      entity: props.entityID,
+      attribute: "button/url",
+      data: { type: "string", value: normalizeButtonUrl(urlDraft) },
+    });
+  };
+
+  return (
+    <BlockSettings label="Button" className="w-xs">
+      <label className="flex flex-col gap-1">
+        <span className="font-bold">Button Text</span>
+        <Input
+          type="text"
+          className="input-with-border"
+          value={textDraft}
+          onMouseDown={(e) => e.stopPropagation()}
+          onChange={(e) => setTextDraft(e.currentTarget.value)}
+          onBlur={commitText}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commitText();
+            }
+          }}
+        />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="font-bold">Link</span>
+        <Input
+          type="text"
+          className="input-with-border"
+          placeholder="www.example.com"
+          value={urlDraft}
+          onMouseDown={(e) => e.stopPropagation()}
+          onChange={(e) => setUrlDraft(e.currentTarget.value)}
+          onBlur={commitUrl}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commitUrl(e);
+            }
+          }}
+        />
+      </label>
+      <hr className="border-border-light" />
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-bold">Alignment</span>
+        <ToggleGroup<Alignment>
+          value={alignment}
+          background="light"
+          onChange={(value) =>
+            rep?.mutate.assertFact({
+              entity: props.entityID,
+              attribute: "block/text-alignment",
+              data: { type: "text-alignment-type-union", value },
+            })
+          }
+          options={[
+            { value: "left", label: <AlignLeftSmall aria-label="Left" /> },
+            {
+              value: "center",
+              label: <AlignCenterSmall aria-label="Center" />,
+            },
+            { value: "right", label: <AlignRightSmall aria-label="Right" /> },
+            {
+              value: "justify",
+              label: <AlignJustifiedSmall aria-label="Full Width" />,
+            },
+          ]}
+        />
+      </div>
+    </BlockSettings>
+  );
+}

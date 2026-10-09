@@ -26,8 +26,15 @@ export async function publishToPublication(
     };
   }
   let { rkey: _ignored, ...safeArgs } = args as PublishLeafletArgs;
+  // A post dated in the future is a scheduled one, which publishes through
+  // saveScheduledPost; published here it would sit on the web postdated.
+  let publishedAt =
+    safeArgs.publishedAt && new Date(safeArgs.publishedAt) > new Date()
+      ? new Date().toISOString()
+      : safeArgs.publishedAt;
   let result = await publishLeaflet({
     ...safeArgs,
+    publishedAt,
     actorDid: identity.atp_did,
   });
   if (result.success)

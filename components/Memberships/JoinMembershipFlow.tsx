@@ -172,9 +172,7 @@ export function JoinMembershipFlow(props: {
       publication: props.publicationUri,
       // The subscribe completes after a redirect, so stamp the originating
       // page into the source now.
-      ...(props.source
-        ? { source: { url: window.location.href, ...props.source } }
-        : {}),
+      source: { url: window.location.href, ...props.source },
     });
 
   // Where sign-in should land: back here, carrying the picked tier for paid
@@ -215,9 +213,7 @@ export function JoinMembershipFlow(props: {
       publicationUri: props.publicationUri,
       tierId,
       cadence: joinCadence,
-      source: props.source
-        ? { url: window.location.href, ...props.source }
-        : undefined,
+      source: { url: window.location.href, ...props.source },
     });
     if (!res.ok) {
       toaster({ type: "error", content: subscribeErrorMessage(res.error) });
@@ -436,11 +432,15 @@ export function JoinMembershipFlow(props: {
     setConfirming(true);
     const plan = confirmStep.plan;
     if (confirmStep.kind === "authToken") {
-      const token = await confirmEmailAuthToken(
-        confirmStep.tokenId,
-        code,
-        "membership",
-      );
+      const token = await confirmEmailAuthToken(confirmStep.tokenId, code, {
+        flow: "membership",
+        action: {
+          action: "subscribe",
+          publication: props.publicationUri,
+          source: props.source,
+        },
+        page: window.location.href,
+      });
       if (!token) {
         setConfirming(false);
         toaster({ type: "error", content: "Incorrect code!" });

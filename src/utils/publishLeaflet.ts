@@ -6,8 +6,6 @@ import {
   PubLeafletBlocksText,
   PubLeafletContent,
   PubLeafletDocument,
-  PubLeafletPagesCanvas,
-  PubLeafletPagesLinearDocument,
   PubLeafletRichtextFacet,
   SiteStandardDocument,
 } from "lexicons/api";
@@ -22,6 +20,7 @@ import { AtUri } from "@atproto/syntax";
 import { Json } from "supabase/database.types";
 import type { PubLeafletPublication } from "lexicons/api";
 import { processBlocksToPages } from "src/utils/factsToPagesRecord";
+import { pageBlocksInOrder } from "src/utils/pageBlocksInOrder";
 import {
   extractThemeFromFacts,
   makePublishUploadHooks,
@@ -48,6 +47,7 @@ import {
 } from "src/utils/collectionHelpers";
 import { inngest } from "app/api/inngest/client";
 import { withPublishLock } from "src/utils/publishLock";
+import { cutPublishVersion } from "src/versioning/cutPublishVersion";
 import { loggedFetchHandler } from "src/utils/loggedFetchHandler";
 import { XRPCError } from "@atproto/xrpc";
 
@@ -199,6 +199,14 @@ async function publish({
 
     pdsDid = data.identity_did!;
     draft = data.leaflets_in_publications[0];
+    if (draft?.email_only)
+      return {
+        success: false,
+        error: {
+          type: "publish_failed",
+          message: "This draft is an email, it can't be published as a post.",
+        },
+      };
     existingDocUri = draft?.doc;
   } else {
     // Publishing standalone - use leaflets_to_documents
@@ -377,23 +385,6 @@ async function publish({
     : undefined;
   const documentType = getDocumentType(existingCollection);
 
-  // Build the pages array (used by both formats)
-  const pagesArray = pages.map((p) => {
-    if (p.type === "canvas") {
-      return {
-        $type: "pub.leaflet.pages.canvas" as const,
-        id: p.id,
-        blocks: p.blocks as PubLeafletPagesCanvas.Block[],
-      };
-    } else {
-      return {
-        $type: "pub.leaflet.pages.linearDocument" as const,
-        id: p.id,
-        blocks: p.blocks as PubLeafletPagesLinearDocument.Block[],
-      };
-    }
-  });
-
   // Resolve fields: use new values if provided, otherwise preserve existing
   const resolvedDescription =
     description !== undefined ? description : existingRecord.description;
@@ -444,7 +435,7 @@ async function publish({
       }),
       content: {
         $type: "pub.leaflet.content" as const,
-        pages: pagesArray,
+        pages,
       },
     };
     record = siteRecord;
@@ -473,7 +464,7 @@ async function publish({
       ...(existingRecord.bskyPostRef && {
         postRef: existingRecord.bskyPostRef,
       }),
-      pages: pagesArray,
+      pages,
       publishedAt: resolvedPublishedAt,
     } satisfies PubLeafletDocument.Record;
     recordForPDS = truncateDocumentRecordForPDS(record);
@@ -504,7 +495,7 @@ async function publish({
       supabaseServerClient.from("documents_in_publications").upsert({
         publication: publication_uri,
         document: result.uri,
-        members_only: pageHasMembersDelimiter(pagesArray[0]),
+        members_only: pageHasMembersDelimiter(pages[0]),
       }),
       supabaseServerClient.from("leaflets_in_publications").upsert({
         doc: result.uri,
@@ -550,6 +541,14 @@ async function publish({
     };
   }
 
+  // A published post has no use for a schedule: this is how a scheduled
+  // publish finishes, and how publishing by hand ahead of time cancels one.
+  if (publication_uri)
+    await supabaseServerClient
+      .from("publication_scheduled_posts")
+      .delete()
+      .eq("leaflet", leaflet_id);
+
   if (!publication_uri) {
     // Heuristic: Remove title entities if this is the first time publishing standalone
     // (when entitiesToDelete is provided and there's no existing document)
@@ -560,6 +559,13 @@ async function publish({
         .in("id", entitiesToDelete);
     }
   }
+
+  await cutPublishVersion({
+    tokenId: leaflet_id,
+    rootEntity: root_entity,
+    authorDid: actorDid,
+    firstPublish: !existingDocUri,
+  });
 
   // GC publish-owned copies of gated images this publish no longer references
   // (all of them when the delimiter was removed). Best-effort — the publish
@@ -623,7 +629,7 @@ async function publish({
     uri: result.uri,
     record: JSON.parse(JSON.stringify(record)),
     firstPublish: !existingDocUri,
-    blocks: pagesArray.reduce((n, p) => n + p.blocks.length, 0),
+    blocks: pages.reduce((n, p) => n + p.blocks.length, 0),
   };
 }
 
@@ -653,29 +659,9 @@ async function createMentionNotifications(
 
   if (!pages) return;
 
-  // Helper to extract blocks from all pages (both linear and canvas)
-  function getAllBlocks(pages: PubLeafletContent.Main["pages"]) {
-    const blocks: (
-      | PubLeafletPagesLinearDocument.Block["block"]
-      | PubLeafletPagesCanvas.Block["block"]
-    )[] = [];
-    for (const page of pages) {
-      if (page.$type === "pub.leaflet.pages.linearDocument") {
-        const linearPage = page as PubLeafletPagesLinearDocument.Main;
-        for (const blockWrapper of linearPage.blocks) {
-          blocks.push(blockWrapper.block);
-        }
-      } else if (page.$type === "pub.leaflet.pages.canvas") {
-        const canvasPage = page as PubLeafletPagesCanvas.Main;
-        for (const blockWrapper of canvasPage.blocks) {
-          blocks.push(blockWrapper.block);
-        }
-      }
-    }
-    return blocks;
-  }
-
-  const allBlocks = getAllBlocks(pages);
+  const allBlocks = pages.flatMap((page) =>
+    pageBlocksInOrder(page).map((b) => b.block.block),
+  );
 
   // Extract mentions from all text blocks and embedded Bluesky posts
   for (const block of allBlocks) {

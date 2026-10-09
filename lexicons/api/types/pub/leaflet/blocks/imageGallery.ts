@@ -17,10 +17,10 @@ const id = 'pub.leaflet.blocks.imageGallery'
 export interface Main {
   $type?: 'pub.leaflet.blocks.imageGallery'
   images: Image[]
-  format?: 'grid' | 'carousel' | 'strip' | (string & {})
+  format?: 'grid' | 'carousel' | 'strip' | 'masonry' | (string & {})
   /** Gap between images in pixels. */
   gap?: number
-  /** Max width per image in grid view (px); drives how many columns fit. */
+  /** Max width per image in grid and masonry views (px); drives how many columns fit. */
   maxWidth?: number
 }
 

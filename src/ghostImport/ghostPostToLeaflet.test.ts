@@ -1,9 +1,6 @@
 import { describe, expect, test } from "vitest";
-import {
-  ghostPostToLeaflet,
-  ghostPostToPage,
-  previewImage,
-} from "./ghostPostToLeaflet";
+import { previewImage } from "src/import/leaflet";
+import { ghostPostToLeaflet, ghostPostToPage } from "./ghostPostToLeaflet";
 import type { GhostPost } from "./parseGhostExport";
 
 const post = (over: Partial<GhostPost>): GhostPost => ({

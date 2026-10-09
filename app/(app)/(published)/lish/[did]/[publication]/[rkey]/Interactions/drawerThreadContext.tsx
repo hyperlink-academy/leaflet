@@ -16,6 +16,14 @@ export type DrawerThread =
   | { type: "recommends"; uri: string }
   | { type: "tag"; tag: string };
 
+// The views that are a Bluesky thread: the only ones that need no published
+// document behind them.
+export function isBskyThread(
+  thread: DrawerThread | undefined,
+): thread is Extract<DrawerThread, { type: "thread" | "quotes" }> {
+  return thread?.type === "thread" || thread?.type === "quotes";
+}
+
 export function drawerThreadKey(thread: DrawerThread) {
   return thread.type === "tag" ? thread.tag : thread.uri;
 }
@@ -45,8 +53,7 @@ export function useOpenThread() {
     // standardSitePost, recommends and tag only exist inside the drawer; they
     // have no page form, so they're never reached here without a drawer-aware
     // provider.
-    else if (thread.type === "thread" || thread.type === "quotes")
-      frame.openPage(parent, thread);
+    else if (isBskyThread(thread)) frame.openPage(parent, thread);
   };
 }
 

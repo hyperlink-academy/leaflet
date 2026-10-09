@@ -9,6 +9,7 @@ import {
   is$typed as _is$typed,
   type OmitKey,
 } from '../../../../util'
+import type * as PubLeafletThemePage from '../theme/page'
 import type * as PubLeafletBlocksIframe from '../blocks/iframe'
 import type * as PubLeafletBlocksHtml from '../blocks/html'
 import type * as PubLeafletBlocksText from '../blocks/text'
@@ -26,13 +27,18 @@ import type * as PubLeafletBlocksBskyPost from '../blocks/bskyPost'
 import type * as PubLeafletBlocksStandardSitePost from '../blocks/standardSitePost'
 import type * as PubLeafletBlocksStandardSitePublication from '../blocks/standardSitePublication'
 import type * as PubLeafletBlocksPage from '../blocks/page'
+import type * as PubLeafletBlocksEmbeddedCanvas from '../blocks/embeddedCanvas'
 import type * as PubLeafletBlocksPoll from '../blocks/poll'
 import type * as PubLeafletBlocksButton from '../blocks/button'
 import type * as PubLeafletBlocksPostsList from '../blocks/postsList'
 import type * as PubLeafletBlocksSignup from '../blocks/signup'
 import type * as PubLeafletBlocksRecommendedPubs from '../blocks/recommendedPubs'
+import type * as PubLeafletBlocksReply from '../blocks/reply'
+import type * as PubLeafletBlocksQuestions from '../blocks/questions'
 import type * as PubLeafletBlocksMembersOnlyDelimiter from '../blocks/membersOnlyDelimiter'
 import type * as PubLeafletBlocksPostHeader from '../blocks/postHeader'
+import type * as PubLeafletBlocksDrawing from '../blocks/drawing'
+import type * as PubLeafletPagesLinearDocument from './linearDocument'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -42,6 +48,18 @@ export interface Main {
   $type?: 'pub.leaflet.pages.canvas'
   id?: string
   blocks: Block[]
+  /** How a narrow viewport frames the canvas: the whole canvas scaled to fit the width (unconstrained, the default), or a phone-width area anchored to the canvas's left edge or centered on it, shown at up to 1:1. */
+  mobileView?: 'unconstrained' | 'left' | 'center' | (string & {})
+  /** Fixed canvas width in canvas px. With height, bounds the canvas: blocks are clipped to the area. Absent, the canvas grows with its content and is 1272px wide, or as wide as the inside of the publication's page (its theme's pageWidth) when it is one of a publication's pages. */
+  width?: number
+  /** Fixed canvas height in canvas px; see width. */
+  height?: number
+  /** Viewers cannot zoom the canvas or scroll it sideways: no wheel, pinch, double-tap or zoom controls, and the initial framing (see mobileView) stays. Vertical scrolling is unaffected. */
+  lockViewerZoom?: boolean
+  theme?: PubLeafletThemePage.Main
+  background?: Background
+  /** The guide pattern drawn over the canvas's background, under its blocks. Absent, a canvas that grows with its content shows the grid and a fixed-size canvas is plain. */
+  pattern?: 'grid' | 'dot' | 'plain' | (string & {})
 }
 
 const hashMain = 'main'
@@ -52,6 +70,26 @@ export function isMain<V>(v: V) {
 
 export function validateMain<V>(v: V) {
   return validate<Main & V>(v, id, hashMain)
+}
+
+/** An image tiled across the canvas, under its guide pattern and blocks. */
+export interface Background {
+  $type?: 'pub.leaflet.pages.canvas#background'
+  image: BlobRef
+  /** Width of each tile in canvas px. Defaults to 500. */
+  width?: number
+  /** Opacity of the image as a percentage. Defaults to 100. */
+  opacity?: number
+}
+
+const hashBackground = 'background'
+
+export function isBackground<V>(v: V) {
+  return is$typed(v, id, hashBackground)
+}
+
+export function validateBackground<V>(v: V) {
+  return validate<Background & V>(v, id, hashBackground)
 }
 
 export interface Block {
@@ -74,13 +112,18 @@ export interface Block {
     | $Typed<PubLeafletBlocksStandardSitePost.Main>
     | $Typed<PubLeafletBlocksStandardSitePublication.Main>
     | $Typed<PubLeafletBlocksPage.Main>
+    | $Typed<PubLeafletBlocksEmbeddedCanvas.Main>
     | $Typed<PubLeafletBlocksPoll.Main>
     | $Typed<PubLeafletBlocksButton.Main>
     | $Typed<PubLeafletBlocksPostsList.Main>
     | $Typed<PubLeafletBlocksSignup.Main>
     | $Typed<PubLeafletBlocksRecommendedPubs.Main>
+    | $Typed<PubLeafletBlocksReply.Main>
+    | $Typed<PubLeafletBlocksQuestions.Main>
     | $Typed<PubLeafletBlocksMembersOnlyDelimiter.Main>
     | $Typed<PubLeafletBlocksPostHeader.Main>
+    | $Typed<PubLeafletBlocksDrawing.Main>
+    | $Typed<PubLeafletPagesLinearDocument.Main>
     | { $type: string }
   x: number
   y: number
@@ -90,6 +133,13 @@ export interface Block {
   rotation?: number
   /** Fractional index ordering this block against its siblings on the z axis. Blocks without one stack below every block with one, ordered by position. */
   stackOrder?: string
+  /** Alignment of a single block's content. A linear document's blocks carry their own. */
+  alignment?:
+    | 'lex:pub.leaflet.pages.linearDocument#textAlignLeft'
+    | 'lex:pub.leaflet.pages.linearDocument#textAlignCenter'
+    | 'lex:pub.leaflet.pages.linearDocument#textAlignRight'
+    | 'lex:pub.leaflet.pages.linearDocument#textAlignJustify'
+    | (string & {})
 }
 
 const hashBlock = 'block'

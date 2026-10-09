@@ -28,10 +28,8 @@ import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { linkOrphanedEmailSubscribers } from "src/utils/linkOrphanedEmailSubscribers";
 import { blobRefToSrc, EMAIL_ICON_TRANSFORM } from "src/utils/blobRefToSrc";
 import { AtUri } from "@atproto/api";
-import {
-  sanitizeSubscriptionSource,
-  type SubscriptionSource,
-} from "src/subscriptionSource";
+import type { SubscriptionSource } from "src/subscriptionSource";
+import { subscriptionSourceFromRequest } from "src/activeUserAnalytics";
 
 type RequestError =
   | "invalid_email"
@@ -85,7 +83,7 @@ export async function requestPublicationEmailSubscription(
       publicationUri,
       email,
       identity.id,
-      sanitizeSubscriptionSource(source),
+      await subscriptionSourceFromRequest(source),
     );
     if (!res.ok) return Err(res.error);
     return Ok({ confirmed: true });
@@ -183,7 +181,7 @@ export async function confirmPublicationEmailSubscription(
     publicationUri,
     email,
     identityId,
-    sanitizeSubscriptionSource(source),
+    await subscriptionSourceFromRequest(source),
   );
   return Ok(null);
 }

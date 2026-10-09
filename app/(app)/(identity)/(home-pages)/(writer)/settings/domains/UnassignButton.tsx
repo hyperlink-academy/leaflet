@@ -4,24 +4,44 @@ import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { UnlinkTiny } from "components/Icons/UnlinkTiny";
 import { Modal } from "components/Modal";
 
-export function UnassignButton(props: {
+type UnassignProps = {
   onUnassign: () => void;
   domain: string;
   linkedItem: string | undefined;
-}) {
+};
+
+export function UnassignButton(props: UnassignProps) {
   let [open, setOpen] = useState(false);
 
   return (
-    <Modal
+    <UnassignModal
+      {...props}
       open={open}
       onOpenChange={setOpen}
-      title="Are You Sure?"
-      className="text-center max-w-sm "
       trigger={
         <div className="text-secondary hover:text-accent-contrast text-sm">
           <UnlinkTiny />
         </div>
       }
+    />
+  );
+}
+
+export function UnassignModal(
+  props: UnassignProps & {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    trigger?: React.ReactNode;
+  },
+) {
+  let setOpen = props.onOpenChange;
+  return (
+    <Modal
+      open={props.open}
+      onOpenChange={setOpen}
+      title="Are You Sure?"
+      className="text-center max-w-sm "
+      trigger={props.trigger}
     >
       <div className="flex flex-col gap-2">
         <div className="flex flex-col ">

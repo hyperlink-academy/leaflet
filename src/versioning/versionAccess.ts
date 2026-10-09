@@ -31,7 +31,7 @@ async function uncachedGetVersionAccess(
   if (isPro(identity?.entitlements)) return { enabled: true, canModify: true };
   return { enabled: await documentHasProOwner(tokenId), canModify: false };
 }
-async function documentHasProOwner(tokenId: string) {
+export async function documentHasProOwner(tokenId: string) {
   let [homepage, inPublication, draftOf] = await Promise.all([
     supabaseServerClient
       .from("permission_token_on_homepage")

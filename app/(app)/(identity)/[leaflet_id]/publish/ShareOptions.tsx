@@ -40,6 +40,8 @@ type Props = {
   publishedAt?: string;
   // localStorage key under which the in-progress Bluesky post is persisted
   bskyDraftKey?: string;
+  // What the Bluesky post starts as when nothing is persisted under the key.
+  bskyInitialContent?: string;
   coverImageSrc?: string;
 };
 
@@ -113,13 +115,15 @@ export function ShareOptions(props: Props) {
             </div>
           </Checkbox>
           {props.publication_uri ? (
-            <EmailPreview
-              publication_uri={props.publication_uri}
-              root_entity={props.root_entity}
-              leaflet_id={props.leaflet_id}
-              title={props.title}
-              description={props.description}
-            />
+            <div className="pl-7 pb-2 -mt-2">
+              <EmailPreview
+                publication_uri={props.publication_uri}
+                root_entity={props.root_entity}
+                leaflet_id={props.leaflet_id}
+                title={props.title}
+                description={props.description}
+              />
+            </div>
           ) : null}
         </>
       ) : null}
@@ -150,6 +154,7 @@ export function ShareOptions(props: Props) {
             charCount={props.charCount}
             onCharCountChange={props.setCharCount}
             persistKey={props.bskyDraftKey}
+            initialContent={props.bskyInitialContent}
             embed={bskyEmbed}
           />
         </div>
@@ -187,12 +192,13 @@ export function ShareOptions(props: Props) {
   );
 }
 
-function EmailPreview(props: {
+export function EmailPreview(props: {
   publication_uri: string;
   root_entity: string;
   leaflet_id: string;
   title: string;
   description: string;
+  emailOnly?: boolean;
 }) {
   let [email, setEmail] = useState("");
   let [status, setStatus] = useState<
@@ -231,6 +237,7 @@ function EmailPreview(props: {
       title: props.title,
       description: props.description,
       to: email,
+      emailOnly: props.emailOnly,
     });
     if (res.ok) {
       setStatus({ state: "sent" });
@@ -240,7 +247,7 @@ function EmailPreview(props: {
   };
 
   return (
-    <div className="pl-7 pb-2 flex flex-col gap-1 -mt-2">
+    <div className="flex flex-col gap-1">
       {status.state === "sent" ? (
         <div className="text-sm text-tertiary italic">
           Preview sent to {email}.

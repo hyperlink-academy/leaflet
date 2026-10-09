@@ -1,25 +1,96 @@
 "use client";
+import { useRef, useState } from "react";
 import { createPublicationDraft } from "actions/createPublicationDraft";
 import { ActionButton } from "components/ActionBar/ActionButton";
-import { ButtonPrimary } from "components/Buttons";
+import {
+  ButtonPrimary,
+  ButtonSecondary,
+  ButtonTertiary,
+} from "components/Buttons";
 import { AddTiny } from "components/Icons/AddTiny";
 import { BlockCanvasPageSmall } from "components/Icons/BlockCanvasPageSmall";
 import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { Menu, MenuItem } from "components/Menu";
 import { useRouter } from "next/navigation";
 import { useIsMobile } from "src/hooks/isMobile";
+import { DotLoader } from "components/utils/DotLoader";
+
+function useCreateDraft(publication: string, options?: { emailOnly: true }) {
+  let router = useRouter();
+
+  let inFlight = useRef(false);
+  let [creating, setCreating] = useState(false);
+  let createDraft = async (pageType?: "doc" | "canvas") => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setCreating(true);
+    try {
+      let newLeaflet = await createPublicationDraft(
+        publication,
+        pageType,
+        options,
+      );
+      if (newLeaflet) return router.push(`/${newLeaflet}`);
+    } catch (e) {
+      console.error(e);
+    }
+    inFlight.current = false;
+    setCreating(false);
+  };
+  return { createDraft, creating };
+}
+
+export function NewDraftButton(props: {
+  publication: string;
+  type?: "primary" | "secondary" | "tertiary";
+  children: React.ReactNode;
+}) {
+  let { createDraft, creating } = useCreateDraft(props.publication);
+  let Button = {
+    primary: ButtonPrimary,
+    secondary: ButtonSecondary,
+    tertiary: ButtonTertiary,
+  }[props.type ?? "primary"];
+  return (
+    <Button disabled={creating} onClick={() => createDraft()}>
+      {creating ? <DotLoader /> : props.children}
+    </Button>
+  );
+}
+
+// Starts an email-only draft, which goes out through the email send flow
+// rather than being published.
+export function NewEmailButton(props: {
+  publication: string;
+  compact?: boolean;
+}) {
+  let { createDraft, creating } = useCreateDraft(props.publication, {
+    emailOnly: true,
+  });
+  return (
+    <ButtonPrimary
+      compact={props.compact}
+      className={props.compact ? "text-sm!" : undefined}
+      disabled={creating}
+      onClick={() => createDraft("doc")}
+    >
+      {creating ? (
+        <DotLoader />
+      ) : (
+        <>
+          <AddTiny className="scale-90" /> Email
+        </>
+      )}
+    </ButtonPrimary>
+  );
+}
 
 export function NewDraftActionButton(props: {
   publication: string;
   compact?: boolean;
 }) {
-  let router = useRouter();
   let isMobile = useIsMobile();
-
-  async function createDraft(pageType: "doc" | "canvas") {
-    let newLeaflet = await createPublicationDraft(props.publication, pageType);
-    if (newLeaflet) router.push(`/${newLeaflet}`);
-  }
+  let { createDraft } = useCreateDraft(props.publication);
 
   return (
     <Menu

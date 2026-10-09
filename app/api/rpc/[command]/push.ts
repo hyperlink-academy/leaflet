@@ -133,7 +133,7 @@ export const push = makeRoute({
           sessionIdentityId = row?.id ?? null;
         }
 
-        let { getContext, flush } = cachedServerMutationContext(
+        let { getContext, checkpoint, flush } = cachedServerMutationContext(
           tx,
           token.id,
           token_rights,
@@ -159,6 +159,11 @@ export const push = makeRoute({
           }
 
           let mutationStart = performance.now();
+          // A mutation that throws is skipped but still acknowledged, so a
+          // poison mutation can't wedge its client forever; its buffered
+          // writes are rolled back so the skip is all-or-nothing, matching
+          // the client, which aborted the whole transaction.
+          let rollback = checkpoint();
           try {
             let ctx = getContext(mutation.clientID, mutation.id);
             await mutations[name](mutation.args as any, ctx);
@@ -168,6 +173,7 @@ export const push = makeRoute({
               duration: mutationDuration,
             });
           } catch (e) {
+            rollback();
             let mutationDuration = performance.now() - mutationStart;
             mutationTimings.push({
               name: mutation.name,
@@ -218,6 +224,9 @@ export const push = makeRoute({
     } catch (e) {
       timeProcessingMutations = performance.now() - start;
       console.log(e);
+      // Nothing was committed, so the client must keep the mutations pending
+      // and retry; a success response here would let it consider them pushed.
+      throw e;
     } finally {
       // Calculate mutation statistics
       let totalMutationTime = mutationTimings.reduce(
@@ -252,8 +261,8 @@ ${mutationTimings
 
       client.release();
       await supabase.removeChannel(channel);
-      return { result: undefined } as const;
     }
+    return { result: undefined } as const;
   },
 });
 

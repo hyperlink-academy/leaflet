@@ -7,8 +7,6 @@ import { SendBackwardTiny } from "./Icons/SendBackwardTiny";
 import { SendToFrontTiny } from "./Icons/SendToFrontTiny";
 import { SendToBackTiny } from "./Icons/SendToBackTiny";
 
-type LayerAction = "forward" | "backward" | "front" | "back";
-
 // Stacking controls for one canvas block, rendered inside a block's options
 // bar in place of the document up/down buttons.
 export function CanvasLayerControls(props: {
@@ -21,23 +19,7 @@ export function CanvasLayerControls(props: {
   let atFront = index === order.length - 1;
   let atBack = index === 0;
 
-  // TooltipButton wraps the handler in an undo group, which the first layering
-  // action on a canvas needs since it writes a fact per block (see
-  // moveCanvasBlockLayer).
-  let move = async (action: LayerAction) => {
-    await rep?.mutate.moveCanvasBlockLayer({
-      parent: props.parent,
-      entityID: props.entityID,
-      action,
-    });
-  };
-
-  let controls: {
-    action: LayerAction;
-    label: string;
-    icon: React.ReactNode;
-    disabled: boolean;
-  }[] = [
+  let controls = [
     {
       action: "backward",
       label: "Send Backward",
@@ -62,7 +44,7 @@ export function CanvasLayerControls(props: {
       icon: <SendToFrontTiny />,
       disabled: atFront,
     },
-  ];
+  ] as const;
 
   return (
     <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
@@ -72,7 +54,15 @@ export function CanvasLayerControls(props: {
           tooltipContent={c.label}
           disabled={c.disabled}
           className="disabled:opacity-40"
-          onMouseDown={() => move(c.action)}
+          // TooltipButton's undo group makes the first layering on a canvas,
+          // which writes a fact per block, one Cmd-Z.
+          onMouseDown={() =>
+            rep?.mutate.moveCanvasBlockLayer({
+              parent: props.parent,
+              entityID: props.entityID,
+              action: c.action,
+            })
+          }
         >
           {c.icon}
         </TooltipButton>

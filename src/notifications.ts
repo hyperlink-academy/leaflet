@@ -3,6 +3,7 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { Tables, TablesInsert } from "supabase/database.types";
 import { AtUri } from "@atproto/syntax";
+import type { PubLeafletInteractionsQuestion } from "lexicons/api";
 import { idResolver, getProfiles, type Profile } from "src/identity";
 import {
   normalizeDocumentRecord,
@@ -44,6 +45,9 @@ export type NotificationData =
   | { type: "comment_mention"; comment_uri: string; mention_type: "publication"; mentioned_uri: string }
   | { type: "comment_mention"; comment_uri: string; mention_type: "document"; mentioned_uri: string }
   | { type: "recommend"; document_uri: string; recommend_uri: string }
+  | { type: "post_reply"; document_uri: string; reply_uri: string }
+  | { type: "post_question"; document_uri: string; question_uri: string }
+  | { type: "question_answered"; question_uri: string; document_uri: string }
   | { type: "new_member"; publication: string; membership_id: string };
 
 export type HydratedNotification =
@@ -54,12 +58,15 @@ export type HydratedNotification =
   | HydratedMentionNotification
   | HydratedCommentMentionNotification
   | HydratedRecommendNotification
+  | HydratedPostReplyNotification
+  | HydratedPostQuestionNotification
+  | HydratedQuestionAnsweredNotification
   | HydratedNewMemberNotification;
 export async function hydrateNotifications(
   notifications: NotificationRow[],
 ): Promise<Array<HydratedNotification>> {
   // Call all hydrators in parallel
-  const [commentNotifications, subscribeNotifications, quoteNotifications, bskyPostEmbedNotifications, mentionNotifications, commentMentionNotifications, recommendNotifications, newMemberNotifications] = await Promise.all([
+  const [commentNotifications, subscribeNotifications, quoteNotifications, bskyPostEmbedNotifications, mentionNotifications, commentMentionNotifications, recommendNotifications, newMemberNotifications, postReplyNotifications, postQuestionNotifications, questionAnsweredNotifications] = await Promise.all([
     hydrateCommentNotifications(notifications),
     hydrateSubscribeNotifications(notifications),
     hydrateQuoteNotifications(notifications),
@@ -68,10 +75,13 @@ export async function hydrateNotifications(
     hydrateCommentMentionNotifications(notifications),
     hydrateRecommendNotifications(notifications),
     hydrateNewMemberNotifications(notifications),
+    hydratePostReplyNotifications(notifications),
+    hydratePostQuestionNotifications(notifications),
+    hydrateQuestionAnsweredNotifications(notifications),
   ]);
 
   // Combine all hydrated notifications
-  const allHydrated = [...commentNotifications, ...subscribeNotifications, ...quoteNotifications, ...bskyPostEmbedNotifications, ...mentionNotifications, ...commentMentionNotifications, ...recommendNotifications, ...newMemberNotifications];
+  const allHydrated = [...commentNotifications, ...subscribeNotifications, ...quoteNotifications, ...bskyPostEmbedNotifications, ...mentionNotifications, ...commentMentionNotifications, ...recommendNotifications, ...newMemberNotifications, ...postReplyNotifications, ...postQuestionNotifications, ...questionAnsweredNotifications];
 
   // Sort by created_at to maintain order
   allHydrated.sort(
@@ -637,6 +647,129 @@ async function hydrateRecommendNotifications(notifications: NotificationRow[]) {
         normalizedPublication: normalizePublicationRecord(
           document.documents_in_publications[0]?.publications?.record,
         ),
+      };
+    })
+    .filter((n) => n !== null);
+}
+
+export type HydratedPostReplyNotification = Awaited<
+  ReturnType<typeof hydratePostReplyNotifications>
+>[0];
+
+async function hydratePostReplyNotifications(notifications: NotificationRow[]) {
+  const replyNotifications = notifications.filter(
+    (n): n is NotificationRow & { data: ExtractNotificationType<"post_reply"> } =>
+      (n.data as NotificationData)?.type === "post_reply",
+  );
+
+  if (replyNotifications.length === 0) {
+    return [];
+  }
+
+  const { data: replies } = await supabaseServerClient
+    .from("document_replies")
+    .select("uri, replier_did, document")
+    .in("uri", replyNotifications.map((n) => n.data.reply_uri));
+  const documentUris = [
+    ...replyNotifications.map((n) => n.data.document_uri),
+    ...(replies ?? []).map((r) => r.document),
+  ];
+  const { data: documents } = await supabaseServerClient
+    .from("documents")
+    .select("uri, data, documents_in_publications(publications(record))")
+    .in("uri", documentUris);
+  const profiles = await getProfiles(
+    Array.from(new Set((replies ?? []).map((r) => r.replier_did))),
+  );
+
+  return replyNotifications
+    .map((notification) => {
+      const reply = replies?.find((r) => r.uri === notification.data.reply_uri);
+      const document = documents?.find((d) => d.uri === notification.data.document_uri);
+      const replyDocument = documents?.find((d) => d.uri === reply?.document);
+      if (!reply || !document || !replyDocument) return null;
+      return {
+        id: notification.id,
+        recipient: notification.recipient,
+        created_at: notification.created_at,
+        type: "post_reply" as const,
+        reply_uri: notification.data.reply_uri,
+        document_uri: notification.data.document_uri,
+        profile: toNotificationProfile(profiles.get(reply.replier_did)),
+        normalizedDocument: normalizeDocumentRecord(document.data, document.uri),
+        normalizedPublication: normalizePublicationRecord(
+          document.documents_in_publications[0]?.publications?.record,
+        ),
+        replyTitle: normalizeDocumentRecord(replyDocument.data, replyDocument.uri)?.title,
+      };
+    })
+    .filter((n) => n !== null);
+}
+
+export type HydratedPostQuestionNotification = Awaited<
+  ReturnType<typeof hydratePostQuestionNotifications>
+>[0];
+export type HydratedQuestionAnsweredNotification = Awaited<
+  ReturnType<typeof hydrateQuestionAnsweredNotifications>
+>[0];
+
+// A reader asked a question on the recipient's post: the asker's profile.
+function hydratePostQuestionNotifications(notifications: NotificationRow[]) {
+  return hydrateQuestionNotifications(notifications, "post_question", (q) => q.asker_did);
+}
+
+// An author answered the recipient's question; document_uri is the post it
+// was asked on, where the answer shows: the author's profile.
+function hydrateQuestionAnsweredNotifications(notifications: NotificationRow[]) {
+  return hydrateQuestionNotifications(notifications, "question_answered", (q) => new AtUri(q.subject).host);
+}
+
+async function hydrateQuestionNotifications<T extends "post_question" | "question_answered">(
+  notifications: NotificationRow[],
+  type: T,
+  profileDid: (question: { asker_did: string; subject: string }) => string,
+) {
+  type Data = { type: T; question_uri: string; document_uri: string };
+  const matching = notifications.filter(
+    (n): n is NotificationRow & { data: Data } =>
+      (n.data as NotificationData)?.type === type,
+  );
+  if (matching.length === 0) return [];
+
+  const [{ data: questions }, { data: documents }] = await Promise.all([
+    supabaseServerClient
+      .from("document_questions")
+      .select("uri, asker_did, subject, record")
+      .in("uri", matching.map((n) => n.data.question_uri)),
+    supabaseServerClient
+      .from("documents")
+      .select("uri, data, documents_in_publications(publications(record))")
+      .in("uri", matching.map((n) => n.data.document_uri)),
+  ]);
+  const profiles = await getProfiles(
+    Array.from(new Set((questions ?? []).map(profileDid))),
+  );
+
+  return matching
+    .map((notification) => {
+      const question = questions?.find((q) => q.uri === notification.data.question_uri);
+      const document = documents?.find((d) => d.uri === notification.data.document_uri);
+      if (!question || !document) return null;
+      const record = question.record as PubLeafletInteractionsQuestion.Record;
+      return {
+        id: notification.id,
+        recipient: notification.recipient,
+        created_at: notification.created_at,
+        type,
+        question_uri: notification.data.question_uri,
+        document_uri: notification.data.document_uri,
+        profile: toNotificationProfile(profiles.get(profileDid(question))),
+        normalizedDocument: normalizeDocumentRecord(document.data, document.uri),
+        normalizedPublication: normalizePublicationRecord(
+          document.documents_in_publications[0]?.publications?.record,
+        ),
+        plaintext: record.plaintext,
+        facets: record.facets,
       };
     })
     .filter((n) => n !== null);

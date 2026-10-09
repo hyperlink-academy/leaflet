@@ -3,6 +3,7 @@
 import { getAuthIdentity } from "src/auth";
 import { isConfirmedContributor } from "src/contributorPermissions";
 import { supabaseServerClient } from "supabase/serverClient";
+import { addDraftToPublication } from "src/utils/addDraftToPublication";
 
 export async function moveLeafletToPublication(
   leaflet_id: string,
@@ -25,24 +26,12 @@ export async function moveLeafletToPublication(
   )
     return;
 
-  await supabaseServerClient.from("leaflets_in_publications").insert({
-    publication: publication_uri,
-    leaflet: leaflet_id,
-    doc: null,
+  await addDraftToPublication({
+    leaflet_id,
+    publication_uri,
+    actorDid: identity.atp_did,
     title: metadata.title,
     description: metadata.description,
+    entitiesToDelete,
   });
-
-  // Credit whoever saved the draft in the byline.
-  await supabaseServerClient
-    .from("leaflet_contributors")
-    .upsert(
-      { leaflet: leaflet_id, contributor_did: identity.atp_did },
-      { onConflict: "leaflet,contributor_did", ignoreDuplicates: true },
-    );
-
-  await supabaseServerClient
-    .from("entities")
-    .delete()
-    .in("id", entitiesToDelete);
 }

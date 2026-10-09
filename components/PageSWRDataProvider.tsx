@@ -86,6 +86,12 @@ export function useLeafletPublicationData() {
     mutate,
   };
 }
+// When this leaflet is scheduled to publish, if it is and is still due to.
+export function useLeafletScheduledPublishAt() {
+  let { data } = useLeafletData();
+  let scheduled = data?.publication_scheduled_posts;
+  return scheduled?.status === "scheduled" ? scheduled.publish_at : null;
+}
 export function useLeafletDomains() {
   let { data, mutate } = useLeafletData();
   return { data: data?.custom_domain_routes, mutate: mutate };

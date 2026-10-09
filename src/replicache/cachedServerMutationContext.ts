@@ -250,6 +250,23 @@ export function cachedServerMutationContext(
     };
     return ctx;
   };
+  // Snapshot of every buffered write, so a mutation that throws part-way can
+  // be rolled back instead of flushing the half it got through. eavCache and
+  // permissionsCache hold only what's in the database, so they're unaffected.
+  let checkpoint = () => {
+    let saved = {
+      writeCache: [...writeCache],
+      entitiesCache: [...entitiesCache],
+      deleteEntitiesCache: [...deleteEntitiesCache],
+      textAttributeWriteCache: structuredClone(textAttributeWriteCache),
+    };
+    return () => {
+      writeCache = saved.writeCache;
+      entitiesCache = saved.entitiesCache;
+      deleteEntitiesCache = saved.deleteEntitiesCache;
+      textAttributeWriteCache = saved.textAttributeWriteCache;
+    };
+  };
   let flush = async () => {
     let flushStart = performance.now();
     let timeInsertingEntities = 0;
@@ -373,6 +390,7 @@ Cache Cleanup:                                             ${timeCacheCleanup.to
 
   return {
     getContext,
+    checkpoint,
     flush,
   };
 }

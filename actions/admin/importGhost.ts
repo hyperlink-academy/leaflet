@@ -1,15 +1,12 @@
 "use server";
 
-import { sql } from "drizzle-orm";
 import { v7 } from "uuid";
 import { isValidRecordKey } from "@atproto/syntax";
 import { generateKeyBetween } from "fractional-indexing";
 import { supabaseServerClient } from "supabase/serverClient";
 import type { Result } from "src/result";
 import { asAdmin } from "src/admin/asAdmin";
-import { restoreOAuthSession } from "src/atproto-oauth";
-import { appendToLeaflet, insertLeaflet } from "src/utils/insertLeaflet";
-import { publishLeaflet } from "src/utils/publishLeaflet";
+import { appendToLeaflet } from "src/utils/insertLeaflet";
 import { assertRkeyFree } from "src/utils/assertRkeyFree";
 import {
   publishPublicationPages,
@@ -25,10 +22,14 @@ import type { GhostPost } from "src/ghostImport/parseGhostExport";
 import {
   ghostPostToLeaflet,
   ghostPostToPage,
-  previewImage,
   type GhostLeaflet,
 } from "src/ghostImport/ghostPostToLeaflet";
-import { uploadRemoteImage } from "src/ghostImport/uploadRemoteImage";
+import { previewImage } from "src/import/leaflet";
+import {
+  getImportPublication,
+  imageUploader,
+  insertImportedPost,
+} from "src/import/importPost";
 
 export type GhostPostPreview = GhostLeaflet & {
   // The draft exactly as importGhostPost would write it, with images left at
@@ -76,39 +77,15 @@ export async function importGhostPost(args: {
   showInDiscover: boolean;
 }): Promise<Result<GhostImportResult, string>> {
   return asAdmin("import-ghost", async () => {
-    let { data: pub } = await supabaseServerClient
-      .from("publications")
-      .select("uri, identity_did, record, draft_leaflet")
-      .eq("uri", args.publicationUri)
-      .maybeSingle()
-      .throwOnError();
-    if (!pub) throw new Error("Publication not found");
+    let pub = await getImportPublication(args.publicationUri, args.mode);
     let slug = args.post.slug;
     let keepSlug = args.post.type === "page" || args.pathMode === "source";
-
-    if (args.mode === "publish") {
-      if (keepSlug && !isValidRecordKey(slug))
-        throw new Error(`Slug "${slug}" is not a valid record key`);
-      // Publishing writes to the owner's PDS with their stored session; check
-      // it before creating a draft that couldn't be published.
-      let session = await restoreOAuthSession(pub.identity_did);
-      if (!session.ok) throw new Error(session.error.message);
-    }
+    if (args.mode === "publish" && keepSlug && !isValidRecordKey(slug))
+      throw new Error(`Slug "${slug}" is not a valid record key`);
     // Published pages take precedence over posts at the same /slug, so a
     // clash either way would hide one of them.
     if (keepSlug) await assertRkeyFree(pub.identity_did, slug);
-
-    // Fetch every image before touching the database, so a draft never
-    // references an upload that hasn't happened.
-    let cache = new Map<
-      string,
-      Promise<Awaited<ReturnType<typeof uploadRemoteImage>>>
-    >();
-    let resolveImage = (img: { url: string }) => {
-      let p = cache.get(img.url) ?? uploadRemoteImage(img.url);
-      cache.set(img.url, p);
-      return p;
-    };
+    let resolveImage = imageUploader();
 
     if (args.post.type === "page") {
       let route = `/${slug}`;
@@ -181,38 +158,14 @@ export async function importGhostPost(args: {
       args.siteUrl,
       resolveImage,
     );
-    let { permTokenId } = await insertLeaflet({
-      rootEntityId: leaflet.rootEntityId,
-      entityIds: leaflet.entities,
-      facts: leaflet.facts,
-      tailCte: ({ permTokenId }) => sql`, link AS (
-        INSERT INTO leaflets_in_publications (publication, leaflet, doc, title, description, tags)
-        VALUES (${args.publicationUri}, ${permTokenId}, NULL, ${leaflet.title}, ${leaflet.description},
-          ARRAY(SELECT jsonb_array_elements_text(${JSON.stringify(leaflet.tags)}::jsonb)))
-      )`,
-    });
-    if (args.mode !== "publish")
-      return { kind: "post", leafletId: permTokenId, rkey: null };
-
-    let published = await publishLeaflet({
-      actorDid: pub.identity_did,
-      root_entity: leaflet.rootEntityId,
-      publication_uri: args.publicationUri,
-      leaflet_id: permTokenId,
-      title: leaflet.title,
-      description: leaflet.description,
-      tags: leaflet.tags,
-      publishedAt: leaflet.publishedAt,
-      // Imported posts are back-catalogue: never email subscribers about them.
-      sendEmail: false,
-      showInDiscover: args.showInDiscover,
+    let result = await insertImportedPost({
+      leaflet,
+      publication: pub,
+      mode: args.mode,
       rkey: keepSlug ? slug : undefined,
+      showInDiscover: args.showInDiscover,
     });
-    if (!published.success)
-      throw new Error(
-        `Draft ${permTokenId} created but publishing failed: ${published.error.message}`,
-      );
-    return { kind: "post", leafletId: permTokenId, rkey: published.rkey };
+    return { kind: "post", ...result };
   });
 }
 
