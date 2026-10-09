@@ -8,7 +8,7 @@ import type { SubscriptionSource } from "src/subscriptionSource";
 import { queueOnSubscribeEmail } from "src/emailPosts/onSubscribe";
 
 // A member is also a subscriber. Called from the inline join flow and from the
-// connect-events webhook's activation paths (requires_action joins only become
+// Stripe Connect webhook's activation paths (requires_action joins only become
 // active there). Best-effort — the membership already billed, so a
 // subscriber-mirroring failure must never fail its caller.
 //

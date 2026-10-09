@@ -11,7 +11,7 @@ export async function handleSubscriptionUpdated(subscriptionId: string) {
   const metadataIdentityId = sub.metadata.identity_id ?? null;
 
   // Membership subscriptions live on publishers' connected accounts and are
-  // handled by the connect-events webhook, never here (this endpoint only sees
+  // handled by the Stripe Connect webhook, never here (this endpoint only sees
   // the platform account's own Leaflet Pro subscriptions).
   const entitlements = parseEntitlements(PRODUCT_DEFINITION.metadata);
 

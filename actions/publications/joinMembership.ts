@@ -144,7 +144,7 @@ export type SubscribeToTierResult = {
   // "active" when the saved card charged off-session (the common case).
   // "requires_action" when the bank demanded authentication or the charge was
   // declined — the reader is sent to hostedInvoiceUrl (a Stripe-hosted page) to
-  // authenticate or fix the payment; the connect-events webhook then activates.
+  // authenticate or fix the payment; the Stripe Connect webhook then activates.
   status: string;
   hostedInvoiceUrl: string | null;
 };
@@ -369,7 +369,7 @@ export async function subscribeToTier(args: {
     // can each create a live subscription while only one row survives the
     // upsert. Cancel any older live subscription for this reader+publication so
     // exactly one keeps billing; ties break by id so racing requests can't
-    // cancel each other. The connect-events webhook reconciles the row if the
+    // cancel each other. The Stripe Connect webhook reconciles the row if the
     // survivor isn't the one it points at.
     try {
       const siblings = await stripe.subscriptions.list(

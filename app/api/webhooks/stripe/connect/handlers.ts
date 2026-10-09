@@ -151,7 +151,7 @@ async function reconcileUntrackedSubscription(
   const { publication, tier_id, identity_id, cadence } = eventSub.metadata;
   if (!publication || !identity_id || !tier_id) {
     console.error(
-      `[connect-events] membership subscription ${eventSub.id} has incomplete publication/identity/tier metadata; cannot reconcile`,
+      `[stripe-connect] membership subscription ${eventSub.id} has incomplete publication/identity/tier metadata; cannot reconcile`,
     );
     return;
   }
@@ -198,7 +198,7 @@ async function reconcileUntrackedSubscription(
   if (tierRes.error) throw tierRes.error;
   if (!tierRes.data) {
     console.error(
-      `[connect-events] membership subscription ${sub.id} references missing tier ${tier_id} for ${publication}; cannot reconcile`,
+      `[stripe-connect] membership subscription ${sub.id} references missing tier ${tier_id} for ${publication}; cannot reconcile`,
     );
     return;
   }
@@ -212,7 +212,7 @@ async function reconcileUntrackedSubscription(
     if (isActiveStatus(tracked.status) || !isActiveStatus(sub.status)) {
       if (isActiveStatus(sub.status)) {
         console.error(
-          `[connect-events] live membership subscription ${sub.id} (${publication}, identity ${identity_id}) is not the tracked subscription ${tracked.stripe_subscription_id}; possible duplicate billing`,
+          `[stripe-connect] live membership subscription ${sub.id} (${publication}, identity ${identity_id}) is not the tracked subscription ${tracked.stripe_subscription_id}; possible duplicate billing`,
         );
       }
       return;
@@ -246,13 +246,13 @@ async function reconcileUntrackedSubscription(
   if (pubRes.error) throw pubRes.error;
   if (!identityRes.data) {
     console.error(
-      `[connect-events] membership subscription ${sub.id} references missing identity ${identity_id}; billing with no owner, needs manual cancellation`,
+      `[stripe-connect] membership subscription ${sub.id} references missing identity ${identity_id}; billing with no owner, needs manual cancellation`,
     );
     return;
   }
   if (!pubRes.data) {
     console.error(
-      `[connect-events] membership subscription ${sub.id} references deleted publication ${publication}; billing for nothing, needs manual cancellation`,
+      `[stripe-connect] membership subscription ${sub.id} references deleted publication ${publication}; billing for nothing, needs manual cancellation`,
     );
     return;
   }

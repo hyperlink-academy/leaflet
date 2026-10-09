@@ -2,10 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "stripe/client";
 import { syncConnectedAccountState } from "stripe/connect";
+import {
+  handleMembershipSubscriptionEvent,
+  handleMembershipInvoiceSucceeded,
+  handleMembershipInvoiceFailed,
+} from "./handlers";
 
-// Connect account-status events (account.updated on connected accounts), with
-// their own signing secret, separate from the v1 webhook that handles platform
-// (Leaflet Pro) billing and the connect-events endpoint for membership billing.
+// Every event raised on publishers' connected accounts: account status and
+// direct-charge membership billing. Configured in the Stripe dashboard to
+// "listen on connected accounts", so event.account is the publisher's account
+// and drives every follow-up API call. Separate signing secret from the
+// platform (Leaflet Pro) billing endpoint, which only sees our own account.
 export async function POST(req: NextRequest) {
   const body = await req.text();
   const signature = req.headers.get("stripe-signature");
@@ -22,11 +29,42 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  // The event payload is a point-in-time snapshot; refetch and persist current
-  // state so out-of-order deliveries can't regress the stored flags.
-  if (event.type === "account.updated") {
-    await syncConnectedAccountState(event.data.object.id);
+  const stripeAccount = event.account;
+
+  switch (event.type) {
+    // The event payload is a point-in-time snapshot; refetch and persist
+    // current state so out-of-order deliveries can't regress the stored flags.
+    case "account.updated": {
+      await syncConnectedAccountState(event.data.object.id);
+      break;
+    }
+
+    case "customer.subscription.created":
+    case "customer.subscription.updated":
+    case "customer.subscription.deleted": {
+      await handleMembershipSubscriptionEvent(event.data.object, stripeAccount);
+      break;
+    }
+
+    case "invoice.payment_succeeded": {
+      const subId = subscriptionIdFromInvoice(event.data.object);
+      if (subId && stripeAccount)
+        await handleMembershipInvoiceSucceeded(subId, stripeAccount);
+      break;
+    }
+
+    case "invoice.payment_failed": {
+      const subId = subscriptionIdFromInvoice(event.data.object);
+      if (subId && stripeAccount)
+        await handleMembershipInvoiceFailed(subId, stripeAccount);
+      break;
+    }
   }
 
   return NextResponse.json({ received: true });
+}
+
+function subscriptionIdFromInvoice(invoice: Stripe.Invoice): string {
+  const sub = invoice.parent?.subscription_details?.subscription;
+  return typeof sub === "string" ? sub : (sub?.id ?? "");
 }

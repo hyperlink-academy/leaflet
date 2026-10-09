@@ -132,7 +132,7 @@ export async function mergeEmailIdentityIntoAtpIdentity(args: {
       // publication_memberships: unique (publication, identity_id). A live
       // subscription must keep its row, so on collision the active side wins,
       // target preferred on a tie. A dropped live row is logged for manual
-      // cancellation; the connect-events webhook also flags it on the
+      // cancellation; the Stripe Connect webhook also flags it on the
       // subscription's next event.
       await tx.execute(sql`
         delete from publication_memberships t
