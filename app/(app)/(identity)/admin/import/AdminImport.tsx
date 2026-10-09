@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { AdminImportGhost } from "./AdminImportGhost";
 import { AdminImportOffprint } from "./AdminImportOffprint";
+import { AdminImportSubstack } from "./AdminImportSubstack";
 
-type Source = "ghost" | "offprint";
+type Source = "ghost" | "substack" | "offprint";
 
 export function AdminImport() {
   let [source, setSource] = useState<Source>("ghost");
@@ -30,6 +31,13 @@ export function AdminImport() {
           description="A JSON export of a Ghost site. Posts become posts; pages become pages in the publication's navigation."
         />
         <SourceRadio
+          value="substack"
+          current={source}
+          onChange={setSource}
+          label="Substack export"
+          description="The zip export of a Substack publication. Published posts become posts; cover images and tags are read from the live site."
+        />
+        <SourceRadio
           value="offprint"
           current={source}
           onChange={setSource}
@@ -38,7 +46,9 @@ export function AdminImport() {
         />
       </div>
 
-      {source === "ghost" ? <AdminImportGhost /> : <AdminImportOffprint />}
+      {source === "ghost" && <AdminImportGhost />}
+      {source === "substack" && <AdminImportSubstack />}
+      {source === "offprint" && <AdminImportOffprint />}
     </div>
   );
 }

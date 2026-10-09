@@ -28,7 +28,6 @@ export function hasBlockToolbar(blockType: string | null | undefined) {
     blockType === "text" ||
     blockType === "heading" ||
     blockType === "blockquote" ||
-    blockType === "button" ||
     blockType === "datetime" ||
     blockType === "image"
   );

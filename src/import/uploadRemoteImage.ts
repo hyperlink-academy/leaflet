@@ -1,7 +1,7 @@
 import sharp from "sharp";
 import { v7 } from "uuid";
 import { supabaseServerClient } from "supabase/serverClient";
-import type { ImageData } from "./ghostPostToLeaflet";
+import type { ImageData } from "./leaflet";
 
 const ASSET_BUCKET = "minilink-user-assets";
 

@@ -7,8 +7,47 @@ import { useIdentityData } from "components/IdentityProvider";
 import { addDomain } from "actions/domains";
 import { DotLoader } from "components/utils/DotLoader";
 import { GoToArrow } from "components/Icons/GoToArrow";
+import { Modal } from "components/Modal";
+import { DomainVerification } from "./DomainVerification";
+import { useDomainStatus } from "./useDomainStatus";
 
-export function AddDomainForm(props: {}) {
+export function AddDomainModal(props: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  let [addedDomain, setAddedDomain] = useState<string | null>(null);
+  return (
+    <Modal
+      open={props.open}
+      onOpenChange={(open) => {
+        props.onOpenChange(open);
+        if (!open) setAddedDomain(null);
+      }}
+      title={addedDomain ? "Verify this Domain" : undefined}
+      className={addedDomain ? "max-w-md" : undefined}
+    >
+      {addedDomain ? (
+        <AddedDomainVerification domain={addedDomain} />
+      ) : (
+        <AddDomainForm onAdded={setAddedDomain} />
+      )}
+    </Modal>
+  );
+}
+
+function AddedDomainVerification(props: { domain: string }) {
+  let { data, pending } = useDomainStatus(props.domain);
+  if (!data) return <DotLoader />;
+  if (!pending)
+    return (
+      <div className="text-secondary">
+        <strong>{props.domain}</strong> is verified and ready to assign!
+      </div>
+    );
+  return <DomainVerification domain={props.domain} />;
+}
+
+function AddDomainForm(props: { onAdded: (domain: string) => void }) {
   let [value, setValue] = useState("");
   let [loading, setLoading] = useState(false);
   let { mutate } = useIdentityData();
@@ -23,14 +62,14 @@ export function AddDomainForm(props: {}) {
       onSubmit={async (e) => {
         e.preventDefault();
         setLoading(true);
-        let { error } = await addDomain(value);
+        let { error, domain } = await addDomain(value);
         if (error) {
           setLoading(false);
           smoker({
             error: true,
             text:
               error === "invalid_domain"
-                ? "Invalid domain! Use just the base domain"
+                ? "Invalid domain! Use just the domain, like example.com"
                 : error === "domain_already_in_use"
                   ? "That domain is already in use!"
                   : "An unknown error occurred",
@@ -41,14 +80,14 @@ export function AddDomainForm(props: {}) {
           });
           return;
         }
-        mutate();
+        await mutate();
+        props.onAdded(domain ?? value);
       }}
     >
       <div className="flex justify-between">
         <h3>Add a Domain</h3>
       </div>
       <div className="text-sm text-secondary">
-        <div className="font-bold">Just include the base domain</div>
         Don't include the protocol{" "}
         <span className="text-tertiary">(like https://) </span>
         or path <span className="text-tertiary">(you can add that later)</span>
@@ -57,9 +96,9 @@ export function AddDomainForm(props: {}) {
       <Input
         className="input-with-border text-primary"
         autoFocus
-        placeholder="www.example.com"
+        placeholder="example.com"
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => setValue(e.target.value.toLowerCase())}
       />
 
       <div className="flex justify-end items-center mt-2">

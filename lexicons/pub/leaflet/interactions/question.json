@@ -1,0 +1,42 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.interactions.question",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "tid",
+      "description": "A public question asked of a document's author, shown on the document once the author answers it (pub.leaflet.interactions.answer)",
+      "record": {
+        "type": "object",
+        "required": [
+          "subject",
+          "plaintext",
+          "createdAt"
+        ],
+        "properties": {
+          "subject": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "The document the question is asked on."
+          },
+          "plaintext": {
+            "type": "string",
+            "maxLength": 10000,
+            "maxGraphemes": 1000
+          },
+          "facets": {
+            "type": "array",
+            "items": {
+              "type": "ref",
+              "ref": "pub.leaflet.richtext.facet"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    }
+  }
+}

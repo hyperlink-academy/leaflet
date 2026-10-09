@@ -1,5 +1,6 @@
 import {
   PubLeafletBlocksPostsList,
+  PubLeafletPagesCanvas,
   PubLeafletPagesLinearDocument,
   PubLeafletPublicationPage,
 } from "lexicons/api";
@@ -40,6 +41,9 @@ import { publishedNavPages } from "src/utils/publishedPageMetadata";
 
 import { collectAndFetchBlockResources } from "./collectAndFetchBlockResources";
 import { PostContent } from "./PostContent";
+import { CanvasContent } from "./CanvasPage";
+import { PublishedPageThemeProvider } from "components/ThemeManager/PublishedPageThemeProvider";
+import { publicationCanvasWidth } from "src/utils/publicationCanvasWidth";
 import { getProfiles } from "src/identity";
 import { attachBylineProfiles, bylineDidsForPosts } from "src/utils/byline";
 
@@ -87,6 +91,10 @@ export async function PublicationPageRenderer({
   const normalizedPublication = normalizePublicationRecord(publication.record);
   const pages = page.record.content.pages || [];
   const firstPage = pages[0];
+  const canvasPage =
+    firstPage && firstPage.$type === "pub.leaflet.pages.canvas"
+      ? (firstPage as PubLeafletPagesCanvas.Main)
+      : null;
 
   const allBlocks: PubLeafletPagesLinearDocument.Block[] =
     firstPage && firstPage.$type === "pub.leaflet.pages.linearDocument"
@@ -102,8 +110,9 @@ export async function PublicationPageRenderer({
       }),
   });
 
-  const resourcePages =
-    firstPage && firstPage.$type === "pub.leaflet.pages.linearDocument"
+  const resourcePages = canvasPage
+    ? [canvasPage]
+    : firstPage && firstPage.$type === "pub.leaflet.pages.linearDocument"
       ? [firstPage as PubLeafletPagesLinearDocument.Main]
       : [];
 
@@ -211,6 +220,10 @@ export async function PublicationPageRenderer({
 
   const theme = resolvePublicationTheme(normalizedPublication);
   const showPageBackground = !!theme?.showPageBackground;
+  const canvasWidth = publicationCanvasWidth(
+    normalizedPublication?.theme?.pageWidth,
+    showPageBackground,
+  );
 
   const documentContextValue: DocumentContextValue = {
     uri: page.record.publication,
@@ -266,6 +279,7 @@ export async function PublicationPageRenderer({
               navPages={navPages}
               publicationUrl={getPublicationURL(publication)}
               activePath={page.path}
+              canvasPage={!!canvasPage}
               subscribe={{
                 publicationUri: publication.uri,
                 publicationUrl: normalizedPublication?.url,
@@ -276,25 +290,57 @@ export async function PublicationPageRenderer({
                   !!publication.publication_newsletter_settings?.enabled,
               }}
             >
-              <div
-                className={`pubPageContent ${showPageBackground ? "pt-2" : "pt-6"}`}
-              >
-                <PostContent
-                  blocks={allBlocks}
+              {canvasPage ? (
+                <CanvasContent
+                  pageScroll
+                  page={canvasPage}
                   did={did}
-                  pages={pages as PubLeafletPagesLinearDocument.Main[]}
+                  prerenderedCodeBlocks={prerenderedCodeBlocks}
                   bskyPostData={JSON.parse(JSON.stringify(bskyPostData))}
                   standardSitePostData={JSON.parse(
                     JSON.stringify(standardSitePosts),
                   )}
-                  standardSitePublicationData={JSON.parse(
-                    JSON.stringify(standardSitePublicationData),
-                  )}
                   pollData={pollData}
-                  prerenderedCodeBlocks={prerenderedCodeBlocks}
-                  postsListData={postsListData}
+                  pages={
+                    pages as (
+                      | PubLeafletPagesLinearDocument.Main
+                      | PubLeafletPagesCanvas.Main
+                    )[]
+                  }
+                  zoomKey={`${publication.uri}${page.path}`}
+                  contentWidth={canvasWidth}
                 />
-              </div>
+              ) : (
+                <PublishedPageThemeProvider
+                  theme={
+                    (
+                      firstPage as
+                        | PubLeafletPagesLinearDocument.Main
+                        | undefined
+                    )?.theme
+                  }
+                >
+                  <div
+                    className={`pubPageContent ${showPageBackground ? "pt-2" : "pt-6"}`}
+                  >
+                    <PostContent
+                      blocks={allBlocks}
+                      did={did}
+                      pages={pages as PubLeafletPagesLinearDocument.Main[]}
+                      bskyPostData={JSON.parse(JSON.stringify(bskyPostData))}
+                      standardSitePostData={JSON.parse(
+                        JSON.stringify(standardSitePosts),
+                      )}
+                      standardSitePublicationData={JSON.parse(
+                        JSON.stringify(standardSitePublicationData),
+                      )}
+                      pollData={pollData}
+                      prerenderedCodeBlocks={prerenderedCodeBlocks}
+                      postsListData={postsListData}
+                    />
+                  </div>
+                </PublishedPageThemeProvider>
+              )}
             </PublicationHomeLayout>
           </PublicationBackgroundProvider>
         </PublicationThemeProvider>

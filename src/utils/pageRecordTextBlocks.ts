@@ -56,6 +56,9 @@ function* textBlocks(block: unknown): Generator<PageRecordTextBlock> {
     yield* listItemTextBlocks(
       (block as { children?: ListItem[] }).children ?? [],
     );
+  else if (PubLeafletPagesLinearDocument.isMain(block))
+    for (let b of (block as PubLeafletPagesLinearDocument.Main).blocks ?? [])
+      yield* textBlocks(b.block);
 }
 
 function* listItemTextBlocks(

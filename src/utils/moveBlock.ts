@@ -1,4 +1,5 @@
 import { Replicache } from "replicache";
+import { v7 } from "uuid";
 import { ReplicacheMutators } from "src/replicache";
 import { getSortedSelection } from "components/SelectionManager/selectionState";
 import { getPageBlocks } from "src/replicache/getBlocks";
@@ -78,7 +79,8 @@ const moveFoldedHeadingSection = async (
   direction: "up" | "down",
 ): Promise<boolean> => {
   let folded = useUIState.getState().foldedBlocks;
-  if (block.type !== "heading" || !folded.includes(block.entityID)) return false;
+  if (block.type !== "heading" || !folded.includes(block.entityID))
+    return false;
 
   let allBlocks = getPageBlocks(rep, block.parent);
   let rootBlocks = childrenOf(allBlocks, block.parent, block.parent);
@@ -208,7 +210,7 @@ export const moveBlockDown = async (
     rep?.mutate.moveBlockDown({
       entityID: block.entityID,
       parent: block.listData?.parent || block.parent,
-      permission_set: permission_set,
+      newBlock: { permission_set, entityID: v7(), factID: v7() },
     });
   }
 };

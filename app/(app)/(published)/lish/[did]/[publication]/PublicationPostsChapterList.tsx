@@ -88,6 +88,27 @@ export function PublicationPostsChapterList({
   showPageCount?: boolean;
   disableLinks?: boolean;
 }) {
+  return (
+    <ChapterGrid pageWidth={pageWidth}>
+      {cards.map((card) => (
+        <ChapterItem
+          key={card.key}
+          card={card}
+          showPageCount={showPageCount}
+          disableLinks={disableLinks}
+        />
+      ))}
+    </ChapterGrid>
+  );
+}
+
+export function ChapterGrid({
+  pageWidth,
+  children,
+}: {
+  pageWidth?: number;
+  children: React.ReactNode;
+}) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
   useEffect(() => {
@@ -118,14 +139,7 @@ export function PublicationPostsChapterList({
         gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
       }}
     >
-      {cards.map((card) => (
-        <ChapterItem
-          key={card.key}
-          card={card}
-          showPageCount={showPageCount}
-          disableLinks={disableLinks}
-        />
-      ))}
+      {children}
     </div>
   );
 }

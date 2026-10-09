@@ -6,6 +6,9 @@ import { getIdentityData } from "actions/getIdentityData";
 import { AtpAgent } from "@atproto/api";
 import { ReplicacheProvider } from "src/replicache";
 import { isUuid } from "src/utils/isUuid";
+import { redirect } from "next/navigation";
+import { scheduledPostIneligibleReason } from "src/scheduledPosts/eligibility";
+import type { ScheduledPost } from "src/scheduledPosts/types";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -45,6 +48,9 @@ export default async function PublishLeafletPage(props: Props) {
     .eq("id", leaflet_id)
     .single();
   let rootEntity = data?.root_entity;
+  // An email-only draft has its own send flow.
+  if (data?.leaflets_in_publications[0]?.email_only)
+    redirect(`/${leaflet_id}/email`);
 
   // Try to find publication from leaflets_in_publications first
   let publication = data?.leaflets_in_publications[0]?.publications;
@@ -100,22 +106,22 @@ export default async function PublishLeafletPage(props: Props) {
     !!publicationOwnerDid && publicationOwnerDid !== identity.atp_did;
   let [viewerProfile, publicationOwnerProfile, subscriberCount] =
     await Promise.all([
-    agent.getProfile({ actor: identity.atp_did }),
-    shouldFetchOwnerProfile
-      ? agent
-          .getProfile({ actor: publicationOwnerDid! })
-          .then((res) => res.data)
-          .catch(() => undefined)
-      : Promise.resolve(undefined),
-    newsletterEnabled
-      ? supabaseServerClient
-          .from("publication_email_subscribers")
-          .select("*", { count: "exact", head: true })
-          .eq("publication", publication!.uri)
-          .eq("state", "confirmed")
-          .then(({ count }) => count ?? 0)
-      : Promise.resolve(undefined),
-  ]);
+      agent.getProfile({ actor: identity.atp_did }),
+      shouldFetchOwnerProfile
+        ? agent
+            .getProfile({ actor: publicationOwnerDid! })
+            .then((res) => res.data)
+            .catch(() => undefined)
+        : Promise.resolve(undefined),
+      newsletterEnabled
+        ? supabaseServerClient
+            .from("publication_email_subscribers")
+            .select("*", { count: "exact", head: true })
+            .eq("publication", publication!.uri)
+            .eq("state", "confirmed")
+            .then(({ count }) => count ?? 0)
+        : Promise.resolve(undefined),
+    ]);
 
   // Parse entitiesToDelete from URL params
   let searchParams = await props.searchParams;
@@ -134,6 +140,12 @@ export default async function PublishLeafletPage(props: Props) {
   let hasDraft =
     data.leaflets_in_publications.length > 0 ||
     data.leaflets_to_documents.length > 0;
+
+  let scheduling = await loadSchedulingOptions({
+    leaflet_id,
+    publication_uri: publication?.uri,
+    published: !!data.leaflets_in_publications[0]?.doc,
+  });
 
   return (
     <ReplicacheProvider
@@ -157,7 +169,29 @@ export default async function PublishLeafletPage(props: Props) {
         subscriberCount={subscriberCount}
         entitiesToDelete={entitiesToDelete}
         hasDraft={hasDraft}
+        scheduling={scheduling}
       />
     </ReplicacheProvider>
   );
+}
+
+// Scheduling applies to a publication's unpublished drafts.
+async function loadSchedulingOptions(args: {
+  leaflet_id: string;
+  publication_uri: string | undefined;
+  published: boolean;
+}) {
+  if (!args.publication_uri || args.published) return undefined;
+  let [{ data: existing }, ineligibleReason] = await Promise.all([
+    supabaseServerClient
+      .from("publication_scheduled_posts")
+      .select()
+      .eq("leaflet", args.leaflet_id)
+      .maybeSingle(),
+    scheduledPostIneligibleReason(args.publication_uri),
+  ]);
+  return {
+    existing: existing as ScheduledPost | null,
+    ineligibleReason,
+  };
 }

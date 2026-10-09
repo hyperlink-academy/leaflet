@@ -1,0 +1,1 @@
+export const DEFAULT_QUESTIONS_BUTTON_TEXT = "Ask";

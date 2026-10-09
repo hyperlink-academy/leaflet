@@ -74,9 +74,12 @@ export async function loadPostPage({
     standardSitePostData,
     standardSitePublicationData,
     pollData,
+    replyData,
+    questionData,
     prerenderedCodeBlocks,
   } = await collectAndFetchBlockResources({
     agent,
+    documentUri: document.uri,
     pages: pages as (
       | PubLeafletPagesLinearDocument.Main
       | PubLeafletPagesCanvas.Main
@@ -105,6 +108,8 @@ export async function loadPostPage({
         JSON.stringify(standardSitePublicationData),
       ) as typeof standardSitePublicationData,
       pollData,
+      replyData,
+      questionData,
     },
     prerenderedCodeBlocks,
   };

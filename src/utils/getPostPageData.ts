@@ -26,6 +26,7 @@ import { resolveDocumentFilter } from "./resolveDocumentFilter";
 import { fetchPublicationForPage } from "app/(app)/(published)/lish/[did]/[publication]/getPublicationForPage";
 import { getPostImagePreloads } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/getPostImagePreloads";
 import { sortPostsForPrevNext } from "src/utils/prevNextPosts";
+import { acceptedReplyTargets } from "src/documentReplies";
 
 export const getPostPageData = cache(async function getPostPageData(
   did: string,
@@ -54,7 +55,10 @@ export const getPostPageData = cache(async function getPostPageData(
           publication_membership_tiers(id, name, description, monthly_price_cents, annual_price_cents, active, sort_order))
         ),
         document_mentions_in_bsky(uri, link),
-        recommends_on_documents(count)
+        recommends_on_documents(count),
+        document_replies!document_replies_document_fkey(uri, subject,
+          documents!document_replies_subject_fkey(uri, data,
+            documents_in_publications(publications(uri, record))))
         `,
     )
     .or(filter)
@@ -213,10 +217,12 @@ export const getPostPageData = cache(async function getPostPageData(
     prevNext && (normalizedPublication?.preferences?.showPrevNext ?? true)
       ? [prevNext.next, prevNext.prev].filter((n): n is Neighbour => !!n)
       : [];
-  const [constellationBacklinks, neighbourImages] = await Promise.all([
-    getConstellationBacklinks(absolutePostUrl, document.uri),
-    getPostImagePreloads(warm),
-  ]);
+  const [constellationBacklinks, neighbourImages, replyingTo] =
+    await Promise.all([
+      getConstellationBacklinks(absolutePostUrl, document.uri),
+      getPostImagePreloads(warm),
+      acceptedReplyTargets(document.document_replies),
+    ]);
   for (const neighbour of warm)
     neighbour.images = neighbourImages.get(neighbour.uri);
 
@@ -279,6 +285,8 @@ export const getPostPageData = cache(async function getPostPageData(
     mentions: document.document_mentions_in_bsky,
     // Recommends data
     recommendsCount,
+    // The posts this one is shown on as an accepted reply
+    replyingTo,
   };
 });
 

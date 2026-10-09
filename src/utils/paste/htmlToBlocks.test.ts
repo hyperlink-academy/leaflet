@@ -332,6 +332,51 @@ describe("Leaflet copy → paste round trip", () => {
     expect(newIDs).toContain(factValue("card/block"));
     expect(factValue("page-link/display")).toBe("compact");
   });
+
+  test("a pasted bluesky post keeps its view", () => {
+    const result = build(fixture("leaflet-copy.html"));
+    const post = result.blocks.find((b) => b.type === "bluesky-post")!;
+    expect(
+      (post.facts.find((f) => f.attribute === "bluesky-post/view")!.data as any)
+        .value,
+    ).toBe("media");
+  });
+
+  test("a pasted embedded canvas stays one and keeps its canvas size", () => {
+    const facts = [
+      {
+        id: "f1",
+        entity: "old-canvas-page",
+        attribute: "page/type",
+        data: { type: "page-type-union", value: "canvas" },
+      },
+      {
+        id: "f2",
+        entity: "old-canvas-page",
+        attribute: "canvas/fixed-height",
+        data: { type: "number", value: 240 },
+      },
+    ];
+    const result = build(
+      `<div data-type="embedded-canvas" data-entityid="old-canvas-page" data-alt="A sketch of a cat" data-facts='${JSON.stringify(facts)}'></div>`,
+    );
+    expect(result.blocks).toHaveLength(1);
+    const embedded = result.blocks[0];
+    expect(embedded.type).toBe("embedded-canvas");
+    const page = (
+      embedded.facts.find((f) => f.attribute === "block/card")!.data as any
+    ).value;
+    expect(page).not.toBe("old-canvas-page");
+    expect(result.extraEntities.map((e) => e.entityID)).toContain(page);
+    expect(
+      embedded.facts.find(
+        (f) => f.entity === page && f.attribute === "canvas/fixed-height",
+      )?.data,
+    ).toEqual({ type: "number", value: 240 });
+    expect(
+      embedded.facts.find((f) => f.attribute === "image/alt")?.data,
+    ).toEqual({ type: "string", value: "A sketch of a cat" });
+  });
 });
 
 // Leaflet's blockquote is a single text block, so a quote containing more than

@@ -8,17 +8,18 @@ import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { usePageMetadata } from "src/hooks/queries/usePageMetadata";
 import { CSSProperties, useEffect, useRef, useState } from "react";
-import {
-  useBlocks,
-  useCanvasBlocksWithType,
-} from "src/hooks/queries/useBlocks";
+import { useBlocks } from "src/hooks/queries/useBlocks";
 import { CompactPageLink } from "./CompactPageLink";
 import {
   PageLinkSettingsButton,
   usePageLinkDisplay,
 } from "./PageLinkBlockSettings";
-import { Canvas, CanvasBackground, CanvasContent } from "components/Canvas";
-import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
+import { CanvasContent } from "components/Canvas";
+import { CanvasLinkPreview } from "./ScaledCanvas";
+import {
+  CardThemeProvider,
+  useCardThemeEntity,
+} from "components/ThemeManager/ThemeProvider";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
 export function PageLinkBlock(
@@ -37,6 +38,11 @@ export function PageLinkBlock(
   let display = usePageLinkDisplay(props.entityID);
 
   let isOpen = useUIState((s) => s.openPages.includes(page?.data.value || ""));
+  // Painted only where it differs from the page around the block, so a
+  // translucent page background isn't laid over itself.
+  let hasOwnBackground =
+    !!useEntity(page?.data.value || null, "theme/card-background") ||
+    !!useEntity(useCardThemeEntity(), "theme/card-background");
   if (!page)
     return <div>An error occurred, there should be a page linked here!</div>;
 
@@ -51,6 +57,7 @@ export function PageLinkBlock(
         className={`cursor-pointer
         pageLinkBlockWrapper relative group/pageLinkBlock
         flex overflow-clip p-0!
+        ${hasOwnBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))]" : ""}
         ${isOpen && "border-accent-contrast! outline-accent-contrast!"}
         `}
       >
@@ -67,12 +74,11 @@ export function PageLinkBlock(
           }}
         >
           {display === "compact" ? (
-            <CompactLinkBlock
-              pageEntity={page.data.value}
-              type={type === "canvas" ? "canvas" : "doc"}
-            />
+            <CompactLinkBlock pageEntity={page.data.value} />
           ) : type === "canvas" ? (
-            <CanvasLinkBlock entityID={page.data.value} />
+            <CanvasLinkPreview>
+              <CanvasContent entityID={page.data.value} preview />
+            </CanvasLinkPreview>
           ) : (
             <DocLinkBlock {...props} />
           )}
@@ -81,43 +87,21 @@ export function PageLinkBlock(
     </CardThemeProvider>
   );
 }
-function CompactLinkBlock(props: {
-  pageEntity: string;
-  type: "doc" | "canvas";
-}) {
-  let title = usePageTitleBlock(props.pageEntity, props.type);
+function CompactLinkBlock(props: { pageEntity: string }) {
+  let [title] = usePageMetadata(props.pageEntity);
   return (
     <CompactPageLink
       isHeading={title?.type === "heading"}
       title={
         title && (
           <div className="flex gap-2">
-            {title.listBlock && (
-              <ListMarker {...title.listBlock} className="pt-[8px]!" />
-            )}
+            {title.listData && <ListMarker {...title} className="pt-[8px]!" />}
             <RenderedTextBlock entityID={title.entityID} type="text" />
           </div>
         )
       }
     />
   );
-}
-
-// Canvases keep their blocks in canvas/block rather than card/block, so the
-// title comes from the topmost-leftmost text block instead of the first child.
-function usePageTitleBlock(pageEntity: string, type: "doc" | "canvas") {
-  let [docTitle] = usePageMetadata(type === "doc" ? pageEntity : null);
-  let canvasTitle = useCanvasBlocksWithType(
-    type === "canvas" ? pageEntity : null,
-  ).find((b) => b.type === "text" || b.type === "heading");
-  if (docTitle)
-    return {
-      entityID: docTitle.entityID,
-      type: docTitle.type,
-      listBlock: docTitle.listData ? docTitle : undefined,
-    };
-  if (canvasTitle)
-    return { entityID: canvasTitle.value, type: canvasTitle.type };
 }
 
 function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
@@ -294,31 +278,6 @@ function PagePreview(props: { entityID: string }) {
     </div>
   );
 }
-
-const CanvasLinkBlock = (props: { entityID: string; preview?: boolean }) => {
-  let pageWidth = `var(--page-width-unitless)`;
-  return (
-    <div
-      style={{ contain: "size layout paint" }}
-      className={`pageLinkBlockPreview shrink-0 h-[200px] w-full overflow-clip relative`}
-    >
-      <div
-        className={`absolute top-0 left-0 origin-top-left pointer-events-none w-full`}
-        style={{
-          width: `calc(1px * ${pageWidth})`,
-          height: "calc(1150px * 2)",
-          transform: `scale(calc(((${pageWidth} - 36) / 1272 )))`,
-        }}
-      >
-        {props.preview ? (
-          <CanvasBackground entityID={props.entityID} />
-        ) : (
-          <CanvasContent entityID={props.entityID} preview />
-        )}
-      </div>
-    </div>
-  );
-};
 
 export function BlockPreview(
   b: BlockProps & {

@@ -2,9 +2,8 @@
 import { usePathname } from "next/navigation";
 import { useIdentityData } from "components/IdentityProvider";
 import {
+  NavigationButton,
   NotificationButton,
-  ReaderButton,
-  WriterButton,
   useIsOnWriterPage,
 } from "./NavigationButtons";
 import { PublicationButtons } from "./Publications";
@@ -16,7 +15,7 @@ import { AccountSmall } from "components/Icons/AccountSmall";
 import { TabsSmall } from "components/Icons/TabsSmall";
 import { SpeedyLink } from "components/SpeedyLink";
 import { GoToArrow } from "components/Icons/GoToArrow";
-import { GoToArrowLined } from "components/Icons/GoToArrowLined";
+import { HomeTiny } from "components/Icons/HomeTiny";
 import { HelpSmall } from "components/Icons/HelpSmall";
 import { Popover } from "components/Popover";
 import { useIsMobile } from "src/hooks/isMobile";
@@ -25,6 +24,8 @@ import { BlueskySmall } from "components/Icons/BlueskySmall";
 import { Separator } from "components/Layout";
 import { LeafletTiny } from "components/Icons/LeafletTiny";
 import { ButtonPrimary } from "components/Buttons";
+import { useTutorialNavTour } from "app/(app)/(identity)/(home-pages)/(writer)/home/Tutorial/TutorialNavTooltip";
+import { HomeSmall } from "components/Icons/HomeSmall";
 
 type NavigationProps = {
   pageTitle: React.ReactNode;
@@ -106,41 +107,28 @@ export const NavigationContent = (props: NavigationProps) => {
       )}
       {onWriterPage && <PublicationButtons />}
       <div className="flex-1" />
-      <WriterButton />
-      <ReaderButton
-        subs={
-          identity?.publication_subscriptions?.length !== 0 &&
-          identity?.publication_subscriptions?.length !== undefined
-        }
-      />
       {identity?.atp_did && <NotificationButton />}
       <div className="flex gap-1 items-center">
-        {identity ? (
-          <>
-            <div className="grow min-w-0">
-              <ProfileButton />
-            </div>
-          </>
-        ) : (
-          <div className="grow min-w-0">
+        <div className="grow min-w-0">
+          {identity ? (
+            <ProfileButton />
+          ) : (
             <LoginModal
               asChild
               trigger={
                 <ActionButton
-                  onClick={() => {
-                    console.log("hello");
-                  }}
                   className="w-full! grow"
-                  secondary
                   icon={<AccountSmall />}
                   label="Log In/Sign Up"
                 />
               }
             />
-          </div>
-        )}
+          )}
+        </div>
         <HelpPopover />
       </div>
+      <hr className="my-2" />
+      <NavigationButton />
     </>
   );
 };
@@ -224,20 +212,26 @@ export const HelpContent = () => {
 
 export const PageTitle = (props: {
   pageTitle: string;
-  showBackButton?: boolean;
+  showHomeButton?: boolean;
 }) => {
+  let pathname = usePathname();
   return (
-    <div className="flex gap-2 w-full px-1 py-0.5 items-center ">
-      {props.showBackButton && (
-        <SpeedyLink eager href={"/home"} className="flex items-center">
-          <button>
-            <GoToArrowLined
-              className="accent-accent-contrast rotate-180 shrink-0"
-              aria-label="Go Back"
-            />
-          </button>
-        </SpeedyLink>
-      )}
+    <div className="flex gap-[6px] w-full px-1 py-0.5 items-center ">
+      {props.showHomeButton &&
+        (pathname === "/home" ? (
+          <div className="flex gap-1 items-center shrink-0 text-tertiary ">
+            <HomeSmall className="ml-1 scale-90" /> /
+          </div>
+        ) : (
+          <SpeedyLink
+            eager
+            href={"/home"}
+            aria-label="Home"
+            className="flex gap-1 items-center shrink-0 text-tertiary hover:no-underline!"
+          >
+            <HomeSmall className="ml-1 scale-90 text-accent-contrast" /> /
+          </SpeedyLink>
+        ))}
       <div className="truncate min-w-0 text-tertiary uppercase text-sm font-bold">
         {props.pageTitle}
       </div>
@@ -246,8 +240,14 @@ export const PageTitle = (props: {
 };
 
 export const DesktopNavigation = (props: NavigationProps) => {
+  let blurred = useTutorialNavTour((s) => s.blurred);
   return (
-    <Sidebar alwaysOpen>
+    <Sidebar
+      alwaysOpen
+      className={`transition-[filter] duration-300 ${
+        blurred ? "blur-[8px] pointer-events-none" : ""
+      }`}
+    >
       <NavigationContent {...props} />
     </Sidebar>
   );

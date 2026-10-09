@@ -9,7 +9,7 @@ import { CurrentAccount } from "./CurrentAccount";
 export const metadata = {
   title: "Get Leaflet Pro",
   description:
-    "Analytics, email newsletters, and group publications for your Leaflet publication.",
+    "Analytics, email newsletters, post scheduling, and group publications for your Leaflet publication.",
 };
 
 export default async function UpgradePage() {

@@ -68,7 +68,7 @@ export function PublicationHeader(props: {
 
   return (
     <div
-      className="pubHeader flex flex-col w-full text-center justify-center"
+      className="publicationTitleHeader flex flex-col w-full text-center justify-center"
       style={{
         paddingBottom: "calc(32px - 32px * var(--header-shrink, 0))",
         ...(variant === "stacked"

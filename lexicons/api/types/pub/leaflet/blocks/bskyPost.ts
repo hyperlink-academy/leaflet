@@ -19,6 +19,7 @@ export interface Main {
   $type?: 'pub.leaflet.blocks.bskyPost'
   postRef: ComAtprotoRepoStrongRef.Main
   clientHost?: string
+  view?: 'full' | 'media' | (string & {})
 }
 
 const hashMain = 'main'

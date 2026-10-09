@@ -4,14 +4,20 @@ import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps, BlockLayout } from "../Block";
 import { useIsBlockSelected } from "src/useUIState";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { addImage } from "src/utils/addImage";
 import { useState } from "react";
-import { v7 } from "uuid";
+import { addGalleryImages } from "./addGalleryImages";
+import { useBlockImagePaste } from "../useBlockImagePaste";
 
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 
-import { DEFAULT_GAP, DEFAULT_FORMAT, DEFAULT_MAX_WIDTH } from "./shared";
+import {
+  DEFAULT_GAP,
+  DEFAULT_FORMAT,
+  DEFAULT_MAX_WIDTH,
+  useGalleryAspectRatios,
+} from "./shared";
 import { ImageGalleryGrid } from "./ImageGalleryGrid";
+import { ImageGalleryMasonry } from "./ImageGalleryMasonry";
 import { ImageGalleryStrip } from "./ImageGalleryStrip";
 import { ImageGalleryCarousel } from "./ImageGalleryCarousel";
 import {
@@ -20,9 +26,10 @@ import {
 } from "./ImageGalleryLightbox";
 import { EditorGalleryImageItem } from "./GalleryImageItem";
 import { ImageGalleryOptions, EditGalleryImages } from "./ImageGalleryOptions";
+import { useCanOpenLightbox } from "./useCanOpenLightbox";
 
 export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
-  let { rep, undoManager } = useReplicache();
+  let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
   let isSelected = useIsBlockSelected(props.entityID);
 
@@ -39,39 +46,30 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
   let [lightboxAltExpanded, setLightboxAltExpanded] = useState(false);
 
   let imageEntities = imageFacts.map((f) => f.data.value);
+  let aspectRatios = useGalleryAspectRatios(imageEntities);
 
   const handleFiles = async (files: File[]) => {
     if (!rep) return;
-    await undoManager.withUndoGroup(async () => {
-      for (let file of files) {
-        if (!file.type.startsWith("image/")) continue;
-        let imageEntity = v7();
-        await rep.mutate.addGalleryImage({
-          galleryEntity: props.entityID,
-          imageEntity,
-          factID: v7(),
-          permission_set: entity_set.set,
-        });
-        if (file.name)
-          await rep.mutate.assertFact({
-            entity: imageEntity,
-            attribute: "image/name",
-            data: { type: "string", value: file.name },
-          });
-        await addImage(file, rep, {
-          entityID: imageEntity,
-          attribute: "block/image",
-        });
-      }
+    await addGalleryImages(rep, {
+      galleryEntity: props.entityID,
+      permission_set: entity_set.set,
+      files,
     });
   };
 
-  // Writers select the block first; a second click on an image opens the
-  // lightbox. Readers (no write permission) open it on the first click.
-  let canOpenLightbox =
-    !props.preview && (!entity_set.permissions.write || !!isSelected);
+  useBlockImagePaste(
+    props.entityID,
+    !props.preview && !!isSelected && entity_set.permissions.write,
+    handleFiles,
+  );
+
+  let { clickOpensLightbox } = useCanOpenLightbox({
+    entityID: props.entityID,
+    isSelected: !!isSelected,
+    preview: props.preview,
+  });
   let openLightbox = (index: number) => {
-    if (canOpenLightbox) {
+    if (clickOpensLightbox()) {
       setLightboxAltExpanded(false);
       setLightboxIndex(index);
     }
@@ -121,6 +119,22 @@ export function ImageGalleryBlock(props: BlockProps & { preview?: boolean }) {
       {format === "carousel" ? (
         <ImageGalleryCarousel
           count={imageEntities.length}
+          renderItem={(i, classes) => (
+            <EditorGalleryImageItem
+              entityID={imageEntities[i]}
+              editable={editable}
+              selected={!!isSelected}
+              onClick={() => openLightbox(i)}
+              onSeeMoreAlt={() => openLightboxWithAlt(i)}
+              {...classes}
+            />
+          )}
+        />
+      ) : format === "masonry" ? (
+        <ImageGalleryMasonry
+          aspectRatios={aspectRatios}
+          gap={gap}
+          maxWidth={maxWidth}
           renderItem={(i, classes) => (
             <EditorGalleryImageItem
               entityID={imageEntities[i]}

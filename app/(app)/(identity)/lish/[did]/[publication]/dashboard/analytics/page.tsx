@@ -10,11 +10,12 @@ import {
   usePublicationData,
   useNormalizedPublicationRecord,
 } from "../PublicationSWRProvider";
-import { useCanSeePro } from "src/hooks/useEntitlement";
+import { useCanSeePro, useIsPro } from "src/hooks/useEntitlement";
 import { useIdentityData } from "components/IdentityProvider";
 
 export default function AnalyticsPage() {
   let canSeePro = useCanSeePro();
+  let isPro = useIsPro();
   let router = useRouter();
   let { data } = usePublicationData();
   let { identity } = useIdentityData();
@@ -37,17 +38,17 @@ export default function AnalyticsPage() {
       scrollKey={`dashboard-${pubUri}-Analytics`}
       pageTitle="Analytics"
       mobileActions={
-        <>
+        isPro && (
           <DateRangeSelector
             dateState={dateState}
             setDateState={setDateState}
             pubStartDate={data?.publication?.indexed_at}
             showBackground={showPageBackground}
           />
-        </>
+        )
       }
       publication={pubUri}
-      showHeader={true}
+      showHeader={isPro}
       controls={
         <div className="flex justify-end gap-2">
           <DateRangeSelector

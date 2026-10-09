@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { addImage, localImages } from "src/utils/addImage";
 import { useImageLoadStatus } from "components/ImageLoadState";
+import { useCanvasImage } from "src/canvasZoom/CanvasZoomProvider";
 import { ImageStatusOverlay } from "./ImageStatusOverlay";
 import { useImageUploadStatus } from "src/utils/imageUploadStatus";
 import { addBlockBelow } from "src/utils/addBlockBelow";
@@ -20,6 +21,9 @@ import {
   EditorLightboxSlide,
 } from "./ImageGalleryBlock/ImageGalleryLightbox";
 import { getPostImageEntities } from "./ImageGalleryBlock/getPostImages";
+import { useCanOpenLightbox } from "./ImageGalleryBlock/useCanOpenLightbox";
+import { addGalleryImages } from "./ImageGalleryBlock/addGalleryImages";
+import { useBlockImagePaste } from "./useBlockImagePaste";
 
 export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let { rep, undoManager } = useReplicache();
@@ -44,6 +48,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     uploadSrc ? s.uploads[uploadSrc]?.state === "failed" : false,
   );
   let [reloads, setReloads] = useState(0);
+  let { decoding, className: canvasImageClass } = useCanvasImage(imageSrc);
   let {
     status: loadStatus,
     imgProps,
@@ -64,10 +69,11 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     altExpanded?: boolean;
   } | null>(null);
 
-  // Writers select the block first; a second click on the image opens the
-  // lightbox. Readers (no write permission) open it on the first click.
-  let canOpenLightbox =
-    !props.preview && (!entity_set.permissions.write || !!isSelected);
+  let { canOpenLightbox, clickOpensLightbox } = useCanOpenLightbox({
+    entityID: props.entityID,
+    isSelected: !!isSelected,
+    preview: props.preview,
+  });
 
   let openLightbox = (opts?: { altExpanded?: boolean }) => {
     let ids = rep ? getPostImageEntities(rep, props.parent) : [];
@@ -125,6 +131,30 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     });
   };
 
+  const handleImageFiles = async (files: File[]) => {
+    let images = files.filter((f) => f.type.startsWith("image/"));
+    if (images.length === 0 || !rep) return;
+    if (images.length === 1) return handleImageUpload(images[0]);
+    await undoManager.withUndoGroup(() =>
+      rep.mutate.assertFact({
+        entity: props.entityID,
+        attribute: "block/type",
+        data: { type: "block-type-union", value: "image-gallery" },
+      }),
+    );
+    await addGalleryImages(rep, {
+      galleryEntity: props.entityID,
+      permission_set: entity_set.set,
+      files: images,
+    });
+  };
+
+  useBlockImagePaste(
+    props.entityID,
+    !image && !props.preview && !!isSelected && entity_set.permissions.write,
+    handleImageFiles,
+  );
+
   if (!image) {
     if (!entity_set.permissions.write) return null;
     return (
@@ -147,13 +177,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
           onDrop={async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            const files = e.dataTransfer.files;
-            if (files && files.length > 0) {
-              const file = files[0];
-              if (file.type.startsWith("image/")) {
-                await handleImageUpload(file);
-              }
-            }
+            await handleImageFiles(Array.from(e.dataTransfer.files));
           }}
         >
           <div className="flex gap-2">
@@ -166,10 +190,9 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             className="h-0 w-0 hidden"
             type="file"
             accept="image/*"
+            multiple
             onChange={async (e) => {
-              let file = e.currentTarget.files?.[0];
-              if (!file) return;
-              await handleImageUpload(file);
+              await handleImageFiles(Array.from(e.currentTarget.files ?? []));
             }}
           />
         </label>
@@ -214,9 +237,10 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       >
         <button
           type="button"
+          data-block-body
           className={`block ${isFullBleed ? "w-full" : "w-fit"} ${canOpenLightbox ? "cursor-zoom-in" : ""}`}
           onClick={() => {
-            if (canOpenLightbox) openLightbox();
+            if (clickOpensLightbox()) openLightbox();
           }}
         >
           {localSrc || image.data.local ? (
@@ -224,12 +248,12 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
               {...imgProps}
               key={reloads}
               loading="lazy"
-              decoding="async"
+              decoding={decoding}
               alt={altText}
               src={localSrc ?? image.data.fallback}
               height={image?.data.height}
               width={image?.data.width}
-              className={isFullBleed ? "w-full" : undefined}
+              className={`${isFullBleed ? "w-full" : ""} ${canvasImageClass}`}
               style={imageStyle}
             />
           ) : (

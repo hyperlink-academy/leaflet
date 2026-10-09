@@ -25,6 +25,7 @@ import {
   type EmailTheme,
   type ResolvedColors,
 } from "./shared";
+import { resolveBskyPostView } from "src/utils/bskyPostView";
 
 // Email rendering of a pub.leaflet.blocks.bskyPost block, mirroring the web's
 // BskyPostContent/BskyEmbed with email-safe table markup. Embeds degrade:
@@ -58,9 +59,7 @@ const labelsToInfo = (labels?: PostView["labels"]): string | undefined => {
   }
 };
 
-const hasPwiOptOut = (author: {
-  labels?: { val: string }[];
-}): boolean =>
+const hasPwiOptOut = (author: { labels?: { val: string }[] }): boolean =>
   !!author.labels?.some((label) => label.val === "!no-unauthenticated");
 
 const bskyPostUrl = (
@@ -90,12 +89,14 @@ const formatPostDate = (createdAt: string): string | undefined => {
 export const BskyPostEmailBlock = ({
   post,
   clientHost = "bsky.app",
+  view,
   theme,
   colors,
   assetsBaseUrl,
 }: {
   post: PostView;
   clientHost?: string;
+  view?: string;
   theme: EmailTheme;
   colors: ResolvedColors;
   assetsBaseUrl: string;
@@ -117,8 +118,8 @@ export const BskyPostEmailBlock = ({
             margin: 0,
           }}
         >
-          The author of this post has requested their posts not be displayed
-          on external sites.
+          The author of this post has requested their posts not be displayed on
+          external sites.
         </ReactEmailText>
         <ReactEmailText
           style={{ fontSize: 14, lineHeight: 1.4, margin: "4px 0 0" }}
@@ -139,6 +140,22 @@ export const BskyPostEmailBlock = ({
   }
 
   const labelInfo = labelsToInfo(post.labels);
+  const resolved = resolveBskyPostView(post, view);
+
+  if (resolved.view === "media") {
+    return (
+      <Card colors={colors}>
+        <EmbedRenderer
+          embed={resolved.media}
+          labelInfo={labelInfo}
+          postUrl={url}
+          clientHost={clientHost}
+          ctx={ctx}
+        />
+        <PostCountsAndLink post={post} url={url} ctx={ctx} showHandle />
+      </Card>
+    );
+  }
 
   return (
     <Section style={{ margin: BLOCK_MARGIN, minWidth: "100%" }}>
@@ -626,8 +643,8 @@ const QuoteEmbed = ({
   if (hasPwiOptOut(record.author)) {
     return (
       <InfoBox ctx={ctx}>
-        The author of the quoted post has requested their posts not be
-        displayed on external sites.
+        The author of the quoted post has requested their posts not be displayed
+        on external sites.
       </InfoBox>
     );
   }
@@ -740,10 +757,13 @@ const PostCountsAndLink = ({
   post,
   url,
   ctx,
+  showHandle,
 }: {
   post: PostView;
   url: string;
   ctx: EmailCtx;
+  // Credits the author when the byline isn't shown.
+  showHandle?: boolean;
 }) => {
   const countStyle: CSSProperties = {
     color: ctx.colors.tertiary,
@@ -793,6 +813,19 @@ const PostCountsAndLink = ({
               </Link>
             ) : null}
           </td>
+          {showHandle ? (
+            <td
+              align="right"
+              style={{ verticalAlign: "middle", paddingRight: 8 }}
+            >
+              <Link
+                href={url}
+                style={{ ...countStyle, wordBreak: "break-all" }}
+              >
+                @{post.author.handle}
+              </Link>
+            </td>
+          ) : null}
           <td align="right" style={{ verticalAlign: "middle", width: 20 }}>
             <Link href={url} style={{ display: "block" }}>
               <Img
@@ -908,7 +941,7 @@ const SeeFullPostCard = ({
   </table>
 );
 
-// Bordered wrapper for the whole-card fallback states (pwi opt-out).
+// Bordered wrapper for cards without the avatar column (pwi opt-out, media only).
 const Card = ({
   children,
   colors,

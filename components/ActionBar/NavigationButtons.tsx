@@ -1,5 +1,7 @@
 "use client";
+import { useContext } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { DashboardIdContext } from "components/PageLayouts/dashboardState";
 import { ActionButton } from "./ActionButton";
 import { useIdentityData } from "components/IdentityProvider";
 import { ReaderUnreadSmall } from "components/Icons/ReaderSmall";
@@ -9,11 +11,10 @@ import {
 } from "components/Icons/NotificationSmall";
 import { SpeedyLink } from "components/SpeedyLink";
 import { WriterSmall } from "components/Icons/WriterSmall";
-function useIsActive(href: string) {
-  let pathname = usePathname();
-  return pathname === href || pathname.startsWith(href + "/");
-}
-
+import { ButtonPrimary } from "components/Buttons";
+import { LoginModal } from "components/LoginButton";
+import { GoToArrowLined } from "components/Icons/GoToArrowLined";
+import { TutorialNavTooltip } from "app/(app)/(identity)/(home-pages)/(writer)/home/Tutorial/TutorialNavTooltip";
 const WRITER_PATHS = ["/home", "/looseleafs", "/notifications"] as const;
 
 export function useIsOnWriterPage() {
@@ -21,30 +22,96 @@ export function useIsOnWriterPage() {
   return WRITER_PATHS.some((p) => pathname.startsWith(p));
 }
 
-export const WriterButton = () => {
-  let current = useIsOnWriterPage();
+// The reader-side dashboards, keyed by the id their shell registers. Profile
+// and tag count as reading even though they aren't under /reader — their own
+// sidebar tabs are the reader's (Inbox/Trending/New). Everything else — the
+// writer pages, publication dashboards (whose id is the publication uri) —
+// is writing.
+const READER_DASHBOARD_IDS = ["reader", "tag", "profile"];
+
+export function useNavSide(): "reader" | "writer" {
+  let dashboardId = useContext(DashboardIdContext);
+  return dashboardId && READER_DASHBOARD_IDS.includes(dashboardId)
+    ? "reader"
+    : "writer";
+}
+
+export function NavigationButton() {
+  let side = useNavSide();
   return (
-    <SpeedyLink eager href={"/home"} className="hover:!no-underline">
-      <ActionButton
-        className={"w-full!"}
-        icon={<WriterSmall />}
-        label="Write"
-        active={current}
-      />
-    </SpeedyLink>
+    <TutorialNavTooltip target="banner" className="w-full">
+      {side === "reader" ? <WriterButton /> : <ReaderButton />}
+    </TutorialNavTooltip>
+  );
+}
+
+export const WriterButton = () => {
+  let { identity } = useIdentityData();
+  let hasWritten =
+    (identity?.permission_token_on_homepage.length ?? 0) > 0 ||
+    (identity?.contributor_leaflets?.length ?? 0) > 0 ||
+    (identity?.publications.length ?? 0) > 0 ||
+    (identity?.contributor_publications?.length ?? 0) > 0;
+
+  if (identity && hasWritten)
+    return (
+      <SpeedyLink eager href={"/home"} className="hover:no-underline!">
+        <ButtonPrimary fullWidth className="mx-auto">
+          <WriterSmall />
+          Write <GoToArrowLined />
+        </ButtonPrimary>
+      </SpeedyLink>
+    );
+
+  return (
+    <div className="accent-container flex flex-col justify-center gap-1 px-2 py-3 text-center text-sm leading-snug mb-2">
+      <WriterSmall className="mx-auto" />
+      <h4 className="leading-snug">Start a Publication with Leaflet</h4>
+      <small className="text-secondary pb-2">
+        A blog, newsletter, comic, novel, course, log, journal, zine…
+      </small>
+      {identity ? (
+        <SpeedyLink eager href="/home" className="hover:no-underline!">
+          <ButtonPrimary fullWidth className="mx-auto ">
+            Start Writing! <GoToArrowLined />
+          </ButtonPrimary>
+        </SpeedyLink>
+      ) : (
+        <LoginModal
+          asChild
+          redirectRoute="/home"
+          trigger={
+            <ButtonPrimary fullWidth className="mx-auto ">
+              Start Writing!
+              <GoToArrowLined />
+            </ButtonPrimary>
+          }
+        />
+      )}
+    </div>
   );
 };
 
-export const ReaderButton = (props: { subs: boolean }) => {
-  let current = useIsActive("/reader");
+export const ReaderButton = () => {
+  let { identity } = useIdentityData();
+  let hasSubs = (identity?.publication_subscriptions?.length ?? 0) > 0;
+
+  if (identity && hasSubs)
+    return (
+      <SpeedyLink eager href={"/reader"} className="hover:no-underline!">
+        <ButtonPrimary fullWidth className="mx-auto">
+          <ReaderUnreadSmall />
+          Read <GoToArrowLined />
+        </ButtonPrimary>
+      </SpeedyLink>
+    );
+
   return (
-    <SpeedyLink eager href={"/reader"} className="hover:no-underline!">
-      <ActionButton
-        className="w-full!"
-        icon={<ReaderUnreadSmall />}
-        label="Read"
-        active={current}
-      />
+    <SpeedyLink eager href="/reader/trending" className="hover:no-underline!">
+      <ButtonPrimary fullWidth className="mx-auto">
+        <ReaderUnreadSmall />
+        Explore Pubs <GoToArrowLined />
+      </ButtonPrimary>
     </SpeedyLink>
   );
 };

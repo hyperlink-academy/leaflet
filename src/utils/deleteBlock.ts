@@ -5,6 +5,7 @@ import { scanIndex } from "src/replicache/utils";
 import { getPageBlocks } from "src/replicache/getBlocks";
 import { focusBlock } from "src/utils/focusBlock";
 import { UndoManager } from "src/undoManager";
+import { pageOfParent } from "src/utils/blockGroups";
 
 export async function deleteBlock(
   entities: string[],
@@ -18,7 +19,7 @@ export async function deleteBlock(
     let [type] = await rep.query((tx) =>
       scanIndex(tx).eav(entity, "block/type"),
     );
-    if (type?.data.value === "card") {
+    if (type?.data.value === "card" || type?.data.value === "embedded-canvas") {
       let [childPages] = await rep?.query(
         (tx) => scanIndex(tx).eav(entity, "block/card") || [],
       );
@@ -49,9 +50,10 @@ export async function deleteBlock(
     );
     // if the page is a canvas, focus the page
     if (parentType[0]?.data.value === "canvas") {
-      useUIState
-        .getState()
-        .setFocusedBlock({ entityType: "page", entityID: parent });
+      useUIState.getState().setFocusedBlock({
+        entityType: "page",
+        entityID: parent,
+      });
       useUIState.getState().setSelectedBlocks([]);
     } else {
       // if the page is a doc, focus the previous block (or if there isn't a prev block, focus the next block)
@@ -91,7 +93,7 @@ export async function deleteBlock(
           },
           { type: "end" },
         );
-      } else {
+      } else if (nextBlock) {
         useUIState.getState().setSelectedBlock({
           entityID: nextBlock.entityID,
           parent: nextBlock.parent,
@@ -105,6 +107,12 @@ export async function deleteBlock(
           },
           { type: "start" },
         );
+      } else {
+        useUIState.getState().setFocusedBlock({
+          entityType: "page",
+          entityID: pageOfParent(parent),
+        });
+        useUIState.getState().setSelectedBlocks([]);
       }
     }
   }
@@ -128,9 +136,7 @@ export async function deleteBlock(
 
     await Promise.all(
       entities.map((entity) =>
-        rep?.mutate.removeBlock({
-          blockEntity: entity,
-        }),
+        rep?.mutate.removeBlock({ blockEntity: entity, parent }),
       ),
     );
   };

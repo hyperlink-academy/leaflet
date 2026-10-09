@@ -2,6 +2,8 @@ import { ReactNode } from "react";
 import { GalleryImage, GalleryItemClasses, useGalleryImage } from "./shared";
 import { ImageAltButton } from "../ImageAltButton";
 import { ImageStatusOverlay } from "../ImageStatusOverlay";
+import { useCanvasImage } from "src/canvasZoom/CanvasZoomProvider";
+import { AnimatedImageVideo } from "../AnimatedImageVideo";
 
 // The image-plus-overlay unit shared by every gallery format, editor and
 // published alike. Each format supplies its own wrapper/button/img classes; the
@@ -15,10 +17,15 @@ export function GalleryImageItem(
   } & GalleryItemClasses,
 ) {
   let { image } = props;
+  let { decoding, className: canvasImageClass } = useCanvasImage(
+    image.src,
+    image.mimeType,
+  );
   return (
     <div className={`relative group/image ${props.className ?? ""}`}>
       <button
         type="button"
+        data-block-body
         onClick={props.onClick}
         className={props.buttonClassName}
         style={
@@ -27,15 +34,23 @@ export function GalleryImageItem(
             : undefined
         }
       >
-        <img
-          loading="lazy"
-          decoding="async"
+        <AnimatedImageVideo
+          videoSrc={image.videoSrc}
           alt={image.alt}
-          src={image.src}
           width={image.width}
           height={image.height}
           className={props.imgClassName}
-        />
+        >
+          <img
+            loading="lazy"
+            decoding={decoding}
+            alt={image.alt}
+            src={image.src}
+            width={image.width}
+            height={image.height}
+            className={`${props.imgClassName ?? ""} ${canvasImageClass}`}
+          />
+        </AnimatedImageVideo>
       </button>
       {props.overlay}
     </div>

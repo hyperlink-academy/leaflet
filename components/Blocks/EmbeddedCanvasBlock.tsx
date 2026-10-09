@@ -1,0 +1,178 @@
+"use client";
+import { BlockProps, BlockLayout } from "./Block";
+import { useEntity, useReplicache } from "src/replicache";
+import { useIsBlockSelected, useUIState } from "src/useUIState";
+import { focusPage } from "src/utils/focusPage";
+import { CanvasContent } from "components/Canvas";
+import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
+import { useCanvasSize } from "src/hooks/queries/useCanvasSize";
+import { ScaledCanvas } from "./ScaledCanvas";
+import { useEntitySetContext } from "components/EntitySetProvider";
+import { EditTiny } from "components/Icons/EditTiny";
+import { ImageAltButton } from "./ImageAltButton";
+import { Popover } from "components/Popover";
+import { BlockSettingOptions } from "./BlockSettingOptions";
+import {
+  type CanvasSize,
+  EMBEDDED_CANVAS_SIZES,
+  type EmbeddedCanvasSizeName,
+} from "src/utils/embeddedCanvasSize";
+
+export function EmbeddedCanvasBlock(
+  props: BlockProps & {
+    preview?: boolean;
+    areYouSure?: boolean;
+    setAreYouSure?: (value: boolean) => void;
+  },
+) {
+  let page = useEntity(props.entityID, "block/card")?.data.value;
+  let size = useCanvasSize(page || null);
+  let isSelected = useIsBlockSelected(props.entityID);
+  let isOpen = useUIState((s) => !!page && s.openPages.includes(page));
+  let alt = useEntity(props.entityID, "image/alt")?.data.value;
+  let { permissions } = useEntitySetContext();
+  if (!page || !size.fixed) return null;
+
+  return (
+    <CardThemeProvider entityID={page}>
+      <BlockLayout
+        isSelected={!!isSelected}
+        areYouSure={props.areYouSure}
+        setAreYouSure={props.setAreYouSure}
+        className={`embeddedCanvasBlockWrapper group/image relative p-0! ${isOpen ? "border-accent-contrast! outline-accent-contrast!" : ""}`}
+      >
+        <ScaledCanvas size={size} inert alt={alt}>
+          <CanvasContent entityID={page} preview />
+        </ScaledCanvas>
+        {!props.preview && permissions.write && (
+          <div className="absolute top-2 right-2 flex items-stretch gap-1">
+            <EmbeddedCanvasSizeButton page={page} size={size} />
+            <EditEmbeddedCanvasButton parent={props.parent} page={page} />
+          </div>
+        )}
+        {!props.preview && (
+          <ImageAltButton
+            entityID={props.entityID}
+            selected={!!isSelected}
+            canEdit={permissions.write}
+            placeholder="Describe this drawing…"
+          />
+        )}
+      </BlockLayout>
+    </CardThemeProvider>
+  );
+}
+
+const overlayButtonStyle =
+  "flex items-center gap-1 rounded-md py-0.5 text-sm font-bold bg-accent-1 text-accent-2 hover:outline-solid hover:outline-1 hover:outline-accent-1 outline-offset-1";
+
+function EditEmbeddedCanvasButton(props: { parent: string; page: string }) {
+  let { rep } = useReplicache();
+  return (
+    <button
+      aria-label="Edit drawing"
+      className={`${overlayButtonStyle} px-2`}
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        useUIState.getState().openPage(props.parent, props.page);
+        if (rep) focusPage(props.page, rep);
+      }}
+    >
+      <EditTiny /> Edit
+    </button>
+  );
+}
+
+function EmbeddedCanvasSizeButton(props: { page: string; size: CanvasSize }) {
+  let { rep, undoManager } = useReplicache();
+  let names = Object.keys(EMBEDDED_CANVAS_SIZES) as EmbeddedCanvasSizeName[];
+  let current = names.find(
+    (n) =>
+      EMBEDDED_CANVAS_SIZES[n].width === props.size.width &&
+      EMBEDDED_CANVAS_SIZES[n].height === props.size.height,
+  );
+  let iconScale = Math.min(16 / props.size.width, 16 / props.size.height);
+  return (
+    <Popover
+      asChild
+      side="bottom"
+      align="end"
+      sideOffset={6}
+      className="p-0! w-md"
+      onOpenAutoFocus={(e) => e.preventDefault()}
+      trigger={
+        <button
+          aria-label="Drawing size"
+          className={`${overlayButtonStyle} px-1.5`}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            className="border-[1.5px] border-current rounded-[2px]"
+            style={{
+              width: props.size.width * iconScale,
+              height: props.size.height * iconScale,
+            }}
+          />
+        </button>
+      }
+    >
+      {/* Clicks here would otherwise bubble (through the portal) to the page
+          wrapper, which refocuses the page. */}
+      <div
+        className="flex flex-col gap-3 p-3 text-primary overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h4>Drawing Size</h4>
+        <BlockSettingOptions<EmbeddedCanvasSizeName>
+          options={names.map((value) => ({
+            value,
+            Icon: ({ selected }) => (
+              <SizeIcon
+                size={EMBEDDED_CANVAS_SIZES[value]}
+                selected={selected}
+              />
+            ),
+          }))}
+          // A size set outside the presets highlights none of them.
+          value={current ?? ("" as EmbeddedCanvasSizeName)}
+          onSelect={async (value) => {
+            if (!rep) return;
+            let { width, height } = EMBEDDED_CANVAS_SIZES[value];
+            await undoManager.withUndoGroup(() =>
+              rep.mutate.assertFact([
+                {
+                  entity: props.page,
+                  attribute: "canvas/fixed-width",
+                  data: { type: "number", value: width },
+                },
+                {
+                  entity: props.page,
+                  attribute: "canvas/fixed-height",
+                  data: { type: "number", value: height },
+                },
+              ]),
+            );
+          }}
+        />
+      </div>
+    </Popover>
+  );
+}
+
+const SizeIcon = (props: { size: CanvasSize; selected: boolean }) => {
+  let scale = Math.min(56 / props.size.width, 48 / props.size.height);
+  return (
+    <div className="flex items-center justify-center w-full h-[48px]">
+      <div
+        className={`opaque-container border-tertiary! ${props.selected ? "border-accent-contrast!" : ""}`}
+        style={{
+          width: props.size.width * scale,
+          height: props.size.height * scale,
+        }}
+      />
+    </div>
+  );
+};

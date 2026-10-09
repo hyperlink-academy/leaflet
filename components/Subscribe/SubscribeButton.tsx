@@ -54,7 +54,7 @@ function redirectToEmailSubscribe(
       publication: publicationUri,
       // The subscribe completes after a redirect, so stamp the originating
       // page into the source now — the server won't see a useful Referer.
-      ...(source ? { source: { url: window.location.href, ...source } } : {}),
+      source: { url: window.location.href, ...source },
     }),
   );
   window.location.href = url.toString();

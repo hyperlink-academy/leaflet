@@ -544,14 +544,15 @@ describe.runIf(dbAvailable)("computePull end-to-end", () => {
     );
   });
 
-  test("malformed token id returns ClientStateNotFound like the legacy handler", async () => {
-    let res = await computePull(
-      supabase,
-      store,
-      { cookie: null, clientGroupID: "g" },
-      "not-a-uuid",
-      Date.now(),
-    );
-    expect(res).toEqual({ error: "ClientStateNotFound" });
+  test("a failed pull throws rather than resetting the client", async () => {
+    await expect(
+      computePull(
+        supabase,
+        store,
+        { cookie: null, clientGroupID: "g" },
+        "not-a-uuid",
+        Date.now(),
+      ),
+    ).rejects.toThrow();
   });
 });

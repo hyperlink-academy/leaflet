@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
-import { DraftList } from "./DraftList";
+import { DraftList, useVisibleDrafts } from "./DraftList";
 import { NewDraftActionButton } from "./NewDraftButton";
 import { PageSearch } from "components/PageLayouts/PageSearch";
 import {
@@ -15,6 +15,7 @@ export function DraftsTab() {
   let { data } = usePublicationData();
   let record = useNormalizedPublicationRecord();
   let pubUri = data?.publication?.uri || "";
+  let hasDrafts = useVisibleDrafts().length > 0;
 
   let [searchValue, setSearchValue] = useState("");
   let [debouncedSearchValue, setDebouncedSearchValue] = useState("");
@@ -30,16 +31,18 @@ export function DraftsTab() {
       pageTitle="Drafts"
       mobileActions={<NewDraftActionButton publication={pubUri} compact />}
       controls={
-        <PageSearch
-          defaultDisplay="list"
-          hasBackgroundImage={!!record?.theme?.backgroundImage}
-          searchValue={searchValue}
-          setSearchValueAction={setSearchValue}
-        />
+        hasDrafts && (
+          <PageSearch
+            defaultDisplay="list"
+            hasBackgroundImage={!!record?.theme?.backgroundImage}
+            searchValue={searchValue}
+            setSearchValueAction={setSearchValue}
+          />
+        )
       }
-      hasSearch
+      hasSearch={hasDrafts}
       publication={pubUri}
-      showHeader={true}
+      showHeader={hasDrafts}
     >
       <DraftList
         searchValue={debouncedSearchValue}

@@ -4,11 +4,13 @@ import { generateKeyBetween } from "fractional-indexing";
 import { addImage } from "src/utils/addImage";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { v7 } from "uuid";
+import { addGalleryImages } from "./ImageGalleryBlock/addGalleryImages";
 
 export const useHandleDrop = (params: {
   parent: string;
   position: string | null;
   nextPosition: string | null;
+  galleryEntity?: string;
 }) => {
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
@@ -30,9 +32,37 @@ export const useHandleDrop = (params: {
 
       if (imageFiles.length === 0) return;
 
+      if (params.galleryEntity) {
+        await addGalleryImages(rep, {
+          galleryEntity: params.galleryEntity,
+          permission_set: entity_set.set,
+          files: imageFiles,
+        });
+        return true;
+      }
+
+      if (imageFiles.length > 1) {
+        let galleryEntity = v7();
+        await undoManager.withUndoGroup(() =>
+          rep.mutate.addBlock({
+            parent: params.parent,
+            factID: v7(),
+            permission_set: entity_set.set,
+            type: "image-gallery",
+            position: generateKeyBetween(params.position, params.nextPosition),
+            newEntityID: galleryEntity,
+          }),
+        );
+        await addGalleryImages(rep, {
+          galleryEntity,
+          permission_set: entity_set.set,
+          files: imageFiles,
+        });
+        return true;
+      }
+
       let currentPosition = params.position;
 
-      // Calculate positions for all images first
       const imageBlocks = imageFiles.map((file) => {
         const entity = v7();
         const position = generateKeyBetween(
@@ -76,6 +106,7 @@ export const useHandleDrop = (params: {
       params.position,
       params.nextPosition,
       params.parent,
+      params.galleryEntity,
       entity_set.set,
       undoManager,
     ],

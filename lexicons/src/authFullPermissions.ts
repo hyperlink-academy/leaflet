@@ -7,7 +7,13 @@ import {
 } from "./publication";
 import { PubLeafletComment } from "./comment";
 import { PubLeafletPollDefinition, PubLeafletPollVote } from "./polls";
-import { PubLeafletInteractionsRecommend } from "./interactions";
+import {
+  PubLeafletInteractionsRecommend,
+  PubLeafletInteractionsReply,
+  PubLeafletInteractionsReplyVisibility,
+  PubLeafletInteractionsQuestion,
+  PubLeafletInteractionsAnswer,
+} from "./interactions";
 import { PubLeafletPublicationPage } from "./publicationPage";
 
 export const PubLeafletAuthFullPermissions: LexiconDoc = {
@@ -33,6 +39,10 @@ export const PubLeafletAuthFullPermissions: LexiconDoc = {
             PubLeafletPublicationSubscription.id,
             PubLeafletGraphRecommendations.id,
             PubLeafletInteractionsRecommend.id,
+            PubLeafletInteractionsReply.id,
+            PubLeafletInteractionsReplyVisibility.id,
+            PubLeafletInteractionsQuestion.id,
+            PubLeafletInteractionsAnswer.id,
             PubLeafletPublicationPage.id,
           ],
         },

@@ -228,7 +228,6 @@ describe("offprintContentToBlocks", () => {
       url: "blob:a",
       width: 400,
       height: 300,
-      attribute: "block/image",
     });
 
     const grid = r.blocks[2];

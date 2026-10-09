@@ -1,7 +1,9 @@
-import { useEntity } from "src/replicache";
+import { useEntity, useReplicache } from "src/replicache";
+import { useSubscribe } from "src/replicache/useSubscribe";
+import { scanIndex } from "src/replicache/utils";
 import { localImages } from "src/utils/addImage";
 
-export type GalleryFormat = "grid" | "carousel" | "strip";
+export type GalleryFormat = "grid" | "carousel" | "strip" | "masonry";
 export const DEFAULT_GAP = 8;
 export const DEFAULT_FORMAT: GalleryFormat = "grid";
 export const DEFAULT_MAX_WIDTH = 300;
@@ -17,6 +19,9 @@ export type GalleryImage = {
   // Canonical storage URL from the fact (editor only) — the key upload status
   // is tracked under, even while `src` is the local object URL.
   factSrc?: string;
+  mimeType?: string;
+  /** Video rendition of an animated GIF (published only). */
+  videoSrc?: string;
   alt: string;
   width: number;
   height: number;
@@ -30,6 +35,32 @@ export type GalleryItemClasses = {
   imgClassName?: string;
   useAspectRatio?: boolean;
 };
+
+// width / height of each gallery child image, in order, for layouts that place
+// images by shape before they render. Unresolved images count as square.
+export function useGalleryAspectRatios(entityIDs: string[]) {
+  let { rep, initialFacts } = useReplicache();
+  let ratioFrom = (data?: { width: number; height: number }) =>
+    data && data.width > 0 && data.height > 0 ? data.width / data.height : 1;
+  let live = useSubscribe(
+    rep,
+    async (tx) =>
+      Promise.all(
+        entityIDs.map(async (id) => {
+          let [image] = await scanIndex(tx).eav(id, "block/image");
+          return ratioFrom(image?.data);
+        }),
+      ),
+    { default: null, dependencies: [entityIDs.join(",")] },
+  );
+  if (live && live.length === entityIDs.length) return live;
+  return entityIDs.map((id) => {
+    let fact = initialFacts.find(
+      (f) => f.entity === id && f.attribute === "block/image",
+    );
+    return ratioFrom(fact?.data as { width: number; height: number });
+  });
+}
 
 // Resolves the best available source for a gallery child image entity. Prefers
 // the in-memory object URL while an upload is in flight, like ImageBlock.

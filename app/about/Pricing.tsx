@@ -125,6 +125,13 @@ export const Pricing = () => {
               </li>
               <hr className="border-border-light" />
               <li>
+                <div>Post Scheduling</div>
+                <div className="text-tertiary text-base">
+                  Set a date and time to publish
+                </div>
+              </li>
+              <hr className="border-border-light" />
+              <li>
                 <div>Group Publications</div>
                 <div className="text-tertiary text-base">
                   Invite unlimited contributors

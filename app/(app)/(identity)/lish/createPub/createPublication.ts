@@ -33,12 +33,14 @@ export async function createPublication({
   iconFile,
   subdomain,
   preferences,
+  postsListView,
 }: {
   name: string;
   description: string;
   iconFile: File | null;
   subdomain: string;
   preferences: Omit<PubLeafletPublication.Preferences, "$type">;
+  postsListView?: "small" | "medium" | "chapter";
 }): Promise<CreatePublicationResult> {
   let isSubdomainValid = subdomainValidator.safeParse(subdomain);
   if (!isSubdomainValid.success) {
@@ -162,6 +164,7 @@ export async function createPublication({
     publication_uri: result.uri,
     did: credentialSession.did!,
     description,
+    postsListView,
     theme: resolvePublicationTheme(
       normalizePublicationRecord(record as unknown as Json),
     ),

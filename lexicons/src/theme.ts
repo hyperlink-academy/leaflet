@@ -75,15 +75,34 @@ export const PubLeafletThemeColor: LexiconDoc = {
   },
 };
 
-export const ThemeLexicons = [
-  PubLeafletThemeBackgroundImage,
-  PubLeafletThemeWordmark,
-  PubLeafletThemeColor,
-];
-
 export const ColorUnion: LexRefUnion = {
   type: "union",
   refs: Object.keys(PubLeafletThemeColor.defs).map(
     (key) => `${PubLeafletThemeColor.id}#${key}`,
   ),
 };
+
+export const PubLeafletThemePage: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.theme.page",
+  defs: {
+    main: {
+      type: "object",
+      description:
+        "Colors a single page overrides. Each absent color is inherited from the document's or publication's theme.",
+      properties: {
+        pageBackground: ColorUnion,
+        primary: ColorUnion,
+        accentBackground: ColorUnion,
+        accentText: ColorUnion,
+      },
+    },
+  },
+};
+
+export const ThemeLexicons = [
+  PubLeafletThemeBackgroundImage,
+  PubLeafletThemeWordmark,
+  PubLeafletThemeColor,
+  PubLeafletThemePage,
+];

@@ -86,9 +86,7 @@ export const SubscribeWithHandle = (props: {
       publication: props.publicationUri,
       // The subscribe completes after the OAuth redirect, so stamp the
       // originating page into the source now.
-      ...(props.source
-        ? { source: { url: window.location.href, ...props.source } }
-        : {}),
+      source: { url: window.location.href, ...props.source },
     });
     let inIframe = isInIframe();
     let url = new URL(window.location.href);
@@ -160,7 +158,7 @@ export const SubscribeWithHandle = (props: {
         compact={props.compact}
         className={`
           subscribeButton
-          text-sm grow shrink!
+          text-sm grow shrink! min-w-0
           ${
             props.compact
               ? "gap-1! min-w-0 flex items-center rounded-r-none! hover:outline-transparent! focus:outline-transparent!"

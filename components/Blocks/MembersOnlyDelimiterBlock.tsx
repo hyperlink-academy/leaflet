@@ -192,7 +192,10 @@ function TierSelector(props: {
       </div>
       <RadioMenuGroup value={props.policy.audience} onValueChange={setAudience}>
         <RadioMenuItem value="subscribers">Subscribers</RadioMenuItem>
-        <RadioMenuItem value="paid">Paid Members</RadioMenuItem>
+
+        {(props.tiers.length > 0 || props.policy.audience === "paid") && (
+          <RadioMenuItem value="paid">Paid Members</RadioMenuItem>
+        )}
         {props.tiers.length > 0 && (
           <RadioMenuItem
             value="tiers"

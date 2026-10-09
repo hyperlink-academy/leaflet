@@ -13,6 +13,7 @@ import {
 import { GalleryImageItem } from "components/Blocks/ImageGalleryBlock/GalleryImageItem";
 import { ImageGalleryGrid } from "components/Blocks/ImageGalleryBlock/ImageGalleryGrid";
 import { ImageGalleryStrip } from "components/Blocks/ImageGalleryBlock/ImageGalleryStrip";
+import { ImageGalleryMasonry } from "components/Blocks/ImageGalleryBlock/ImageGalleryMasonry";
 import { ImageGalleryCarousel } from "components/Blocks/ImageGalleryBlock/ImageGalleryCarousel";
 import {
   ImageGalleryLightbox,
@@ -31,6 +32,11 @@ export function PublishedImageGallery(props: {
           width: POST_BODY_IMAGE_WIDTH,
         }),
         fullSrc: blobRefToSrc(i.image.ref, did),
+        mimeType: i.image.mimeType,
+        videoSrc:
+          i.image.mimeType === "image/gif"
+            ? blobRefToSrc(i.image.ref, did, undefined, { format: "mp4" })
+            : undefined,
         alt: i.alt || "",
         width: i.aspectRatio.width,
         height: i.aspectRatio.height,
@@ -69,6 +75,13 @@ export function PublishedImageGallery(props: {
     <div className="imageGalleryBlock w-full">
       {format === "carousel" ? (
         <ImageGalleryCarousel count={images.length} renderItem={renderItem} />
+      ) : format === "masonry" ? (
+        <ImageGalleryMasonry
+          aspectRatios={images.map((i) => i.width / i.height)}
+          gap={gap}
+          maxWidth={maxWidth}
+          renderItem={renderItem}
+        />
       ) : format === "strip" ? (
         <ImageGalleryStrip
           count={images.length}

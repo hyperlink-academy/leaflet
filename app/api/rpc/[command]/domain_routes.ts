@@ -11,41 +11,16 @@ export const get_domain_status = makeRoute({
   }),
   handler: async ({ domain }, { vercel }: Pick<Env, "vercel">) => {
     try {
-      let [projectDomain, config] = await Promise.all([
-        vercel.projects.getProjectDomain({
-          idOrName: VERCEL_PROJECT,
-          teamId: VERCEL_TEAM,
-          domain,
-        }),
-        vercel.domains.getDomainConfig({
-          domain,
-          teamId: VERCEL_TEAM,
-        }),
+      let [status, www] = await Promise.all([
+        getProjectDomainStatus(vercel, domain),
+        getProjectDomainStatus(vercel, `www.${domain}`).catch(() => null),
       ]);
-
-      if (!projectDomain.verified) {
-        // Vercel only re-checks ownership and kicks off certificate issuance
-        // when the verify endpoint is POSTed (the dashboard's refresh button
-        // does this) — pending domains otherwise stay pending indefinitely.
-        try {
-          let result = await vercel.projects.verifyProjectDomain({
-            idOrName: VERCEL_PROJECT,
-            teamId: VERCEL_TEAM,
-            domain,
-          });
-          if (result.verified) return { config };
-        } catch (e) {
-          console.log(e);
-        }
-        if (!projectDomain.verification) {
-          return { config };
-        }
-        return {
-          verification: projectDomain.verification,
-          config,
-        } as const;
-      }
-      return { config };
+      return {
+        config: status.config,
+        apexName: status.apexName,
+        verification: status.verification,
+        www,
+      };
     } catch (e) {
       let errorResponse = e as NextApiResponse;
       if (errorResponse.statusCode === 404)
@@ -54,6 +29,46 @@ export const get_domain_status = makeRoute({
     }
   },
 });
+
+async function getProjectDomainStatus(vercel: Env["vercel"], domain: string) {
+  let [projectDomain, config] = await Promise.all([
+    vercel.projects.getProjectDomain({
+      idOrName: VERCEL_PROJECT,
+      teamId: VERCEL_TEAM,
+      domain,
+    }),
+    vercel.domains.getDomainConfig({
+      domain,
+      teamId: VERCEL_TEAM,
+    }),
+  ]);
+
+  let { apexName } = projectDomain;
+  if (!projectDomain.verified) {
+    // Vercel only re-checks ownership and kicks off certificate issuance
+    // when the verify endpoint is POSTed (the dashboard's refresh button
+    // does this) — pending domains otherwise stay pending indefinitely.
+    try {
+      let result = await vercel.projects.verifyProjectDomain({
+        idOrName: VERCEL_PROJECT,
+        teamId: VERCEL_TEAM,
+        domain,
+      });
+      if (result.verified) return { config, apexName };
+    } catch (e) {
+      console.log(e);
+    }
+    if (!projectDomain.verification) {
+      return { config, apexName };
+    }
+    return {
+      verification: projectDomain.verification,
+      config,
+      apexName,
+    } as const;
+  }
+  return { config, apexName };
+}
 
 export const get_leaflet_subdomain_status = makeRoute({
   route: "get_leaflet_subdomain_status",

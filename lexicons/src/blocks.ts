@@ -35,6 +35,27 @@ export const PubLeafletBlocksPage: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksEmbeddedCanvas: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.embeddedCanvas",
+  defs: {
+    main: {
+      type: "object",
+      required: ["id"],
+      description:
+        "A fixed-size canvas shown in full inline. id refers to a pub.leaflet.pages.canvas in the document's pages whose width and height bound it.",
+      properties: {
+        id: { type: "string" },
+        alt: {
+          type: "string",
+          description:
+            "Alt text description of the canvas as a picture, for accessibility.",
+        },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksBskyPost: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.bskyPost",
@@ -45,6 +66,7 @@ export const PubLeafletBlocksBskyPost: LexiconDoc = {
       properties: {
         postRef: { type: "ref", ref: "com.atproto.repo.strongRef" },
         clientHost: { type: "string" },
+        view: { type: "string", knownValues: ["full", "media"] },
       },
     },
   },
@@ -251,7 +273,7 @@ export const PubLeafletBlocksImageGallery: LexiconDoc = {
         },
         format: {
           type: "string",
-          knownValues: ["grid", "carousel", "strip"],
+          knownValues: ["grid", "carousel", "strip", "masonry"],
         },
         gap: {
           type: "integer",
@@ -260,7 +282,7 @@ export const PubLeafletBlocksImageGallery: LexiconDoc = {
         maxWidth: {
           type: "integer",
           description:
-            "Max width per image in grid view (px); drives how many columns fit.",
+            "Max width per image in grid and masonry views (px); drives how many columns fit.",
         },
       },
     },
@@ -531,6 +553,60 @@ export const PubLeafletBlocksRecommendedPubs: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksReply: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.reply",
+  defs: {
+    main: {
+      type: "object",
+      description:
+        "Lets readers submit their own documents as replies to this one (pub.leaflet.interactions.reply) and shows the ones the author made visible (pub.leaflet.interactions.replyVisibility). Replies are resolved at render time rather than stored on the block.",
+      required: [],
+      properties: {
+        buttonText: {
+          type: "string",
+          maxLength: 500,
+          maxGraphemes: 50,
+          description: "Label for the button readers use to submit a reply.",
+        },
+        promptText: {
+          type: "string",
+          maxLength: 3000,
+          maxGraphemes: 300,
+          description:
+            "Text inviting readers to reply, shown beside the button.",
+        },
+        showPublicationTheme: {
+          type: "boolean",
+          description:
+            "Render each reply in its own publication's theme. Defaults to true.",
+        },
+      },
+    },
+  },
+};
+
+export const PubLeafletBlocksQuestions: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.questions",
+  defs: {
+    main: {
+      type: "object",
+      description:
+        "Lets readers ask the author public questions (pub.leaflet.interactions.question) and shows the ones the author has answered (pub.leaflet.interactions.answer). Questions are resolved at render time rather than stored on the block.",
+      required: [],
+      properties: {
+        buttonText: {
+          type: "string",
+          maxLength: 500,
+          maxGraphemes: 50,
+          description: "Label for the button readers use to submit a question.",
+        },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksMembersOnlyDelimiter: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.membersOnlyDelimiter",
@@ -592,6 +668,86 @@ export const PubLeafletBlocksPostHeader: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksDrawing: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.drawing",
+  defs: {
+    main: {
+      type: "object",
+      description:
+        "Freehand ink strokes. The view box is the area of drawing space the block shows, scaled to the block's width; strokes may reach past it.",
+      required: ["viewBox", "strokes"],
+      properties: {
+        viewBox: { type: "ref", ref: "#viewBox" },
+        strokes: { type: "array", items: { type: "ref", ref: "#stroke" } },
+        fills: {
+          type: "array",
+          items: { type: "ref", ref: "#fill" },
+          description: "Painted in order, beneath the strokes.",
+        },
+      },
+    },
+    fill: {
+      type: "object",
+      description:
+        "A filled polygon, painted with the nonzero rule: the region a stroke encloses.",
+      required: ["points", "color"],
+      properties: {
+        points: {
+          type: "array",
+          items: { type: "integer" },
+          description:
+            "Flattened vertices as x, y pairs in drawing space. The last joins back to the first.",
+        },
+        color: {
+          type: "string",
+          description:
+            "A CSS hex color, or one of the document theme's colors: primary (text), accent, or tertiary (faded text).",
+        },
+      },
+    },
+    viewBox: {
+      type: "object",
+      required: ["x", "y", "width", "height"],
+      properties: {
+        x: { type: "integer" },
+        y: { type: "integer" },
+        width: { type: "integer", minimum: 1 },
+        height: { type: "integer", minimum: 1 },
+      },
+    },
+    stroke: {
+      type: "object",
+      description:
+        "One pen stroke, drawn in order, rendered as a variable-width outline of its input points (as perfect-freehand does).",
+      required: ["points", "color", "size"],
+      properties: {
+        points: {
+          type: "array",
+          items: { type: "integer" },
+          description:
+            "Flattened input points as x, y, pressure triples: x and y in drawing space, pressure from 0 to 1000.",
+        },
+        color: {
+          type: "string",
+          description:
+            "A CSS hex color, or one of the document theme's colors: primary (text), accent, or tertiary (faded text).",
+        },
+        size: {
+          type: "integer",
+          minimum: 1,
+          description: "The stroke's base diameter in drawing space.",
+        },
+        simulatePressure: {
+          type: "boolean",
+          description:
+            "The input had no real pressure (a mouse or finger); derive it from the stroke's speed instead.",
+        },
+      },
+    },
+  },
+};
+
 export const BlockLexicons = [
   PubLeafletBlocksIFrame,
   PubLeafletBlocksHtml,
@@ -610,13 +766,17 @@ export const BlockLexicons = [
   PubLeafletBlocksStandardSitePost,
   PubLeafletBlocksStandardSitePublication,
   PubLeafletBlocksPage,
+  PubLeafletBlocksEmbeddedCanvas,
   PubLeafletBlocksPoll,
   PubLeafletBlocksButton,
   PubLeafletBlocksPostsList,
   PubLeafletBlocksSignup,
   PubLeafletBlocksRecommendedPubs,
+  PubLeafletBlocksReply,
+  PubLeafletBlocksQuestions,
   PubLeafletBlocksMembersOnlyDelimiter,
   PubLeafletBlocksPostHeader,
+  PubLeafletBlocksDrawing,
 ];
 export const BlockUnion: LexRefUnion = {
   type: "union",

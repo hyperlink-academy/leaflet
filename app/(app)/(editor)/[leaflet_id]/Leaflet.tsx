@@ -13,6 +13,7 @@ import { UpdateLeafletTitle } from "components/utils/UpdateLeafletTitle";
 import { LeafletLayout } from "components/LeafletLayout";
 import { WelcomeModal } from "./WelcomeModal";
 import { AddToHomeEffect } from "./AddToHomeEffect";
+import { LeafletTutorial } from "./LeafletTutorial";
 import { EditorCommentSelectionPopover } from "components/EditorComments/EditorCommentSelectionPopover";
 import { FindReplace } from "components/FindReplace";
 import { FoldStateProvider } from "components/FoldStateProvider";
@@ -45,6 +46,7 @@ export function Leaflet(props: {
               <UpdateLeafletTitle entityID={props.leaflet_id} />
               <WelcomeModal />
               <AddToHomeEffect />
+              <LeafletTutorial rootPage={props.leaflet_id} />
               <SelectionManager />
               <FindReplace />
               {/* we need the padding bottom here because if we don't have it the mobile footer will cut off...

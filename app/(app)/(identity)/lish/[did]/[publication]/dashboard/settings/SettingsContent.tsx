@@ -16,6 +16,7 @@ import { PubDomainSettings } from "./PubDomainSettings";
 import { GeneralSettings } from "./GeneralSettings";
 import { ThemeAndLayoutSettings } from "./ThemeAndLayoutSettings";
 import { ShareSettings } from "./ShareSettings";
+import { SubscribePageSettings } from "./SubscribePageSettings";
 import { NewsletterSettings } from "./NewsletterSettings";
 import { ContributorSettings } from "./ContributorSettings";
 import { MonetizationSettings } from "./MonetizationSettings";
@@ -376,6 +377,8 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
           showOtherPublicationsInTags={showOtherPublicationsInTags}
           setShowOtherPublicationsInTags={setShowOtherPublicationsInTags}
         />
+
+        <SubscribePageSettings />
 
         <SettingsSection title="Domains">
           <div className="text-secondary">

@@ -1,6 +1,9 @@
 "use client";
 import { EditTiny } from "components/Icons/EditTiny";
-import { EmptyState } from "components/EmptyState";
+import { ButtonPrimary } from "components/Buttons";
+import { AddTiny } from "components/Icons/AddTiny";
+import { DashboardEmptyState } from "./DashboardEmptyState";
+import { NewDraftButton } from "./NewDraftButton";
 
 import {
   usePublicationData,
@@ -8,7 +11,7 @@ import {
   type PublishedDocument,
 } from "./PublicationSWRProvider";
 import { Fragment } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { getPublicationURL, getDocumentURL } from "src/utils/getPublicationURL";
 import { SpeedyLink } from "components/SpeedyLink";
 import { InteractionPreview } from "components/Interactions/InteractionsPreview";
@@ -28,7 +31,7 @@ export function PublishedPostsList(props: {
   const pubRecord = useNormalizedPublicationRecord();
   if (!publication) return null;
   if (!documents || documents.length === 0)
-    return <EmptyState title="Nothing's been published yet…" />;
+    return <PublishedEmpty publication={publication.uri} />;
 
   // Sort by publishedAt (most recent first)
   const sortedDocuments = [...documents].sort((a, b) => {
@@ -53,6 +56,35 @@ export function PublishedPostsList(props: {
         />
       ))}
     </div>
+  );
+}
+
+function PublishedEmpty(props: { publication: string }) {
+  let router = useRouter();
+  let params = useParams<{ did: string; publication: string }>();
+  return (
+    <DashboardEmptyState>
+      <h3 className="text-primary">No published posts!</h3>
+      <div className="text-secondary flex flex-col gap-2">
+        <p>
+          You haven&apos;t published anything to this publication yet! Once you
+          do, it&apos;ll appear here.
+        </p>
+      </div>
+      <div className="flex flex-col justify-center gap-1 pt-2">
+        <ButtonPrimary
+          className="mx-auto"
+          onClick={() =>
+            router.push(`/lish/${params.did}/${params.publication}/dashboard`)
+          }
+        >
+          Go to Drafts
+        </ButtonPrimary>
+        <NewDraftButton publication={props.publication} type="tertiary">
+          Start a New Draft
+        </NewDraftButton>
+      </div>
+    </DashboardEmptyState>
   );
 }
 
@@ -129,6 +161,7 @@ function PublishedPostItem(props: {
                       ],
                       leaflets_to_documents: [],
                       publications: [],
+                      publication_scheduled_posts: null,
                       blocked_by_admin: null,
                       custom_domain_routes: [],
                     }}

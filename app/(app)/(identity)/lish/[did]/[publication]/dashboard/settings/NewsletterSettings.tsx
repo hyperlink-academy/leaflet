@@ -16,6 +16,7 @@ import {
   usePublicationData,
 } from "../PublicationSWRProvider";
 import { useToaster } from "components/Toast";
+import { SubscribePageLinkInput } from "./SubscribePageSettings";
 import {
   clearReplyToEmail,
   confirmReplyToVerification,
@@ -59,16 +60,16 @@ export const NewsletterSettings = () => {
       )}
       {newsletterEnabled && (
         <>
-      <SettingsSection title="Embeddable Subscribe Form">
-        <EmbedFormSnippet
-          publicationUri={publicationUri}
-          publicationUrl={record?.url}
-        />
-      </SettingsSection>
-        <DisableNewsletterSection
-          publicationUri={publicationUri}
-          mutate={mutate}
-        />
+          <SettingsSection title="Embeddable Subscribe Form">
+            <EmbedFormSnippet
+              publicationUri={publicationUri}
+              publicationUrl={record?.url}
+            />
+          </SettingsSection>
+          <DisableNewsletterSection
+            publicationUri={publicationUri}
+            mutate={mutate}
+          />
         </>
       )}
     </>
@@ -85,13 +86,16 @@ function EnableNewsletterSection(props: {
   return (
     <SettingsSection title="Enable Newsletter">
       <div className="font-bold">
-       Newsletter mode allows you to send email updates to your subscribers!
+        Newsletter mode allows you to send email updates to your subscribers!
       </div>
-      <div >
-        Your first 1k email subscribers are included with Leaflet Pro.<br/> After
-        that, it&apos;s $5 for each additional 1k subs.
+      <div>
+        Your first 1k email subscribers are included with Leaflet Pro.
+        <br /> After that, it&apos;s $5 for each additional 1k subs.
       </div>
-      <div>If you have questions, or you want to import an existing email list, <a href="mailto:contact@leaflet.pub">contact us</a>!</div>
+      <div>
+        If you have questions, or you want to import an existing email list,{" "}
+        <a href="mailto:contact@leaflet.pub">contact us</a>!
+      </div>
       <ButtonPrimary
         className="self-start"
         disabled={pending}
@@ -203,7 +207,10 @@ function NewsletterOptions(props: {
   return (
     <SettingsSection title="Newsletter Options">
       <div>Newsletters allow your subscribers to opt into email updates.</div>
-       <div>If you have questions, or you want to import an existing email list, <a href="mailto:contact@leaflet.pub">contact us</a>!</div>
+      <div>
+        If you have questions, or you want to import an existing email list,{" "}
+        <a href="mailto:contact@leaflet.pub">contact us</a>!
+      </div>
       <div className="flex flex-col gap-4">
         <InputSetting label="Sender Name">
           <div className="light-container w-full max-w-prose text-secondary h-fit bg-border-light px-2 py-1 rounded-md">
@@ -379,8 +386,11 @@ const EmbedFormSnippet = (props: {
   let action = encodeActionToSearchParam({
     action: "subscribe",
     publication: props.publicationUri,
+    source: { placement: "embed" },
   });
-  let redirect = props.publicationUrl || appUrl;
+  let defaultRedirect = props.publicationUrl || appUrl;
+  let [redirectValue, setRedirectValue] = useState("");
+  let redirect = escapeHtmlAttribute(redirectValue.trim() || defaultRedirect);
   let snippet = `<form action="${actionUrl}" method="get">
   <input type="hidden" name="action" value="${action}" />
   <input type="hidden" name="redirect" value="${redirect}" />
@@ -399,44 +409,58 @@ const EmbedFormSnippet = (props: {
         then sent back to your webpage.
       </p>
       <InputSetting label="HTML Snippet">
-        <div className="flex flex-col">
-          <pre className="input-with-border bg-border-light text-primary text-sm rounded-md p-2 pr-16 overflow-x-auto whitespace-pre">
-            <code>{snippet}</code>
-          </pre>
-          <ButtonSecondary
-            type="button"
-            compact
-            fullWidth
-            className="mt-2"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(snippet);
-                toaster({ type: "success", content: "Copied!" });
-              } catch {
-                toaster({
-                  type: "error",
-                  content: "Couldn't copy to clipboard.",
-                });
-              }
-            }}
-          >
-            Copy HTML
-          </ButtonSecondary>
-        </div>
+        <pre className="input-with-border bg-border-light text-primary text-sm rounded-md p-2 pr-16 overflow-x-auto whitespace-pre">
+          <code>{snippet}</code>
+        </pre>
       </InputSetting>
-      <InputSetting label="Preview">
-        <form
-          className="light-container flex gap-2 items-center p-3 max-w-prose"
-          onSubmit={(e) => e.preventDefault()}
-        >
-          <Input
-            className="input-with-border grow min-w-0 text-primary"
-            type="email"
-            placeholder="you@example.com"
-          />
-          <ButtonPrimary type="submit">Subscribe</ButtonPrimary>
-        </form>
+      <InputSetting
+        htmlFor="embedRedirect"
+        label="Redirect To"
+        helpText="Specify where a subscriber is redirected to once they subscribe."
+      >
+        <Input
+          id="embedRedirect"
+          className="input-with-border w-full text-primary"
+          type="url"
+          value={redirectValue}
+          placeholder={defaultRedirect}
+          onChange={(e) => setRedirectValue(e.currentTarget.value)}
+        />
+      </InputSetting>
+      <ButtonSecondary
+        type="button"
+        compact
+        fullWidth
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(snippet);
+            toaster({ type: "success", content: "Copied!" });
+          } catch {
+            toaster({
+              type: "error",
+              content: "Couldn't copy to clipboard.",
+            });
+          }
+        }}
+      >
+        Copy HTML
+      </ButtonSecondary>
+      <hr />
+      <InputSetting
+        htmlFor="subscribePageUrl"
+        label="Subscribe Page"
+        helpText="Or link to this page, or embed it in an iframe."
+      >
+        <SubscribePageLinkInput id="subscribePageUrl" />
       </InputSetting>
     </>
   );
 };
+
+function escapeHtmlAttribute(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}

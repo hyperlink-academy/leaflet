@@ -27,6 +27,7 @@ import { TextBlock } from "./TextBlock/index";
 import { ImageBlock } from "./ImageBlock";
 import { ImageGalleryBlock } from "./ImageGalleryBlock";
 import { PageLinkBlock } from "./PageLinkBlock";
+import { EmbeddedCanvasBlock } from "./EmbeddedCanvasBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { EmbedBlock, HTMLBlock } from "./EmbedBlock";
 import { MailboxBlock } from "./MailboxBlock";
@@ -45,9 +46,12 @@ import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { MathBlock } from "./MathBlock";
 import { CodeBlock } from "./CodeBlock";
 import { HorizontalRule } from "./HorizontalRule";
+import { DrawingBlock } from "./DrawingBlock";
 import { MembersOnlyDelimiterBlock } from "./MembersOnlyDelimiterBlock";
 import { PostsListBlock } from "./PostsListBlock";
 import { RecommendedPubsBlock } from "./RecommendedPubsBlock";
+import { ReplyBlock } from "./ReplyBlock";
+import { QuestionsBlock } from "./QuestionsBlock";
 import { SubscribeBlock } from "./SubscribeBlock";
 import { PostHeaderBlock } from "./PostHeaderBlock";
 import { deepEquals } from "src/utils/deepEquals";
@@ -58,6 +62,11 @@ import { Separator } from "components/Layout";
 import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
 import { deleteBlock } from "src/utils/deleteBlock";
 import { CanvasLayerControls } from "components/CanvasLayerControls";
+import { Blocks } from "./index";
+import {
+  blockSpacingClassName,
+  type SpacingKind,
+} from "src/utils/blockSpacing";
 
 const SWIPE_THRESHOLD = 50;
 
@@ -98,10 +107,17 @@ export const Block = memo(function Block(
   // mouse events, keyboard events and longPress, and setting AreYouSure state
   // and shared styling like padding and flex for list layouting
   let mouseHandlers = useBlockMouseHandlers(props);
+  let focused = useUIState(
+    (s) =>
+      s.focusedEntity?.entityType === "block" &&
+      s.focusedEntity.entityID === props.entityID,
+  );
   let handleDrop = useHandleDrop({
     parent: props.parent,
     position: props.position,
     nextPosition: props.nextPosition,
+    galleryEntity:
+      props.type === "image-gallery" && focused ? props.entityID : undefined,
   });
   let entity_set = useEntitySetContext();
   let isMobile = useIsMobile();
@@ -135,11 +151,6 @@ export const Block = memo(function Block(
   );
 
   let selected = useIsBlockSelected(props.entityID);
-  let focused = useUIState(
-    (s) =>
-      s.focusedEntity?.entityType === "block" &&
-      s.focusedEntity.entityID === props.entityID,
-  );
   let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
 
   let alignmentStyle =
@@ -222,41 +233,29 @@ export const Block = memo(function Block(
       className={`
         blockWrapper group/blockWrapper relative
         flex flex-row gap-2
-        px-3 sm:px-4 pt-1
+        px-3 sm:px-4
 
         z-1 w-full
         ${isDragSource ? "opacity-30" : ""}
         ${props.listData && focused ? "touch-pan-y" : ""}
       ${alignmentStyle}
+      ${blockSpacingClassName({
+        kind: spacingKind(props),
+        headingLevel: props.headingLevel,
+        previous: props.previousBlock
+          ? spacingKind(props.previousBlock)
+          : undefined,
+        isFirst: !props.listData && !props.previousBlock,
+        isLast: !props.nextBlock,
+        isListItem: !!props.listData,
+      })}
       ${
-        !props.nextBlock
-          ? "pb-3 sm:pb-4"
-          : displayedAsHeading || (props.listData && props.nextBlock?.listData)
-            ? "pb-0"
-            : "pb-2"
+        // A published list closes with its <ul>'s bottom padding, which,
+        // unlike a margin, adds to the next block's top margin. min-h-9 keeps
+        // the 28px row on top of that padding.
+        props.listData && !props.nextBlock?.listData ? "pb-2 min-h-9!" : ""
       }
-      ${!displayedAsHeading && props.type === "blockquote" && props.previousBlock?.type === "blockquote" ? (!props.listData ? "-mt-3" : "-mt-1") : ""}
-      ${
-        displayedAsHeading &&
-        props.previousBlock &&
-        props.previousBlock.type !== "horizontal-rule"
-          ? props.previousBlock.type !== "heading"
-            ? {
-                1: "mt-5 sm:mt-6",
-                2: "mt-4 sm:mt-5",
-                3: "mt-2 sm:mt-3",
-                4: "mt-2 sm:mt-3",
-              }[props.headingLevel || 1]
-            : "mt-1"
-          : ""
-      }
-      ${
-        !props.previousBlock
-          ? displayedAsHeading || props.type === "text"
-            ? "mt-1 sm:mt-2"
-            : "mt-2 sm:mt-3"
-          : ""
-      }`}
+      ${props.listData ? "isListItem" : ""}`}
     >
       {!props.preview && <BlockMultiselectIndicator {...props} />}
       {dropIndicator && <ListDropIndicator indicator={dropIndicator} />}
@@ -439,6 +438,7 @@ const BlockTypeComponents: {
   code: CodeBlock,
   math: MathBlock,
   card: PageLinkBlock,
+  "embedded-canvas": EmbeddedCanvasBlock,
   text: TextBlock,
   blockquote: TextBlock,
   heading: TextBlock,
@@ -459,9 +459,58 @@ const BlockTypeComponents: {
   "members-only-delimiter": MembersOnlyDelimiterBlock,
   "posts-list": PostsListBlock,
   "recommended-pubs": RecommendedPubsBlock,
+  reply: ReplyBlock,
+  questions: QuestionsBlock,
   signup: SubscribeBlock,
   "post-header": PostHeaderBlock,
+  group: GroupBlock,
+  drawing: DrawingBlock,
 };
+
+// Only rendered on canvases. The Blocks list pads each block for a page; pull
+// it back out so a block keeps its place on the canvas when it becomes the
+// first block of a group.
+function GroupBlock(props: React.ComponentProps<typeof BaseBlock>) {
+  let focusedBlock = useUIState((s) =>
+    s.focusedEntity?.entityType === "block" &&
+    (s.focusedEntity.entityID === props.entityID ||
+      s.focusedEntity.parent === props.entityID)
+      ? s.focusedEntity.entityID
+      : null,
+  );
+  let focusedType = useEntity(focusedBlock, "block/type")?.data.value;
+  // Any other child brings an options bar of its own.
+  let showOptions =
+    focusedBlock === props.entityID ||
+    (!!focusedType && isTextBlock[focusedType]);
+  return (
+    <div className="canvasBlockGroup relative -mx-3 sm:-mx-4">
+      {focusedBlock && (
+        // Drawn around the children's text box, where a selected lone canvas
+        // block draws its border.
+        <div className="canvasBlockGroupFrame absolute -inset-y-px inset-x-[11px] sm:inset-x-[15px] pointer-events-none bg-bg-page block-border-selected">
+          {showOptions && !props.preview && (
+            <NonTextBlockOptions
+              block={props}
+              optionsClassName="pointer-events-auto"
+              areYouSure={props.areYouSure}
+              setAreYouSure={props.setAreYouSure}
+            />
+          )}
+        </div>
+      )}
+      <Blocks entityID={props.entityID} group preview={props.preview} />
+    </div>
+  );
+}
+
+function spacingKind(block: Pick<Block, "type" | "listData">): SpacingKind {
+  if (block.type === "blockquote") return "blockquote";
+  if (block.listData) return "list";
+  if (block.type === "heading") return "heading";
+  if (block.type === "horizontal-rule") return "horizontal-rule";
+  return "other";
+}
 
 const BlockMultiselectIndicator = (props: BlockProps) => {
   let first = props.previousBlock === null;
@@ -491,8 +540,8 @@ const BlockMultiselectIndicator = (props: BlockProps) => {
           blockSelectionBG multiselected selected
           pointer-events-none
           bg-border-light
-          absolute right-2 left-2 bottom-0
-          ${first ? "top-1" : "top-0"}
+          absolute right-2 left-2 -bottom-1
+          ${first ? "top-0" : "-top-1"}
           ${!multiselectState.includes("p") && "rounded-t-md"}
           ${!multiselectState.includes("n") && "rounded-b-md"}
           `}
@@ -571,37 +620,31 @@ const NonTextBlockOptions = (props: {
   setAreYouSure?: (value: boolean) => void;
   optionsClassName?: string;
   extraOptions?: React.ReactNode;
+  // The block the bar acts on, when that isn't the focused one: a canvas
+  // group shows the bar while one of its children has focus.
+  block?: { entityID: string; parent: string };
 }) => {
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
   let focusedEntity = useUIState((s) => s.focusedEntity);
-  let focusedEntityType = useEntity(
-    focusedEntity?.entityType === "page"
-      ? focusedEntity.entityID
-      : focusedEntity?.parent || null,
-    "page/type",
-  );
+  let block =
+    props.block ??
+    (focusedEntity?.entityType === "block" ? focusedEntity : undefined);
+  let pageType = useEntity(block?.parent || null, "page/type");
 
   let isMultiselected = useUIState((s) => s.selectedBlocks.length > 1);
-  if (focusedEntity?.entityType === "page") return;
+  if (!block) return;
 
   if (isMultiselected) return;
   if (!entity_set.permissions.write) return null;
+  let { entityID, parent } = block;
 
   return (
     <div
       className={`flex gap-1 absolute -top-[25px] right-2 pb-0.5 pt-1 px-1 rounded-t-md bg-border text-bg-page ${props.optionsClassName}`}
     >
-      {focusedEntityType?.data.value === "canvas" ? (
-        focusedEntity?.parent && (
-          <>
-            <CanvasLayerControls
-              parent={focusedEntity.parent}
-              entityID={focusedEntity.entityID}
-            />
-            <Separator classname="border-bg-page! h-4! mx-0.5" />
-          </>
-        )
+      {pageType?.data.value === "canvas" ? (
+        <CanvasLayerControls parent={parent} entityID={entityID} />
       ) : (
         <>
           <button
@@ -624,9 +667,9 @@ const NonTextBlockOptions = (props: {
           >
             <ArrowDownTiny className="rotate-180" />
           </button>
-          <Separator classname="border-bg-page! h-4! mx-0.5" />
         </>
       )}
+      <Separator classname="border-bg-page! h-4! mx-0.5" />
       {props.extraOptions && (
         <>
           {props.extraOptions}{" "}
@@ -636,7 +679,9 @@ const NonTextBlockOptions = (props: {
       <button
         onClick={async (e) => {
           e.stopPropagation();
-          if (!rep || !focusedEntity) return;
+          if (!rep) return;
+          // deleteBlock works out what to focus next from the focused block.
+          useUIState.getState().focusAndSelectBlock({ entityID, parent });
 
           if (props.areYouSure !== undefined && props.setAreYouSure) {
             if (!props.areYouSure) {
@@ -655,10 +700,10 @@ const NonTextBlockOptions = (props: {
                 }, 300);
                 return;
               }
-              await deleteBlock([focusedEntity.entityID], rep, undoManager);
+              await deleteBlock([entityID], rep, undoManager);
             }
           } else {
-            await deleteBlock([focusedEntity.entityID], rep, undoManager);
+            await deleteBlock([entityID], rep, undoManager);
           }
         }}
       >
@@ -675,10 +720,10 @@ const HeadingFoldButton = (props: { entityID: string }) => {
     .value;
   let top =
     headingLevel === 1
-      ? "top-[16px]"
+      ? "top-[12px]"
       : headingLevel === 2
-        ? "top-[11px]"
-        : "top-[8px]";
+        ? "top-[7px]"
+        : "top-[4px]";
   return (
     <button
       className={`headingFoldButton absolute -left-1 ${top} p-0.5 pl-[3px] rounded-r-full text-bg-page  transition-opacity

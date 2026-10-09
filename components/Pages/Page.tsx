@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useIsPageFocused, useUIState } from "src/useUIState";
 
 import { elementId } from "src/utils/elementId";
@@ -20,7 +20,12 @@ import { focusPage } from "src/utils/focusPage";
 import { zoomIntoBlock } from "src/utils/zoomIntoBlock";
 import { PageOptions } from "./PageOptions";
 import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
-import { useDrawerOpen } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/useDrawerOpen";
+import { InteractionDrawer } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/InteractionDrawer";
+import { openDrawerThread } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Interactions/Interactions";
+import {
+  type PostFrame,
+  PostFrameProvider,
+} from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/postFrame";
 import { usePreserveScroll } from "src/hooks/usePreserveScroll";
 import { usePageFootnotes } from "components/Footnotes/usePageFootnotes";
 import { FootnoteContext } from "components/Footnotes/FootnoteContext";
@@ -33,15 +38,18 @@ import { EditorCommentMobileSheet } from "components/EditorComments/EditorCommen
 import { EditorCommentPopover } from "components/EditorComments/EditorCommentPopover";
 import { EditorCommentAnchorHover } from "components/EditorComments/EditorCommentAnchorHover";
 import { LinkPopover } from "components/LinkPopover";
+import { CanvasPageArea } from "src/canvasZoom/CanvasPageScroll";
 
 export function Page(props: {
   entityID: string;
   first?: boolean;
   fullPageScroll: boolean;
-  flow?: boolean;
   header?: React.ReactNode;
+  // The drawer this page's Bluesky posts open their threads in, from a host
+  // that lays pages out in a row with room for one.
+  threadDrawer?: { pageId: string | undefined; inline: boolean };
 }) {
-  let { rep } = useReplicache();
+  let { rep, rootEntity } = useReplicache();
   let publicationPage = useLeafletPublicationPage();
 
   let zoomedBlock = useUIState((s) => s.zoomedBlocks[props.entityID]);
@@ -49,7 +57,34 @@ export function Page(props: {
   let isFocused = useIsPageFocused(props.entityID);
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
 
-  let drawerOpen = useDrawerOpen(props.entityID);
+  let drawer = props.threadDrawer;
+  let hasDrawer = !!drawer;
+  let drawerPageId = drawer?.pageId;
+  // The drawer's other views (tags, post discussions, recommends) read a
+  // published document the editor lacks, so blocks opt into the frame one at a
+  // time with DrawerThreadPageProvider.
+  let frame = useMemo<PostFrame | null>(
+    () =>
+      hasDrawer
+        ? {
+            drawer: true,
+            headerInteractions: false,
+            openPages: [],
+            openPage: () => {},
+            closePage: () => {},
+            showPage: () => {},
+            openDiscussion: () => {},
+            toggleDiscussion: () => {},
+            openThread: (thread) => {
+              // The click that opens a thread also selects its block, which
+              // would keep taking the keyboard from the drawer.
+              useUIState.setState({ focusedEntity: null, selectedBlocks: [] });
+              openDrawerThread(rootEntity, thread, drawerPageId);
+            },
+          }
+        : null,
+    [hasDrawer, rootEntity, drawerPageId],
+  );
   let footnoteData = usePageFootnotes(props.entityID);
   let commentData = usePageEditorComments(props.entityID);
   let isRightmostPage = useUIState((s) => {
@@ -57,57 +92,90 @@ export function Page(props: {
     if (pages.length === 0) return true;
     return pages[pages.length - 1] === props.entityID;
   });
-  let sideColumnVisible = pageType === "doc" && !drawerOpen && isRightmostPage;
+  let sideColumnVisible =
+    pageType === "doc" && !drawer?.inline && isRightmostPage;
+  // A canvas below a publication header scrolls with the page and is as wide
+  // as one, as a doc page is (src/canvasZoom/CanvasPageScroll.tsx).
+  let canvasBelowHeader = !!props.header && pageType === "canvas";
+  let cardBorderHidden = useCardBorderHidden();
 
   return (
     <CardThemeProvider entityID={props.entityID}>
       <FootnoteContext.Provider value={footnoteData}>
         <EditorCommentContext.Provider value={commentData}>
-          <PageWrapper
-            onClickAction={(e) => {
-              if (e.defaultPrevented) return;
-              if (rep) {
-                if (isFocused) return;
-                focusPage(props.entityID, rep);
+          <PostFrameProvider value={frame}>
+            <PageWrapper
+              onClickAction={(e) => {
+                if (e.defaultPrevented) return;
+                if (rep) {
+                  if (isFocused) return;
+                  focusPage(props.entityID, rep);
+                }
+              }}
+              id={elementId.page(props.entityID).container}
+              drawerOpen={!!drawer?.inline}
+              isFocused={isFocused}
+              fullPageScroll={props.fullPageScroll}
+              pageType={pageType}
+              overflow={canvasBelowHeader ? "scroll" : undefined}
+              pageOptions={
+                <PageOptions
+                  entityID={props.entityID}
+                  first={props.first}
+                  isFocused={isFocused}
+                />
               }
-            }}
-            id={elementId.page(props.entityID).container}
-            drawerOpen={!!drawerOpen}
-            isFocused={isFocused}
-            fullPageScroll={props.fullPageScroll}
-            flow={props.flow}
-            pageType={pageType}
-            pageOptions={
-              <PageOptions
-                entityID={props.entityID}
-                first={props.first}
-                isFocused={isFocused}
-              />
-            }
-            footnoteSideColumn={
-              <AnnotationSideColumn
-                pageEntityID={props.entityID}
-                visible={sideColumnVisible}
-                fullPageScroll={props.fullPageScroll}
-              />
-            }
-          >
-            {/*this is used in the publication page, for publication information and
+              footnoteSideColumn={
+                <AnnotationSideColumn
+                  pageEntityID={props.entityID}
+                  visible={sideColumnVisible}
+                  fullPageScroll={props.fullPageScroll}
+                />
+              }
+            >
+              {/*this is used in the publication page, for publication information and
           nav*/}
-            {props.header}
-            {props.first &&
-              pageType === "doc" &&
-              !publicationPage &&
-              !zoomedBlock && <PublicationMetadata />}
-            {props.first && pageType === "doc" && <InlineVersionBanner />}
-            <PageContent
-              entityID={props.entityID}
-              first={props.first}
-              zoomedBlock={zoomedBlock}
+              {props.header}
+              {props.first &&
+                pageType === "doc" &&
+                !publicationPage &&
+                !zoomedBlock && <PublicationMetadata />}
+              {props.first && pageType === "doc" && <InlineVersionBanner />}
+              {canvasBelowHeader ? (
+                // A borderless card overhangs the bottom of the window (see
+                // PageWrapper's negative margins); the padding keeps the
+                // canvas's end reachable and the overlays on screen.
+                <CanvasPageArea
+                  className={
+                    cardBorderHidden
+                      ? "pb-3 sm:pb-6 [--canvas-sticky-bottom:12px] sm:[--canvas-sticky-bottom:24px]"
+                      : ""
+                  }
+                >
+                  <Canvas
+                    entityID={props.entityID}
+                    first={props.first}
+                    pageScroll
+                  />
+                </CanvasPageArea>
+              ) : (
+                <PageContent
+                  entityID={props.entityID}
+                  first={props.first}
+                  zoomedBlock={zoomedBlock}
+                />
+              )}
+            </PageWrapper>
+          </PostFrameProvider>
+          {drawer && (
+            <InteractionDrawer
+              threadsOnly
+              showPageBackground={!cardBorderHidden}
+              document_uri={rootEntity}
+              pageId={drawer.pageId}
             />
-
-          </PageWrapper>
-          <DesktopPageFooter pageID={props.entityID} flow={props.flow} />
+          )}
+          <DesktopPageFooter pageID={props.entityID} />
           <FootnotePopover pageID={props.entityID} />
           <EditorCommentPopover />
           <EditorCommentMobileSheet />
@@ -125,7 +193,6 @@ export const PageWrapper = (props: {
   pageOptions?: React.ReactNode;
   footnoteSideColumn?: React.ReactNode;
   fullPageScroll: boolean;
-  flow?: boolean;
   isFocused?: boolean;
   onClickAction?: (e: React.MouseEvent) => void;
   pageType: "canvas" | "doc";
@@ -136,11 +203,15 @@ export const PageWrapper = (props: {
 }) => {
   const cardBorderHidden = useCardBorderHidden();
   let { ref } = usePreserveScroll<HTMLDivElement>(props.id);
+  let canvasPageScroll =
+    props.pageType === "canvas" && props.overflow === "scroll";
+  // Scrolled by the page and as wide as one.
+  let pageLayout = props.pageType === "doc" || canvasPageScroll;
   return (
     // this div wraps the contents AND the page options.
     // it needs to be its own div because this container does NOT scroll, and therefore doesn't clip the absolutely positioned pageOptions
     <div
-      className={`pageWrapper relative shrink-0 ${props.flow ? "" : "h-full"} ${props.fullPageScroll ? "w-full" : "w-max"}`}
+      className={`pageWrapper relative shrink-0 h-full ${props.fullPageScroll ? "w-full" : "w-max"}`}
     >
       {/*
         this div is the scrolling container that wraps only the contents div.
@@ -162,29 +233,34 @@ export const PageWrapper = (props: {
       publicationScrollContainer
       grow relative
       shrink-0 snap-center
-      ${props.flow ? "" : props.overflow === "hidden" ? "overflow-hidden" : "overflow-y-scroll"}
+      ${props.overflow === "hidden" || !pageLayout ? "overflow-hidden" : "overflow-y-scroll"}
       ${
         !cardBorderHidden &&
         `border
           bg-[rgba(var(--bg-page),var(--bg-page-alpha))]
-          ${props.flow ? "" : "h-full"}
+          h-full
           ${props.drawerOpen ? "rounded-l-lg " : "rounded-lg"}
           ${props.isFocused ? "shadow-md border-border" : "border-border-light"}`
       }
-      ${cardBorderHidden && (props.flow ? "sm:pt-6 pt-3" : "sm:h-[calc(100%+48px)] h-[calc(100%+20px)] sm:-my-6 -my-3 sm:pt-6 pt-3")}
+      ${cardBorderHidden && "sm:h-[calc(100%+48px)] h-[calc(100%+20px)] sm:-my-6 -my-3 sm:pt-6 pt-3"}
       ${props.fullPageScroll && "max-w-full "}
-    ${props.pageType === "doc" && !props.fullPageScroll ? (props.fixedWidth ? "w-[10000px] sm:max-w-prose max-w-[var(--page-width-units)]" : "w-[10000px] sm:mx-0 max-w-[var(--page-width-units)]") : ""}
+      ${
+        // The canvas is as wide as the inside of the card, and a classic
+        // scrollbar would take its width out of that.
+        canvasPageScroll && !cardBorderHidden ? "no-scrollbar" : ""
+      }
+    ${pageLayout && !props.fullPageScroll ? (props.fixedWidth ? "w-[10000px] sm:max-w-prose max-w-[var(--page-width-units)]" : "w-[10000px] sm:mx-0 max-w-[var(--page-width-units)]") : ""}
     ${
-      props.pageType === "canvas" &&
+      !pageLayout &&
       !props.fullPageScroll &&
-      "max-w-[var(--page-width-units)] sm:max-w-[calc(var(--leaflet-layout-width,100vw)-128px)] lg:max-w-fit lg:w-[calc(var(--page-width-units)*2 + 24px))]"
+      "max-w-[var(--page-width-units)] sm:max-w-[calc(var(--leaflet-layout-width,100vw)-128px)] lg:max-w-[calc(var(--leaflet-layout-width,100vw)-128px)]"
     }
 
 `}
       >
         <div
           className={`postPageContent static
-          ${props.fullPageScroll ? "h-full sm:max-w-[var(--page-width-units)] mx-auto" : ` contents w-full ${props.flow ? "" : "h-full"}`}
+          ${props.fullPageScroll ? `${pageLayout ? "min-h-full" : "h-full"} sm:max-w-[var(--page-width-units)] mx-auto` : " contents w-full h-full"}
         `}
         >
           {props.children}

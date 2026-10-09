@@ -1,5 +1,10 @@
 import { useRef, useEffect, useState, useCallback } from "react";
+import { pageOfParent } from "src/utils/blockGroups";
 import { elementId } from "src/utils/elementId";
+import {
+  CustomizeTutorialTooltip,
+  useTutorialOpen,
+} from "app/(app)/(identity)/lish/[did]/[publication]/edit/CustomizeTutorialTooltip";
 import { useReplicache, useEntity } from "src/replicache";
 import { isVisible } from "src/utils/isVisible";
 import { TextSelection } from "prosemirror-state";
@@ -21,6 +26,7 @@ import { AddTiny } from "components/Icons/AddTiny";
 import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { isIOS } from "src/utils/isDevice";
+import { didBodyDragJustEnd } from "src/hooks/useDrag";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useMountProsemirror } from "./mountProsemirror";
@@ -110,6 +116,7 @@ function IOSBS(props: BlockProps) {
     <div
       className="h-full w-full absolute z-[1] cursor-text group-focus-within:hidden py-[18px]"
       onPointerUp={(e) => {
+        if (didBodyDragJustEnd()) return;
         e.preventDefault();
         focusBlock(props, {
           type: "coord",
@@ -123,7 +130,7 @@ function IOSBS(props: BlockProps) {
           let vis = await isVisible(target as Element);
           if (!vis) {
             let parentEl = document.getElementById(
-              elementId.page(props.parent).container,
+              elementId.page(pageOfParent(props.parent)).container,
             );
             if (!parentEl) return;
             parentEl?.scrollBy({
@@ -144,6 +151,7 @@ export function RenderedTextBlock(props: {
   pageType?: "canvas" | "doc";
   type: BlockProps["type"];
   previousBlock?: BlockProps["previousBlock"];
+  /** The block's parent; a group resolves to its canvas page. */
   pageID?: string;
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
@@ -212,7 +220,7 @@ export function RenderedTextBlock(props: {
         if (store.activeFootnoteID === footnoteID) {
           store.close();
         } else {
-          store.open(footnoteID, footnoteRef, props.pageID);
+          store.open(footnoteID, footnoteRef, pageOfParent(props.pageID));
         }
       }}
       className={`
@@ -468,6 +476,7 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
   let rep = useReplicache();
   let entity_set = useEntitySetContext();
   let { data: pub } = useLeafletPublicationData();
+  let addTutorialOpen = useTutorialOpen("text", true);
 
   return (
     <div
@@ -513,35 +522,39 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
         </TooltipButton>
       )}
 
-      <TooltipButton
-        className={props.className}
-        onMouseDown={(e) => {
-          e.preventDefault();
-          let editor = useEditorStates.getState().editorStates[props.entityID];
+      <CustomizeTutorialTooltip target="text" className="flex" blockFocused>
+        <TooltipButton
+          className={props.className}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            let editor =
+              useEditorStates.getState().editorStates[props.entityID];
 
-          let editorState = editor?.editor;
-          if (editorState && editor?.view) {
-            editor.view.focus();
-            let tr = editorState.tr.insertText("/", 1);
-            tr.setSelection(TextSelection.create(tr.doc, 2));
-            editor.view.dispatch(tr);
-          }
-          focusBlock(
-            {
-              type: props.type,
-              entityID: props.entityID,
-              parent: props.parent,
-            },
-            { type: "end" },
-          );
-        }}
-        side="bottom"
-        tooltipContent={<div className="flex gap-1 font-bold">Add More!</div>}
-      >
-        <div className="w-6 h-6 flex place-items-center justify-center">
-          <AddTiny className="text-accent-contrast" />
-        </div>
-      </TooltipButton>
+            let editorState = editor?.editor;
+            if (editorState && editor?.view) {
+              editor.view.focus();
+              let tr = editorState.tr.insertText("/", 1);
+              tr.setSelection(TextSelection.create(tr.doc, 2));
+              editor.view.dispatch(tr);
+            }
+            focusBlock(
+              {
+                type: props.type,
+                entityID: props.entityID,
+                parent: props.parent,
+              },
+              { type: "end" },
+            );
+          }}
+          side="bottom"
+          hideTooltip={addTutorialOpen}
+          tooltipContent={<div className="flex gap-1 font-bold">Add More!</div>}
+        >
+          <div className="w-6 h-6 flex place-items-center justify-center">
+            <AddTiny className="text-accent-contrast" />
+          </div>
+        </TooltipButton>
+      </CustomizeTutorialTooltip>
     </div>
   );
 };

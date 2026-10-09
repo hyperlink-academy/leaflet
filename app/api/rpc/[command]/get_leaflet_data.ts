@@ -28,7 +28,8 @@ export const get_leaflet_data = makeRoute({
         custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*),
         ${leaflets_in_publications_query},
         ${leaflets_to_documents_query},
-        ${draft_publication_query}`,
+        ${draft_publication_query},
+        publication_scheduled_posts(publish_at, status)`,
       )
       .eq("id", token_id)
       .single();

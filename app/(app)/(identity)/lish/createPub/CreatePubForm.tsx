@@ -18,6 +18,8 @@ import { Checkbox } from "components/Checkbox";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { encodeIconFile } from "src/utils/imageEncoding";
 
+type PubType = "blog" | "serial";
+
 type DomainState =
   | { status: "empty" }
   | { status: "valid" }
@@ -30,6 +32,7 @@ export const CreatePubForm = () => {
   let [nameValue, setNameValue] = useState("");
   let [descriptionValue, setDescriptionValue] = useState("");
   let [showInDiscover, setShowInDiscover] = useState(true);
+  let [pubType, setPubType] = useState<PubType>("blog");
   let [logoFile, setLogoFile] = useState<File | null>(null);
   let [logoPreview, setLogoPreview] = useState<string | null>(null);
   let [logoError, setLogoError] = useState<string | null>(null);
@@ -45,7 +48,7 @@ export const CreatePubForm = () => {
   let router = useRouter();
   return (
     <form
-      className="flex flex-col gap-3"
+      className="flex flex-col gap-3 my-4"
       onSubmit={async (e) => {
         if (formState !== "normal") return;
         e.preventDefault();
@@ -65,11 +68,12 @@ export const CreatePubForm = () => {
               showComments: true,
               showMentions: true,
               showPrevNext: true,
-              prevNextDirection: "rtl",
+              prevNextDirection: pubType === "serial" ? "ltr" : "rtl",
               showRecommends: true,
-              showFirstLast: false,
+              showFirstLast: pubType === "serial",
               showOtherPublicationsInTags: true,
             },
+            postsListView: pubType === "serial" ? "chapter" : undefined,
           });
         } catch {
           setFormState("normal");
@@ -92,7 +96,7 @@ export const CreatePubForm = () => {
           setFormState("normal");
           if (result.publication)
             router.push(
-              `${getBasePublicationURL(result.publication)}/dashboard`,
+              `${getBasePublicationURL(result.publication)}/edit?create=true`,
             );
         }, 500);
       }}
@@ -169,6 +173,8 @@ export const CreatePubForm = () => {
         setDomainState={setDomainState}
       />
       <hr className="border-border-light" />
+      <PubTypeInput pubType={pubType} setPubType={setPubType} />
+      <hr className="border-border-light" />
       <Checkbox
         checked={showInDiscover}
         onChange={(e) => setShowInDiscover(e.target.checked)}
@@ -194,7 +200,7 @@ export const CreatePubForm = () => {
               !nameValue || !domainValue || domainState.status !== "valid"
             }
           >
-            {formState === "loading" ? <DotLoader /> : "Create Publication!"}
+            {formState === "loading" ? <DotLoader /> : "Next: Customize"}
           </ButtonPrimary>
         </div>
         {oauthError && (
@@ -207,6 +213,59 @@ export const CreatePubForm = () => {
     </form>
   );
 };
+
+function PubTypeInput(props: {
+  pubType: PubType;
+  setPubType: (t: PubType) => void;
+}) {
+  let options: { value: PubType; label: string; description: string }[] = [
+    {
+      value: "blog",
+      label: "Blog",
+      description:
+        "Your posts mostly stand alone, like a blog or a newsletter.",
+    },
+    {
+      value: "serial",
+      label: "Serial",
+      description:
+        "Your posts mostly exist in sequence, like a comic, a novel, or a tutorial.",
+    },
+  ];
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-sm text-tertiary font-bold italic">Type</p>
+      <div className="grid grid-cols-2 gap-2">
+        {options.map((option) => {
+          let selected = props.pubType === option.value;
+          return (
+            <label
+              key={option.value}
+              htmlFor={`pubType-${option.value}`}
+              className={`${selected ? "accent-container border border-accent-contrast outline-offset-1 outline-2 outline-accent-contrast" : "opaque-container"} flex flex-col leading-snug px-2 py-1.5 cursor-pointer text-sm `}
+            >
+              <input
+                type="radio"
+                name="pubType"
+                id={`pubType-${option.value}`}
+                value={option.value}
+                checked={selected}
+                onChange={() => props.setPubType(option.value)}
+                className="sr-only"
+              />
+              <p
+                className={`font-bold ${selected ? "text-accent-contrast" : "text-secondary"}`}
+              >
+                {option.label}
+              </p>
+              <p className="text-tertiary">{option.description}</p>
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 let subdomainValidator = string()
   .min(3)
@@ -231,7 +290,7 @@ function DomainInput(props: {
             reason === "too_small"
               ? "Must be at least 3 characters long"
               : reason === "invalid_string"
-                ? "Must contain only lowercase a-z, 0-9, and -"
+                ? "Only lowercase a-z, 0-9, and -"
                 : "",
         });
         return;
@@ -259,30 +318,59 @@ function DomainInput(props: {
     [props.domain],
   );
 
+  let violatesRules = props.domainState.status === "error";
+
   return (
     <div className="flex flex-col gap-1">
-      <label className=" input-with-border flex flex-col text-sm text-tertiary font-bold italic leading-tight py-1! px-[6px]!">
+      <label
+        className=" input-with-border flex flex-col text-sm text-tertiary font-bold italic leading-tight py-1! px-[6px]!"
+        style={
+          violatesRules
+            ? { borderColor: ERROR_COLOR, outlineColor: ERROR_COLOR }
+            : undefined
+        }
+      >
         <div>Choose your domain</div>
-        <div className="flex flex-row  items-center">
-          <Input
-            minLength={3}
-            maxLength={63}
-            placeholder="domain"
-            className="appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 outline-hidden"
-            value={props.domain}
-            onChange={(e) => props.setDomain(e.currentTarget.value)}
-          />
-          .leaflet.pub
+        <div className="flex flex-row items-center text-base font-normal min-w-0">
+          {/* The hidden mirror sizes the input to its text so the suffix
+              trails the typed domain rather than the end of the box. size=1
+              drops the input's default ~20ch intrinsic width, which would
+              otherwise hold the grid column open. */}
+          <span className="inline-grid min-w-0">
+            <span
+              aria-hidden
+              className="invisible whitespace-pre col-start-1 row-start-1 overflow-hidden"
+            >
+              {props.domain || "domain"}
+            </span>
+            <Input
+              size={1}
+              minLength={3}
+              maxLength={63}
+              placeholder="domain"
+              className="appearance-none col-start-1 row-start-1 w-full min-w-0 font-normal bg-transparent text-base text-primary focus:outline-0 outline-hidden"
+              value={props.domain}
+              onChange={(e) => props.setDomain(e.currentTarget.value)}
+            />
+          </span>
+          <span className="text-tertiary font-normal select-none shrink-0">
+            .leaflet.pub
+          </span>
         </div>
       </label>
       <div
         className={"text-sm italic "}
         style={{
-          fontWeight: props.domainState.status === "valid" ? "bold" : "normal",
+          fontWeight:
+            props.domainState.status === "valid" || violatesRules
+              ? "bold"
+              : "normal",
           color:
             props.domainState.status === "valid"
               ? theme.colors["accent-contrast"]
-              : theme.colors.tertiary,
+              : violatesRules
+                ? ERROR_COLOR
+                : theme.colors.tertiary,
         }}
       >
         {props.domainState.status === "valid"
@@ -298,3 +386,5 @@ function DomainInput(props: {
     </div>
   );
 }
+
+const ERROR_COLOR = "#DC2626";

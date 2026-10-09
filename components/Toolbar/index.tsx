@@ -1,5 +1,6 @@
 "use client";
 
+import { pageOfParent } from "src/utils/blockGroups";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { TextBlockTypeToolbar } from "./TextBlockTypeToolbar";
 import { InlineLinkToolbar } from "./InlineLinkToolbar";
@@ -92,7 +93,7 @@ export const Toolbar = (props: {
     if (props.blockType === "image") {
       setToolbarState("image");
     }
-    if (props.blockType === "button" || props.blockType === "datetime") {
+    if (props.blockType === "datetime") {
       setToolbarState("text-alignment");
     }
   }, [props.blockType, isMultiselect, selectionKey]);
@@ -159,7 +160,7 @@ export const Toolbar = (props: {
                 useUIState.setState(() => ({
                   focusedEntity: {
                     entityType: "page",
-                    entityID: props.pageID,
+                    entityID: pageOfParent(props.pageID),
                   },
                   selectedBlocks: [],
                 }));

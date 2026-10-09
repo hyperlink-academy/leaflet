@@ -78,14 +78,7 @@ export async function buildDocumentRecord(args: {
     }),
     content: {
       $type: "pub.leaflet.content",
-      pages: pages.map((p) => ({
-        $type:
-          p.type === "canvas"
-            ? "pub.leaflet.pages.canvas"
-            : "pub.leaflet.pages.linearDocument",
-        id: p.id,
-        blocks: p.blocks,
-      })),
+      pages,
     },
   } as unknown as SiteStandardDocument.Record;
   return {

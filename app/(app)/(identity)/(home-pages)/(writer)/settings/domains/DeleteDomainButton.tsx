@@ -11,28 +11,41 @@ import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { Modal } from "components/Modal";
 
 export function DeleteDomainButton(props: { domain: string }) {
-  let { mutate: mutateIdentity } = useIdentityData();
   let [open, setOpen] = useState(false);
+  return (
+    <DeleteDomainModal
+      domain={props.domain}
+      open={open}
+      onOpenChange={setOpen}
+      trigger={
+        <DeleteTiny className="text-secondary hover:text-accent-contrast shrink-0" />
+      }
+    />
+  );
+}
+
+export function DeleteDomainModal(props: {
+  domain: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  trigger?: React.ReactNode;
+}) {
+  let { mutate: mutateIdentity } = useIdentityData();
+  let setOpen = props.onOpenChange;
   let [loading, setLoading] = useState(false);
 
   return (
     <Modal
-      open={open}
+      open={props.open}
       onOpenChange={setOpen}
       title="Are You Sure?"
       className="max-w-sm text-center"
-      trigger={
-        <DeleteTiny className="text-secondary hover:text-accent-contrast shrink-0" />
-      }
+      trigger={props.trigger}
     >
       <div className="flex flex-col gap-2">
         <p className="text-secondary">
-          Deleting <strong>{props.domain}</strong> will remove all current
-          assignments.
-        </p>
-        <p>
-          It will not be available to assign later. You will have to re-verify
-          it.
+          Deleting <strong>{props.domain}</strong> will unverify this domain and
+          remove all assignments.
         </p>
         <div className="flex gap-2 items-center justify-center ">
           <ButtonTertiary

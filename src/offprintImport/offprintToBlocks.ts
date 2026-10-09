@@ -1,11 +1,10 @@
-import { v7 } from "uuid";
-import { generateNKeysBetween } from "fractional-indexing";
 import {
-  buildBlocksFromPasteHTML,
-  type BuiltBlock,
-} from "src/utils/paste/htmlToBlocks";
-import type { FactInput } from "src/replicache/mutations";
-import { withDomGlobals } from "src/ghostImport/ghostToBlocks";
+  contentBuilder,
+  escapeHtml,
+  numberFact as number,
+  stringFact as string,
+  type ConvertedContent,
+} from "src/import/content";
 import {
   blobCid,
   type OffprintBlock,
@@ -17,20 +16,6 @@ import {
   type OffprintTextBlock,
   type OffprintHeadingBlock,
 } from "./offprintRecords";
-
-export type OffprintImage = {
-  entityID: string;
-  url: string;
-  width: number | null;
-  height: number | null;
-  attribute: "block/image" | "link/preview";
-};
-
-export type OffprintConverted = {
-  blocks: BuiltBlock[];
-  extraEntities: string[];
-  images: OffprintImage[];
-};
 
 // Records a document points at that have to be fetched before the synchronous
 // conversion: inlined components and the Bluesky posts it embeds.
@@ -58,14 +43,6 @@ export function collectOffprintRefs(items: OffprintBlock[]): {
 // a pixel width, so percentages are taken against the default page width
 // (624px) minus its padding.
 const CONTENT_WIDTH = 592;
-
-function escapeHtml(s: string) {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
 
 // Facet byte offsets are over the UTF-8 encoding; map them onto UTF-16 string
 // indices. Offsets that land inside a multi-byte character snap forward.
@@ -238,20 +215,6 @@ function cssWidthToPx(width: string | undefined): number | null {
   return null;
 }
 
-type Card = {
-  type: BuiltBlock["type"];
-  facts: Array<{ attribute: string; data: unknown }>;
-};
-
-const string = (attribute: string, value: string) => ({
-  attribute,
-  data: { type: "string", value },
-});
-const number = (attribute: string, value: number) => ({
-  attribute,
-  data: { type: "number", value },
-});
-
 export function offprintContentToBlocks(
   items: OffprintBlock[],
   opts: {
@@ -259,99 +222,29 @@ export function offprintContentToBlocks(
     blobUrl: (cid: string) => string;
     resolved: OffprintResolved;
   },
-): OffprintConverted {
-  const content: OffprintConverted = {
-    blocks: [],
-    extraEntities: [],
-    images: [],
-  };
-  let html = "";
-  const flushHtml = () => {
-    if (!html) return;
-    const result = withDomGlobals(() =>
-      // Only the ids of extra entities are used; they join the leaflet's
-      // entity set on insert.
-      buildBlocksFromPasteHTML(html, {
-        parent: opts.parent,
-        permission_set: "",
-      }),
-    );
-    html = "";
-    content.blocks.push(...result.blocks);
-    content.extraEntities.push(...result.extraEntities.map((e) => e.entityID));
-  };
-  const card = (c: Card): string => {
-    flushHtml();
-    const entityID = v7();
-    content.blocks.push({
-      entityID,
-      parent: opts.parent,
-      type: c.type,
-      facts: [
-        {
-          entity: entityID,
-          attribute: "block/type",
-          data: { type: "block-type-union", value: c.type },
-        },
-        ...c.facts.map((f) => ({ ...f, entity: entityID })),
-      ] as FactInput[],
-    });
-    return entityID;
-  };
-  const image = (
-    entityID: string,
-    blob: OffprintBlob | undefined,
-    aspect: { width: number; height: number } | undefined,
-    attribute: OffprintImage["attribute"] = "block/image",
-  ) => {
+): ConvertedContent {
+  const builder = contentBuilder(opts.parent);
+  const { card } = builder;
+  const blobSource = (blob: OffprintBlob | undefined) => {
     const cid = blobCid(blob);
     if (!cid) throw new Error("Image block without a blob");
-    content.images.push({
-      entityID,
-      url: opts.blobUrl(cid),
-      width: aspect?.width ?? null,
-      height: aspect?.height ?? null,
-      attribute,
-    });
+    return opts.blobUrl(cid);
   };
   const gallery = (
     format: "grid" | "carousel",
     images: OffprintGridImage[],
     caption?: string,
   ) => {
-    const children = images.map(() => v7());
-    const positions = generateNKeysBetween(null, null, children.length);
-    const entityID = card({
-      type: "image-gallery",
-      facts: [
-        {
-          attribute: "gallery/format",
-          data: { type: "gallery-format-union", value: format },
-        },
-        ...children.map((child, i) => ({
-          // Cardinality-many facts need caller-generated ids.
-          id: v7(),
-          attribute: "gallery/image",
-          data: {
-            type: "ordered-reference",
-            value: child,
-            position: positions[i],
-          },
-        })),
-      ],
-    });
-    images.forEach((img, i) => {
-      image(children[i], img.image ?? img.blob, img.aspectRatio);
-      if (img.alt)
-        content.blocks[content.blocks.length - 1].facts.push({
-          entity: children[i],
-          attribute: "image/alt",
-          data: { type: "string", value: img.alt },
-        } as FactInput);
-    });
-    content.extraEntities.push(...children);
-    html += captionHtml(caption);
-    return entityID;
+    builder.gallery(
+      format,
+      images.map((img) => ({
+        url: blobSource(img.image ?? img.blob),
+        width: img.aspectRatio?.width ?? null,
+        height: img.aspectRatio?.height ?? null,
+        alt: img.alt,
+      })),
+    );
+    builder.html(captionHtml(caption));
   };
   const linkCard = (b: {
     href: string;
@@ -367,16 +260,23 @@ export function offprintContentToBlocks(
         ...(b.description ? [string("link/description", b.description)] : []),
       ],
     });
-    if (b.preview) image(entityID, b.preview, undefined, "link/preview");
+    if (b.preview)
+      builder.image({
+        entityID,
+        url: blobSource(b.preview),
+        width: null,
+        height: null,
+        attribute: "link/preview",
+      });
   };
 
   const convert = (item: OffprintBlock, inComponent: boolean) => {
     switch (item.$type) {
       case "app.offprint.block.text":
-        html += textHtml(item as OffprintTextBlock);
+        builder.html(textHtml(item as OffprintTextBlock));
         break;
       case "app.offprint.block.heading":
-        html += headingHtml(item as OffprintHeadingBlock);
+        builder.html(headingHtml(item as OffprintHeadingBlock));
         break;
       case "app.offprint.block.blockquote": {
         const quote = item as Extract<OffprintBlock, { content: unknown }>;
@@ -386,9 +286,11 @@ export function offprintContentToBlocks(
             inner.$type === "app.offprint.block.heading"
               ? `<strong>${p}</strong>`
               : p;
-          html += paragraphs
-            .map((p) => `<blockquote>${wrap(p)}</blockquote>`)
-            .join("");
+          builder.html(
+            paragraphs
+              .map((p) => `<blockquote>${wrap(p)}</blockquote>`)
+              .join(""),
+          );
         }
         break;
       }
@@ -399,32 +301,36 @@ export function offprintContentToBlocks(
           callout.facets,
         ).join("<br>");
         if (inner)
-          html += `<blockquote>${escapeHtml(callout.emoji ?? "💡")} ${inner}</blockquote>`;
+          builder.html(
+            `<blockquote>${escapeHtml(callout.emoji ?? "💡")} ${inner}</blockquote>`,
+          );
         break;
       }
       case "app.offprint.block.bulletList":
       case "app.offprint.block.taskList":
-        html += listHtml(
-          "ul",
-          (item as { children: OffprintListItem[] }).children,
+        builder.html(
+          listHtml("ul", (item as { children: OffprintListItem[] }).children),
         );
         break;
       case "app.offprint.block.orderedList":
-        html += listHtml(
-          "ol",
-          (item as { children: OffprintListItem[] }).children,
+        builder.html(
+          listHtml("ol", (item as { children: OffprintListItem[] }).children),
         );
         break;
       case "app.offprint.block.codeBlock": {
         const code = item as Extract<OffprintBlock, { code: string }>;
-        html += `<pre data-lang="${escapeHtml(code.language || "plaintext")}">${escapeHtml(code.code)}</pre>`;
+        builder.html(
+          `<pre data-lang="${escapeHtml(code.language || "plaintext")}">${escapeHtml(code.code)}</pre>`,
+        );
         break;
       }
       case "app.offprint.block.mathBlock":
-        html += `<div data-tex="${escapeHtml((item as { tex: string }).tex)}"></div>`;
+        builder.html(
+          `<div data-tex="${escapeHtml((item as { tex: string }).tex)}"></div>`,
+        );
         break;
       case "app.offprint.block.horizontalRule":
-        html += "<hr>";
+        builder.html("<hr>");
         break;
       case "app.offprint.block.image": {
         const img = item as Extract<OffprintBlock, { captionFacets?: unknown }>;
@@ -447,8 +353,13 @@ export function offprintContentToBlocks(
               : []),
           ],
         });
-        image(entityID, img.image, img.aspectRatio);
-        html += captionHtml(img.caption, img.captionFacets);
+        builder.image({
+          entityID,
+          url: blobSource(img.image),
+          width: img.aspectRatio?.width ?? null,
+          height: img.aspectRatio?.height ?? null,
+        });
+        builder.html(captionHtml(img.caption, img.captionFacets));
         break;
       }
       case "app.offprint.block.imageGrid":
@@ -491,7 +402,7 @@ export function offprintContentToBlocks(
           OffprintBlock,
           { text: string; href: string }
         >;
-        html += captionHtml(button.caption);
+        builder.html(captionHtml(button.caption));
         card({
           type: "button",
           facts: [
@@ -533,6 +444,5 @@ export function offprintContentToBlocks(
   };
 
   for (const item of items) convert(item, false);
-  flushHtml();
-  return content;
+  return builder.finish();
 }

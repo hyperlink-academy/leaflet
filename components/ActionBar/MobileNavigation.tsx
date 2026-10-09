@@ -9,6 +9,10 @@ import { useSidebarStore } from "./Sidebar";
 import { SearchTiny } from "components/Icons/SearchTiny";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { useIdentityData } from "components/IdentityProvider";
+import {
+  TutorialNavTooltip,
+  useTutorialNavTour,
+} from "app/(app)/(identity)/(home-pages)/(writer)/home/Tutorial/TutorialNavTooltip";
 
 export const MobileNavigation = (props: {
   controls?: React.ReactNode;
@@ -23,6 +27,7 @@ export const MobileNavigation = (props: {
   let lastScrollY = useRef(0);
   let cardBorderHidden = useCardBorderHidden();
   let hiddenOnScroll = props.hiddenOnScroll;
+  let blurred = useTutorialNavTour((s) => s.blurred);
 
   useEffect(() => {
     const homeContent = document.getElementById("home-content");
@@ -72,7 +77,7 @@ export const MobileNavigation = (props: {
   return (
     <MediaContents
       mobile={true}
-      className={`mobilePageFooter  pwa-padding-x z-20 fixed left-0 bottom-4 right-0 transition-transform duration-200 ${hidden ? "translate-y-[120px]" : ""}`}
+      className={`mobilePageFooter  pwa-padding-x z-20 fixed left-0 bottom-4 right-0 transition-[transform,translate,filter] duration-200 ${hidden ? "translate-y-[120px]" : ""} ${blurred ? "blur-[8px] pointer-events-none" : ""}`}
       style={{ bottom: "var(--safe-padding-bottom)" }}
     >
       <div
@@ -152,19 +157,21 @@ const MobileSidebarTrigger = (props: { pageTitle: string }) => {
   let { identity } = useIdentityData();
   let unreads = identity?.notifications[0]?.count;
   return (
-    <button
-      className="flex gap-2 items-center text-secondary font-bold"
-      onClick={() => setOpen(true)}
-    >
-      <div className="relative">
-        <MenuSmall />
-        {unreads ? (
-          <div className="absolute left-1 -top-0.5  min-w-4 h-4 px-1 rounded-full bg-accent-1 text-accent-2 border border-bg-page text-[8px] leading-none font-bold flex items-center justify-center -translate-x-1/2">
-            {unreads < 100 ? unreads : "∞"}
-          </div>
-        ) : null}
-      </div>
-      {props.pageTitle}
-    </button>
+    <TutorialNavTooltip target="sidebar-trigger">
+      <button
+        className="flex gap-2 items-center text-secondary font-bold"
+        onClick={() => setOpen(true)}
+      >
+        <div className="relative">
+          <MenuSmall />
+          {unreads ? (
+            <div className="absolute left-1 -top-0.5  min-w-4 h-4 px-1 rounded-full bg-accent-1 text-accent-2 border border-bg-page text-[8px] leading-none font-bold flex items-center justify-center -translate-x-1/2">
+              {unreads < 100 ? unreads : "∞"}
+            </div>
+          ) : null}
+        </div>
+        {props.pageTitle}
+      </button>
+    </TutorialNavTooltip>
   );
 };

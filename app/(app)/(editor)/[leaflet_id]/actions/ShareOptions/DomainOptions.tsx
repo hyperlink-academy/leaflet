@@ -297,8 +297,12 @@ function NonLinkedDomains(props: {
   setDomainMenuState: (state: DomainMenuState) => void;
 }) {
   let statuses = useDomainStatuses(props.domains.map((d) => d.domain));
-  let unverified = props.domains.filter((d) => statuses?.[d.domain]);
-  let available = props.domains.filter((d) => !statuses?.[d.domain]);
+  let unverified = props.domains.filter(
+    (d) => statuses?.[d.domain] === "pending",
+  );
+  let available = props.domains.filter((d) => statuses?.[d.domain] === "ready");
+
+  if (props.domains.length > 0 && !statuses) return <DotLoader />;
 
   return (
     <div className="flex flex-col gap-1">
@@ -312,9 +316,9 @@ function NonLinkedDomains(props: {
           setSelectedRoute={props.setSelectedRoute}
         />
       ))}
-      {unverified.length > 0 && available.length > 0 && (
+      {unverified.length > 0 && (
         <>
-          <hr className="border-border-light my-1" />
+          {available.length > 0 && <hr className="my-1" />}
           <div className="text-xs text-tertiary -mb-0.5 ">STILL PENDING</div>
           {unverified.map((domain) => (
             <UnverifiedDomainRow

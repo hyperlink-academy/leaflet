@@ -11,6 +11,7 @@ import {
   PubLeafletBlocksStandardSitePublication,
   PubLeafletBlocksButton,
   PubLeafletBlocksCode,
+  PubLeafletBlocksDrawing,
   PubLeafletBlocksHeader,
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksHtml,
@@ -24,6 +25,8 @@ import {
   PubLeafletBlocksPoll,
   PubLeafletBlocksPostsList,
   PubLeafletBlocksRecommendedPubs,
+  PubLeafletBlocksReply,
+  PubLeafletBlocksQuestions,
   PubLeafletBlocksSignup,
   PubLeafletBlocksPostHeader,
   PubLeafletBlocksText,
@@ -33,17 +36,23 @@ import {
   PubLeafletPagesLinearDocument,
   PubLeafletPollDefinition,
   PubLeafletRichtextFacet,
+  PubLeafletThemePage,
 } from "lexicons/api";
 import { ids } from "lexicons/api/lexicons";
+import { drawingFills } from "components/Blocks/DrawingBlock/ink";
 
 import { Block } from "components/Blocks/Block";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { scanIndexLocal } from "src/replicache/utils";
 import { getBlocksWithTypeLocal } from "src/replicache/getBlocks";
+import { isTextBlock } from "src/utils/isTextBlock";
 import { List, parseBlocksToList } from "src/utils/parseBlocksToList";
 import { Delta, YJSFragmentToString } from "src/utils/yjsFragmentToString";
-import { ColorToRGB } from "components/ThemeManager/colorToLexicons";
+import {
+  ColorToRGB,
+  ColorToRGBA,
+} from "components/ThemeManager/colorToLexicons";
 import { ThemeDefaults } from "components/ThemeManager/themeUtils";
 import { parseColor } from "@react-stately/color";
 
@@ -78,15 +87,11 @@ export type ProcessBlocksToPagesHooks = {
     | null;
 };
 
-type ProcessBlocksToPagesResult = {
-  pages: {
-    id: string;
-    blocks:
-      | PubLeafletPagesLinearDocument.Block[]
-      | PubLeafletPagesCanvas.Block[];
-    type: "doc" | "canvas";
-  }[];
-};
+export type PageRecord =
+  | $Typed<PubLeafletPagesLinearDocument.Main>
+  | $Typed<PubLeafletPagesCanvas.Main>;
+
+type ProcessBlocksToPagesResult = { pages: PageRecord[] };
 
 function resolveHighlightColors(
   scan: ReturnType<typeof scanIndexLocal>,
@@ -209,30 +214,13 @@ export async function processBlocksToPages(opts: {
   } = {
     datetime: async () => undefined,
     rsvp: async () => undefined,
+    // Serialized by canvasBlocksToRecord, the only place a group can sit.
+    group: async () => undefined,
     mailbox: async () => undefined,
     card: async (b, membersOnly) => {
       const [page] = scan.eav(b.entityID, "block/card");
       if (!page) return;
-      const [pageType] = scan.eav(page.data.value, "page/type");
-
-      if (pageType?.data.value === "canvas") {
-        const canvasBlocks = await canvasBlocksToRecord(
-          page.data.value,
-          membersOnly,
-        );
-        pages.push({
-          id: page.data.value,
-          blocks: canvasBlocks,
-          type: "canvas",
-        });
-      } else {
-        const blocks = getBlocksWithTypeLocal(facts, page.data.value);
-        pages.push({
-          id: page.data.value,
-          blocks: await blocksToRecord(blocks, membersOnly),
-          type: "doc",
-        });
-      }
+      pages.push(await pageToRecord(page.data.value, membersOnly));
 
       const [display] = scan.eav(b.entityID, "page-link/display");
       const block: $Typed<PubLeafletBlocksPage.Main> = {
@@ -243,10 +231,22 @@ export async function processBlocksToPages(opts: {
         block.display = display.data.value;
       return block;
     },
+    "embedded-canvas": async (b, membersOnly) => {
+      const [page] = scan.eav(b.entityID, "block/card");
+      if (!page) return;
+      pages.push(await pageToRecord(page.data.value, membersOnly));
+      const [alt] = scan.eav(b.entityID, "image/alt");
+      return {
+        $type: ids.PubLeafletBlocksEmbeddedCanvas,
+        id: page.data.value,
+        ...(alt?.data.value && { alt: alt.data.value }),
+      };
+    },
     "bluesky-post": async (b) => {
       const [post] = scan.eav(b.entityID, "block/bluesky-post");
       if (!post || !post.data.value.post) return;
       const [hostFact] = scan.eav(b.entityID, "bluesky-post/host");
+      const [viewFact] = scan.eav(b.entityID, "bluesky-post/view");
       const block: $Typed<PubLeafletBlocksBskyPost.Main> = {
         $type: ids.PubLeafletBlocksBskyPost,
         postRef: {
@@ -254,6 +254,7 @@ export async function processBlocksToPages(opts: {
           cid: post.data.value.post.cid,
         },
         clientHost: hostFact?.data.value,
+        ...(viewFact?.data.value === "media" && { view: "media" }),
       };
       return block;
     },
@@ -457,6 +458,38 @@ export async function processBlocksToPages(opts: {
       };
       return block;
     },
+    drawing: async (b) => {
+      const [viewBox] = scan.eav(b.entityID, "drawing/view-box");
+      const strokes = scan
+        .eav(b.entityID, "drawing/stroke")
+        .toSorted((x, y) => (x.id < y.id ? -1 : 1));
+      if (!viewBox || strokes.length === 0) return;
+      const box = viewBox.data.value;
+      const block: $Typed<PubLeafletBlocksDrawing.Main> = {
+        $type: "pub.leaflet.blocks.drawing",
+        viewBox: {
+          x: Math.round(box.x),
+          y: Math.round(box.y),
+          width: Math.max(1, Math.round(box.width)),
+          height: Math.max(1, Math.round(box.height)),
+        },
+        strokes: strokes.map(({ data: { value: stroke } }) => ({
+          points: stroke.points.map(Math.round),
+          color: stroke.color,
+          size: Math.max(1, Math.round(stroke.size)),
+          ...(stroke.simulatePressure && { simulatePressure: true }),
+        })),
+      };
+      const fills = drawingFills(
+        strokes.map((s) => ({ id: s.id, stroke: s.data.value })),
+      );
+      if (fills.length > 0)
+        block.fills = fills.map(({ fill }) => ({
+          points: fill.points.map(Math.round),
+          color: fill.color,
+        }));
+      return block;
+    },
     math: async (b) => {
       const [math] = scan.eav(b.entityID, "block/math");
       const block: $Typed<PubLeafletBlocksMath.Main> = {
@@ -540,7 +573,9 @@ export async function processBlocksToPages(opts: {
         $type: "pub.leaflet.blocks.postsList",
         ...(viewFact && { view: viewFact.data.value }),
         ...(highlightFact && { highlightFirstPost: highlightFact.data.value }),
-        ...(showPageCountFact && { showPageCount: showPageCountFact.data.value }),
+        ...(showPageCountFact && {
+          showPageCount: showPageCountFact.data.value,
+        }),
         ...(filterByTags.length > 0 && { filterByTags }),
         ...(limit && limit > 0 && { limit }),
         // The sub-flags only mean anything under readerControls, and each
@@ -559,6 +594,26 @@ export async function processBlocksToPages(opts: {
       const block: $Typed<PubLeafletBlocksRecommendedPubs.Main> = {
         $type: "pub.leaflet.blocks.recommendedPubs",
         ...(compactFact && { compact: compactFact.data.value }),
+      };
+      return block;
+    },
+    reply: async (b) => {
+      const [buttonText] = scan.eav(b.entityID, "reply/button-text");
+      const [promptText] = scan.eav(b.entityID, "reply/prompt-text");
+      const [showTheme] = scan.eav(b.entityID, "reply/show-publication-theme");
+      const block: $Typed<PubLeafletBlocksReply.Main> = {
+        $type: "pub.leaflet.blocks.reply",
+        ...(buttonText?.data.value && { buttonText: buttonText.data.value }),
+        ...(promptText?.data.value && { promptText: promptText.data.value }),
+        ...(showTheme?.data.value === false && { showPublicationTheme: false }),
+      };
+      return block;
+    },
+    questions: async (b) => {
+      const [buttonText] = scan.eav(b.entityID, "questions/button-text");
+      const block: $Typed<PubLeafletBlocksQuestions.Main> = {
+        $type: "pub.leaflet.blocks.questions",
+        ...(buttonText?.data.value && { buttonText: buttonText.data.value }),
       };
       return block;
     },
@@ -582,26 +637,113 @@ export async function processBlocksToPages(opts: {
     opts.start_page ?? scan.eav(root_entity, "root/page")?.[0]?.data.value;
   if (!startPage) throw new Error("No root page");
 
-  const [pageType] = scan.eav(startPage, "page/type");
-
-  if (pageType?.data.value === "canvas") {
-    const canvasBlocks = await canvasBlocksToRecord(startPage, false);
-    pages.unshift({
-      id: startPage,
-      blocks: canvasBlocks,
-      type: "canvas",
-    });
-  } else {
-    const blocks = getBlocksWithTypeLocal(facts, startPage);
-    const b = await blocksToRecord(blocks, false);
-    pages.unshift({
-      id: startPage,
-      blocks: b,
-      type: "doc",
-    });
-  }
+  pages.unshift(await pageToRecord(startPage, false));
 
   return { pages };
+
+  async function pageToRecord(
+    pageID: string,
+    membersOnly: boolean,
+  ): Promise<PageRecord> {
+    const theme = pageThemeToRecord(pageID);
+    if (scan.eav(pageID, "page/type")[0]?.data.value !== "canvas")
+      return {
+        $type: "pub.leaflet.pages.linearDocument",
+        id: pageID,
+        blocks: await blocksToRecord(
+          getBlocksWithTypeLocal(facts, pageID),
+          membersOnly,
+        ),
+        ...(theme && { theme }),
+      };
+    const mobileView = scan.eav(pageID, "canvas/mobile-view")[0]?.data.value;
+    const fixedWidth = scan.eav(pageID, "canvas/fixed-width")[0]?.data.value;
+    const fixedHeight = scan.eav(pageID, "canvas/fixed-height")[0]?.data.value;
+    const pattern = scan.eav(pageID, "canvas/background-pattern")[0]?.data
+      .value;
+    return {
+      $type: "pub.leaflet.pages.canvas",
+      id: pageID,
+      blocks: await canvasBlocksToRecord(pageID, membersOnly),
+      ...(theme && { theme }),
+      ...(pattern && { pattern }),
+      ...(await canvasBackgroundToRecord(pageID, membersOnly)),
+      ...(fixedWidth && fixedHeight
+        ? { width: Math.floor(fixedWidth), height: Math.floor(fixedHeight) }
+        : {}),
+      ...(mobileView && mobileView !== "unconstrained" && { mobileView }),
+      ...(scan.eav(pageID, "canvas/lock-viewer-zoom")[0]?.data.value && {
+        lockViewerZoom: true,
+      }),
+    };
+  }
+
+  function pageThemeToRecord(
+    pageID: string,
+  ): PubLeafletThemePage.Main | undefined {
+    const color = (
+      attribute:
+        | "theme/card-background"
+        | "theme/primary"
+        | "theme/accent-background"
+        | "theme/accent-text",
+    ) => {
+      const value = scan.eav(pageID, attribute)[0]?.data.value;
+      return value ? parseColor(`hsba(${value})`) : undefined;
+    };
+    const pageBackground = color("theme/card-background");
+    const primary = color("theme/primary");
+    const accentBackground = color("theme/accent-background");
+    const accentText = color("theme/accent-text");
+    if (!pageBackground && !primary && !accentBackground && !accentText) return;
+    return {
+      $type: "pub.leaflet.theme.page",
+      ...(pageBackground && { pageBackground: ColorToRGBA(pageBackground) }),
+      ...(primary && { primary: ColorToRGB(primary) }),
+      ...(accentBackground && {
+        accentBackground: ColorToRGB(accentBackground),
+      }),
+      ...(accentText && { accentText: ColorToRGB(accentText) }),
+    };
+  }
+
+  async function canvasBackgroundToRecord(
+    pageID: string,
+    membersOnly: boolean,
+  ): Promise<{ background?: PubLeafletPagesCanvas.Background }> {
+    const [image] = scan.eav(pageID, "theme/card-background-image");
+    if (!image) return {};
+    const blobref = await hooks.uploadImage(image.data.src, { membersOnly });
+    if (!blobref) return {};
+    const tileWidth = scan.eav(pageID, "theme/card-background-image-repeat")[0]
+      ?.data.value;
+    const opacity = scan.eav(pageID, "theme/card-background-image-opacity")[0]
+      ?.data.value;
+    return {
+      background: {
+        $type: "pub.leaflet.pages.canvas#background",
+        image: blobref,
+        ...(tileWidth && { width: Math.floor(tileWidth) }),
+        ...(opacity !== undefined &&
+          opacity < 1 && { opacity: Math.round(opacity * 100) }),
+      },
+    };
+  }
+
+  function blockAlignment(
+    entityID: string,
+  ): ExcludeString<PubLeafletPagesLinearDocument.Block["alignment"]> {
+    const value = scan.eav(entityID, "block/text-alignment")[0]?.data.value;
+    return value === "center"
+      ? "lex:pub.leaflet.pages.linearDocument#textAlignCenter"
+      : value === "right"
+        ? "lex:pub.leaflet.pages.linearDocument#textAlignRight"
+        : value === "justify"
+          ? "lex:pub.leaflet.pages.linearDocument#textAlignJustify"
+          : value === "left"
+            ? "lex:pub.leaflet.pages.linearDocument#textAlignLeft"
+            : undefined;
+  }
 
   async function blocksToRecord(
     blocks: Block[],
@@ -621,22 +763,7 @@ export async function processBlocksToPages(opts: {
             membersOnly ||
             (delimiterIndex !== -1 && blockIndex > delimiterIndex);
           if (blockOrList.type === "block") {
-            const alignmentValue = scan.eav(
-              blockOrList.block.entityID,
-              "block/text-alignment",
-            )[0]?.data.value;
-            const alignment: ExcludeString<
-              PubLeafletPagesLinearDocument.Block["alignment"]
-            > =
-              alignmentValue === "center"
-                ? "lex:pub.leaflet.pages.linearDocument#textAlignCenter"
-                : alignmentValue === "right"
-                  ? "lex:pub.leaflet.pages.linearDocument#textAlignRight"
-                  : alignmentValue === "justify"
-                    ? "lex:pub.leaflet.pages.linearDocument#textAlignJustify"
-                    : alignmentValue === "left"
-                      ? "lex:pub.leaflet.pages.linearDocument#textAlignLeft"
-                      : undefined;
+            const alignment = blockAlignment(blockOrList.block.entityID);
             const b = await blockToRecord(blockOrList.block, blockMembersOnly);
             if (!b) return [];
             const block: PubLeafletPagesLinearDocument.Block = {
@@ -795,50 +922,58 @@ export async function processBlocksToPages(opts: {
     pageID: string,
     membersOnly: boolean,
   ): Promise<PubLeafletPagesCanvas.Block[]> {
-    const canvasBlocks = scan.eav(pageID, "canvas/block");
     return (
       await Promise.all(
-        canvasBlocks.map(async (canvasBlock) => {
+        scan.eav(pageID, "canvas/block").map(async (canvasBlock) => {
           const blockEntity = canvasBlock.data.value;
-          const position = canvasBlock.data.position;
-
-          const blockType = scan.eav(blockEntity, "block/type")?.[0];
+          const [blockType] = scan.eav(blockEntity, "block/type");
           if (!blockType) return null;
 
-          const block: Block = {
-            type: blockType.data.value,
-            entityID: blockEntity,
-            parent: pageID,
-            position: "",
-            factID: canvasBlock.id,
-          };
-
-          const content = await blockToRecord(block, membersOnly);
+          let content: PubLeafletPagesCanvas.Block["block"] | undefined;
+          if (blockType.data.value === "group") {
+            const blocks = await blocksToRecord(
+              getBlocksWithTypeLocal(facts, blockEntity),
+              membersOnly,
+            );
+            if (blocks.length > 0)
+              content = { $type: "pub.leaflet.pages.linearDocument", blocks };
+          } else
+            content = await blockToRecord(
+              {
+                type: blockType.data.value,
+                entityID: blockEntity,
+                parent: pageID,
+                position: "",
+                factID: canvasBlock.id,
+              },
+              membersOnly,
+            );
           if (!content) return null;
 
-          const width =
-            scan.eav(blockEntity, "canvas/block/width")?.[0]?.data.value || 360;
-          const rotation = scan.eav(blockEntity, "canvas/block/rotation")?.[0]
-            ?.data.value;
-          const stackOrder = scan.eav(
+          const [width] = scan.eav(blockEntity, "canvas/block/width");
+          const [rotation] = scan.eav(blockEntity, "canvas/block/rotation");
+          const [stackOrder] = scan.eav(
             blockEntity,
             "canvas/block/stack-order",
-          )?.[0]?.data.value;
+          );
+          // The editor only aligns the text of a lone canvas block.
+          const alignment = isTextBlock[blockType.data.value]
+            ? blockAlignment(blockEntity)
+            : undefined;
 
-          const canvasBlockRecord: PubLeafletPagesCanvas.Block = {
+          return {
             $type: "pub.leaflet.pages.canvas#block",
             block: content,
-            x: Math.floor(position.x),
-            y: Math.floor(position.y),
-            width: Math.floor(width),
-            ...(rotation !== undefined && { rotation: Math.floor(rotation) }),
-            ...(stackOrder !== undefined && { stackOrder }),
-          };
-
-          return canvasBlockRecord;
+            x: Math.floor(canvasBlock.data.position.x),
+            y: Math.floor(canvasBlock.data.position.y),
+            width: Math.floor(width?.data.value || 360),
+            ...(rotation && { rotation: Math.round(rotation.data.value) }),
+            ...(stackOrder && { stackOrder: stackOrder.data.value }),
+            ...(alignment && { alignment }),
+          } satisfies PubLeafletPagesCanvas.Block;
         }),
       )
-    ).filter((b): b is PubLeafletPagesCanvas.Block => b !== null);
+    ).filter((b) => b !== null);
   }
 }
 

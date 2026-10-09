@@ -10,7 +10,6 @@ import { useSubscribe } from "src/replicache/useSubscribe";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useContributorProfiles } from "src/hooks/useContributorProfiles";
 import { bylineName } from "src/utils/byline";
-import { Separator } from "components/Layout";
 import { CheckboxMenuItem, Menu } from "components/Menu";
 import { Profile } from "src/identity";
 
@@ -94,7 +93,6 @@ export function DraftContributorSelector(props: { leaflet_id: string }) {
         contributors={contributors}
         selectedDids={selectedDids}
       />
-      <Separator classname="h-4!" />
     </div>
   );
 }

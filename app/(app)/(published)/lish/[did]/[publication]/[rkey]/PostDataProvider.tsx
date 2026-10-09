@@ -11,6 +11,8 @@ import type { PostPageData } from "src/utils/getPostPageData";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
 import type { StandardSitePublicationData } from "app/api/rpc/[command]/get_standard_site_publications";
 import type { PollData } from "./fetchPollData";
+import type { DocumentReply } from "src/documentReplies";
+import type { DocumentQuestion } from "src/documentQuestions";
 
 export type PostResources = {
   pages: PubLeafletContent.Main["pages"];
@@ -18,6 +20,8 @@ export type PostResources = {
   standardSitePostData: StandardSitePostData[];
   standardSitePublicationData: StandardSitePublicationData[];
   pollData: PollData[];
+  replyData: DocumentReply[];
+  questionData: DocumentQuestion[];
 };
 
 export type UnlockStatus = "idle" | "loading" | "error";
@@ -30,6 +34,10 @@ export function usePostResources() {
   if (!ctx)
     throw new Error("usePostResources must be used within PostDataProvider");
   return ctx;
+}
+
+export function useOptionalPostResources() {
+  return useContext(PostResourcesContext);
 }
 
 export function useUnlockStatus() {

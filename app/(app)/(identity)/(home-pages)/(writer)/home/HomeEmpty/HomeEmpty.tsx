@@ -1,65 +1,71 @@
 "use client";
-import { PubListEmptyIllo } from "components/ActionBar/Publications";
-import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
-import { WelcomeToLeafletIllo } from "./WelcomeToLeafletIllo";
+import { ButtonPrimary } from "components/Buttons";
+import { GoToArrowLined } from "components/Icons/GoToArrowLined";
 import { createNewLeaflet } from "actions/createNewLeaflet";
 import { useIsMobile } from "src/hooks/isMobile";
 import { SpeedyLink } from "components/SpeedyLink";
 
 export function HomeEmptyState() {
   return (
-    <div className="flex flex-col gap-4 sm:flex-row">
-      <PublicationBanner />
-      <div className="flex sm:flex-col flex-row gap-2 sm:w-fit w-full items-center text-tertiary font-normal italic">
-        <hr className="border-border grow w-full sm:w-px h-px sm:h-full border-l" />
-        <div>or</div>
-        <hr className="border-border grow w-full sm:w-px h-px sm:h-full border-l" />
+    <div className="grow w-full flex flex-col items-center justify-center text-center py-4">
+      <div className="flex flex-col gap-3 text-lg max-w-lg w-full sm:px-4">
+        <h2>
+          How do you want to <br className="sm:hidden block" />
+          get started?
+        </h2>
+        <div className="flex gap-4 flex-col items-stretch">
+          <PublicationOption />
+          <DocOption />
+        </div>
       </div>
-      <DocBanner />
     </div>
   );
 }
 
-let bannerStyles =
-  "flex flex-row sm:flex-col py-4 px-4 sm:items-center items-start gap-4";
-
-const PublicationBanner = () => {
+const PublicationOption = () => {
   return (
-    <div className={`accent-container sm:basis-2/3 ${bannerStyles}`}>
-      <div className="my-auto flex flex-row sm:flex-col gap-4">
-        <div className="w-[64px] mx-auto">
-          <PubListEmptyIllo />
+    <div className="light-container p-3 flex sm:flex-row flex-col gap-4">
+      <img
+        src="/illustrations/start-a-publication.webp"
+        alt=""
+        className="h-auto w-36 object-contain mx-auto"
+      />
+      <div className="text-base sm:text-left grow flex flex-col gap-1">
+        <h3>Start a Publication</h3>
+        <div className="grow">
+          Start a blog, newsletter, comic, novel, zine, etc. Make a homepage and
+          publish posts!
         </div>
-        <div className={`flex flex-col sm:text-center text-left w-full`}>
-          <h3>Create a Publication!</h3>
-          <div className="mb-2 text-tertiary">
-            You can decide to share or publish it later.
-          </div>
-          <SpeedyLink href="/lish/createPub" className="sm:mx-auto mx-0 ">
-            <ButtonPrimary>Create a Publication</ButtonPrimary>
-          </SpeedyLink>
-        </div>
+        <SpeedyLink href="/lish/createPub" className="mt-2">
+          <ButtonPrimary fullWidth>
+            New Publication
+            <GoToArrowLined />
+          </ButtonPrimary>
+        </SpeedyLink>
       </div>
     </div>
   );
 };
 
-const DocBanner = () => {
+const DocOption = () => {
   let isMobile = useIsMobile();
 
   return (
-    <div className={`text-sm sm:basis-1/3 py-0! sm:py-4! ${bannerStyles}`}>
-      <div className="w-[48px] mx-auto">
-        <WelcomeToLeafletIllo />
-      </div>
-
-      <div className={`grow flex flex-col sm:text-center text-left w-full`}>
-        <h4>Just write something</h4>
-        <div className="mb-2 text-tertiary">
-          You can decide to share or publish it later.
+    <div className="light-container p-3 flex sm:flex-row flex-col gap-4">
+      <img
+        src="/illustrations/start-writing.webp"
+        alt=""
+        className="h-auto w-36 object-contain mx-auto"
+      />
+      <div className="text-base sm:text-left grow flex flex-col gap-1">
+        <h3>Write something</h3>
+        <div className="grow">
+          Just start writing! Add this to a publication later, share and collab
+          on it with friends, or just write it for you.
         </div>
-        <ButtonSecondary
-          className="sm:mx-auto mx-0"
+        <ButtonPrimary
+          fullWidth
+          className="mt-2"
           onClick={async () => {
             let openNewLeaflet = (id: string) => {
               if (isMobile) {
@@ -76,8 +82,8 @@ const DocBanner = () => {
             openNewLeaflet(id);
           }}
         >
-          New Doc!
-        </ButtonSecondary>
+          New Doc <GoToArrowLined />
+        </ButtonPrimary>
       </div>
     </div>
   );

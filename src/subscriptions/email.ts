@@ -6,6 +6,7 @@ import {
   deleteSuppression,
 } from "src/utils/postmarkSuppressions";
 import { Ok, Err, type Result } from "src/result";
+import { queueOnSubscribeEmail } from "src/emailPosts/onSubscribe";
 import {
   subscriptionSourceProperties,
   trackUserEvent,
@@ -125,6 +126,7 @@ export async function onEmailSubscriptionConfirmed(
       confirmedIdentity.atp_did,
       publicationUri,
     );
+  await queueOnSubscribeEmail(publicationUri, identityId);
 }
 
 // Flips every still-active subscriber row for this publication to

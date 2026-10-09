@@ -9,6 +9,8 @@ import {
 } from "components/PageSWRDataProvider";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { Combobox, ComboboxResult } from "components/Combobox";
+import { useIdentityData } from "components/IdentityProvider";
+import { hasEntitlement } from "src/entitlements";
 
 type Props = {
   parent: string;
@@ -31,6 +33,7 @@ export const BlockCommandBar = ({
 
   let { rep, undoManager, rootEntity } = useReplicache();
   let entity_set = useEntitySetContext();
+  let { identity } = useIdentityData();
   let { data: pub } = useLeafletPublicationData();
   let publicationPage = useLeafletPublicationPage();
   let inPublicationEdit = !!publicationPage;
@@ -39,11 +42,15 @@ export const BlockCommandBar = ({
   // only (that's the page the server truncates), and at most one per post.
   let membershipsEnabled =
     !!pub?.publications?.publication_membership_settings?.enabled;
+  let hasPaidTiers = (
+    pub?.publications?.publication_membership_tiers ?? []
+  ).some((t) => t.active);
   let firstPage = useEntity(rootEntity, "root/page")[0]?.data.value;
   let hasMembersDelimiter = useBlocks(props.parent).some(
     (b) => b.type === "members-only-delimiter",
   );
   let isCanvas = useEntity(props.parent, "page/type")?.data.value === "canvas";
+  let inAnswer = !!useEntity(props.parent, "answer/question");
 
   // This clears '/' AND anything typed after it
   const clearCommandSearchText = () => {
@@ -76,18 +83,25 @@ export const BlockCommandBar = ({
         props.parent === firstPage &&
         !hasMembersDelimiter);
 
+    const allowedForAccount =
+      (!command.atprotoOnly || !!identity?.atp_did) &&
+      (!command.entitlement ||
+        hasEntitlement(identity?.entitlements, command.entitlement));
     const allowedInPublication =
       !command.publicationOnly || !!pub?.publications;
     const hiddenOnPubPage =
       !!command.hiddenOnPublicationPage && inPublicationEdit;
     const hiddenInPubPost = !!command.hiddenInPost && !inPublicationEdit;
-    const allowedOnPage = !command.canvasOnly || isCanvas;
+    const allowedOnPage =
+      (isCanvas ? !command.hiddenOnCanvas : !command.canvasOnly) &&
+      !(inAnswer && command.hiddenInAnswer);
 
     return (
       matchesSearch &&
       isVisible &&
       hasMembership &&
       allowedInPublication &&
+      allowedForAccount &&
       !hiddenOnPubPage &&
       !hiddenInPubPost &&
       allowedOnPage
@@ -108,7 +122,7 @@ export const BlockCommandBar = ({
           if (!command || !rep) return;
           await command.onSelect(
             rep,
-            { ...props, entity_set: entity_set.set },
+            { ...props, entity_set: entity_set.set, hasPaidTiers },
             undoManager,
           );
         });
@@ -130,7 +144,7 @@ export const BlockCommandBar = ({
                   if (!rep) return;
                   await result.onSelect(
                     rep,
-                    { ...props, entity_set: entity_set.set },
+                    { ...props, entity_set: entity_set.set, hasPaidTiers },
                     undoManager,
                   );
                 })

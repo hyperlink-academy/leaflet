@@ -7,6 +7,7 @@ import {
   getBlockStructureMirror,
 } from "src/replicache/blockMirror";
 import { scanIndexLocal } from "src/replicache/utils";
+import { canvasBlockOrder } from "src/utils/canvasBlockOrder";
 
 // Headings own the blocks that follow them in document order until the next
 // heading of equal-or-higher level (Obsidian-style sections). That ownership is
@@ -163,6 +164,69 @@ export const getBlocksWithTypeLocal = (
   initialFacts: Fact<any>[],
   entityID: string,
 ) => assembleBlocks(scanIndexLocal(initialFacts), entityID);
+
+// A page's blocks in reading order: its linear blocks, then its canvas
+// blocks top-to-bottom then left-to-right, with each group expanded into its
+// children in document order.
+export function getPageReadingOrder(scan: SyncScan, pageID: string): Block[] {
+  let canvasBlocks = scan
+    .eav(pageID, "canvas/block")
+    .toSorted((a, b) => canvasBlockOrder(a.data.position, b.data.position))
+    .flatMap((b): Block[] => {
+      let type = scan.eav(b.data.value, "block/type")[0]?.data.value;
+      if (!type) return [];
+      if (type === "group") return assembleBlocks(scan, b.data.value);
+      return [
+        {
+          entityID: b.data.value,
+          parent: pageID,
+          factID: b.id,
+          position: "",
+          type,
+        },
+      ];
+    });
+  return [...assembleBlocks(scan, pageID), ...canvasBlocks];
+}
+
+// A block placed on a canvas outside of a group, as the one-item document it
+// would be. Groups are left to their children.
+export const getCanvasBlock = (
+  rep: Replicache<ReplicacheMutators>,
+  pageID: string,
+  entityID: string,
+): Block | null => {
+  let scan = getBlockStructureMirror(rep);
+  let fact = scan
+    .eav(pageID, "canvas/block")
+    .find((b) => b.data.value === entityID);
+  let type = scan.eav(entityID, "block/type")[0]?.data.value;
+  if (!fact || !type || type === "group") return null;
+  let headingLevel =
+    type === "heading"
+      ? scan.eav(entityID, "block/heading-level")[0]?.data.value
+      : undefined;
+  let checklist = scan.eav(entityID, "block/check-list")[0];
+  return {
+    entityID,
+    parent: pageID,
+    factID: fact.id,
+    position: "",
+    type,
+    ...(headingLevel !== undefined && { headingLevel }),
+    ...(scan.eav(entityID, "block/is-list")[0]?.data.value && {
+      listData: {
+        depth: 1,
+        parent: pageID,
+        path: [{ entity: entityID, depth: 1 }],
+        checklist: !!checklist,
+        checked: checklist?.data.value,
+        listStyle: scan.eav(entityID, "block/list-style")[0]?.data.value,
+        listStart: scan.eav(entityID, "block/list-number")[0]?.data.value,
+      },
+    }),
+  };
+};
 
 export const getBlocksFromMirror = (
   mirror: BlockStructureMirror,

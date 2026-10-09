@@ -11,6 +11,7 @@ import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { AddSmall } from "components/Icons/AddSmall";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { PublishSmall } from "components/Icons/PublishSmall";
+import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
 import { useIdentityData } from "components/IdentityProvider";
 import { InputWithLabel } from "components/Input";
 import { Menu, MenuItem } from "components/Menu";
@@ -31,10 +32,7 @@ import { useIsMobile } from "src/hooks/isMobile";
 import { useReplicache, useEntity } from "src/replicache";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { Json } from "supabase/database.types";
-import {
-  useBlocks,
-  useCanvasBlocksWithType,
-} from "src/hooks/queries/useBlocks";
+import { usePageReadingOrder } from "src/hooks/queries/useBlocks";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { YJSFragmentToString } from "src/utils/yjsFragmentToString";
@@ -67,6 +65,20 @@ export const PublishButton = (props: { entityID: string }) => {
         ));
     if (!isOwnerOrContributor) return null;
   }
+
+  if (pub.email_only)
+    return (
+      <ActionButton
+        primary
+        labelOnMobile
+        className="sm:w-full! w-fit!"
+        icon={<BlockMailboxSmall className="shrink-0" />}
+        label={"Send Email"}
+        onClick={() => {
+          router.push(`/${params.leaflet_id}/email`);
+        }}
+      />
+    );
 
   if (!pub?.doc)
     return (
@@ -506,16 +518,12 @@ const PubOption = (props: {
 
 let useTitle = (entityID: string) => {
   let rootPage = useEntity(entityID, "root/page")[0].data.value;
-  let canvasBlocks = useCanvasBlocksWithType(rootPage).filter(
+  let isCanvas = useEntity(rootPage, "page/type")?.data.value === "canvas";
+  let blocks = usePageReadingOrder(rootPage).filter(
     (b) => b.type === "text" || b.type === "heading",
   );
-  let blocks = useBlocks(rootPage).filter(
-    (b) => b.type === "text" || b.type === "heading",
-  );
-  // Canvas items are fact data (entity in .value); linear blocks are Blocks
-  // (entity in .entityID) — read each arm's own field.
-  let firstBlockEntity = canvasBlocks[0]?.value ?? blocks[0]?.entityID ?? null;
-  let firstBlockType = canvasBlocks[0]?.type ?? blocks[0]?.type;
+  let firstBlockEntity = blocks[0]?.entityID ?? null;
+  let firstBlockType = blocks[0]?.type;
 
   let firstBlockText = useEntity(firstBlockEntity, "block/text")?.data.value;
 
@@ -529,7 +537,6 @@ let useTitle = (entityID: string) => {
   }, [firstBlockText]);
 
   // Only handle second block logic for linear documents, not canvas
-  let isCanvas = canvasBlocks.length > 0;
   let secondBlock = !isCanvas ? blocks[1] : undefined;
   let secondBlockTextValue = useEntity(
     secondBlock?.entityID || null,

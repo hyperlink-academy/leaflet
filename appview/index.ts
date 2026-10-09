@@ -15,6 +15,10 @@ import {
   PubLeafletPollVote,
   PubLeafletPollDefinition,
   PubLeafletInteractionsRecommend,
+  PubLeafletInteractionsReply,
+  PubLeafletInteractionsReplyVisibility,
+  PubLeafletInteractionsQuestion,
+  PubLeafletInteractionsAnswer,
   SiteStandardDocument,
   SiteStandardPublication,
   SiteStandardGraphSubscription,
@@ -33,6 +37,8 @@ import { stripThemeWithoutType } from "src/utils/stripThemeWithoutType";
 import { pageHasMembersDelimiter } from "src/membership";
 import { MAIN_SITE_URL } from "src/utils/customDomain";
 import { tombstoneComment } from "src/comments/tombstoneComment";
+import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
+import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import type { AppviewRevalidateEvent } from "app/api/appview_revalidate/route";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
@@ -255,6 +261,10 @@ async function main() {
       ids.PubLeafletPollVote,
       ids.PubLeafletPollDefinition,
       ids.PubLeafletInteractionsRecommend,
+      ids.PubLeafletInteractionsReply,
+      ids.PubLeafletInteractionsReplyVisibility,
+      ids.PubLeafletInteractionsQuestion,
+      ids.PubLeafletInteractionsAnswer,
       ids.AppBskyActorProfile,
       "app.bsky.feed.post",
       ids.SiteStandardDocument,
@@ -413,6 +423,8 @@ async function handleEvent(evt: Event) {
         document: record.value.subject,
         record: record.value as Json,
       });
+      if (!error)
+        await broadcastDocumentEvent(supabase, "comment", record.value.subject);
       // Comment counts are server-rendered into post pages and listings.
       if (await isInLeafletPublication(record.value.subject))
         await notifyRevalidate({
@@ -422,6 +434,8 @@ async function handleEvent(evt: Event) {
     }
     if (evt.event === "delete") {
       let comment = await tombstoneComment(supabase, evt.uri.toString());
+      if (comment?.document)
+        await broadcastDocumentEvent(supabase, "comment", comment.document);
       if (comment?.document && (await isInLeafletPublication(comment.document)))
         await notifyRevalidate({
           kind: "interaction",
@@ -502,6 +516,191 @@ async function handleEvent(evt: Event) {
         await notifyRevalidate({
           kind: "interaction",
           document: recommend.document,
+        });
+    }
+  }
+  if (evt.collection === ids.PubLeafletInteractionsReply) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = PubLeafletInteractionsReply.validateRecord(evt.record);
+      if (!record.success) return;
+      let documentUri;
+      try {
+        documentUri = new AtUri(record.value.document);
+      } catch {
+        return;
+      }
+      // A repo may only submit its own documents as replies.
+      if (documentUri.host !== evt.did) return;
+      if (record.value.document === record.value.subject) return;
+      // Replies to (or with) documents we don't index fail the foreign keys
+      // and are dropped; a second submission of the same document fails the
+      // (subject, document) unique key.
+      let { error } = await supabase.from("document_replies").upsert({
+        uri: evt.uri.toString(),
+        subject: record.value.subject,
+        document: record.value.document,
+        replier_did: evt.did,
+        record: record.value as Json,
+      });
+      if (error) console.log("Error upserting reply:", error);
+      else
+        await broadcastDocumentEvent(supabase, "reply", record.value.subject);
+    }
+    if (evt.event === "delete") {
+      let { data: reply } = await supabase
+        .from("document_replies")
+        .delete()
+        .eq("uri", evt.uri.toString())
+        .select("subject")
+        .maybeSingle();
+      if (reply) await broadcastDocumentEvent(supabase, "reply", reply.subject);
+      // Visible replies are server-rendered into the subject's pages.
+      if (reply && (await isInLeafletPublication(reply.subject)))
+        await notifyRevalidate({
+          kind: "interaction",
+          document: reply.subject,
+        });
+    }
+  }
+  if (evt.collection === ids.PubLeafletInteractionsReplyVisibility) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = PubLeafletInteractionsReplyVisibility.validateRecord(
+        evt.record,
+      );
+      if (!record.success) return;
+      let subjectUri;
+      try {
+        subjectUri = new AtUri(record.value.subject);
+      } catch {
+        return;
+      }
+      // Only the document's own repo moderates its replies, through the one
+      // record keyed like the document.
+      if (subjectUri.host !== evt.did || subjectUri.rkey !== evt.uri.rkey)
+        return;
+      // One row per allowed reply; replace the subject's rows wholesale so
+      // hidden replies don't linger.
+      await supabase
+        .from("document_reply_visibility")
+        .delete()
+        .eq("subject", record.value.subject);
+      let allowed = [...new Set(record.value.allowed)];
+      if (allowed.length > 0) {
+        // Upsert: the app writes these rows itself when the author accepts a
+        // reply, and may land one between the delete above and this insert.
+        let { error } = await supabase.from("document_reply_visibility").upsert(
+          allowed.map((reply) => ({
+            uri: evt.uri.toString(),
+            subject: record.value.subject,
+            reply,
+          })),
+        );
+        if (error) console.log("Error inserting reply visibility:", error);
+      }
+      await broadcastDocumentEvent(
+        supabase,
+        "reply_visibility",
+        record.value.subject,
+      );
+      if (await isInLeafletPublication(record.value.subject))
+        await notifyRevalidate({
+          kind: "interaction",
+          document: record.value.subject,
+        });
+    }
+    if (evt.event === "delete") {
+      let { data: rows } = await supabase
+        .from("document_reply_visibility")
+        .delete()
+        .eq("uri", evt.uri.toString())
+        .select("subject");
+      let subject = rows?.[0]?.subject;
+      if (subject)
+        await broadcastDocumentEvent(supabase, "reply_visibility", subject);
+      if (subject && (await isInLeafletPublication(subject)))
+        await notifyRevalidate({ kind: "interaction", document: subject });
+    }
+  }
+  if (evt.collection === ids.PubLeafletInteractionsQuestion) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = PubLeafletInteractionsQuestion.validateRecord(evt.record);
+      if (!record.success) return;
+      // Questions on documents we don't index fail the foreign key and are
+      // dropped.
+      let { error } = await supabase.from("document_questions").upsert({
+        uri: evt.uri.toString(),
+        subject: record.value.subject,
+        asker_did: evt.did,
+        cid: evt.cid.toString(),
+        record: record.value as Json,
+      });
+      if (error) console.log("Error upserting question:", error);
+      else
+        await broadcastDocumentEvent(
+          supabase,
+          "question",
+          record.value.subject,
+        );
+    }
+    if (evt.event === "delete") {
+      let { data: question } = await supabase
+        .from("document_questions")
+        .delete()
+        .eq("uri", evt.uri.toString())
+        .select("subject")
+        .maybeSingle();
+      if (question)
+        await broadcastDocumentEvent(supabase, "question", question.subject);
+      // An answered question was server-rendered into the subject's pages.
+      if (question && (await isInLeafletPublication(question.subject)))
+        await notifyRevalidate({
+          kind: "interaction",
+          document: question.subject,
+        });
+    }
+  }
+  if (evt.collection === ids.PubLeafletInteractionsAnswer) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = PubLeafletInteractionsAnswer.validateRecord(evt.record);
+      if (!record.success) return;
+      // Only the repo owning the question's subject document answers it.
+      let { data: question } = await supabase
+        .from("document_questions")
+        .select("subject")
+        .eq("uri", record.value.question.uri)
+        .maybeSingle();
+      if (!question || question.subject !== record.value.document) return;
+      if (!isDocumentOwner(question.subject, evt.did)) return;
+      // A question has one answer: a second record for it is dropped.
+      let { error } = await supabase.from("document_question_answers").upsert({
+        uri: evt.uri.toString(),
+        question: record.value.question.uri,
+        subject: question.subject,
+        record: record.value as Json,
+      });
+      if (error) console.log("Error upserting answer:", error);
+      else {
+        await broadcastDocumentEvent(supabase, "answer", question.subject);
+        if (await isInLeafletPublication(question.subject))
+          await notifyRevalidate({
+            kind: "interaction",
+            document: question.subject,
+          });
+      }
+    }
+    if (evt.event === "delete") {
+      let { data: answer } = await supabase
+        .from("document_question_answers")
+        .delete()
+        .eq("uri", evt.uri.toString())
+        .select("subject")
+        .maybeSingle();
+      if (answer)
+        await broadcastDocumentEvent(supabase, "answer", answer.subject);
+      if (answer && (await isInLeafletPublication(answer.subject)))
+        await notifyRevalidate({
+          kind: "interaction",
+          document: answer.subject,
         });
     }
   }

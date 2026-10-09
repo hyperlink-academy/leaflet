@@ -1,10 +1,15 @@
 import { after } from "next/server";
+import { headers } from "next/headers";
 import { tinybird } from "lib/tinybird";
 import { supabaseServerClient } from "supabase/serverClient";
 import { keyEntitlements } from "./identityPayload";
 import { isPro, PRO_ENTITLEMENT_KEY } from "./entitlements";
-import type { SubscriptionSource } from "./subscriptionSource";
+import {
+  sanitizeSubscriptionSource,
+  type SubscriptionSource,
+} from "./subscriptionSource";
 import { getAuthIdentity } from "./auth";
+import type { ActionAfterSignIn } from "app/api/oauth/[route]/afterSignInActions";
 
 // Active-user counts are "distinct identities with any event"; finer questions
 // (who moved from reading to writing) are query-time filters on `event` and
@@ -16,9 +21,12 @@ export type UserEvent =
   // source_placement, source_publication, source_url.
   | "subscribe"
   | "unsubscribe"
-  | "publish" // published a document; props publication, document, first_publish, blocks
+  | "publish" // published a document; props publication, document, first_publish, blocks, scheduled ("true" when a scheduled publish went out)
+  | "send_email_post" // saved an email-only post; props publication, send_mode (now | scheduled | on_subscribe), audience
+  | "schedule_post" // scheduled a post to publish later; props publication, publish_at, first_schedule ("false" for a reschedule)
   | "create_publication" // props publication
-  | "signup" // identity row created; props method (email | bluesky), source
+  | "comment" // commented on a published document; props document, record_uri, reply ("true" for a reply to another comment)
+  | "signup" // identity row created; props method (email | bluesky), plus signupSourceProperties
   | "create_document" // props kind (doc | canvas | template | duplicate | publication_draft), publication
   | "pro_upgrade" // Leaflet Pro checkout completed; props plan
   | "pro_cancel" // Leaflet Pro subscription ended
@@ -33,6 +41,56 @@ export function subscriptionSourceProperties(
     source_placement: source?.placement ?? "",
     source_publication: source?.publication ?? "",
     source_url: source?.url ?? "",
+  };
+}
+
+// A server action's Referer is the page that called it. Flows that complete
+// after a redirect (OAuth, email login) stamp the url client-side instead, and
+// their cross-site Referer (the auth server) is ignored.
+export async function subscriptionSourceFromRequest(source: unknown) {
+  const sanitized = sanitizeSubscriptionSource(source);
+  if (sanitized?.url) return sanitized;
+  const requestHeaders = await headers();
+  const referer = requestHeaders.get("referer");
+  if (!referer) return sanitized;
+  try {
+    if (new URL(referer).host !== requestHeaders.get("host")) return sanitized;
+  } catch {
+    return sanitized;
+  }
+  return sanitizeSubscriptionSource({ ...sanitized, url: referer });
+}
+
+// Where a signup started: `source` names the flow (an after-sign-in action or
+// e.g. "membership"), the action's target is linked as publication/document,
+// and source_url is the page sign-in began on. Fields can come from the
+// client, so they're type-checked and length-limited like subscribe sources.
+export function signupSourceProperties(args: {
+  flow?: string;
+  action?: ActionAfterSignIn | null;
+  page?: string | null;
+}): Record<string, string> {
+  const { action } = args;
+  const props: Record<string, string> = {
+    source: String(args.flow ?? action?.action ?? "").slice(0, 64),
+  };
+  let source: unknown = { url: args.page ?? undefined };
+  if (
+    action?.action === "subscribe" &&
+    typeof action.publication === "string" &&
+    action.publication.length <= 512
+  ) {
+    props.publication = action.publication;
+    source = { url: args.page ?? undefined, ...action.source };
+  } else if (
+    action?.action === "recommend" &&
+    typeof action.document === "string" &&
+    action.document.length <= 512
+  )
+    props.document = action.document;
+  return {
+    ...props,
+    ...subscriptionSourceProperties(sanitizeSubscriptionSource(source)),
   };
 }
 
@@ -63,6 +121,17 @@ export function trackUserEvent(
 ) {
   if (!process.env.TINYBIRD_TOKEN) return;
   after(() => ingestUserEvent(identity, event, properties));
+}
+
+// For background jobs, which have no request to keep fast and may run
+// outside the request context `after()` needs.
+export async function recordUserEvent(
+  identity: TrackedIdentity,
+  event: UserEvent,
+  properties: Record<string, string> = {},
+) {
+  if (!process.env.TINYBIRD_TOKEN) return;
+  await ingestUserEvent(identity, event, properties);
 }
 
 async function ingestUserEvent(

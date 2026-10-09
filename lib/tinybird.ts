@@ -399,9 +399,15 @@ export const ACTIVITY_METRICS = {
   documents_created: { event: "create_document" },
   // Republishing an edit is a `publish` event too, but not a new post.
   posts_published: { event: "publish", where: ["first_publish", "true"] },
+  // Moving a scheduled post to a new time is a `schedule_post` event too.
+  posts_scheduled: {
+    event: "schedule_post",
+    where: ["first_schedule", "true"],
+  },
   publications_created: { event: "create_publication" },
   subscribes: { event: "subscribe" },
   unsubscribes: { event: "unsubscribe" },
+  comments: { event: "comment" },
   memberships_joined: { event: "join_membership" },
   pro_upgrades: { event: "pro_upgrade" },
   pro_cancels: { event: "pro_cancel" },

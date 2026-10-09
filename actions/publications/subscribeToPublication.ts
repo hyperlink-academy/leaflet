@@ -4,14 +4,12 @@ import { getAuthIdentity } from "src/auth";
 import { OAuthSessionError } from "src/atproto-oauth";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import {
-  sanitizeSubscriptionSource,
-  type SubscriptionSource,
-} from "src/subscriptionSource";
+import type { SubscriptionSource } from "src/subscriptionSource";
 import { buildOauthLoginUrl } from "src/utils/customDomain";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { createAtprotoSubscription } from "src/subscriptions/atproto";
 import {
+  subscriptionSourceFromRequest,
   subscriptionSourceProperties,
   trackUserEvent,
 } from "src/activeUserAnalytics";
@@ -26,11 +24,7 @@ export async function subscribeToPublication(
   source?: SubscriptionSource,
 ): Promise<SubscribeResult | never> {
   let requestHeaders = await headers();
-  let subscribeSource = sanitizeSubscriptionSource(source);
-  if (subscribeSource && !subscribeSource.url) {
-    let referer = requestHeaders.get("referer");
-    if (referer) subscribeSource = { ...subscribeSource, url: referer };
-  }
+  let subscribeSource = await subscriptionSourceFromRequest(source);
   let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) {
     return redirect(

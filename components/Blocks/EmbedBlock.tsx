@@ -11,6 +11,7 @@ import { isUrl } from "src/utils/isURL";
 import { elementId } from "src/utils/elementId";
 import { focusBlock } from "src/utils/focusBlock";
 import { useDrag } from "src/hooks/useDrag";
+import { useCanvasZoomLevel } from "src/canvasZoom/CanvasZoomProvider";
 import { BlockEmbedSmall } from "components/Icons/BlockEmbedSmall";
 import { CheckTiny } from "components/Icons/CheckTiny";
 import { EditTiny } from "components/Icons/EditTiny";
@@ -47,27 +48,22 @@ const useEmbedSizing = (props: BlockProps & { preview?: boolean }) => {
   let height = useEntity(props.entityID, "embed/height")?.data.value || 360;
   let aspectRatio = useEntity(props.entityID, "embed/aspect-ratio")?.data.value;
 
-  let heightOnDragEnd = useCallback(
-    (dragPosition: { x: number; y: number }) => {
+  // Drag deltas arrive in screen px; on a canvas the height is canvas px.
+  let zoom = useCanvasZoomLevel();
+  let heightHandle = useDrag({
+    onDragEnd: (dragPosition) =>
       rep?.mutate.assertFact({
         entity: props.entityID,
         attribute: "embed/height",
-        data: {
-          type: "number",
-          value: height + dragPosition.y,
-        },
-      });
-    },
-    [props, rep, height],
-  );
-
-  let heightHandle = useDrag({ onDragEnd: heightOnDragEnd });
+        data: { type: "number", value: height + dragPosition.y / zoom },
+      }),
+  });
 
   let resizeHandle =
     !props.preview && permissions.write && !aspectRatio ? (
       <div
         data-draggable
-        className={`resizeHandle
+        className={`resizeHandle touch-none
           cursor-ns-resize shrink-0 z-10 w-6 h-[5px]
           absolute bottom-[3px] right-1/2 translate-x-1/2
           rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,inset_0_0_0_1px_white]
@@ -78,7 +74,7 @@ const useEmbedSizing = (props: BlockProps & { preview?: boolean }) => {
 
   let sizeStyle = aspectRatio
     ? { aspectRatio }
-    : { height: height + (heightHandle.dragDelta?.y || 0) };
+    : { height: height + (heightHandle.dragDelta?.y || 0) / zoom };
 
   return {
     aspectRatio,
@@ -411,7 +407,8 @@ const BlockEmbedInput = (
       props.onDone?.();
       return;
     }
-    if (!rep) return;
+    // A block on its own on a canvas is in no list to add to.
+    if (!rep || props.pageType === "canvas") return;
     let textEntity = await addBlockBelow(rep, {
       parent: props.parent,
       position: props.position,

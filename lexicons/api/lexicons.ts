@@ -1302,6 +1302,10 @@ export const schemaDict = {
           clientHost: {
             type: 'string',
           },
+          view: {
+            type: 'string',
+            knownValues: ['full', 'media'],
+          },
         },
       },
     },
@@ -1341,6 +1345,133 @@ export const schemaDict = {
           },
           syntaxHighlightingTheme: {
             type: 'string',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksDrawing: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.drawing',
+    defs: {
+      main: {
+        type: 'object',
+        description:
+          "Freehand ink strokes. The view box is the area of drawing space the block shows, scaled to the block's width; strokes may reach past it.",
+        required: ['viewBox', 'strokes'],
+        properties: {
+          viewBox: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.blocks.drawing#viewBox',
+          },
+          strokes: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.blocks.drawing#stroke',
+            },
+          },
+          fills: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.blocks.drawing#fill',
+            },
+            description: 'Painted in order, beneath the strokes.',
+          },
+        },
+      },
+      fill: {
+        type: 'object',
+        description:
+          'A filled polygon, painted with the nonzero rule: the region a stroke encloses.',
+        required: ['points', 'color'],
+        properties: {
+          points: {
+            type: 'array',
+            items: {
+              type: 'integer',
+            },
+            description:
+              'Flattened vertices as x, y pairs in drawing space. The last joins back to the first.',
+          },
+          color: {
+            type: 'string',
+            description:
+              "A CSS hex color, or one of the document theme's colors: primary (text), accent, or tertiary (faded text).",
+          },
+        },
+      },
+      viewBox: {
+        type: 'object',
+        required: ['x', 'y', 'width', 'height'],
+        properties: {
+          x: {
+            type: 'integer',
+          },
+          y: {
+            type: 'integer',
+          },
+          width: {
+            type: 'integer',
+            minimum: 1,
+          },
+          height: {
+            type: 'integer',
+            minimum: 1,
+          },
+        },
+      },
+      stroke: {
+        type: 'object',
+        description:
+          'One pen stroke, drawn in order, rendered as a variable-width outline of its input points (as perfect-freehand does).',
+        required: ['points', 'color', 'size'],
+        properties: {
+          points: {
+            type: 'array',
+            items: {
+              type: 'integer',
+            },
+            description:
+              'Flattened input points as x, y, pressure triples: x and y in drawing space, pressure from 0 to 1000.',
+          },
+          color: {
+            type: 'string',
+            description:
+              "A CSS hex color, or one of the document theme's colors: primary (text), accent, or tertiary (faded text).",
+          },
+          size: {
+            type: 'integer',
+            minimum: 1,
+            description: "The stroke's base diameter in drawing space.",
+          },
+          simulatePressure: {
+            type: 'boolean',
+            description:
+              "The input had no real pressure (a mouse or finger); derive it from the stroke's speed instead.",
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksEmbeddedCanvas: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.embeddedCanvas',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['id'],
+        description:
+          "A fixed-size canvas shown in full inline. id refers to a pub.leaflet.pages.canvas in the document's pages whose width and height bound it.",
+        properties: {
+          id: {
+            type: 'string',
+          },
+          alt: {
+            type: 'string',
+            description:
+              'Alt text description of the canvas as a picture, for accessibility.',
           },
         },
       },
@@ -1528,7 +1659,7 @@ export const schemaDict = {
           },
           format: {
             type: 'string',
-            knownValues: ['grid', 'carousel', 'strip'],
+            knownValues: ['grid', 'carousel', 'strip', 'masonry'],
           },
           gap: {
             type: 'integer',
@@ -1537,7 +1668,7 @@ export const schemaDict = {
           maxWidth: {
             type: 'integer',
             description:
-              'Max width per image in grid view (px); drives how many columns fit.',
+              'Max width per image in grid and masonry views (px); drives how many columns fit.',
           },
         },
       },
@@ -1780,6 +1911,27 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksQuestions: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.questions',
+    defs: {
+      main: {
+        type: 'object',
+        description:
+          'Lets readers ask the author public questions (pub.leaflet.interactions.question) and shows the ones the author has answered (pub.leaflet.interactions.answer). Questions are resolved at render time rather than stored on the block.',
+        required: [],
+        properties: {
+          buttonText: {
+            type: 'string',
+            maxLength: 500,
+            maxGraphemes: 50,
+            description:
+              'Label for the button readers use to submit a question.',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksRecommendedPubs: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.recommendedPubs',
@@ -1794,6 +1946,38 @@ export const schemaDict = {
             type: 'boolean',
             description:
               'Lay the recommendations out as a single side-scrolling row instead of a grid.',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksReply: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.reply',
+    defs: {
+      main: {
+        type: 'object',
+        description:
+          'Lets readers submit their own documents as replies to this one (pub.leaflet.interactions.reply) and shows the ones the author made visible (pub.leaflet.interactions.replyVisibility). Replies are resolved at render time rather than stored on the block.',
+        required: [],
+        properties: {
+          buttonText: {
+            type: 'string',
+            maxLength: 500,
+            maxGraphemes: 50,
+            description: 'Label for the button readers use to submit a reply.',
+          },
+          promptText: {
+            type: 'string',
+            maxLength: 3000,
+            maxGraphemes: 300,
+            description:
+              'Text inviting readers to reply, shown beside the button.',
+          },
+          showPublicationTheme: {
+            type: 'boolean',
+            description:
+              "Render each reply in its own publication's theme. Defaults to true.",
           },
         },
       },
@@ -2208,6 +2392,82 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletInteractionsAnswer: {
+    lexicon: 1,
+    id: 'pub.leaflet.interactions.answer',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'any',
+        description:
+          "The author's answer to a pub.leaflet.interactions.question, written in the repo that owns the question's subject document. One record per question.",
+        record: {
+          type: 'object',
+          required: ['question', 'document', 'content', 'createdAt'],
+          properties: {
+            question: {
+              type: 'ref',
+              ref: 'lex:com.atproto.repo.strongRef',
+              description: 'The question being answered.',
+            },
+            document: {
+              type: 'string',
+              format: 'at-uri',
+              description: 'The document the question was asked on.',
+            },
+            content: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.pages.linearDocument',
+              description: "The answer's blocks.",
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
+  PubLeafletInteractionsQuestion: {
+    lexicon: 1,
+    id: 'pub.leaflet.interactions.question',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'tid',
+        description:
+          "A public question asked of a document's author, shown on the document once the author answers it (pub.leaflet.interactions.answer)",
+        record: {
+          type: 'object',
+          required: ['subject', 'plaintext', 'createdAt'],
+          properties: {
+            subject: {
+              type: 'string',
+              format: 'at-uri',
+              description: 'The document the question is asked on.',
+            },
+            plaintext: {
+              type: 'string',
+              maxLength: 10000,
+              maxGraphemes: 1000,
+            },
+            facets: {
+              type: 'array',
+              items: {
+                type: 'ref',
+                ref: 'lex:pub.leaflet.richtext.facet',
+              },
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
   PubLeafletInteractionsRecommend: {
     lexicon: 1,
     id: 'pub.leaflet.interactions.recommend',
@@ -2233,6 +2493,72 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletInteractionsReply: {
+    lexicon: 1,
+    id: 'pub.leaflet.interactions.reply',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'tid',
+        description:
+          "Submits one of the author's own documents as a reply to another document",
+        record: {
+          type: 'object',
+          required: ['subject', 'document', 'createdAt'],
+          properties: {
+            subject: {
+              type: 'string',
+              format: 'at-uri',
+              description: 'The document being replied to.',
+            },
+            document: {
+              type: 'string',
+              format: 'at-uri',
+              description:
+                'The reply: a document in the same repo as this record.',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
+  PubLeafletInteractionsReplyVisibility: {
+    lexicon: 1,
+    id: 'pub.leaflet.interactions.replyVisibility',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'any',
+        description:
+          "Declares which submitted replies are shown on a document. Lives in the document's repo, with a record key matching the document's.",
+        record: {
+          type: 'object',
+          required: ['subject', 'allowed'],
+          properties: {
+            subject: {
+              type: 'string',
+              format: 'at-uri',
+              description: 'The document whose replies this record moderates.',
+            },
+            allowed: {
+              type: 'array',
+              maxLength: 500,
+              description:
+                'The pub.leaflet.interactions.reply records shown on the document.',
+              items: {
+                type: 'string',
+                format: 'at-uri',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
   PubLeafletPagesCanvas: {
     lexicon: 1,
     id: 'pub.leaflet.pages.canvas',
@@ -2250,6 +2576,64 @@ export const schemaDict = {
               type: 'ref',
               ref: 'lex:pub.leaflet.pages.canvas#block',
             },
+          },
+          mobileView: {
+            type: 'string',
+            knownValues: ['unconstrained', 'left', 'center'],
+            description:
+              "How a narrow viewport frames the canvas: the whole canvas scaled to fit the width (unconstrained, the default), or a phone-width area anchored to the canvas's left edge or centered on it, shown at up to 1:1.",
+          },
+          width: {
+            type: 'integer',
+            description:
+              "Fixed canvas width in canvas px. With height, bounds the canvas: blocks are clipped to the area. Absent, the canvas grows with its content and is 1272px wide, or as wide as the inside of the publication's page (its theme's pageWidth) when it is one of a publication's pages.",
+          },
+          height: {
+            type: 'integer',
+            description: 'Fixed canvas height in canvas px; see width.',
+          },
+          lockViewerZoom: {
+            type: 'boolean',
+            description:
+              'Viewers cannot zoom the canvas or scroll it sideways: no wheel, pinch, double-tap or zoom controls, and the initial framing (see mobileView) stays. Vertical scrolling is unaffected.',
+          },
+          theme: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.theme.page',
+          },
+          background: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.pages.canvas#background',
+          },
+          pattern: {
+            type: 'string',
+            knownValues: ['grid', 'dot', 'plain'],
+            description:
+              "The guide pattern drawn over the canvas's background, under its blocks. Absent, a canvas that grows with its content shows the grid and a fixed-size canvas is plain.",
+          },
+        },
+      },
+      background: {
+        type: 'object',
+        required: ['image'],
+        description:
+          'An image tiled across the canvas, under its guide pattern and blocks.',
+        properties: {
+          image: {
+            type: 'blob',
+            accept: ['image/*'],
+            maxSize: 1000000,
+          },
+          width: {
+            type: 'integer',
+            description: 'Width of each tile in canvas px. Defaults to 500.',
+          },
+          opacity: {
+            type: 'integer',
+            minimum: 0,
+            maximum: 100,
+            description:
+              'Opacity of the image as a percentage. Defaults to 100.',
           },
         },
       },
@@ -2277,14 +2661,21 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.standardSitePost',
               'lex:pub.leaflet.blocks.standardSitePublication',
               'lex:pub.leaflet.blocks.page',
+              'lex:pub.leaflet.blocks.embeddedCanvas',
               'lex:pub.leaflet.blocks.poll',
               'lex:pub.leaflet.blocks.button',
               'lex:pub.leaflet.blocks.postsList',
               'lex:pub.leaflet.blocks.signup',
               'lex:pub.leaflet.blocks.recommendedPubs',
+              'lex:pub.leaflet.blocks.reply',
+              'lex:pub.leaflet.blocks.questions',
               'lex:pub.leaflet.blocks.membersOnlyDelimiter',
               'lex:pub.leaflet.blocks.postHeader',
+              'lex:pub.leaflet.blocks.drawing',
+              'lex:pub.leaflet.pages.linearDocument',
             ],
+            description:
+              'A single block, or a linear document: blocks grouped in reading order that are positioned, sized and rotated on the canvas as one.',
           },
           x: {
             type: 'integer',
@@ -2306,6 +2697,17 @@ export const schemaDict = {
             type: 'string',
             description:
               'Fractional index ordering this block against its siblings on the z axis. Blocks without one stack below every block with one, ordered by position.',
+          },
+          alignment: {
+            type: 'string',
+            description:
+              "Alignment of a single block's content. A linear document's blocks carry their own.",
+            knownValues: [
+              'lex:pub.leaflet.pages.linearDocument#textAlignLeft',
+              'lex:pub.leaflet.pages.linearDocument#textAlignCenter',
+              'lex:pub.leaflet.pages.linearDocument#textAlignRight',
+              'lex:pub.leaflet.pages.linearDocument#textAlignJustify',
+            ],
           },
         },
       },
@@ -2367,6 +2769,10 @@ export const schemaDict = {
               ref: 'lex:pub.leaflet.pages.linearDocument#block',
             },
           },
+          theme: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.theme.page',
+          },
         },
       },
       block: {
@@ -2393,13 +2799,17 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.standardSitePost',
               'lex:pub.leaflet.blocks.standardSitePublication',
               'lex:pub.leaflet.blocks.page',
+              'lex:pub.leaflet.blocks.embeddedCanvas',
               'lex:pub.leaflet.blocks.poll',
               'lex:pub.leaflet.blocks.button',
               'lex:pub.leaflet.blocks.postsList',
               'lex:pub.leaflet.blocks.signup',
               'lex:pub.leaflet.blocks.recommendedPubs',
+              'lex:pub.leaflet.blocks.reply',
+              'lex:pub.leaflet.blocks.questions',
               'lex:pub.leaflet.blocks.membersOnlyDelimiter',
               'lex:pub.leaflet.blocks.postHeader',
+              'lex:pub.leaflet.blocks.drawing',
             ],
           },
           alignment: {
@@ -2947,6 +3357,47 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletThemePage: {
+    lexicon: 1,
+    id: 'pub.leaflet.theme.page',
+    defs: {
+      main: {
+        type: 'object',
+        description:
+          "Colors a single page overrides. Each absent color is inherited from the document's or publication's theme.",
+        properties: {
+          pageBackground: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+          primary: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+          accentBackground: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+          accentText: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+        },
+      },
+    },
+  },
   PubLeafletThemeWordmark: {
     lexicon: 1,
     id: 'pub.leaflet.theme.wordmark',
@@ -3360,6 +3811,8 @@ export const ids = {
   PubLeafletBlocksBskyPost: 'pub.leaflet.blocks.bskyPost',
   PubLeafletBlocksButton: 'pub.leaflet.blocks.button',
   PubLeafletBlocksCode: 'pub.leaflet.blocks.code',
+  PubLeafletBlocksDrawing: 'pub.leaflet.blocks.drawing',
+  PubLeafletBlocksEmbeddedCanvas: 'pub.leaflet.blocks.embeddedCanvas',
   PubLeafletBlocksHeader: 'pub.leaflet.blocks.header',
   PubLeafletBlocksHorizontalRule: 'pub.leaflet.blocks.horizontalRule',
   PubLeafletBlocksHtml: 'pub.leaflet.blocks.html',
@@ -3374,7 +3827,9 @@ export const ids = {
   PubLeafletBlocksPoll: 'pub.leaflet.blocks.poll',
   PubLeafletBlocksPostHeader: 'pub.leaflet.blocks.postHeader',
   PubLeafletBlocksPostsList: 'pub.leaflet.blocks.postsList',
+  PubLeafletBlocksQuestions: 'pub.leaflet.blocks.questions',
   PubLeafletBlocksRecommendedPubs: 'pub.leaflet.blocks.recommendedPubs',
+  PubLeafletBlocksReply: 'pub.leaflet.blocks.reply',
   PubLeafletBlocksSignup: 'pub.leaflet.blocks.signup',
   PubLeafletBlocksStandardSitePost: 'pub.leaflet.blocks.standardSitePost',
   PubLeafletBlocksStandardSitePublication:
@@ -3387,7 +3842,12 @@ export const ids = {
   PubLeafletDocument: 'pub.leaflet.document',
   PubLeafletGraphRecommendations: 'pub.leaflet.graph.recommendations',
   PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
+  PubLeafletInteractionsAnswer: 'pub.leaflet.interactions.answer',
+  PubLeafletInteractionsQuestion: 'pub.leaflet.interactions.question',
   PubLeafletInteractionsRecommend: 'pub.leaflet.interactions.recommend',
+  PubLeafletInteractionsReply: 'pub.leaflet.interactions.reply',
+  PubLeafletInteractionsReplyVisibility:
+    'pub.leaflet.interactions.replyVisibility',
   PubLeafletPagesCanvas: 'pub.leaflet.pages.canvas',
   PubLeafletPagesLinearDocument: 'pub.leaflet.pages.linearDocument',
   PubLeafletPollDefinition: 'pub.leaflet.poll.definition',
@@ -3397,6 +3857,7 @@ export const ids = {
   PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
   PubLeafletThemeBackgroundImage: 'pub.leaflet.theme.backgroundImage',
   PubLeafletThemeColor: 'pub.leaflet.theme.color',
+  PubLeafletThemePage: 'pub.leaflet.theme.page',
   PubLeafletThemeWordmark: 'pub.leaflet.theme.wordmark',
   SiteStandardDocument: 'site.standard.document',
   SiteStandardGraphRecommend: 'site.standard.graph.recommend',
