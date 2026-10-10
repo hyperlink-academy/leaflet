@@ -137,6 +137,7 @@ export const TooltipButton = (props: {
   side?: "top" | "right" | "bottom" | "left" | undefined;
   open?: boolean;
   delayDuration?: number;
+  tooltipClassName?: string;
   // Leaves the trigger mounted so a click that flips this mid-press still
   // lands on the button.
   hideTooltip?: boolean;
@@ -169,7 +170,7 @@ export const TooltipButton = (props: {
                 side={props.side ? props.side : undefined}
                 sideOffset={6}
                 alignOffset={12}
-                className="portalStyles z-10  rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
+                className={`portalStyles ${props.tooltipClassName ?? "z-10"} rounded-md py-1 px-[6px] font-bold text-secondary text-sm`}
                 style={{
                   backgroundColor:
                     "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 85%)",

@@ -145,6 +145,7 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
             setLink();
           }
           if (e.key === "Escape") {
+            e.preventDefault();
             props.onClose();
           }
         }}
