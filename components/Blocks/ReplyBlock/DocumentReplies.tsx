@@ -18,7 +18,10 @@ import {
   withdrawReply,
   type ReplyError,
 } from "actions/replies";
-import type { DocumentReply } from "src/documentReplies";
+import type {
+  DocumentReply,
+  DocumentReplies as DocumentRepliesData,
+} from "src/documentReplies";
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { DEFAULT_REPLY_BUTTON_TEXT } from "./constants";
@@ -41,10 +44,13 @@ const replyErrorMessages: Partial<Record<ReplyError["type"], string>> = {
 // their own. `action` replaces the reader's reply button (the editor passes
 // its editable label). `initialReplies` is the public list a cached page was
 // rendered with; a signed-in viewer's own view (moderation, pending
-// submissions) replaces it once their identity is known.
+// submissions) replaces it once their identity is known. `initial` is the
+// viewer's own view as loaded with the editor page, shown until their
+// identity resolves and the first fetch replaces it.
 export function DocumentReplies(props: {
   documentUri: string;
   initialReplies?: DocumentReply[];
+  initial?: DocumentRepliesData;
   buttonText?: string;
   showThemes?: boolean;
   prompt?: React.ReactNode;
@@ -61,10 +67,12 @@ export function DocumentReplies(props: {
     needsFetch ? ["document_replies", props.documentUri, viewer] : null,
     () => getDocumentReplies(props.documentUri),
     {
-      fallbackData: props.initialReplies && {
-        isAuthor: false,
-        replies: props.initialReplies,
-      },
+      fallbackData:
+        props.initial ??
+        (props.initialReplies && {
+          isAuthor: false,
+          replies: props.initialReplies,
+        }),
     },
   );
   useDocumentEvents(props.documentUri, ["reply", "reply_visibility"], () => {

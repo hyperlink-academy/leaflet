@@ -11,13 +11,24 @@ import { Leaflet } from "./Leaflet";
 import { scanIndexLocal } from "src/replicache/utils";
 import { getPageReadingOrder } from "src/replicache/getBlocks";
 
-import { PageSWRDataProvider } from "components/PageSWRDataProvider";
+import {
+  PageSWRDataProvider,
+  type EditorBlockData,
+} from "components/PageSWRDataProvider";
 import { getPollData } from "actions/pollActions";
 import { supabaseServerClient } from "supabase/serverClient";
-import { get_leaflet_data } from "app/api/rpc/[command]/get_leaflet_data";
+import {
+  get_leaflet_data,
+  type GetLeafletDataReturnType,
+} from "app/api/rpc/[command]/get_leaflet_data";
 import { getSessionDid } from "src/identityPayload";
 import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationMetadataFromLeafletData";
 import { FontLoader, extractFontsFromFacts } from "components/FontLoader";
+import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
+import { documentHasBlock } from "src/utils/documentHasBlock";
+import { ids } from "lexicons/api/lexicons";
+import { loadDocumentQuestions } from "src/documentQuestions";
+import { loadDocumentReplies } from "src/documentReplies";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -38,15 +49,39 @@ const getInitialFacts = cache(async (root: string) => {
   return (data as unknown as Fact<Attribute>[]) || [];
 });
 
+// Questions and replies only exist once the published document carries
+// their block, which is also what the blocks check before showing them.
+async function getEditorBlockData(
+  data: NonNullable<GetLeafletDataReturnType["result"]["data"]>,
+  viewer: string | null,
+): Promise<EditorBlockData> {
+  let pub = getPublicationMetadataFromLeafletData(data);
+  let uri = pub?.documents?.uri;
+  let document = normalizeDocumentRecord(pub?.documents?.data);
+  if (!uri || !document) return {};
+  let [questions, replies] = await Promise.all([
+    documentHasBlock(document, ids.PubLeafletBlocksQuestions)
+      ? loadDocumentQuestions(uri, viewer)
+      : undefined,
+    documentHasBlock(document, ids.PubLeafletBlocksReply)
+      ? loadDocumentReplies(uri, viewer)
+      : undefined,
+  ]);
+  return { questions, replies };
+}
+
 export default async function LeafletPage(props: Props) {
   let { result: res } = await getLeafletData((await props.params).leaflet_id);
   let rootEntity = res.data?.root_entity;
   if (!rootEntity || !res.data || res.data.blocked_by_admin) notFound();
 
-  let [initialFacts, poll_data, viewerDid] = await Promise.all([
+  let token = res.data;
+  let viewer = getSessionDid();
+  let [initialFacts, poll_data, viewerDid, block_data] = await Promise.all([
     getInitialFacts(rootEntity),
-    getPollData(res.data.permission_token_rights.map((ptr) => ptr.entity_set)),
-    getSessionDid(),
+    getPollData(token.permission_token_rights.map((ptr) => ptr.entity_set)),
+    viewer,
+    viewer.then((did) => getEditorBlockData(token, did)),
   ]);
 
   // Extract font settings from facts for server-side font loading
@@ -63,6 +98,7 @@ export default async function LeafletPage(props: Props) {
         poll_data={poll_data}
         leaflet_id={res.data.id}
         leaflet_data={res}
+        block_data={block_data}
       >
         <Leaflet
           initialFacts={initialFacts}

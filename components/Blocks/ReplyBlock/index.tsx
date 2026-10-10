@@ -1,5 +1,8 @@
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import {
+  useEditorBlockData,
+  useLeafletPublicationData,
+} from "components/PageSWRDataProvider";
 import { ButtonPrimary } from "components/Buttons";
 import { useEntity, useReplicache } from "src/replicache";
 import { useIsBlockSelected } from "src/useUIState";
@@ -32,6 +35,7 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
     false;
   let { data, normalizedDocument } = useLeafletPublicationData();
   let documentUri = data?.documents?.uri;
+  let { replies: initial } = useEditorBlockData();
 
   // Readers can only reply once the published document carries the block, so
   // a block added since the last publish is still a draft.
@@ -102,6 +106,7 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
           showThemes={showThemes}
           prompt={prompt}
           action={button}
+          initial={initial}
         />
       ) : (
         <RepliesDraft prompt={prompt} action={button} />

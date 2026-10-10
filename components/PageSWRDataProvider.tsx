@@ -15,6 +15,18 @@ import {
   type NormalizedDocument,
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
+import type { DocumentQuestions } from "src/documentQuestions";
+import type { DocumentReplies } from "src/documentReplies";
+
+// Reader-submitted content on the published document, loaded by the editor
+// page for the viewer so the questions and reply blocks render it on first
+// paint instead of growing once a client fetch lands.
+export type EditorBlockData = {
+  questions?: DocumentQuestions;
+  replies?: DocumentReplies;
+};
+const EditorBlockDataContext = createContext<EditorBlockData>({});
+export const useEditorBlockData = () => useContext(EditorBlockDataContext);
 
 export const StaticLeafletDataContext = createContext<
   null | GetLeafletDataReturnType["result"]["data"]
@@ -23,6 +35,7 @@ export function PageSWRDataProvider(props: {
   leaflet_id: string;
   leaflet_data: GetLeafletDataReturnType["result"];
   poll_data: Awaited<ReturnType<typeof getPollData>>;
+  block_data?: EditorBlockData;
   children: React.ReactNode;
 }) {
   return (
@@ -34,7 +47,9 @@ export function PageSWRDataProvider(props: {
         },
       }}
     >
-      {props.children}
+      <EditorBlockDataContext.Provider value={props.block_data ?? {}}>
+        {props.children}
+      </EditorBlockDataContext.Provider>
     </SWRConfig>
   );
 }

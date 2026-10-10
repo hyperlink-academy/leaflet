@@ -1,5 +1,8 @@
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import {
+  useEditorBlockData,
+  useLeafletPublicationData,
+} from "components/PageSWRDataProvider";
 import { ButtonPrimary } from "components/Buttons";
 import { useEntity, useReplicache } from "src/replicache";
 import { useIsBlockSelected } from "src/useUIState";
@@ -29,6 +32,7 @@ export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
   );
   let { data, normalizedDocument } = useLeafletPublicationData();
   let documentUri = data?.documents?.uri;
+  let { questions: initial } = useEditorBlockData();
 
   // Readers can only ask once the published document carries the block, so
   // a block added since the last publish is still a draft.
@@ -101,6 +105,7 @@ export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
             blockEntity: props.entityID,
             page: pageOfParent(props.parent),
             action: button,
+            initial,
           }}
         />
       ) : (

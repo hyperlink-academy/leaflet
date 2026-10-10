@@ -15,7 +15,10 @@ import {
   withdrawQuestion,
   type QuestionError,
 } from "actions/questions";
-import type { DocumentQuestion } from "src/documentQuestions";
+import type {
+  DocumentQuestion,
+  DocumentQuestions as DocumentQuestionsData,
+} from "src/documentQuestions";
 import type { QuestionsAudience } from "src/questionsAudience";
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 import { ComposerPlaceholder } from "components/FacetedTextComposer";
@@ -61,6 +64,9 @@ export function DocumentQuestions(props: {
     page: string;
     // The editable button text
     action: React.ReactNode;
+    // The viewer's questions as loaded with the page, shown until their
+    // identity resolves and the first fetch replaces it
+    initial?: DocumentQuestionsData;
   };
 }) {
   let { identity, identityPending } = useIdentityData();
@@ -74,10 +80,12 @@ export function DocumentQuestions(props: {
     needsFetch ? ["document_questions", props.documentUri, viewer] : null,
     () => getDocumentQuestions(props.documentUri),
     {
-      fallbackData: props.initialQuestions && {
-        isAuthor: false,
-        questions: props.initialQuestions,
-      },
+      fallbackData:
+        props.editor?.initial ??
+        (props.initialQuestions && {
+          isAuthor: false,
+          questions: props.initialQuestions,
+        }),
     },
   );
   useDocumentEvents(props.documentUri, ["question", "answer"], () => {
