@@ -33,6 +33,7 @@ import {
 } from "src/utils/postsListPagination";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { buildChapterCards } from "src/utils/chapterGrouping";
+import { pageBlocksInOrder } from "src/utils/pageBlocksInOrder";
 import { PublicationHomeLayout } from "../PublicationHomeLayout";
 import { getPublicationURL } from "src/utils/getPublicationURL";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
@@ -116,9 +117,9 @@ export async function PublicationPageRenderer({
       ? [firstPage as PubLeafletPagesLinearDocument.Main]
       : [];
 
-  const postsListBlocks = allBlocks.filter((b) =>
-    PubLeafletBlocksPostsList.isMain(b.block),
-  );
+  const postsListBlocks = (
+    firstPage ? pageBlocksInOrder(firstPage).map((b) => b.block) : []
+  ).filter((b) => PubLeafletBlocksPostsList.isMain(b.block));
 
   // The document list is only loaded when the page renders one — callers that
   // already have it (theme preview) pass it in, everyone else queries here.
@@ -301,6 +302,7 @@ export async function PublicationPageRenderer({
                     JSON.stringify(standardSitePosts),
                   )}
                   pollData={pollData}
+                  postsListData={postsListData}
                   pages={
                     pages as (
                       | PubLeafletPagesLinearDocument.Main

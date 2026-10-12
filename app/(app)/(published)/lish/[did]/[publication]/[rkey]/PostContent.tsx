@@ -94,7 +94,7 @@ const HeadingStyle: { [level: number]: string } = {
   4: "font-bold leading-snug pb-1 text-secondary [font-family:var(--theme-heading-font)]",
 };
 
-type PostsListData = {
+export type PostsListData = {
   publication: { uri: string; record: unknown };
   publicationRecord: NormalizedPublication | null;
   // Per tag-filter signature (postsListFilterKey), what the blocks using that

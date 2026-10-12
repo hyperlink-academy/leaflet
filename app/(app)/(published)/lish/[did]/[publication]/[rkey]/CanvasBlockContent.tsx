@@ -15,7 +15,7 @@ import { canvasBlockEdges } from "src/utils/blockSpacing";
 import { CONTENT_WIDTH } from "src/canvasZoom/math";
 import { visibleCanvasX } from "src/utils/embeddedCanvasSize";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { Block } from "./PostContent";
+import { Block, type PostsListData } from "./PostContent";
 import { PollData } from "./fetchPollData";
 
 type BlockDataProps = {
@@ -24,6 +24,7 @@ type BlockDataProps = {
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
   pollData: PollData[];
+  postsListData?: PostsListData;
   pageId?: string;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   preview: boolean;
