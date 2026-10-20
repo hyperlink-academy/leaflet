@@ -335,9 +335,18 @@ const ImageBlockAttributes = {
   },
 } as const;
 
+const CoverImageAttributes = {
+  "cover-image/original": {
+    type: "image",
+    cardinality: "one",
+  },
+  "cover-image/crop": {
+    type: "view-box",
+    cardinality: "one",
+  },
+} as const;
+
 const GalleryBlockAttributes = {
-  // Child image entities, each carrying their own block/image, image/alt and
-  // image/name facts — mirrors poll/options.
   "gallery/image": {
     type: "ordered-reference",
     cardinality: "many",
@@ -571,6 +580,7 @@ export const Attributes = {
   ...BlueskyPostBlockAttributes,
   ...ButtonBlockAttributes,
   ...ImageBlockAttributes,
+  ...CoverImageAttributes,
   ...GalleryBlockAttributes,
   ...PollBlockAttributes,
   ...PostsListBlockAttributes,

@@ -4,7 +4,12 @@ import { DotLoader } from "components/utils/DotLoader";
 import { useState, useRef, useCallback, type CSSProperties } from "react";
 import { useLocalStorageState } from "src/hooks/useLocalStorageState";
 import { clearDraftDoc } from "src/utils/prosemirror/draftPersistence";
-import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
+import {
+  ButtonPrimary,
+  ButtonSecondary,
+  ButtonTertiary,
+} from "components/Buttons";
+import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
@@ -19,6 +24,8 @@ import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
 import { useEntity, useReplicache } from "src/replicache";
 import { addPostHeaderBlock } from "src/utils/addPostHeaderBlock";
 import { uploadCoverImage } from "src/utils/uploadCoverImage";
+import { localImages } from "src/utils/addImage";
+import { CoverImageCropModal } from "components/CoverImageCropModal";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { editorStateToFacetedText } from "components/BlueskyPostComposer/ProsemirrorEditor";
 import { EditorState } from "prosemirror-state";
@@ -42,21 +49,8 @@ import { DatePicker, TimePicker } from "components/DatePicker";
 import { Popover } from "components/Popover";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useHasPageLoaded } from "components/InitialPageLoadProvider";
-import { Separator } from "react-aria-components";
-import {
-  ThemeBackgroundProvider,
-  ThemeProvider,
-} from "components/ThemeManager/ThemeProvider";
-import {
-  PublicationThemeProvider,
-  PublicationBackgroundProvider,
-} from "components/ThemeManager/PublicationThemeProvider";
-import { LeafletContent } from "app/(app)/(identity)/(home-pages)/(writer)/home/LeafletList/LeafletContent";
-import { Contributor } from "lexicons/api/types/site/standard/document";
-import {
-  BskyEmbed,
-  StandardSiteExternalEmbed,
-} from "components/Blocks/BlueskyPostBlock/BskyEmbed";
+import { Separator } from "components/Layout";
+import { StandardSiteExternalEmbed } from "components/Blocks/BlueskyPostBlock/BskyEmbed";
 
 type Props = {
   title: string;
@@ -219,9 +213,11 @@ const PublishPostForm = (
   // set from the draft editor.
   let coverImageEntity =
     useEntity(props.root_entity, "root/cover-image")?.data.value ?? null;
-  let coverImageSrc = useEntity(coverImageEntity, "block/image")?.data.src;
-  // The did that owns the publication record — needed to resolve the pub icon
-  // blob and to attribute the post's author in the social-preview embed.
+  let coverImage = useEntity(coverImageEntity, "block/image")?.data;
+  let coverImageSrc = coverImage
+    ? localImages.get(coverImage.src) ??
+      (coverImage.local ? coverImage.fallback : coverImage.src)
+    : undefined;
   let pubDid =
     props.publicationOwnerDid ??
     (props.publication_uri ? new AtUri(props.publication_uri).host : undefined);
@@ -402,7 +398,9 @@ const PublishPostForm = (
               />
               {props.replyTarget && (
                 <div className="flex justify-between gap-4">
-                  <div className="text-tertiary whitespace-nowrap">Replying to</div>
+                  <div className="text-tertiary whitespace-nowrap">
+                    Replying to
+                  </div>
                   <a
                     href={props.replyTarget.href}
                     target="_blank"
@@ -579,6 +577,7 @@ const CoverImageControls = (props: {
 }) => {
   let { rep, permission_token } = useReplicache();
   let permission_set = permission_token.permission_token_rights[0]?.entity_set;
+  let [cropOpen, setCropOpen] = useState(false);
 
   const handleFile = async (file: File) => {
     if (!rep || !permission_set) return;
@@ -591,39 +590,54 @@ const CoverImageControls = (props: {
 
   if (!permission_set) return null;
 
-  return (
-    <div className="flex gap-3 justify-end items-center text-border text-sm">
-      {props.coverImageEntity && (
-        <>
-          <button
-            type="button"
-            className="hover:underline text-accent-contrast"
-            onClick={() => {
-              if (props.coverImageEntity)
-                rep?.mutate.deleteEntity({ entity: props.coverImageEntity });
+  let coverEntity = props.coverImageEntity;
+  if (!coverEntity)
+    return (
+      <div className="flex justify-end text-sm">
+        <label
+          className="hover:underline hover:cursor-pointer text-accent-contrast"
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          Add Cover
+          <input
+            className="hidden"
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              let file = e.currentTarget.files?.[0];
+              if (file) handleFile(file);
+              e.currentTarget.value = "";
             }}
-          >
-            Remove
-          </button>
-          |
-        </>
-      )}
-      <label
-        className="hover:underline hover:cursor-pointer text-accent-contrast"
-        onMouseDown={(e) => e.preventDefault()}
+          />
+        </label>
+      </div>
+    );
+
+  return (
+    <div className="flex gap-2 w-full items-center justify-end">
+      <ButtonTertiary
+        compact
+        type="button"
+        className="text-sm "
+        onClick={() => setCropOpen(true)}
       >
-        {props.coverImageEntity ? "Change" : "Add"} Cover
-        <input
-          className="hidden"
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            let file = e.currentTarget.files?.[0];
-            if (file) handleFile(file);
-            e.currentTarget.value = "";
-          }}
-        />
-      </label>
+        Crop
+      </ButtonTertiary>
+      <Separator classname="h-4!" />
+      <ButtonTertiary
+        compact
+        type="button"
+        aria-label="Remove cover image"
+        className="text-sm h-full py-0.5!"
+        onClick={() => rep?.mutate.deleteEntity({ entity: coverEntity })}
+      >
+        <DeleteTiny />
+      </ButtonTertiary>
+      <CoverImageCropModal
+        coverEntity={coverEntity}
+        open={cropOpen}
+        onOpenChange={setCropOpen}
+      />
     </div>
   );
 };
@@ -721,7 +735,7 @@ const BackdateOptions = (props: {
               onSelect={handleDateChange}
               disabled={(date) => date > latest()}
             />
-            <Separator className="border-border" />
+            <Separator classname="border-border" />
             <div className="flex gap-4 pb-1 items-center">
               <TimePicker value={timeValue} onChange={handleTimeChange} />
               {props.publishedAt && (

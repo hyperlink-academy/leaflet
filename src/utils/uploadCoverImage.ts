@@ -2,6 +2,7 @@ import { Replicache } from "replicache";
 import { v7 } from "uuid";
 import { addImage } from "src/utils/addImage";
 import { ReplicacheMutators } from "src/replicache";
+import { clearCoverImageCrop } from "src/utils/cropCoverImage";
 
 // Uploads `file` as the publication cover image. Shared by the publish-page and
 // metadata-bar "Add/Change Cover" controls.
@@ -32,6 +33,8 @@ export async function uploadCoverImage(
     await rep.mutate.createEntity([
       { entityID: coverEntity, permission_set: opts.permission_set },
     ]);
+  } else {
+    await clearCoverImageCrop(rep, coverEntity);
   }
 
   await addImage(file, rep, {

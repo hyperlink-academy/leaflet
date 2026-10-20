@@ -539,10 +539,6 @@ export function StandardSiteExternalEmbed({
   );
 }
 
-// Fills the fixed-aspect cover slot with a pulsing placeholder until the image
-// finishes downloading (or, with no src yet, while it's still being generated),
-// so the card doesn't render an empty gap. onError also clears the loader so a
-// broken thumb doesn't pulse forever.
 function CoverImage({
   src,
   alt,

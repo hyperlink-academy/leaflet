@@ -32,6 +32,9 @@ import { mergePreferences } from "src/utils/mergePreferences";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { DraftContributorSelector } from "./DraftContributorSelector";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
+import { CoverImageCropModal } from "components/CoverImageCropModal";
+import { DeleteTiny } from "components/Icons/DeleteTiny";
+import { EditTiny } from "components/Icons/EditTiny";
 
 export const PublicationMetadata = (props: {
   noInteractions?: boolean;
@@ -82,7 +85,7 @@ export const PublicationMetadata = (props: {
     <PostHeaderLayout
       compact={props.compact}
       pubLink={
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center min-w-0 w-full">
           {pub.publications && (
             <Link
               href={
@@ -90,7 +93,7 @@ export const PublicationMetadata = (props: {
                   ? `${getBasePublicationURL(pub.publications)}/dashboard`
                   : getPublicationURL(pub.publications)
               }
-              className="leafletMetadata text-accent-contrast font-bold no-underline!"
+              className="leafletMetadata text-accent-contrast font-bold no-underline! truncate"
             >
               {pub.publications?.name}
             </Link>
@@ -375,6 +378,8 @@ export const AddCoverImage = () => {
   let coverImage = useEntity(coverEntity, "block/image");
   let localSrc = coverImage ? localImages.get(coverImage.data.src) : undefined;
   let replaceInputRef = useRef<HTMLInputElement | null>(null);
+  let [popoverOpen, setPopoverOpen] = useState(false);
+  let [cropOpen, setCropOpen] = useState(false);
 
   const handleFile = async (file: File) => {
     if (!rep) return;
@@ -410,70 +415,94 @@ export const AddCoverImage = () => {
     );
 
   return (
-    <Popover
-      className="w-sm flex flex-col gap-2"
-      trigger={
-        <div className="flex flex-row gap-1 shrink-0 items-center hover:underline text-tertiary">
-          <CoverImageTiny />
-          <div className="sm:block hidden">Edit Cover</div>
+    <>
+      <Popover
+        className="w-sm flex flex-col gap-2 px-2!"
+        open={popoverOpen}
+        onOpenChange={setPopoverOpen}
+        trigger={
+          <div className="flex flex-row gap-1 shrink-0 items-center hover:underline text-tertiary">
+            <CoverImageTiny />
+            <div className="sm:block hidden">Edit Cover</div>
+          </div>
+        }
+      >
+        {coverImage &&
+          (localSrc || coverImage.data.local ? (
+            <img
+              loading="lazy"
+              decoding="async"
+              src={localSrc ?? coverImage.data.fallback}
+              className="w-full aspect-[1200/630] object-cover rounded-md border border-border-light"
+              alt=""
+            />
+          ) : (
+            <Image
+              src={
+                "/" +
+                new URL(coverImage.data.src).pathname
+                  .split("/")
+                  .slice(5)
+                  .join("/")
+              }
+              width={coverImage.data.width}
+              height={coverImage.data.height}
+              className="w-full aspect-[1200/630] object-cover rounded-md border border-border-light"
+              alt=""
+            />
+          ))}
+        <div className="flex  gap-2 w-full justify-between">
+          <div className="flex gap-1">
+            <input
+              ref={replaceInputRef}
+              className="hidden"
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                let file = e.currentTarget.files?.[0];
+                if (file) handleFile(file);
+                e.currentTarget.value = "";
+              }}
+            />
+            <ButtonTertiary
+              compact
+              type="button"
+              className="text-sm h-full py-0.5!"
+              onClick={() => rep?.mutate.deleteEntity({ entity: coverEntity })}
+            >
+              <DeleteTiny />
+            </ButtonTertiary>
+            <ButtonTertiary
+              compact
+              type="button"
+              className="changeCoverImageTrigger text-sm "
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => replaceInputRef.current?.click()}
+            >
+              Replace Image
+            </ButtonTertiary>
+          </div>
+          <ButtonPrimary
+            compact
+            type="button"
+            className="text-sm py-0.5!"
+            onClick={() => {
+              setPopoverOpen(false);
+              setCropOpen(true);
+            }}
+          >
+            <EditTiny />
+          </ButtonPrimary>
         </div>
-      }
-    >
-      {coverImage &&
-        (localSrc || coverImage.data.local ? (
-          <img
-            loading="lazy"
-            decoding="async"
-            src={localSrc ?? coverImage.data.fallback}
-            className="w-full aspect-video object-cover rounded-md border border-border-light"
-            alt=""
-          />
-        ) : (
-          <Image
-            src={
-              "/" +
-              new URL(coverImage.data.src).pathname
-                .split("/")
-                .slice(5)
-                .join("/")
-            }
-            width={coverImage.data.width}
-            height={coverImage.data.height}
-            className="w-full aspect-video object-cover rounded-md border border-border-light"
-            alt=""
-          />
-        ))}
-      <div className="flex gap-2 place-self-end">
-        <ButtonTertiary
-          compact
-          type="button"
-          className="text-sm "
-          onClick={() => rep?.mutate.deleteEntity({ entity: coverEntity })}
-        >
-          Remove
-        </ButtonTertiary>
-
-        <ButtonPrimary
-          compact
-          type="button"
-          className="changeCoverImageTrigger text-sm "
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => replaceInputRef.current?.click()}
-        >
-          Change Cover Image
-        </ButtonPrimary>
-        <input
-          ref={replaceInputRef}
-          className="hidden"
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            let file = e.currentTarget.files?.[0];
-            if (file) handleFile(file);
-            e.currentTarget.value = "";
-          }}
-        />
-      </div>
-    </Popover>
+      </Popover>
+      <CoverImageCropModal
+        coverEntity={coverEntity}
+        open={cropOpen}
+        onOpenChange={(open) => {
+          setCropOpen(open);
+          if (!open) setPopoverOpen(true);
+        }}
+      />
+    </>
   );
 };

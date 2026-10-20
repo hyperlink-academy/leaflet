@@ -170,6 +170,7 @@ function CoverImageControl(props: { entityID: string }) {
   let alt = useEntity(props.entityID, "image/alt")?.data.value;
   let coverEntity = useEntity(rootEntity, "root/cover-image")?.data.value;
   let coverImage = useEntity(coverEntity ?? null, "block/image");
+  let coverOriginal = useEntity(coverEntity ?? null, "cover-image/original");
 
   // Only show in a publication, with write permissions, and an image to copy.
   // Publication pages (e.g. an About page) have no cover image.
@@ -181,9 +182,8 @@ function CoverImageControl(props: { entityID: string }) {
   )
     return null;
 
-  // The cover is a standalone copy sharing this block's src, so a matching src
-  // means this block is the current cover.
-  let isCoverImage = !!coverImage && coverImage.data.src === image.data.src;
+  let coverSrc = (coverOriginal ?? coverImage)?.data.src;
+  let isCoverImage = !!coverSrc && coverSrc === image.data.src;
 
   return (
     <>

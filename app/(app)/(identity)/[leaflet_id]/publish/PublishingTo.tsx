@@ -12,9 +12,13 @@ export const PublishingTo = (props: {
   if (props.publication_uri && props.record) {
     return (
       <div className="flex  justify-between gap-4">
-        <div className="text-tertiary">{props.label ?? "Publishing to"}</div>
-        <div className="flex gap-2 items-center ">
-          <div className="font-bold text-secondary">{props.record.name}</div>
+        <div className="text-tertiary w-max shrink-0">
+          {props.label ?? "Publishing to"}
+        </div>
+        <div className="flex gap-2 items-center min-w-0">
+          <div className="font-bold text-secondary truncate">
+            {props.record.name}
+          </div>
           <PubIcon
             icon={
               props.record.icon
