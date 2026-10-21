@@ -4,7 +4,11 @@ import { recommendAction } from "actions/recommendAction";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextRequest, NextResponse } from "next/server";
-import { createOauthClient, describeOAuthError } from "src/atproto-oauth";
+import {
+  createOauthClient,
+  describeOAuthError,
+  restoreOAuthSession,
+} from "src/atproto-oauth";
 import {
   AUTH_TOKEN_COOKIE,
   resolveAuthToken,
@@ -85,22 +89,23 @@ export async function GET(
           (await cookies()).get(AUTH_TOKEN_COOKIE)?.value,
         );
         let sessionDid = existing?.identity.atp_did;
-        if (existing && sessionDid) {
-          if (!handle)
-            return handleAction(
-              action,
-              redirect || "/",
-              existing.tokenId,
-              sessionDid,
-            );
-          if ((await resolveToDid(handle)) === sessionDid)
-            return handleAction(
-              action,
-              redirect || "/",
-              existing.tokenId,
-              sessionDid,
-            );
-        }
+        // The leaflet auth_token outlives the atproto OAuth session it was
+        // minted with (a refresh can be rejected and the session row deleted),
+        // so a valid token alone would hand back a session whose atproto writes
+        // all fail as "logged out". Reuse it only while the OAuth session still
+        // restores; otherwise fall through to a full PDS login.
+        if (
+          existing &&
+          sessionDid &&
+          (!handle || (await resolveToDid(handle)) === sessionDid) &&
+          (await restoreOAuthSession(sessionDid)).ok
+        )
+          return handleAction(
+            action,
+            redirect || "/",
+            existing.tokenId,
+            sessionDid,
+          );
       }
 
       let state: OauthRequestClientState = {

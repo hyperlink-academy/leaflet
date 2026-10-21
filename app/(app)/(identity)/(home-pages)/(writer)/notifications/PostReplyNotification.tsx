@@ -12,7 +12,9 @@ export const PostReplyNotification = (props: HydratedPostReplyNotification) => {
   if (!docRecord) return null;
 
   // Links to the replied-to post, where the author accepts or hides the reply.
-  const href = getDocumentURL(docRecord, props.document_uri, pubRecord);
+  const href =
+    getDocumentURL(docRecord, props.document_uri, pubRecord) +
+    `#${props.anchor}`;
 
   return (
     <Notification

@@ -18,7 +18,8 @@ export const PostQuestionNotification = (
 
   // Links to the post's questions; the author answers from its editor.
   const href =
-    getDocumentURL(docRecord, props.document_uri, pubRecord) + "#questions";
+    getDocumentURL(docRecord, props.document_uri, pubRecord) +
+    `#${props.anchor}`;
 
   return (
     <Notification

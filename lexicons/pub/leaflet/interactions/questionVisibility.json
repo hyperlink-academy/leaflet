@@ -1,0 +1,44 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.interactions.questionVisibility",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "any",
+      "description": "Declares which questions asked on a document the author accepted or hid. Lives in the document's repo, with a record key matching the document's. An answered question shows unless hidden; any other question is pending.",
+      "record": {
+        "type": "object",
+        "required": [
+          "subject",
+          "accepted",
+          "hidden"
+        ],
+        "properties": {
+          "subject": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "The document whose questions this record moderates."
+          },
+          "accepted": {
+            "type": "array",
+            "maxLength": 500,
+            "description": "pub.leaflet.interactions.question records shown on the document.",
+            "items": {
+              "type": "string",
+              "format": "at-uri"
+            }
+          },
+          "hidden": {
+            "type": "array",
+            "maxLength": 500,
+            "description": "pub.leaflet.interactions.question records never shown on the document.",
+            "items": {
+              "type": "string",
+              "format": "at-uri"
+            }
+          }
+        }
+      }
+    }
+  }
+}

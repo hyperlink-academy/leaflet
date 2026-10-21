@@ -607,12 +607,14 @@ export async function processBlocksToPages(opts: {
         ...(buttonText?.data.value && { buttonText: buttonText.data.value }),
         ...(promptText?.data.value && { promptText: promptText.data.value }),
         ...(showTheme?.data.value === false && { showPublicationTheme: false }),
+        key: b.entityID,
       };
       return block;
     },
     questions: async (b) => {
       const [buttonText] = scan.eav(b.entityID, "questions/button-text");
       const [audience] = scan.eav(b.entityID, "questions/audience");
+      const [showPending] = scan.eav(b.entityID, "questions/show-pending");
       const block: $Typed<PubLeafletBlocksQuestions.Main> = {
         $type: "pub.leaflet.blocks.questions",
         ...(buttonText?.data.value && { buttonText: buttonText.data.value }),
@@ -620,6 +622,8 @@ export async function processBlocksToPages(opts: {
           audience.data.value !== "anyone" && {
             audience: audience.data.value,
           }),
+        ...(showPending?.data.value && { showPending: true }),
+        key: b.entityID,
       };
       return block;
     },

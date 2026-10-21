@@ -17,6 +17,10 @@ import { DotLoader } from "components/utils/DotLoader";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import type { DocumentReply } from "src/documentReplies";
 import {
+  hasSeveralAuthors,
+  InteractionAuthorLine,
+} from "../InteractionAuthorName";
+import {
   DEFAULT_REPLY_BUTTON_TEXT,
   DEFAULT_REPLY_PROMPT_TEXT,
 } from "./constants";
@@ -171,23 +175,34 @@ function ReplyPost(props: {
   );
 }
 
-// A reply with whatever acts on it in its top-right corner.
+// A reply under who submitted it, with whatever acts on it beside them.
 function ReplyRow(props: {
   reply: DocumentReply;
   showTheme?: boolean;
+  showHandle?: boolean;
   control?: React.ReactNode;
 }) {
   return (
-    <div className="relative transparent-container overflow-hidden">
-      <ReplyPost post={props.reply.post} showTheme={props.showTheme} />
-      {props.control && (
-        <div className="absolute top-2 right-3 z-[2] flex items-center gap-2 text-sm text-tertiary">
-          {props.control}
-        </div>
-      )}
+    <div className="flex flex-col gap-1">
+      <InteractionAuthorLine
+        author={props.reply.replier}
+        showHandle={props.showHandle}
+      >
+        {props.control && (
+          <span className="ml-auto shrink-0 flex items-center gap-2 text-tertiary">
+            {props.control}
+          </span>
+        )}
+      </InteractionAuthorLine>
+      <div className="transparent-container overflow-hidden">
+        <ReplyPost post={props.reply.post} showTheme={props.showTheme} />
+      </div>
     </div>
   );
 }
+
+const repliersDiffer = (replies: DocumentReply[]) =>
+  hasSeveralAuthors(replies.map((r) => r.replier));
 
 export function RepliesList(props: {
   replies: DocumentReply[];
@@ -197,6 +212,7 @@ export function RepliesList(props: {
   onWithdraw?: (uri: string) => void;
 }) {
   let { onWithdraw } = props;
+  let showHandles = repliersDiffer(props.replies);
   return (
     <div className="flex flex-col gap-5">
       <RepliesHeader prompt={props.prompt} action={props.action} />
@@ -207,6 +223,7 @@ export function RepliesList(props: {
               key={reply.uri}
               reply={reply}
               showTheme={props.showThemes}
+              showHandle={showHandles}
               control={
                 !reply.visible && (
                   <>
@@ -428,6 +445,7 @@ export function RepliesModeration(props: {
 }) {
   let pending = props.replies.filter((r) => !r.visible);
   let visible = props.replies.filter((r) => r.visible);
+  let showHandles = repliersDiffer(props.replies);
   let withdraw = (reply: DocumentReply) =>
     reply.mine && (
       <button
@@ -455,6 +473,7 @@ export function RepliesModeration(props: {
               key={reply.uri}
               reply={reply}
               showTheme={props.showThemes}
+              showHandle={showHandles}
               control={
                 <>
                   <ButtonPrimary
@@ -478,6 +497,7 @@ export function RepliesModeration(props: {
               key={reply.uri}
               reply={reply}
               showTheme={props.showThemes}
+              showHandle={showHandles}
               control={
                 <>
                   <ButtonSecondary

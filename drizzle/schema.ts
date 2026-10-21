@@ -648,6 +648,20 @@ export const document_reply_visibility = pgTable("document_reply_visibility", {
 	}
 });
 
+export const document_question_visibility = pgTable("document_question_visibility", {
+	uri: text("uri").notNull(),
+	subject: text("subject").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	question: text("question").notNull(),
+	state: text("state").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		uri_idx: index("document_question_visibility_uri_idx").on(table.uri),
+		document_question_visibility_pkey: primaryKey({ columns: [table.subject, table.question], name: "document_question_visibility_pkey"}),
+	}
+});
+
 export const document_questions = pgTable("document_questions", {
 	uri: text("uri").primaryKey().notNull(),
 	subject: text("subject").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),

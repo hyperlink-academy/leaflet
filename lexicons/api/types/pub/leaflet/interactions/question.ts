@@ -19,6 +19,8 @@ export interface Record {
   $type: 'pub.leaflet.interactions.question'
   /** The document the question is asked on. */
   subject: string
+  /** The key of the pub.leaflet.blocks.questions block on the subject this was submitted through, when the subject has more than one. */
+  block?: string
   plaintext: string
   facets?: PubLeafletRichtextFacet.Main[]
   createdAt: string

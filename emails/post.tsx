@@ -1,4 +1,9 @@
-import { DEFAULT_REPLY_BUTTON_TEXT } from "components/Blocks/ReplyBlock/constants";
+import {
+  DEFAULT_REPLY_BUTTON_TEXT,
+  DEFAULT_REPLY_PROMPT_TEXT,
+} from "components/Blocks/ReplyBlock/constants";
+import { DEFAULT_QUESTIONS_BUTTON_TEXT } from "components/Blocks/QuestionsBlock/constants";
+import { interactionBlockAnchor } from "src/utils/interactionBlockAnchor";
 import {
   Body,
   Column,
@@ -1556,22 +1561,26 @@ const BlockRenderer = ({
     "pub.leaflet.blocks.drawing": notSupported,
     "pub.leaflet.blocks.postsList": notSupported,
     "pub.leaflet.blocks.recommendedPubs": notSupported,
-    // Replies load and are submitted on the web; the email carries the
-    // button through to the post.
-    "pub.leaflet.blocks.reply": (block) => {
-      const url = blockUrl ?? postUrl;
-      if (!url) return null;
-      return (
-        <ButtonBlock
-          text={block.buttonText || DEFAULT_REPLY_BUTTON_TEXT}
-          url={url}
-          align="right"
+    "pub.leaflet.blocks.reply": (block) =>
+      postUrl ? (
+        <InteractionEmailBlock
+          url={`${postUrl}#${interactionBlockAnchor("replies", block.key)}`}
+          buttonText={block.buttonText || DEFAULT_REPLY_BUTTON_TEXT}
+          prompt={block.promptText || DEFAULT_REPLY_PROMPT_TEXT}
           theme={theme}
+          colors={colors}
         />
-      );
-    },
-    // Questions are asked and answered on the web.
-    "pub.leaflet.blocks.questions": () => null,
+      ) : null,
+    "pub.leaflet.blocks.questions": (block) =>
+      postUrl ? (
+        <InteractionEmailBlock
+          url={`${postUrl}#${interactionBlockAnchor("questions", block.key)}`}
+          buttonText={block.buttonText || DEFAULT_QUESTIONS_BUTTON_TEXT}
+          inputPlaceholder="Ask the author a question…"
+          theme={theme}
+          colors={colors}
+        />
+      ) : null,
     "pub.leaflet.blocks.signup": notSupported,
     // The email has its own header; the block is nothing in the body.
     "pub.leaflet.blocks.postHeader": () => null,
@@ -2765,18 +2774,93 @@ const ImageGalleryEmailBlock = ({
   );
 };
 
+// The questions and reply blocks: the web block's bordered box, with the
+// reply prompt (centered over the button, as on the web) or a stand-in for
+// the question box (button under it on the right). Everything links to the
+// block on the post, where the reader acts.
+const InteractionEmailBlock = ({
+  url,
+  buttonText,
+  prompt,
+  inputPlaceholder,
+  theme,
+  colors,
+}: {
+  url: string;
+  buttonText: string;
+  prompt?: string;
+  inputPlaceholder?: string;
+  theme: EmailTheme;
+  colors: ResolvedColors;
+}) => (
+  <Section
+    style={{
+      border: `1px solid ${colors.border}`,
+      borderCollapse: "separate",
+      borderRadius: 8,
+      margin: BLOCK_MARGIN,
+      padding: 12,
+    }}
+  >
+    {prompt ? (
+      <ReactEmailText
+        style={{
+          color: theme.primary,
+          fontFamily: theme.bodyFont,
+          fontSize: 20,
+          fontWeight: "bold",
+          lineHeight: 1.3,
+          margin: "4px 0 0",
+          textAlign: "center",
+        }}
+      >
+        {prompt}
+      </ReactEmailText>
+    ) : null}
+    {inputPlaceholder ? (
+      <Link
+        href={url}
+        style={{
+          border: `1px solid ${colors.border}`,
+          borderRadius: 6,
+          color: colors.tertiary,
+          display: "block",
+          fontFamily: theme.bodyFont,
+          fontSize: 16,
+          fontStyle: "italic",
+          lineHeight: 1.5,
+          minHeight: 64,
+          padding: "6px 8px",
+          textDecoration: "none",
+        }}
+      >
+        {inputPlaceholder}
+      </Link>
+    ) : null}
+    <ButtonBlock
+      text={buttonText}
+      url={url}
+      align={prompt ? "center" : "right"}
+      theme={theme}
+      margin={prompt ? "8px 0 0" : "4px 0 0"}
+    />
+  </Section>
+);
+
 const ButtonBlock = ({
   text,
   url,
   align = "center",
   fullWidth = false,
   theme = defaultEmailTheme,
+  margin = BLOCK_MARGIN,
 }: {
   text: string;
   url: string;
   align?: "left" | "center" | "right";
   fullWidth?: boolean;
   theme?: EmailTheme;
+  margin?: string;
 }) => {
   // Bulletproof button: table-based so Outlook (which ignores padding on
   // <a>) renders a real clickable button. The `<td>` carries the bgcolor
@@ -2785,7 +2869,7 @@ const ButtonBlock = ({
   // attribute — Gmail won't reliably cascade `text-align` from a wrapping
   // <Section>, so we anchor on the table itself.
   return (
-    <Section style={{ margin: BLOCK_MARGIN, minWidth: "100%" }}>
+    <Section style={{ margin, minWidth: "100%" }}>
       <table
         role="presentation"
         align={align}

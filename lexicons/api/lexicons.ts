@@ -1918,7 +1918,7 @@ export const schemaDict = {
       main: {
         type: 'object',
         description:
-          'Lets readers ask the author public questions (pub.leaflet.interactions.question) and shows the ones the author has answered (pub.leaflet.interactions.answer). Questions are resolved at render time rather than stored on the block.',
+          'Lets readers ask the author public questions (pub.leaflet.interactions.question) and shows the ones the author has answered (pub.leaflet.interactions.answer) or accepted (pub.leaflet.interactions.questionVisibility). Questions are resolved at render time rather than stored on the block.',
         required: [],
         properties: {
           buttonText: {
@@ -1933,6 +1933,17 @@ export const schemaDict = {
             knownValues: ['anyone', 'follows', 'followers'],
             description:
               'Who may ask: anyone, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a question is asked.',
+          },
+          showPending: {
+            type: 'boolean',
+            description:
+              "Show readers questions the author hasn't accepted, answered or hidden yet. Defaults to false.",
+          },
+          key: {
+            type: 'string',
+            maxLength: 100,
+            description:
+              "Tells this block apart from the document's other blocks of its type; interaction records name it in their `block` field. Records without a matching key belong to the first block of the type.",
           },
         },
       },
@@ -1984,6 +1995,12 @@ export const schemaDict = {
             type: 'boolean',
             description:
               "Render each reply in its own publication's theme. Defaults to true.",
+          },
+          key: {
+            type: 'string',
+            maxLength: 100,
+            description:
+              "Tells this block apart from the document's other blocks of its type; interaction records name it in their `block` field. Records without a matching key belong to the first block of the type.",
           },
         },
       },
@@ -2443,7 +2460,7 @@ export const schemaDict = {
         type: 'record',
         key: 'tid',
         description:
-          "A public question asked of a document's author, shown on the document once the author answers it (pub.leaflet.interactions.answer)",
+          "A public question asked of a document's author, shown on the document once the author answers (pub.leaflet.interactions.answer) or accepts it (pub.leaflet.interactions.questionVisibility)",
         record: {
           type: 'object',
           required: ['subject', 'plaintext', 'createdAt'],
@@ -2452,6 +2469,12 @@ export const schemaDict = {
               type: 'string',
               format: 'at-uri',
               description: 'The document the question is asked on.',
+            },
+            block: {
+              type: 'string',
+              maxLength: 100,
+              description:
+                'The key of the pub.leaflet.blocks.questions block on the subject this was submitted through, when the subject has more than one.',
             },
             plaintext: {
               type: 'string',
@@ -2468,6 +2491,50 @@ export const schemaDict = {
             createdAt: {
               type: 'string',
               format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
+  PubLeafletInteractionsQuestionVisibility: {
+    lexicon: 1,
+    id: 'pub.leaflet.interactions.questionVisibility',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'any',
+        description:
+          "Declares which questions asked on a document the author accepted or hid. Lives in the document's repo, with a record key matching the document's. An answered question shows unless hidden; any other question is pending.",
+        record: {
+          type: 'object',
+          required: ['subject', 'accepted', 'hidden'],
+          properties: {
+            subject: {
+              type: 'string',
+              format: 'at-uri',
+              description:
+                'The document whose questions this record moderates.',
+            },
+            accepted: {
+              type: 'array',
+              maxLength: 500,
+              description:
+                'pub.leaflet.interactions.question records shown on the document.',
+              items: {
+                type: 'string',
+                format: 'at-uri',
+              },
+            },
+            hidden: {
+              type: 'array',
+              maxLength: 500,
+              description:
+                'pub.leaflet.interactions.question records never shown on the document.',
+              items: {
+                type: 'string',
+                format: 'at-uri',
+              },
             },
           },
         },
@@ -2522,6 +2589,12 @@ export const schemaDict = {
               format: 'at-uri',
               description:
                 'The reply: a document in the same repo as this record.',
+            },
+            block: {
+              type: 'string',
+              maxLength: 100,
+              description:
+                'The key of the pub.leaflet.blocks.reply block on the subject this was submitted through, when the subject has more than one.',
             },
             createdAt: {
               type: 'string',
@@ -3850,6 +3923,8 @@ export const ids = {
   PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
   PubLeafletInteractionsAnswer: 'pub.leaflet.interactions.answer',
   PubLeafletInteractionsQuestion: 'pub.leaflet.interactions.question',
+  PubLeafletInteractionsQuestionVisibility:
+    'pub.leaflet.interactions.questionVisibility',
   PubLeafletInteractionsRecommend: 'pub.leaflet.interactions.recommend',
   PubLeafletInteractionsReply: 'pub.leaflet.interactions.reply',
   PubLeafletInteractionsReplyVisibility:

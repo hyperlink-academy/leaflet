@@ -20,6 +20,8 @@ export interface Record {
   subject: string
   /** The reply: a document in the same repo as this record. */
   document: string
+  /** The key of the pub.leaflet.blocks.reply block on the subject this was submitted through, when the subject has more than one. */
+  block?: string
   createdAt: string
   [k: string]: unknown
 }

@@ -23,6 +23,8 @@ export interface Main {
   promptText?: string
   /** Render each reply in its own publication's theme. Defaults to true. */
   showPublicationTheme?: boolean
+  /** Tells this block apart from the document's other blocks of its type; interaction records name it in their `block` field. Records without a matching key belong to the first block of the type. */
+  key?: string
 }
 
 const hashMain = 'main'

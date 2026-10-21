@@ -49,6 +49,9 @@ const replyErrorMessages: Partial<Record<ReplyError["type"], string>> = {
 // identity resolves and the first fetch replaces it.
 export function DocumentReplies(props: {
   documentUri: string;
+  // Key of the reply block this is (see resolveInteractionBlock): only its
+  // replies show, and new ones are submitted through it
+  block: string | null;
   initialReplies?: DocumentReply[];
   initial?: DocumentRepliesData;
   buttonText?: string;
@@ -63,7 +66,7 @@ export function DocumentReplies(props: {
   let [changed, setChanged] = useState(false);
   let needsFetch =
     !identityPending && (!!viewer || !props.initialReplies || changed);
-  let { data, mutate } = useSWR(
+  let { data: allReplies, mutate } = useSWR(
     needsFetch ? ["document_replies", props.documentUri, viewer] : null,
     () => getDocumentReplies(props.documentUri),
     {
@@ -75,6 +78,10 @@ export function DocumentReplies(props: {
         }),
     },
   );
+  let data = allReplies && {
+    ...allReplies,
+    replies: allReplies.replies.filter((r) => r.block === props.block),
+  };
   useDocumentEvents(props.documentUri, ["reply", "reply_visibility"], () => {
     setChanged(true);
     mutate();
@@ -116,6 +123,7 @@ export function DocumentReplies(props: {
           <ReplyButton
             label={label}
             documentUri={props.documentUri}
+            block={props.block}
             onSubmitted={() => mutate()}
           />
         )}
@@ -134,7 +142,7 @@ export function DocumentReplies(props: {
               ? loaded.replies
               : inEditor
                 ? []
-                : data?.replies.filter((r) => r.visible) ?? []
+                : (data?.replies.filter((r) => r.visible) ?? [])
           }
           showThemes={props.showThemes}
           prompt={props.prompt}
@@ -190,6 +198,7 @@ export function DocumentReplies(props: {
           <ReplyButton
             label={label}
             documentUri={props.documentUri}
+            block={props.block}
             onSubmitted={() => mutate()}
           />
         ) : (
@@ -211,6 +220,7 @@ export function DocumentReplies(props: {
 function ReplyButton(props: {
   label: string;
   documentUri: string;
+  block: string | null;
   onSubmitted: () => void;
 }) {
   let [open, setOpen] = useState(false);
@@ -224,6 +234,7 @@ function ReplyButton(props: {
     >
       <ReplyPickerForViewer
         documentUri={props.documentUri}
+        block={props.block}
         onSubmitted={() => {
           setOpen(false);
           props.onSubmitted();
@@ -235,6 +246,7 @@ function ReplyButton(props: {
 
 function ReplyPickerForViewer(props: {
   documentUri: string;
+  block: string | null;
   onSubmitted: () => void;
 }) {
   let { identity } = useIdentityData();
@@ -248,7 +260,11 @@ function ReplyPickerForViewer(props: {
       publications={data?.publications}
       onCreateDraft={async (publication_uri) => {
         let result = await run(() =>
-          createReplyDraft({ subject: props.documentUri, publication_uri }),
+          createReplyDraft({
+            subject: props.documentUri,
+            block: props.block,
+            publication_uri,
+          }),
         );
         if (!result) return;
         window.location.assign(`${mainSiteAuthBase()}/${result.value.leaflet}`);
@@ -273,7 +289,7 @@ function ReplyPickerForViewer(props: {
       onSubmit={async (reply) => {
         setSubmitting(true);
         let ok = await run(() =>
-          submitReply({ subject: props.documentUri, reply }),
+          submitReply({ subject: props.documentUri, block: props.block, reply }),
         );
         setSubmitting(false);
         if (ok) props.onSubmitted();

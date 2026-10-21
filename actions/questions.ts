@@ -2,10 +2,11 @@
 
 import { AtUri } from "@atproto/syntax";
 import { TID } from "@atproto/common";
+import { XRPCError } from "@atproto/xrpc";
 import { v7 } from "uuid";
 import {
-  PubLeafletBlocksQuestions,
   PubLeafletInteractionsAnswer,
+  PubLeafletInteractionsQuestionVisibility,
   PubLeafletInteractionsQuestion,
   PubLeafletPagesLinearDocument,
   PubLeafletRichtextFacet,
@@ -20,14 +21,20 @@ import {
   Notification,
   pingIdentityToUpdateNotification,
 } from "src/notifications";
-import { findDocumentBlock } from "src/utils/documentHasBlock";
+import { resolveInteractionBlock } from "src/utils/documentHasBlock";
 import { questionsAudience } from "src/questionsAudience";
+import {
+  canAskQuestion,
+  mirrorQuestionVisibility,
+  questionsBlocksOf,
+  questionVisibilityStates,
+} from "src/questionsBlocks";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import {
   answerRkey,
-  canAskQuestion,
   loadDocumentQuestions,
   type DocumentQuestions,
+  type QuestionState,
 } from "src/documentQuestions";
 import { scanIndexLocal } from "src/replicache/utils";
 import type { Fact } from "src/replicache";
@@ -68,6 +75,8 @@ export type QuestionError =
 // Asks the author of `subject` a public question.
 export async function askQuestion(args: {
   subject: string;
+  // Key of the questions block asked through
+  block: string | null;
   plaintext: string;
   facets: PubLeafletRichtextFacet.Main[];
 }): Promise<Result<{ uri: string }, QuestionError>> {
@@ -88,13 +97,12 @@ export async function askQuestion(args: {
     subjectDoc.data,
     subjectDoc.uri,
   );
-  const questionsBlock =
-    subjectRecord &&
-    findDocumentBlock(subjectRecord, ids.PubLeafletBlocksQuestions);
-  if (!questionsBlock) return Err({ type: "questions_closed" });
-  const audience = questionsAudience(
-    (questionsBlock as PubLeafletBlocksQuestions.Main).audience,
+  const questionsBlock = resolveInteractionBlock(
+    questionsBlocksOf(subjectRecord),
+    args.block,
   );
+  if (!questionsBlock) return Err({ type: "questions_closed" });
+  const audience = questionsAudience(questionsBlock.audience);
   try {
     if (!(await canAskQuestion(args.subject, did, audience)))
       return Err({
@@ -111,6 +119,7 @@ export async function askQuestion(args: {
   const record: PubLeafletInteractionsQuestion.Record = {
     $type: "pub.leaflet.interactions.question",
     subject: args.subject,
+    block: questionsBlock.key,
     plaintext: args.plaintext,
     facets: args.facets.length > 0 ? args.facets : undefined,
     createdAt: new Date().toISOString(),
@@ -181,7 +190,7 @@ export async function withdrawQuestion(
   // Read before the record goes: the appview may delete the row first.
   const { data: row } = await supabaseServerClient
     .from("document_questions")
-    .select("subject, document_question_answers(uri)")
+    .select("subject")
     .eq("uri", questionUri)
     .maybeSingle();
   try {
@@ -198,11 +207,11 @@ export async function withdrawQuestion(
     .from("document_questions")
     .delete()
     .eq("uri", questionUri);
-  if (row)
+  if (row) {
     await broadcastDocumentEvent(supabaseServerClient, "question", row.subject);
-  // An answered question was server-rendered into the post's pages.
-  if (row?.document_question_answers)
+    // A shown question was server-rendered into the post's pages.
     await revalidateDocumentPaths(row.subject, { neighbours: false });
+  }
   return Ok(null);
 }
 
@@ -314,4 +323,104 @@ export async function publishAnswer(args: {
   // The post's page lists its answered questions.
   await revalidateDocumentPaths(subject, { neighbours: false });
   return Ok({ uri });
+}
+
+// Accepts, hides or returns to pending one question on the viewer's own
+// document. The states live in one pub.leaflet.interactions.questionVisibility
+// record in the document's repo, keyed by the document's rkey so every change
+// is a plain overwrite; the supabase rows mirror what the appview indexes
+// from it.
+export async function setQuestionState(args: {
+  subject: string;
+  question: string;
+  state: QuestionState;
+}): Promise<Result<null, QuestionError>> {
+  const identity = await getAuthIdentity();
+  if (!identity?.atp_did) return Err(notAuthenticated);
+  if (!isDocumentOwner(args.subject, identity.atp_did))
+    return Err({ type: "not_owner" });
+
+  const agent = await agentFor(identity.atp_did);
+  if (!agent.ok) return Err(agent.error);
+  const subjectUri = new AtUri(args.subject);
+  const repo = subjectUri.host;
+  const collection = ids.PubLeafletInteractionsQuestionVisibility;
+  const rkey = subjectUri.rkey;
+
+  // Built from the record rather than the mirrored rows: the appview rewrites
+  // the rows from each record event, which can land after a newer change.
+  let marks = new Map<string, QuestionState>();
+  try {
+    const { data } = await agent.value.com.atproto.repo.getRecord({
+      repo,
+      collection,
+      rkey,
+    });
+    const record = PubLeafletInteractionsQuestionVisibility.validateRecord(
+      data.value,
+    );
+    if (record.success) marks = questionVisibilityStates(record.value);
+  } catch (e) {
+    if (!(e instanceof XRPCError && e.error === "RecordNotFound")) {
+      console.error("[questions] visibility read failed", e);
+      return Err({ type: "failed" });
+    }
+  }
+  marks.delete(args.question);
+  if (args.state !== "pending") marks.set(args.question, args.state);
+
+  // Withdrawn questions drop out of the lists here, so they can't grow
+  // without bound.
+  const { data: existing, error: readError } = await supabaseServerClient
+    .from("document_questions")
+    .select("uri")
+    .eq("subject", args.subject)
+    .in("uri", [...marks.keys()]);
+  if (readError) {
+    console.error("[questions] question read failed", readError);
+    return Err({ type: "failed" });
+  }
+  const live = new Set(existing.map((r) => r.uri));
+  if (args.state !== "pending" && !live.has(args.question))
+    return Err({ type: "not_found" });
+  for (const q of marks.keys()) if (!live.has(q)) marks.delete(q);
+  const listOf = (state: QuestionState) =>
+    [...marks].filter(([, s]) => s === state).map(([q]) => q);
+
+  try {
+    if (marks.size === 0) {
+      await agent.value.com.atproto.repo
+        .deleteRecord({ repo, collection, rkey })
+        .catch(() => {});
+    } else {
+      const record: PubLeafletInteractionsQuestionVisibility.Record = {
+        $type: "pub.leaflet.interactions.questionVisibility",
+        subject: args.subject,
+        accepted: listOf("accepted"),
+        hidden: listOf("hidden"),
+      };
+      await agent.value.com.atproto.repo.putRecord({
+        repo,
+        collection,
+        rkey,
+        record,
+        validate: false,
+      });
+    }
+  } catch (e) {
+    console.error("[questions] visibility write failed", e);
+    return Err({ type: "failed" });
+  }
+
+  // Mirror the record now rather than waiting on the appview.
+  await mirrorQuestionVisibility(
+    supabaseServerClient,
+    AtUri.make(repo, collection, rkey).toString(),
+    args.subject,
+    marks,
+  );
+  await broadcastDocumentEvent(supabaseServerClient, "question", args.subject);
+  // Shown questions are server-rendered into the post's pages.
+  await revalidateDocumentPaths(args.subject, { neighbours: false });
+  return Ok(null);
 }

@@ -24,6 +24,11 @@ const RootAttributes = {
     type: "string",
     cardinality: "one",
   },
+  // The key of the reply block on that post the draft was started from
+  "root/reply-to-block": {
+    type: "string",
+    cardinality: "one",
+  },
 } as const;
 const PageAttributes = {
   "card/block": {
@@ -431,6 +436,10 @@ const QuestionsBlockAttributes = {
   // "anyone" | "follows" | "followers"; see pub.leaflet.blocks.questions
   "questions/audience": {
     type: "string",
+    cardinality: "one",
+  },
+  "questions/show-pending": {
+    type: "boolean",
     cardinality: "one",
   },
   // The author's answer drafts: entities holding a linear block list under

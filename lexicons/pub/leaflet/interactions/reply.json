@@ -24,6 +24,11 @@
             "format": "at-uri",
             "description": "The reply: a document in the same repo as this record."
           },
+          "block": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "The key of the pub.leaflet.blocks.reply block on the subject this was submitted through, when the subject has more than one."
+          },
           "createdAt": {
             "type": "string",
             "format": "datetime"

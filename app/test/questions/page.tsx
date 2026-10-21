@@ -1,7 +1,10 @@
 "use client";
 import React, { useState } from "react";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
-import type { DocumentQuestion } from "src/documentQuestions";
+import type {
+  DocumentQuestion,
+  QuestionState,
+} from "src/documentQuestions";
 import { DEFAULT_QUESTIONS_BUTTON_TEXT } from "components/Blocks/QuestionsBlock/constants";
 import {
   AnswerEditorFrame,
@@ -18,6 +21,12 @@ import { PublishedAnswer } from "components/Blocks/QuestionsBlock/PublishedAnswe
 
 const VIEWER = "did:plc:viewer";
 const AUTHOR = "did:plc:author";
+const AUTHOR_PROFILE = {
+  did: AUTHOR,
+  handle: "author.bsky.social",
+  displayName: "The Author",
+  avatar: null,
+};
 
 const paragraph = (plaintext: string) => ({
   $type: "pub.leaflet.pages.linearDocument#block" as const,
@@ -40,11 +49,14 @@ const question = (
     day?: number;
     answer?: string[];
     mine?: boolean;
+    state?: QuestionState;
   },
 ): DocumentQuestion => {
   let did = args.did ?? `did:plc:asker${i}`;
   return {
     uri: `at://${did}/pub.leaflet.interactions.question/q${i}`,
+    block: null,
+    state: args.state ?? (args.answer ? "accepted" : "pending"),
     mine: !!args.mine,
     asker: {
       did,
@@ -60,6 +72,7 @@ const question = (
     answer: args.answer
       ? {
           uri: `at://${AUTHOR}/pub.leaflet.interactions.answer/a${i}`,
+          author: AUTHOR_PROFILE,
           content: answerContent(args.answer),
         }
       : null,
@@ -92,6 +105,13 @@ const seed = (): DocumentQuestion[] => [
     text: "Would you ever go back to a bigger team?",
     name: "Sam Rivera",
     day: 5,
+    state: "accepted",
+  }),
+  question(4, {
+    text: "buy followers cheap!!",
+    name: "Spam Account",
+    day: 6,
+    state: "hidden",
   }),
 ];
 
@@ -141,6 +161,15 @@ function Playground() {
   let [questions, setQuestions] = useState<DocumentQuestion[]>(seed);
   let [viewer, setViewer] = useState<Viewer>("reader");
   let [drafts, setDrafts] = useState<Record<string, string>>({});
+  let [showPending, setShowPending] = useState(false);
+  let setState = (uri: string, state: QuestionState) =>
+    setQuestions((qs) =>
+      qs.map((q) =>
+        q.uri === uri
+          ? { ...q, state: state === "pending" && q.answer ? "accepted" : state }
+          : q,
+      ),
+    );
   let pending = questions.filter((q) => !q.answer).length;
   let withdraw = (uri: string) =>
     setQuestions((qs) => qs.filter((q) => q.uri !== uri));
@@ -152,8 +181,10 @@ function Playground() {
         q.uri === uri
           ? {
               ...q,
+              state: q.state === "hidden" ? "hidden" : "accepted",
               answer: {
                 uri: `${q.uri}#answer`,
+                author: AUTHOR_PROFILE,
                 content: answerContent(text.split(/\n+/)),
               },
             }
@@ -168,6 +199,7 @@ function Playground() {
     view = (
       <QuestionsModeration
         questions={questions}
+        onSetState={setState}
         renderAnswer={(q) =>
           q.uri in drafts ? (
             <FakeAnswerEditor
@@ -197,7 +229,10 @@ function Playground() {
     );
   } else {
     let shown = questions.filter(
-      (q) => q.answer || (viewer === "reader" && q.mine),
+      (q) =>
+        q.state === "accepted" ||
+        (showPending && q.state === "pending") ||
+        (viewer === "reader" && q.mine),
     );
     view = (
       <QuestionsList
@@ -208,6 +243,7 @@ function Playground() {
           viewer === "reader" ? (
             <QuestionComposer
               draftKey={null}
+              showPending={showPending}
               onSubmit={async (text) => {
                 await new Promise((r) => setTimeout(r, 400));
                 setQuestions((qs) => [
@@ -251,6 +287,14 @@ function Playground() {
             {v}
           </label>
         ))}
+        <label className="flex items-center gap-1">
+          <input
+            type="checkbox"
+            checked={showPending}
+            onChange={() => setShowPending(!showPending)}
+          />
+          show pending
+        </label>
         <span className="grow" />
         <ButtonSecondary
           compact
@@ -278,7 +322,7 @@ export default function QuestionsTestPage() {
     <QuestionsButtonTextInput value={buttonText} onCommit={setButtonText} />
   );
   let all = seed();
-  let answered = all.filter((q) => q.answer);
+  let answered = all.filter((q) => q.state === "accepted");
   let mine = question(50, {
     text: "Do you have a template for the weekly review you mentioned?",
     name: "You",
@@ -318,6 +362,7 @@ export default function QuestionsTestPage() {
       <Case label="Editor — published, one answer being written inline">
         <QuestionsModeration
           questions={all}
+          onSetState={noop}
           header={<QuestionComposerPreview action={editableButton} />}
           renderAnswer={(q) =>
             q.uri === all[2].uri ? (
@@ -375,6 +420,7 @@ export default function QuestionsTestPage() {
       <Case label="Published — author (answers in the editor)">
         <QuestionsModeration
           questions={all}
+          onSetState={noop}
           renderAnswer={renderPublished}
           renderControl={(q) =>
             !q.answer && <ButtonSecondary compact>Answer in editor</ButtonSecondary>
@@ -384,6 +430,7 @@ export default function QuestionsTestPage() {
       <Case label="Published — author, nothing asked yet">
         <QuestionsModeration
           questions={[]}
+          onSetState={noop}
           renderAnswer={renderPublished}
           renderControl={() => null}
         />

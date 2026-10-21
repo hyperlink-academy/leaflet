@@ -6,7 +6,7 @@ import {
 import { ButtonPrimary } from "components/Buttons";
 import { useEntity, useReplicache } from "src/replicache";
 import { useIsBlockSelected } from "src/useUIState";
-import { documentHasBlock } from "src/utils/documentHasBlock";
+import { publishedBlockKey } from "src/utils/interactionBlockAnchor";
 import { ids } from "lexicons/api/lexicons";
 import { BlockProps, BlockLayout } from "../Block";
 import {
@@ -39,9 +39,11 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
 
   // Readers can only reply once the published document carries the block, so
   // a block added since the last publish is still a draft.
-  let isPublished =
-    !!normalizedDocument &&
-    documentHasBlock(normalizedDocument, ids.PubLeafletBlocksReply);
+  let blockKey = publishedBlockKey(
+    normalizedDocument,
+    ids.PubLeafletBlocksReply,
+    props.entityID,
+  );
 
   let button =
     permissions.write && !props.preview ? (
@@ -100,9 +102,10 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
         ) : undefined
       }
     >
-      {isPublished && documentUri && !props.preview ? (
+      {blockKey !== undefined && documentUri && !props.preview ? (
         <DocumentReplies
           documentUri={documentUri}
+          block={blockKey}
           showThemes={showThemes}
           prompt={prompt}
           action={button}

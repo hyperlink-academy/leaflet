@@ -62,6 +62,7 @@ import * as PubLeafletGraphRecommendations from './types/pub/leaflet/graph/recom
 import * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
 import * as PubLeafletInteractionsAnswer from './types/pub/leaflet/interactions/answer'
 import * as PubLeafletInteractionsQuestion from './types/pub/leaflet/interactions/question'
+import * as PubLeafletInteractionsQuestionVisibility from './types/pub/leaflet/interactions/questionVisibility'
 import * as PubLeafletInteractionsRecommend from './types/pub/leaflet/interactions/recommend'
 import * as PubLeafletInteractionsReply from './types/pub/leaflet/interactions/reply'
 import * as PubLeafletInteractionsReplyVisibility from './types/pub/leaflet/interactions/replyVisibility'
@@ -136,6 +137,7 @@ export * as PubLeafletGraphRecommendations from './types/pub/leaflet/graph/recom
 export * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
 export * as PubLeafletInteractionsAnswer from './types/pub/leaflet/interactions/answer'
 export * as PubLeafletInteractionsQuestion from './types/pub/leaflet/interactions/question'
+export * as PubLeafletInteractionsQuestionVisibility from './types/pub/leaflet/interactions/questionVisibility'
 export * as PubLeafletInteractionsRecommend from './types/pub/leaflet/interactions/recommend'
 export * as PubLeafletInteractionsReply from './types/pub/leaflet/interactions/reply'
 export * as PubLeafletInteractionsReplyVisibility from './types/pub/leaflet/interactions/replyVisibility'
@@ -894,6 +896,7 @@ export class PubLeafletInteractionsNS {
   _client: XrpcClient
   answer: PubLeafletInteractionsAnswerRecord
   question: PubLeafletInteractionsQuestionRecord
+  questionVisibility: PubLeafletInteractionsQuestionVisibilityRecord
   recommend: PubLeafletInteractionsRecommendRecord
   reply: PubLeafletInteractionsReplyRecord
   replyVisibility: PubLeafletInteractionsReplyVisibilityRecord
@@ -902,6 +905,8 @@ export class PubLeafletInteractionsNS {
     this._client = client
     this.answer = new PubLeafletInteractionsAnswerRecord(client)
     this.question = new PubLeafletInteractionsQuestionRecord(client)
+    this.questionVisibility =
+      new PubLeafletInteractionsQuestionVisibilityRecord(client)
     this.recommend = new PubLeafletInteractionsRecommendRecord(client)
     this.reply = new PubLeafletInteractionsReplyRecord(client)
     this.replyVisibility = new PubLeafletInteractionsReplyVisibilityRecord(
@@ -1071,6 +1076,92 @@ export class PubLeafletInteractionsQuestionRecord {
       'com.atproto.repo.deleteRecord',
       undefined,
       { collection: 'pub.leaflet.interactions.question', ...params },
+      { headers },
+    )
+  }
+}
+
+export class PubLeafletInteractionsQuestionVisibilityRecord {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+
+  async list(
+    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
+  ): Promise<{
+    cursor?: string
+    records: {
+      uri: string
+      value: PubLeafletInteractionsQuestionVisibility.Record
+    }[]
+  }> {
+    const res = await this._client.call('com.atproto.repo.listRecords', {
+      collection: 'pub.leaflet.interactions.questionVisibility',
+      ...params,
+    })
+    return res.data
+  }
+
+  async get(
+    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
+  ): Promise<{
+    uri: string
+    cid: string
+    value: PubLeafletInteractionsQuestionVisibility.Record
+  }> {
+    const res = await this._client.call('com.atproto.repo.getRecord', {
+      collection: 'pub.leaflet.interactions.questionVisibility',
+      ...params,
+    })
+    return res.data
+  }
+
+  async create(
+    params: OmitKey<
+      ComAtprotoRepoCreateRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletInteractionsQuestionVisibility.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.interactions.questionVisibility'
+    const res = await this._client.call(
+      'com.atproto.repo.createRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async put(
+    params: OmitKey<
+      ComAtprotoRepoPutRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletInteractionsQuestionVisibility.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.interactions.questionVisibility'
+    const res = await this._client.call(
+      'com.atproto.repo.putRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async delete(
+    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
+    headers?: Record<string, string>,
+  ): Promise<void> {
+    await this._client.call(
+      'com.atproto.repo.deleteRecord',
+      undefined,
+      { collection: 'pub.leaflet.interactions.questionVisibility', ...params },
       { headers },
     )
   }

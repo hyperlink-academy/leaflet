@@ -576,13 +576,19 @@ async function publish({
   // A draft started from another post's reply block submits itself as a
   // reply once it's published. Best-effort: the post is already live, and
   // the author can still submit it by hand from the reply block.
+  const rootFact = (attribute: "root/reply-to" | "root/reply-to-block") =>
+    scanIndexLocal(facts).eav(root_entity, attribute)[0]?.data.value;
   const replyTo: string | undefined = publication_uri
     ? draft?.reply_to
-    : scanIndexLocal(facts).eav(root_entity, "root/reply-to")[0]?.data.value;
+    : rootFact("root/reply-to");
+  const replyToBlock: string | undefined = publication_uri
+    ? (draft?.reply_to_block ?? undefined)
+    : rootFact("root/reply-to-block");
   if (!existingDocUri && replyTo) {
     const reply = await createReplyRecord({
       did: credentialSession.did!,
       subject: replyTo,
+      block: replyToBlock,
       document: result.uri,
       agent,
     }).catch((e) => {

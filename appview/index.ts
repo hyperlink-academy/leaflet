@@ -18,6 +18,7 @@ import {
   PubLeafletInteractionsReply,
   PubLeafletInteractionsReplyVisibility,
   PubLeafletInteractionsQuestion,
+  PubLeafletInteractionsQuestionVisibility,
   PubLeafletInteractionsAnswer,
   SiteStandardDocument,
   SiteStandardPublication,
@@ -39,6 +40,15 @@ import { MAIN_SITE_URL } from "src/utils/customDomain";
 import { tombstoneComment } from "src/comments/tombstoneComment";
 import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
+import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
+import { resolveInteractionBlock } from "src/utils/documentHasBlock";
+import {
+  canAskQuestion,
+  mirrorQuestionVisibility,
+  questionsBlocksOf,
+  questionVisibilityStates,
+} from "src/questionsBlocks";
+import { questionsAudience } from "src/questionsAudience";
 import type { AppviewRevalidateEvent } from "app/api/appview_revalidate/route";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
@@ -264,6 +274,7 @@ async function main() {
       ids.PubLeafletInteractionsReply,
       ids.PubLeafletInteractionsReplyVisibility,
       ids.PubLeafletInteractionsQuestion,
+      ids.PubLeafletInteractionsQuestionVisibility,
       ids.PubLeafletInteractionsAnswer,
       ids.AppBskyActorProfile,
       "app.bsky.feed.post",
@@ -625,8 +636,33 @@ async function handleEvent(evt: Event) {
     if (evt.event === "create" || evt.event === "update") {
       let record = PubLeafletInteractionsQuestion.validateRecord(evt.record);
       if (!record.success) return;
-      // Questions on documents we don't index fail the foreign key and are
-      // dropped.
+      let { data: doc } = await supabase
+        .from("documents")
+        .select("uri, data")
+        .eq("uri", record.value.subject)
+        .maybeSingle();
+      if (!doc) return;
+      let block = resolveInteractionBlock(
+        questionsBlocksOf(normalizeDocumentRecord(doc.data, doc.uri)),
+        record.value.block,
+      );
+      if (!block) return;
+      // askQuestion checks the audience before writing, but a record written
+      // straight to a PDS skips it, and a block showing pending questions
+      // would publish it.
+      try {
+        if (
+          !(await canAskQuestion(
+            record.value.subject,
+            evt.did,
+            questionsAudience(block.audience),
+          ))
+        )
+          return;
+      } catch (e) {
+        console.log("Error checking question audience:", e);
+        return;
+      }
       let { error } = await supabase.from("document_questions").upsert({
         uri: evt.uri.toString(),
         subject: record.value.subject,
@@ -634,13 +670,19 @@ async function handleEvent(evt: Event) {
         cid: evt.cid.toString(),
         record: record.value as Json,
       });
-      if (error) console.log("Error upserting question:", error);
-      else
-        await broadcastDocumentEvent(
-          supabase,
-          "question",
-          record.value.subject,
-        );
+      if (error) {
+        console.log("Error upserting question:", error);
+        return;
+      }
+      await broadcastDocumentEvent(supabase, "question", record.value.subject);
+      if (
+        block.showPending &&
+        (await isInLeafletPublication(record.value.subject))
+      )
+        await notifyRevalidate({
+          kind: "interaction",
+          document: record.value.subject,
+        });
     }
     if (evt.event === "delete") {
       let { data: question } = await supabase
@@ -657,6 +699,47 @@ async function handleEvent(evt: Event) {
           kind: "interaction",
           document: question.subject,
         });
+    }
+  }
+  if (evt.collection === ids.PubLeafletInteractionsQuestionVisibility) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = PubLeafletInteractionsQuestionVisibility.validateRecord(
+        evt.record,
+      );
+      if (!record.success) return;
+      let subjectUri;
+      try {
+        subjectUri = new AtUri(record.value.subject);
+      } catch {
+        return;
+      }
+      // Only the document's own repo moderates its questions, through the
+      // one record keyed like the document.
+      if (subjectUri.host !== evt.did || subjectUri.rkey !== evt.uri.rkey)
+        return;
+      await mirrorQuestionVisibility(
+        supabase,
+        evt.uri.toString(),
+        record.value.subject,
+        questionVisibilityStates(record.value),
+      );
+      await broadcastDocumentEvent(supabase, "question", record.value.subject);
+      if (await isInLeafletPublication(record.value.subject))
+        await notifyRevalidate({
+          kind: "interaction",
+          document: record.value.subject,
+        });
+    }
+    if (evt.event === "delete") {
+      let { data: rows } = await supabase
+        .from("document_question_visibility")
+        .delete()
+        .eq("uri", evt.uri.toString())
+        .select("subject");
+      let subject = rows?.[0]?.subject;
+      if (subject) await broadcastDocumentEvent(supabase, "question", subject);
+      if (subject && (await isInLeafletPublication(subject)))
+        await notifyRevalidate({ kind: "interaction", document: subject });
     }
   }
   if (evt.collection === ids.PubLeafletInteractionsAnswer) {

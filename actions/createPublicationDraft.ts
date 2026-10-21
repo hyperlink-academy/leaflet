@@ -7,7 +7,11 @@ import { isConfirmedContributor } from "src/contributorPermissions";
 export async function createPublicationDraft(
   publication_uri: string,
   pageType: "canvas" | "doc" = "doc",
-  options: { emailOnly?: boolean; replyTo?: string } = {},
+  options: {
+    emailOnly?: boolean;
+    // The post (and its reply block) this draft will reply to
+    replyTo?: { subject: string; block?: string };
+  } = {},
 ) {
   let identity = await getAuthIdentity();
   if (!identity || !identity.atp_did) return null;
@@ -39,7 +43,8 @@ export async function createPublicationDraft(
     leaflet: newLeaflet,
     doc: null,
     email_only: !!options.emailOnly,
-    reply_to: options.replyTo ?? null,
+    reply_to: options.replyTo?.subject ?? null,
+    reply_to_block: options.replyTo?.block ?? null,
   });
 
   // If a contributor created the draft, automatically add them as a draft

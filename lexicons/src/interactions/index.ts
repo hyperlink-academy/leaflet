@@ -44,6 +44,12 @@ export const PubLeafletInteractionsReply: LexiconDoc = {
             description:
               "The reply: a document in the same repo as this record.",
           },
+          block: {
+            type: "string",
+            maxLength: 100,
+            description:
+              "The key of the pub.leaflet.blocks.reply block on the subject this was submitted through, when the subject has more than one.",
+          },
           createdAt: { type: "string", format: "datetime" },
         },
       },
@@ -90,7 +96,7 @@ export const PubLeafletInteractionsQuestion: LexiconDoc = {
       type: "record",
       key: "tid",
       description:
-        "A public question asked of a document's author, shown on the document once the author answers it (pub.leaflet.interactions.answer)",
+        "A public question asked of a document's author, shown on the document once the author answers (pub.leaflet.interactions.answer) or accepts it (pub.leaflet.interactions.questionVisibility)",
       record: {
         type: "object",
         required: ["subject", "plaintext", "createdAt"],
@@ -99,6 +105,12 @@ export const PubLeafletInteractionsQuestion: LexiconDoc = {
             type: "string",
             format: "at-uri",
             description: "The document the question is asked on.",
+          },
+          block: {
+            type: "string",
+            maxLength: 100,
+            description:
+              "The key of the pub.leaflet.blocks.questions block on the subject this was submitted through, when the subject has more than one.",
           },
           plaintext: {
             type: "string",
@@ -110,6 +122,44 @@ export const PubLeafletInteractionsQuestion: LexiconDoc = {
             items: { type: "ref", ref: "pub.leaflet.richtext.facet" },
           },
           createdAt: { type: "string", format: "datetime" },
+        },
+      },
+    },
+  },
+};
+
+export const PubLeafletInteractionsQuestionVisibility: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.interactions.questionVisibility",
+  defs: {
+    main: {
+      type: "record",
+      key: "any",
+      description:
+        "Declares which questions asked on a document the author accepted or hid. Lives in the document's repo, with a record key matching the document's. An answered question shows unless hidden; any other question is pending.",
+      record: {
+        type: "object",
+        required: ["subject", "accepted", "hidden"],
+        properties: {
+          subject: {
+            type: "string",
+            format: "at-uri",
+            description: "The document whose questions this record moderates.",
+          },
+          accepted: {
+            type: "array",
+            maxLength: 500,
+            description:
+              "pub.leaflet.interactions.question records shown on the document.",
+            items: { type: "string", format: "at-uri" },
+          },
+          hidden: {
+            type: "array",
+            maxLength: 500,
+            description:
+              "pub.leaflet.interactions.question records never shown on the document.",
+            items: { type: "string", format: "at-uri" },
+          },
         },
       },
     },

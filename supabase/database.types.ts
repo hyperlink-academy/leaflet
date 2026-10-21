@@ -550,6 +550,38 @@ export type Database = {
           },
         ]
       }
+      document_question_visibility: {
+        Row: {
+          indexed_at: string
+          question: string
+          state: string
+          subject: string
+          uri: string
+        }
+        Insert: {
+          indexed_at?: string
+          question: string
+          state: string
+          subject: string
+          uri: string
+        }
+        Update: {
+          indexed_at?: string
+          question?: string
+          state?: string
+          subject?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_question_visibility_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       document_questions: {
         Row: {
           asker_did: string
@@ -955,6 +987,7 @@ export type Database = {
           preferences: Json | null
           publication: string
           reply_to: string | null
+          reply_to_block: string | null
           scheduled_publish_at: string | null
           scheduled_publish_data: Json | null
           tags: string[] | null
@@ -970,6 +1003,7 @@ export type Database = {
           preferences?: Json | null
           publication: string
           reply_to?: string | null
+          reply_to_block?: string | null
           scheduled_publish_at?: string | null
           scheduled_publish_data?: Json | null
           tags?: string[] | null
@@ -985,6 +1019,7 @@ export type Database = {
           preferences?: Json | null
           publication?: string
           reply_to?: string | null
+          reply_to_block?: string | null
           scheduled_publish_at?: string | null
           scheduled_publish_data?: Json | null
           tags?: string[] | null

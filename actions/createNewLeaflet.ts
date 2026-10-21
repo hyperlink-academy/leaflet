@@ -25,7 +25,8 @@ export async function createNewLeaflet({
   addToHomepage?: boolean;
   analytics?: { kind: string; publication?: string };
   canvasPostHeader?: boolean;
-  replyTo?: string;
+  // The post (and its reply block) this draft will reply to
+  replyTo?: { subject: string; block?: string };
 }) {
   let auth_token = (await cookies()).get("auth_token")?.value;
   trackDocumentCreated(analytics ?? { kind: pageType });
@@ -43,7 +44,15 @@ export async function createNewLeaflet({
         ? [
             {
               attribute: "root/reply-to",
-              data: { type: "string", value: replyTo },
+              data: { type: "string", value: replyTo.subject },
+            },
+          ]
+        : []),
+      ...(replyTo?.block
+        ? [
+            {
+              attribute: "root/reply-to-block",
+              data: { type: "string", value: replyTo.block },
             },
           ]
         : []),

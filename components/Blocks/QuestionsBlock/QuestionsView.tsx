@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { Popover } from "components/Popover";
 import { Avatar } from "components/Avatar";
@@ -12,7 +12,13 @@ import {
   FacetedTextComposer,
   type FacetedText,
 } from "components/FacetedTextComposer";
-import type { DocumentQuestion } from "src/documentQuestions";
+import type { DocumentQuestion, QuestionState } from "src/documentQuestions";
+import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
+import {
+  authorDisplayName,
+  hasSeveralAuthors,
+  InteractionAuthorName,
+} from "../InteractionAuthorName";
 import { ReplyButtonTextInput } from "../ReplyBlock/RepliesView";
 import { DEFAULT_QUESTIONS_BUTTON_TEXT } from "./constants";
 import {
@@ -36,6 +42,7 @@ export function QuestionsButtonTextInput(props: {
 export function PublicQuestionNotice(props: {
   defaultOpen?: boolean;
   audience?: QuestionsAudience;
+  showPending?: boolean;
 }) {
   let restriction = questionsAudienceNotice(props.audience ?? "anyone");
   return (
@@ -56,7 +63,10 @@ export function PublicQuestionNotice(props: {
       }
     >
       Questions are public. Yours is posted to your account, where anyone can
-      see it, and appears here if the author answers it.
+      see it,{" "}
+      {props.showPending
+        ? "and appears here unless the author hides it."
+        : "and appears here once the author accepts or answers it."}
       {restriction && <div className="pt-2">{restriction}</div>}
     </Popover>
   );
@@ -74,6 +84,7 @@ export function QuestionComposer(props: {
   submitLabel?: string;
   autoFocus?: boolean;
   audience?: QuestionsAudience;
+  showPending?: boolean;
   onSubmit: (text: FacetedText) => Promise<boolean>;
 }) {
   return (
@@ -86,7 +97,10 @@ export function QuestionComposer(props: {
       trailing={
         <>
           <AudienceNotice audience={props.audience} />
-          <PublicQuestionNotice audience={props.audience} />
+          <PublicQuestionNotice
+            audience={props.audience}
+            showPending={props.showPending}
+          />
         </>
       }
     />
@@ -97,6 +111,7 @@ export function QuestionComposer(props: {
 export function QuestionComposerPreview(props: {
   action: React.ReactNode;
   audience?: QuestionsAudience;
+  showPending?: boolean;
 }) {
   return (
     <div className="flex flex-col grow">
@@ -105,7 +120,10 @@ export function QuestionComposerPreview(props: {
       </div>
       <div className="flex justify-end items-center gap-2 pt-1">
         <AudienceNotice audience={props.audience} />
-        <PublicQuestionNotice audience={props.audience} />
+        <PublicQuestionNotice
+          audience={props.audience}
+          showPending={props.showPending}
+        />
         {props.action}
       </div>
     </div>
@@ -139,19 +157,21 @@ export function SignInToAsk(props: {
 export function QuestionsDraft(props: {
   action: React.ReactNode;
   audience?: QuestionsAudience;
+  showPending?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-3">
       <QuestionComposerPreview
         action={props.action}
         audience={props.audience}
+        showPending={props.showPending}
       />
       <div className="light-container text-sm italic text-tertiary text-center p-3 sm:p-4">
         <div className="text-base font-bold">
           Questions open when you publish
         </div>
-        Readers can ask you public questions. Answer one right here and it
-        appears under the question.
+        Readers can ask you public questions. Accept one to show it, or answer
+        it right here and the answer appears under it.
       </div>
     </div>
   );
@@ -159,16 +179,20 @@ export function QuestionsDraft(props: {
 
 function QuestionBody(props: {
   question: DocumentQuestion;
+  showHandle?: boolean;
   control?: React.ReactNode;
 }) {
   let { asker } = props.question;
-  let name = asker.displayName || asker.handle || "Someone";
   return (
     <div className="flex gap-2 min-w-0">
-      <Avatar src={asker.avatar} displayName={name} size="small" />
+      <Avatar
+        src={asker.avatar}
+        displayName={authorDisplayName(asker)}
+        size="small"
+      />
       <div className="flex flex-col min-w-0 grow">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
-          <span className="font-bold text-secondary truncate">{name}</span>
+          <InteractionAuthorName author={asker} showHandle={props.showHandle} />
           {props.question.createdAt && (
             <span className="text-tertiary shrink-0">
               <LocalizedDate
@@ -204,12 +228,17 @@ function QuestionBody(props: {
 // author's inline editor), and whatever acts on it beside the asker's name.
 export function QuestionRow(props: {
   question: DocumentQuestion;
+  showHandle?: boolean;
   answer?: React.ReactNode;
   control?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-2 transparent-container p-2 sm:p-3">
-      <QuestionBody question={props.question} control={props.control} />
+      <QuestionBody
+        question={props.question}
+        showHandle={props.showHandle}
+        control={props.control}
+      />
       {props.answer && <div className="pl-8 sm:pl-9">{props.answer}</div>}
     </div>
   );
@@ -254,12 +283,13 @@ export function AnswerEditorFrame(props: {
   );
 }
 
-// The reader's view: answered questions, plus their own still waiting.
+// The reader's view: the questions shown on the post, plus their own still
+// waiting.
 export function QuestionsList(props: {
   questions: DocumentQuestion[];
   // The composer or a sign-in button
   action?: React.ReactNode;
-  renderAnswer: (question: DocumentQuestion) => React.ReactNode;
+  renderAnswer: RenderAnswer;
   onWithdraw?: (uri: string) => void;
 }) {
   let { onWithdraw } = props;
@@ -268,11 +298,16 @@ export function QuestionsList(props: {
       {props.action}
       <QuestionRows
         questions={props.questions}
+        showHandles={showHandlesFor(props.questions)}
         renderAnswer={props.renderAnswer}
         renderControl={(question) =>
           !question.answer && (
             <>
-              <span className="italic">Awaiting an answer</span>
+              <span className="italic">
+                {question.mine && question.state !== "accepted"
+                  ? "Awaiting the author"
+                  : "Awaiting an answer"}
+              </span>
               {onWithdraw && question.mine && (
                 <button
                   aria-label="Withdraw question"
@@ -290,18 +325,60 @@ export function QuestionsList(props: {
   );
 }
 
-// The author's view: unanswered questions first, each with an answer
-// control, and the answered ones under them.
+// The author's view: pending questions first, each with controls to accept
+// or hide it, then the ones shown on the post, and the hidden ones behind a
+// toggle.
 export function QuestionsModeration(props: {
   questions: DocumentQuestion[];
   // Above the lists: the editor's composer preview
   header?: React.ReactNode;
-  renderAnswer: (question: DocumentQuestion) => React.ReactNode;
-  // Top-right of an unanswered question: "Answer", or a link to the editor
+  // A state change is being published
+  busy?: boolean;
+  // Unset for an editor who isn't the post's author
+  onSetState?: (uri: string, state: QuestionState) => void;
+  renderAnswer: RenderAnswer;
+  // Beside a question's moderation controls: "Answer", or a link to the
+  // editor
   renderControl: (question: DocumentQuestion) => React.ReactNode;
 }) {
-  let pending = props.questions.filter((q) => !q.answer);
-  let answered = props.questions.filter((q) => q.answer);
+  let [showHidden, setShowHidden] = useState(false);
+  let inState = (state: QuestionState) =>
+    props.questions.filter((q) => q.state === state);
+  let hidden = inState("hidden");
+  if (showHidden && hidden.length === 0) setShowHidden(false);
+  let showHandles = showHandlesFor(props.questions);
+  let stateButton = (
+    q: DocumentQuestion,
+    state: QuestionState,
+    label: string,
+  ) =>
+    props.onSetState && (
+      <ButtonTertiary
+        compact
+        disabled={props.busy}
+        onClick={() => props.onSetState?.(q.uri, state)}
+      >
+        {label}
+      </ButtonTertiary>
+    );
+  let rows = (
+    questions: DocumentQuestion[],
+    controls: (q: DocumentQuestion) => React.ReactNode,
+    className?: string,
+  ) => (
+    <QuestionRows
+      questions={questions}
+      className={className}
+      showHandles={showHandles}
+      renderAnswer={props.renderAnswer}
+      renderControl={(q) => (
+        <>
+          {controls(q)}
+          {props.renderControl(q)}
+        </>
+      )}
+    />
+  );
   return (
     <div className="flex flex-col gap-3">
       {props.header}
@@ -310,25 +387,56 @@ export function QuestionsModeration(props: {
           No one has asked anything yet.
         </div>
       )}
-      <QuestionRows
-        questions={pending}
-        className="light-container p-2"
-        renderAnswer={props.renderAnswer}
-        renderControl={props.renderControl}
-      />
-      <QuestionRows
-        questions={answered}
-        renderAnswer={props.renderAnswer}
-        renderControl={props.renderControl}
-      />
+      {rows(
+        inState("pending"),
+        (q) => (
+          <>
+            {stateButton(q, "hidden", "Hide")}
+            {stateButton(q, "accepted", "Accept")}
+          </>
+        ),
+        "light-container p-2",
+      )}
+      {rows(inState("accepted"), (q) => stateButton(q, "hidden", "Hide"))}
+      {hidden.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <ButtonTertiary
+            compact
+            className="w-fit"
+            aria-expanded={showHidden}
+            onClick={() => setShowHidden(!showHidden)}
+          >
+            {hidden.length} hidden
+            <ArrowDownTiny className={showHidden ? "rotate-180" : ""} />
+          </ButtonTertiary>
+          {showHidden &&
+            rows(hidden, (q) => stateButton(q, "pending", "Unhide"))}
+        </div>
+      )}
     </div>
   );
 }
 
+// Whether to show handles, judged across everyone the whole list shows: the
+// askers and whoever answered.
+function showHandlesFor(questions: DocumentQuestion[]) {
+  return hasSeveralAuthors(
+    questions.flatMap((q) =>
+      q.answer ? [q.asker, q.answer.author] : [q.asker],
+    ),
+  );
+}
+
+type RenderAnswer = (
+  question: DocumentQuestion,
+  showHandle?: boolean,
+) => React.ReactNode;
+
 function QuestionRows(props: {
   questions: DocumentQuestion[];
   className?: string;
-  renderAnswer: (question: DocumentQuestion) => React.ReactNode;
+  showHandles?: boolean;
+  renderAnswer: RenderAnswer;
   renderControl: (question: DocumentQuestion) => React.ReactNode;
 }) {
   if (props.questions.length === 0) return null;
@@ -338,7 +446,8 @@ function QuestionRows(props: {
         <QuestionRow
           key={question.uri}
           question={question}
-          answer={props.renderAnswer(question)}
+          showHandle={props.showHandles}
+          answer={props.renderAnswer(question, props.showHandles)}
           control={props.renderControl(question)}
         />
       ))}

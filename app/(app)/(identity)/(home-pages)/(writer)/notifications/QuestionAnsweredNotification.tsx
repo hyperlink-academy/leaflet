@@ -14,7 +14,8 @@ export const QuestionAnsweredNotification = (
 
   // Links to the post's questions, where the answer shows.
   const href =
-    getDocumentURL(docRecord, props.document_uri, pubRecord) + "#questions";
+    getDocumentURL(docRecord, props.document_uri, pubRecord) +
+    `#${props.anchor}`;
 
   return (
     <Notification

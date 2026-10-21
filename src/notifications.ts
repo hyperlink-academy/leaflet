@@ -3,7 +3,14 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { Tables, TablesInsert } from "supabase/database.types";
 import { AtUri } from "@atproto/syntax";
-import type { PubLeafletInteractionsQuestion } from "lexicons/api";
+import type {
+  PubLeafletInteractionsQuestion,
+  PubLeafletInteractionsReply,
+} from "lexicons/api";
+import { questionsBlocksOf } from "src/questionsBlocks";
+import { replyBlocksOf } from "src/documentReplies";
+import { resolveInteractionBlock } from "src/utils/documentHasBlock";
+import { interactionBlockAnchor } from "src/utils/interactionBlockAnchor";
 import { idResolver, getProfiles, type Profile } from "src/identity";
 import {
   normalizeDocumentRecord,
@@ -668,7 +675,7 @@ async function hydratePostReplyNotifications(notifications: NotificationRow[]) {
 
   const { data: replies } = await supabaseServerClient
     .from("document_replies")
-    .select("uri, replier_did, document")
+    .select("uri, replier_did, document, record")
     .in("uri", replyNotifications.map((n) => n.data.reply_uri));
   const documentUris = [
     ...replyNotifications.map((n) => n.data.document_uri),
@@ -688,6 +695,11 @@ async function hydratePostReplyNotifications(notifications: NotificationRow[]) {
       const document = documents?.find((d) => d.uri === notification.data.document_uri);
       const replyDocument = documents?.find((d) => d.uri === reply?.document);
       if (!reply || !document || !replyDocument) return null;
+      const normalizedDocument = normalizeDocumentRecord(document.data, document.uri);
+      const block = resolveInteractionBlock(
+        replyBlocksOf(normalizedDocument),
+        (reply.record as PubLeafletInteractionsReply.Record).block,
+      );
       return {
         id: notification.id,
         recipient: notification.recipient,
@@ -696,7 +708,9 @@ async function hydratePostReplyNotifications(notifications: NotificationRow[]) {
         reply_uri: notification.data.reply_uri,
         document_uri: notification.data.document_uri,
         profile: toNotificationProfile(profiles.get(reply.replier_did)),
-        normalizedDocument: normalizeDocumentRecord(document.data, document.uri),
+        normalizedDocument,
+        // The reply block it was submitted through
+        anchor: interactionBlockAnchor("replies", block?.key),
         normalizedPublication: normalizePublicationRecord(
           document.documents_in_publications[0]?.publications?.record,
         ),
@@ -756,6 +770,11 @@ async function hydrateQuestionNotifications<T extends "post_question" | "questio
       const document = documents?.find((d) => d.uri === notification.data.document_uri);
       if (!question || !document) return null;
       const record = question.record as PubLeafletInteractionsQuestion.Record;
+      const normalizedDocument = normalizeDocumentRecord(document.data, document.uri);
+      const block = resolveInteractionBlock(
+        questionsBlocksOf(normalizedDocument),
+        record.block,
+      );
       return {
         id: notification.id,
         recipient: notification.recipient,
@@ -764,7 +783,9 @@ async function hydrateQuestionNotifications<T extends "post_question" | "questio
         question_uri: notification.data.question_uri,
         document_uri: notification.data.document_uri,
         profile: toNotificationProfile(profiles.get(profileDid(question))),
-        normalizedDocument: normalizeDocumentRecord(document.data, document.uri),
+        normalizedDocument,
+        // The questions block it was asked through
+        anchor: interactionBlockAnchor("questions", block?.key),
         normalizedPublication: normalizePublicationRecord(
           document.documents_in_publications[0]?.publications?.record,
         ),

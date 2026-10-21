@@ -6,14 +6,29 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import type { Json } from "supabase/database.types";
 import { getDocumentURL } from "src/utils/getPublicationURL";
-import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
+import {
+  normalizeDocumentRecord,
+  type NormalizedDocument,
+} from "src/utils/normalizeRecords";
 import { AtUri } from "@atproto/syntax";
 import { TID } from "@atproto/common";
 import { v7 } from "uuid";
 import { ids } from "lexicons/api/lexicons";
-import type { AtpBaseClient, PubLeafletInteractionsReply } from "lexicons/api";
+import type {
+  AtpBaseClient,
+  PubLeafletBlocksReply,
+  PubLeafletInteractionsReply,
+} from "lexicons/api";
 import { Err, Ok, type Result } from "src/result";
-import { documentHasBlock } from "src/utils/documentHasBlock";
+import {
+  findDocumentBlocks,
+  resolveInteractionBlock,
+} from "src/utils/documentHasBlock";
+import { getProfiles } from "src/identity";
+import {
+  interactionAuthor,
+  type InteractionAuthor,
+} from "src/interactionAuthor";
 import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
 import {
   type Notification,
@@ -25,6 +40,10 @@ export const MAX_REPLIES = 500;
 export type DocumentReply = {
   // at-uri of the pub.leaflet.interactions.reply record
   uri: string;
+  // Key of the reply block it was submitted through (see
+  // resolveInteractionBlock); null for a published block without a key
+  block: string | null;
+  replier: InteractionAuthor;
   visible: boolean;
   // Submitted by the viewer
   mine: boolean;
@@ -44,47 +63,76 @@ export async function loadDocumentReplies(
   subject: string,
   viewer: string | null,
 ): Promise<DocumentReplies> {
-  const [{ data: rows }, { data: allowedRows }] = await Promise.all([
-    supabaseServerClient
-      .from("document_replies")
-      .select("uri, document, replier_did")
-      .eq("subject", subject)
-      .order("indexed_at", { ascending: true })
-      .limit(MAX_REPLIES),
-    supabaseServerClient
-      .from("document_reply_visibility")
-      .select("reply")
-      .eq("subject", subject),
-  ]);
+  const [{ data: rows }, { data: allowedRows }, { data: doc }] =
+    await Promise.all([
+      supabaseServerClient
+        .from("document_replies")
+        .select("uri, document, replier_did, record")
+        .eq("subject", subject)
+        .order("indexed_at", { ascending: true })
+        .limit(MAX_REPLIES),
+      supabaseServerClient
+        .from("document_reply_visibility")
+        .select("reply")
+        .eq("subject", subject),
+      supabaseServerClient
+        .from("documents")
+        .select("uri, data")
+        .eq("uri", subject)
+        .maybeSingle(),
+    ]);
   const isAuthor = !!viewer && isDocumentOwner(subject, viewer);
   const allowed = new Set((allowedRows ?? []).map((r) => r.reply));
+  const blocks = replyBlocksOf(
+    doc && normalizeDocumentRecord(doc.data, doc.uri),
+  );
 
   const shown = (rows ?? [])
     .map((r) => ({
       uri: r.uri,
       document: r.document,
+      replier_did: r.replier_did,
+      block:
+        resolveInteractionBlock(
+          blocks,
+          (r.record as PubLeafletInteractionsReply.Record).block,
+        )?.key ?? null,
       visible: allowed.has(r.uri),
       mine: !!viewer && r.replier_did === viewer,
     }))
     .filter((r) => isAuthor || r.visible || r.mine);
   if (shown.length === 0) return { isAuthor, replies: [] };
 
-  const {
-    result: { posts },
-  } = await get_standard_site_posts.handler(
-    { uris: shown.map((r) => r.document) },
-    { supabase: supabaseServerClient },
-  );
+  const [
+    {
+      result: { posts },
+    },
+    profiles,
+  ] = await Promise.all([
+    get_standard_site_posts.handler(
+      { uris: shown.map((r) => r.document) },
+      { supabase: supabaseServerClient },
+    ),
+    getProfiles([...new Set(shown.map((r) => r.replier_did))]),
+  ]);
   const postsByUri = new Map(posts.map((p) => [p.uri, p]));
 
   return {
     isAuthor,
-    replies: shown.flatMap(({ document, ...reply }) => {
+    replies: shown.flatMap(({ document, replier_did, ...reply }) => {
       const post = postsByUri.get(document);
-      return post ? [{ ...reply, post }] : [];
+      return post
+        ? [{ ...reply, replier: interactionAuthor(replier_did, profiles), post }]
+        : [];
     }),
   };
 }
+
+export const replyBlocksOf = (document: NormalizedDocument | null) =>
+  findDocumentBlocks<PubLeafletBlocksReply.Main>(
+    document,
+    ids.PubLeafletBlocksReply,
+  );
 
 export type ReplyTarget = { uri: string; title: string; href: string };
 
@@ -139,17 +187,23 @@ export async function acceptedReplyTargets(
   });
 }
 
-// Whether `subject` is a published document that asks for replies: without
-// this anyone could notify the author of a post that never asked for them.
-export async function subjectAcceptsReplies(subject: string): Promise<boolean> {
+// The reply block on published document `subject` that a submission through
+// block `key` lands on, or null if the document takes no replies: without
+// this check anyone could notify the author of a post that never asked for
+// them.
+export async function subjectReplyBlock(
+  subject: string,
+  key: string | null | undefined,
+): Promise<PubLeafletBlocksReply.Main | null> {
   const { data: doc } = await supabaseServerClient
     .from("documents")
     .select("uri, data")
     .eq("uri", subject)
     .maybeSingle();
-  if (!doc) return false;
-  const record = normalizeDocumentRecord(doc.data, doc.uri);
-  return !!record && documentHasBlock(record, ids.PubLeafletBlocksReply);
+  return resolveInteractionBlock(
+    replyBlocksOf(doc && normalizeDocumentRecord(doc.data, doc.uri)),
+    key,
+  );
 }
 
 // The post a reply draft answers, for the editor's "Replying to" indicator.
@@ -185,6 +239,8 @@ export type CreateReplyError = "not_found" | "failed";
 export async function createReplyRecord(args: {
   did: string;
   subject: string;
+  // Key of the reply block submitted through
+  block: string | undefined;
   document: string;
   agent: AtpBaseClient;
 }): Promise<Result<{ uri: string }, { type: CreateReplyError }>> {
@@ -209,6 +265,7 @@ export async function createReplyRecord(args: {
   const record: PubLeafletInteractionsReply.Record = {
     $type: "pub.leaflet.interactions.reply",
     subject,
+    block: args.block,
     document,
     createdAt: new Date().toISOString(),
   };

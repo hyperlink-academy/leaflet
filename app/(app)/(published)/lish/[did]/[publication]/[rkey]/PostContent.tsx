@@ -80,6 +80,8 @@ import { PublishedRecommendedPubs } from "./Blocks/PublishedRecommendedPubs";
 import { DocumentReplies } from "components/Blocks/ReplyBlock/DocumentReplies";
 import { DEFAULT_REPLY_PROMPT_TEXT } from "components/Blocks/ReplyBlock/constants";
 import { DocumentQuestions } from "components/Blocks/QuestionsBlock/DocumentQuestions";
+import { InteractionBlockFrame } from "components/Blocks/InteractionBlockFrame";
+import { interactionBlockAnchor } from "src/utils/interactionBlockAnchor";
 import { useOptionalPostResources } from "./PostDataProvider";
 import { PostHeader } from "./PostHeader/PostHeader";
 import { usePostHeaderBlockData } from "./PostHeader/postHeaderBlockContext";
@@ -488,15 +490,21 @@ export let Block = ({
       if (!document || preview) return null;
       return (
         <div className={className} {...blockProps}>
-          <div className="replyBlock block-border w-full p-2 sm:p-3">
-            <DocumentReplies
-              documentUri={document.uri}
-              initialReplies={replyData}
-              buttonText={block.buttonText}
-              prompt={block.promptText || DEFAULT_REPLY_PROMPT_TEXT}
-              showThemes={block.showPublicationTheme !== false}
-            />
-          </div>
+          <InteractionBlockFrame
+            anchor={interactionBlockAnchor("replies", block.key)}
+            className="replyBlock block-border w-full p-2 sm:p-3"
+          >
+            {() => (
+              <DocumentReplies
+                documentUri={document.uri}
+                block={block.key ?? null}
+                initialReplies={replyData}
+                buttonText={block.buttonText}
+                prompt={block.promptText || DEFAULT_REPLY_PROMPT_TEXT}
+                showThemes={block.showPublicationTheme !== false}
+              />
+            )}
+          </InteractionBlockFrame>
         </div>
       );
     },
@@ -504,17 +512,22 @@ export let Block = ({
       if (!document || preview) return null;
       return (
         <div className={className} {...blockProps}>
-          <div
-            id="questions"
+          <InteractionBlockFrame
+            anchor={interactionBlockAnchor("questions", block.key)}
             className="questionsBlock block-border w-full p-2 sm:p-3"
           >
-            <DocumentQuestions
-              documentUri={document.uri}
-              initialQuestions={questionData}
-              buttonText={block.buttonText}
-              audience={questionsAudience(block.audience)}
-            />
-          </div>
+            {(targeted) => (
+              <DocumentQuestions
+                documentUri={document.uri}
+                block={block.key ?? null}
+                initialQuestions={questionData}
+                buttonText={block.buttonText}
+                audience={questionsAudience(block.audience)}
+                showPending={!!block.showPending}
+                autoFocus={targeted}
+              />
+            )}
+          </InteractionBlockFrame>
         </div>
       );
     },

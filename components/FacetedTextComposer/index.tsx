@@ -281,12 +281,14 @@ export function FacetedTextComposer(props: {
         },
       },
     );
-    if (props.autoFocus) view.current.focus();
     return () => {
       view.current?.destroy();
       view.current = null;
     };
   }, []);
+  useEffect(() => {
+    if (props.autoFocus) view.current?.focus();
+  }, [props.autoFocus]);
 
   return (
     <div className={`flex flex-col grow ${props.className ?? ""}`}>

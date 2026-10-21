@@ -6,7 +6,8 @@ import {
 import { ButtonPrimary } from "components/Buttons";
 import { useEntity, useReplicache } from "src/replicache";
 import { useIsBlockSelected } from "src/useUIState";
-import { documentHasBlock } from "src/utils/documentHasBlock";
+import { publishedBlockKey } from "src/utils/interactionBlockAnchor";
+import { ToggleWithLabel } from "components/Toggle";
 import { ids } from "lexicons/api/lexicons";
 import { pageOfParent } from "src/utils/blockGroups";
 import { BlockProps, BlockLayout } from "../Block";
@@ -30,15 +31,19 @@ export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
   let audience = questionsAudience(
     useEntity(props.entityID, "questions/audience")?.data.value,
   );
+  let showPending = !!useEntity(props.entityID, "questions/show-pending")?.data
+    .value;
   let { data, normalizedDocument } = useLeafletPublicationData();
   let documentUri = data?.documents?.uri;
   let { questions: initial } = useEditorBlockData();
 
   // Readers can only ask once the published document carries the block, so
   // a block added since the last publish is still a draft.
-  let isPublished =
-    !!normalizedDocument &&
-    documentHasBlock(normalizedDocument, ids.PubLeafletBlocksQuestions);
+  let blockKey = publishedBlockKey(
+    normalizedDocument,
+    ids.PubLeafletBlocksQuestions,
+    props.entityID,
+  );
 
   let button =
     permissions.write && !props.preview ? (
@@ -92,15 +97,30 @@ export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
                   </div>
                 </Radio>
               ))}
+              <hr className="border-border-light my-1" />
+              <ToggleWithLabel
+                label="Show pending questions"
+                helpText="Readers see questions before you accept or answer them. Hidden ones never show."
+                toggle={showPending}
+                onToggle={() =>
+                  rep?.mutate.assertFact({
+                    entity: props.entityID,
+                    attribute: "questions/show-pending",
+                    data: { type: "boolean", value: !showPending },
+                  })
+                }
+              />
             </div>
           </BlockSettings>
         ) : undefined
       }
     >
-      {isPublished && documentUri && !props.preview ? (
+      {blockKey !== undefined && documentUri && !props.preview ? (
         <DocumentQuestions
           documentUri={documentUri}
+          block={blockKey}
           audience={audience}
+          showPending={showPending}
           editor={{
             blockEntity: props.entityID,
             page: pageOfParent(props.parent),
@@ -109,7 +129,11 @@ export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
           }}
         />
       ) : (
-        <QuestionsDraft action={button} audience={audience} />
+        <QuestionsDraft
+          action={button}
+          audience={audience}
+          showPending={showPending}
+        />
       )}
     </BlockLayout>
   );

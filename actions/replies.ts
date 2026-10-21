@@ -7,7 +7,10 @@ import { OAuthSessionError } from "src/atproto-oauth";
 import { agentFor, notAuthenticated } from "src/utils/agentFor";
 import { getAuthIdentity } from "src/auth";
 import { Err, Ok, Result } from "src/result";
-import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
+import {
+  deduplicateByUri,
+  deduplicateByUriOrdered,
+} from "src/utils/deduplicateRecords";
 import {
   normalizeDocumentRecord,
   normalizePublicationRecord,
@@ -21,7 +24,7 @@ import {
   createReplyRecord,
   getReplyTarget as loadReplyTarget,
   loadDocumentReplies,
-  subjectAcceptsReplies,
+  subjectReplyBlock,
   MAX_REPLIES,
   type DocumentReplies,
 } from "src/documentReplies";
@@ -70,7 +73,9 @@ export async function getReplyCandidates() {
   });
   return {
     candidates,
-    publications: (publications ?? []).filter(isLeafletManagedPublication),
+    publications: deduplicateByUri(publications ?? []).filter(
+      isLeafletManagedPublication,
+    ),
   };
 }
 
@@ -78,21 +83,22 @@ export async function getReplyCandidates() {
 // will be submitted as a reply to `subject` when it's first published.
 export async function createReplyDraft(args: {
   subject: string;
+  // Key of the reply block the draft was started from
+  block: string | null;
   // Null for a looseleaf
   publication_uri: string | null;
 }): Promise<Result<{ leaflet: string }, ReplyError>> {
   const identity = await getAuthIdentity();
   if (!identity?.atp_did) return Err(notAuthenticated);
-  if (!(await subjectAcceptsReplies(args.subject)))
-    return Err({ type: "replies_closed" });
+  const block = await subjectReplyBlock(args.subject, args.block);
+  if (!block) return Err({ type: "replies_closed" });
+  const replyTo = { subject: args.subject, block: block.key };
   const leaflet = args.publication_uri
-    ? await createPublicationDraft(args.publication_uri, "doc", {
-        replyTo: args.subject,
-      })
+    ? await createPublicationDraft(args.publication_uri, "doc", { replyTo })
     : await createNewLeaflet({
         pageType: "doc",
         redirectUser: false,
-        replyTo: args.subject,
+        replyTo,
         analytics: { kind: "reply_looseleaf" },
       });
   if (!leaflet) return Err({ type: "not_owner" });
@@ -119,6 +125,8 @@ export type ReplyError =
 // URL, as a reply to `subject`. Submitting the same document twice is a no-op.
 export async function submitReply(args: {
   subject: string;
+  // Key of the reply block submitted through
+  block: string | null;
   reply: { uri: string } | { url: string };
 }): Promise<Result<{ uri: string }, ReplyError>> {
   const identity = await getAuthIdentity();
@@ -136,14 +144,15 @@ export async function submitReply(args: {
   if (!isDocumentOwner(document, did)) return Err({ type: "not_your_post" });
   if (document === args.subject) return Err({ type: "same_post" });
 
-  if (!(await subjectAcceptsReplies(args.subject)))
-    return Err({ type: "replies_closed" });
+  const block = await subjectReplyBlock(args.subject, args.block);
+  if (!block) return Err({ type: "replies_closed" });
 
   const agent = await agentFor(did);
   if (!agent.ok) return Err(agent.error);
   return createReplyRecord({
     did,
     subject: args.subject,
+    block: block.key,
     document,
     agent: agent.value,
   });

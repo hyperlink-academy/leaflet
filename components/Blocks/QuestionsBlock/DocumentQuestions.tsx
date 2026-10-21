@@ -12,12 +12,14 @@ import { usePostEditLink } from "app/(app)/(published)/lish/[did]/[publication]/
 import {
   askQuestion,
   getDocumentQuestions,
+  setQuestionState,
   withdrawQuestion,
   type QuestionError,
 } from "actions/questions";
 import type {
   DocumentQuestion,
   DocumentQuestions as DocumentQuestionsData,
+  QuestionState,
 } from "src/documentQuestions";
 import type { QuestionsAudience } from "src/questionsAudience";
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
@@ -54,6 +56,12 @@ const questionErrorMessages: Partial<Record<QuestionError["type"], string>> = {
 // their own pending ones) replaces it once their identity is known.
 export function DocumentQuestions(props: {
   documentUri: string;
+  // Key of the questions block this is (see resolveInteractionBlock): only
+  // its questions show, and new ones are asked through it
+  block: string | null;
+  showPending?: boolean;
+  // The page was opened at this block
+  autoFocus?: boolean;
   initialQuestions?: DocumentQuestion[];
   buttonText?: string;
   audience?: QuestionsAudience;
@@ -98,6 +106,33 @@ export function DocumentQuestions(props: {
   let closeEditor = (uri: string) =>
     setEditing(({ [uri]: _, ...rest }) => rest);
   let run = useActionToast<QuestionError>(questionErrorMessages);
+  let [busy, setBusy] = useState(false);
+  let questions = (data?.questions ?? []).filter(
+    (q) => q.block === props.block,
+  );
+  let setState = async (question: string, state: QuestionState) => {
+    setBusy(true);
+    let ok = await run(() =>
+      setQuestionState({ subject: props.documentUri, question, state }),
+    );
+    if (ok)
+      await mutate(
+        (current) =>
+          current && {
+            ...current,
+            questions: current.questions.map((q) =>
+              q.uri === question
+                ? {
+                    ...q,
+                    state: state === "pending" && q.answer ? "accepted" : state,
+                  }
+                : q,
+            ),
+          },
+        { revalidate: false },
+      );
+    setBusy(false);
+  };
   let toaster = useToaster();
   let pathname = usePathname();
   let redirectRoute = useMemo(() => {
@@ -117,24 +152,22 @@ export function DocumentQuestions(props: {
   };
   if (props.editor) {
     let editor = props.editor;
-    if (!data)
-      return (
-        <QuestionComposerPreview
-          action={editor.action}
-          audience={props.audience}
-        />
-      );
+    let preview = (
+      <QuestionComposerPreview
+        action={editor.action}
+        audience={props.audience}
+        showPending={props.showPending}
+      />
+    );
+    if (!data) return preview;
     let isAuthor = data.isAuthor;
     return (
       <QuestionsModeration
-        questions={data.questions}
-        header={
-          <QuestionComposerPreview
-            action={editor.action}
-            audience={props.audience}
-          />
-        }
-        renderAnswer={(q) =>
+        questions={questions}
+        header={preview}
+        busy={busy}
+        onSetState={isAuthor ? setState : undefined}
+        renderAnswer={(q, showHandle) =>
           editing[q.uri] ? (
             <AnswerEditor
               blockEntity={editor.blockEntity}
@@ -149,7 +182,7 @@ export function DocumentQuestions(props: {
               onClose={() => closeEditor(q.uri)}
             />
           ) : (
-            publishedAnswer(q)
+            publishedAnswer(q, showHandle)
           )
         }
         renderControl={(q) =>
@@ -171,14 +204,20 @@ export function DocumentQuestions(props: {
     return (
       <PublishedAuthorView
         documentUri={props.documentUri}
-        questions={data?.questions ?? []}
+        questions={questions}
+        busy={busy}
+        onSetState={setState}
       />
     );
   if (!data) return null;
 
   let ask = async (text: FacetedText) => {
     let result = await run(() =>
-      askQuestion({ subject: props.documentUri, ...text }),
+      askQuestion({
+        subject: props.documentUri,
+        block: props.block,
+        ...text,
+      }),
     );
     if (!result) return false;
     await mutate();
@@ -187,7 +226,7 @@ export function DocumentQuestions(props: {
   };
   return (
     <QuestionsList
-      questions={data.questions}
+      questions={questions}
       onWithdraw={withdraw}
       renderAnswer={publishedAnswer}
       action={
@@ -195,9 +234,11 @@ export function DocumentQuestions(props: {
           <ComposerPlaceholder className="min-h-20!" />
         ) : viewer ? (
           <QuestionComposer
-            draftKey={`question:${props.documentUri}`}
+            draftKey={`question:${props.documentUri}${props.block ? `:${props.block}` : ""}`}
             submitLabel={props.buttonText}
             audience={props.audience}
+            showPending={props.showPending}
+            autoFocus={props.autoFocus}
             onSubmit={ask}
           />
         ) : (
@@ -208,13 +249,17 @@ export function DocumentQuestions(props: {
   );
 }
 
-const publishedAnswer = (q: DocumentQuestion) =>
-  q.answer ? <PublishedAnswer answer={q.answer} /> : null;
+const publishedAnswer = (q: DocumentQuestion, showHandle?: boolean) =>
+  q.answer ? (
+    <PublishedAnswer answer={q.answer} showHandle={showHandle} />
+  ) : null;
 
 // The author on their published post: answers are written in the editor.
 function PublishedAuthorView(props: {
   documentUri: string;
   questions: DocumentQuestion[];
+  busy: boolean;
+  onSetState: (uri: string, state: QuestionState) => void;
 }) {
   let editLink = usePostEditLink(
     props.documentUri,
@@ -223,6 +268,8 @@ function PublishedAuthorView(props: {
   return (
     <QuestionsModeration
       questions={props.questions}
+      busy={props.busy}
+      onSetState={props.onSetState}
       renderAnswer={publishedAnswer}
       renderControl={(q) =>
         !q.answer &&
