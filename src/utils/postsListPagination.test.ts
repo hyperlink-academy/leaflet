@@ -1,9 +1,50 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPostsListIndex,
+  postMatchesTags,
+  postsListFilterFromSearch,
+  postsListFilterSearch,
   readerControlledUris,
   sortPostsForList,
 } from "./postsListPagination";
+
+describe("postMatchesTags", () => {
+  it("matches any of the filter's tags, and everything when empty", () => {
+    expect(postMatchesTags(["a", "b"], ["b", "c"])).toBe(true);
+    expect(postMatchesTags(["a"], ["c"])).toBe(false);
+    expect(postMatchesTags(undefined, ["c"])).toBe(false);
+    expect(postMatchesTags(undefined, [])).toBe(true);
+    expect(postMatchesTags(["a"], null)).toBe(true);
+  });
+});
+
+describe("posts-list filter search params", () => {
+  it("is empty without a filter", () => {
+    expect(postsListFilterSearch(undefined)).toBe("");
+    expect(postsListFilterSearch([])).toBe("");
+  });
+
+  it("writes one stable URL per tag set and reads it back", () => {
+    const search = postsListFilterSearch([
+      "zines, etc",
+      "art & craft",
+      "art & craft",
+    ]);
+    expect(search).toBe(postsListFilterSearch(["art & craft", "zines, etc"]));
+    expect(postsListFilterFromSearch(new URLSearchParams(search))).toEqual([
+      "art & craft",
+      "zines, etc",
+    ]);
+  });
+
+  it("ignores unrelated params", () => {
+    expect(
+      postsListFilterFromSearch(
+        new URLSearchParams("?interactionDrawer=comments&tag=fiction"),
+      ),
+    ).toEqual(["fiction"]);
+  });
+});
 
 const post = (uri: string, publishedAt?: string, tags?: string[]) => ({
   uri,

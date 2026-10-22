@@ -13,6 +13,7 @@ import {
 import { LocalizedDate } from "./LocalizedDate";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
+import { postsListFilterSearch } from "src/utils/postsListPagination";
 import { getGatedPostPolicy } from "src/membership";
 import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
 import { useContributorProfiles } from "src/hooks/useContributorProfiles";
@@ -64,6 +65,7 @@ export function PublicationPostsList({
   inList,
   disableLinks = false,
   pageWidth,
+  filterTags,
 }: {
   publication: PublicationForURL;
   publicationRecord: NormalizedPublication | null;
@@ -79,6 +81,7 @@ export function PublicationPostsList({
   // on publish, so a highlighted post would otherwise lay itself out for a
   // width the editor isn't showing.
   pageWidth?: number;
+  filterTags?: string[];
 }) {
   const effectivePageWidth = pageWidth ?? publicationRecord?.theme?.pageWidth;
   const unresolvedDids = useMemo(() => {
@@ -132,6 +135,9 @@ export function PublicationPostsList({
             const tags = doc_record.tags || [];
 
             const docUrl = getDocumentURL(doc_record, post.uri, publication);
+            const postHref = disableLinks
+              ? undefined
+              : docUrl + postsListFilterSearch(filterTags);
             const date = doc_record.publishedAt ? (
               <LocalizedDate
                 dateString={doc_record.publishedAt}
@@ -191,7 +197,7 @@ export function PublicationPostsList({
                 <React.Fragment key={post.uri}>
                   <PublicationPostItemLarge
                     inList={inList ?? true}
-                    href={disableLinks ? undefined : docUrl}
+                    href={postHref}
                     membersOnly={post.membersOnly}
                     publicationUri={publication.uri}
                     gatePolicy={gatePolicy}
@@ -216,7 +222,7 @@ export function PublicationPostsList({
                 <React.Fragment key={post.uri}>
                   <PublicationPostItemSmall
                     inList={inList ?? true}
-                    href={disableLinks ? undefined : docUrl}
+                    href={postHref}
                     membersOnly={post.membersOnly}
                     publicationUri={publication.uri}
                     gatePolicy={gatePolicy}
@@ -234,7 +240,7 @@ export function PublicationPostsList({
               <React.Fragment key={post.uri}>
                 <PublicationPostItemMedium
                   inList={inList ?? true}
-                  href={disableLinks ? undefined : docUrl}
+                  href={postHref}
                   membersOnly={post.membersOnly}
                   publicationUri={publication.uri}
                   gatePolicy={gatePolicy}

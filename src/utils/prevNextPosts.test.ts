@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   adjacentPosts,
+  prevNextAround,
   sortPostsForPrevNext,
   type PrevNextCandidate,
 } from "src/utils/prevNextPosts";
@@ -25,6 +26,46 @@ describe("sortPostsForPrevNext", () => {
       post(4, { publishedAt: null }),
     ]);
     expect(sorted.map((d) => d.uri)).toEqual([post(1).uri, post(3).uri]);
+  });
+});
+
+describe("prevNextAround", () => {
+  const sorted = sortPostsForPrevNext([
+    post(1),
+    post(2),
+    post(3),
+    post(4),
+    post(5),
+  ]);
+
+  test("neighbours, edges and two-hop preloads from the middle", () => {
+    expect(prevNextAround(sorted, post(3).uri)).toMatchObject({
+      prev: { uri: post(2).uri },
+      next: { uri: post(4).uri },
+      first: { uri: post(1).uri },
+      last: { uri: post(5).uri },
+      prevPreload: { uri: post(1).uri },
+      nextPreload: { uri: post(5).uri },
+    });
+  });
+
+  test("a post at an edge doesn't point at itself", () => {
+    expect(prevNextAround(sorted, post(1).uri)).toMatchObject({
+      prev: undefined,
+      first: undefined,
+      prevPreload: undefined,
+      next: { uri: post(2).uri },
+      last: { uri: post(5).uri },
+    });
+    expect(prevNextAround(sorted, post(5).uri)).toMatchObject({
+      next: undefined,
+      last: undefined,
+      nextPreload: undefined,
+    });
+  });
+
+  test("undefined for a post outside the run", () => {
+    expect(prevNextAround(sorted, "at://elsewhere")).toBeUndefined();
   });
 });
 

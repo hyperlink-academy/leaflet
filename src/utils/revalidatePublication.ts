@@ -1,8 +1,9 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { AtUri } from "@atproto/syntax";
 import { supabaseServerClient } from "supabase/serverClient";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { adjacentPosts, sortPostsForPrevNext } from "src/utils/prevNextPosts";
+import { publicationPostsCacheTag } from "src/utils/publicationPrevNextPosts";
 
 // ISR cache tags include the route group segment
 // (_N_T_/(published)/lish/...), so the pattern form
@@ -198,6 +199,8 @@ export async function revalidateDocumentPaths(
     }
   }
   if (pub) {
+    if (opts?.neighbours !== false)
+      revalidateTag(publicationPostsCacheTag(pub.uri), { expire: 0 });
     const prefs = neighbourButtonPrefs(pub.record);
     const loadNeighbours =
       opts?.neighbours !== false && (prefs.showPrevNext || prefs.showFirstLast);

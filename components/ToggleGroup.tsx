@@ -4,8 +4,6 @@ export function ToggleGroup<T extends string>(props: {
   value: T;
   onChange: (value: T, e?: React.MouseEvent) => void;
   options: { value: T; label: ReactNode }[];
-  // "light" swaps the accent track for a light-container one, for places the
-  // accent color would compete with surrounding content.
   background?: "accent" | "light";
   className?: string;
   optionClassName?: string;
@@ -15,7 +13,7 @@ export function ToggleGroup<T extends string>(props: {
   let light = props.background === "light";
   return (
     <div
-      className={`flex gap-1 p-1 text-sm rounded-lg ${light ? "bg-bg-light border border-border-light" : "bg-accent-1"} ${props.fullWidth ? "w-full" : "w-fit"} ${props.className || ""}`}
+      className={`toggleGroup flex gap-1 p-1 text-sm rounded-lg ${light ? "bg-bg-light border border-border-light" : "bg-accent-1"} ${props.fullWidth ? "w-full" : "w-fit"} ${props.className || ""}`}
     >
       {props.options.map((option) => (
         <button

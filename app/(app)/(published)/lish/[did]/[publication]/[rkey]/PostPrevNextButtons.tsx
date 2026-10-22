@@ -1,8 +1,8 @@
 "use client";
-import { getPublicationURL } from "src/utils/getPublicationURL";
-import { AtUri } from "@atproto/api";
+import type { ReactNode } from "react";
 import { useDocument } from "contexts/DocumentContext";
 import { useWarmAdjacentPosts } from "./useWarmAdjacentPosts";
+import { usePostPrevNext } from "./usePostPrevNext";
 import { SpeedyLink } from "components/SpeedyLink";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { DoubleArrowRightTiny } from "components/Icons/DoubleArrowRightTiny";
@@ -14,34 +14,40 @@ import {
 
 type PostRef = { uri: string; title: string };
 
+const PLACEHOLDER_POSTS = {
+  prev: { uri: "", title: "Previous" },
+  next: { uri: "", title: "Next" },
+  first: { uri: "", title: "First" },
+  last: { uri: "", title: "Last" },
+};
+
 export const PostPrevNextButtons = (props: {
   showPrevNext: boolean;
   showFirstLast: boolean;
   direction?: string;
 }) => {
-  const { prevNext, publication, uri } = useDocument();
+  const { publication, uri } = useDocument();
+  const { prevNext, hrefFor, loading } = usePostPrevNext();
 
-  useWarmAdjacentPosts(props.showPrevNext);
+  useWarmAdjacentPosts(props.showPrevNext, prevNext, hrefFor);
 
   if ((!props.showPrevNext && !props.showFirstLast) || !publication)
     return null;
 
-  function getPostLink(uri: string) {
-    return publication && uri
-      ? `${getPublicationURL(publication)}/${new AtUri(uri).rkey}`
-      : "leaflet.pub/not-found";
-  }
-  let prevPost =
-    props.showPrevNext && prevNext?.prev ? prevNext?.prev : undefined;
-  let nextPost =
-    props.showPrevNext && prevNext?.next ? prevNext?.next : undefined;
+  const posts = loading ? PLACEHOLDER_POSTS : prevNext;
+  const getPostLink = (post: PostRef) =>
+    loading ? undefined : hrefFor(post.uri);
+  const arrowColor = loading ? "text-border" : "";
+
+  let prevPost = props.showPrevNext ? posts?.prev : undefined;
+  let nextPost = props.showPrevNext ? posts?.next : undefined;
   let firstPost =
-    props.showFirstLast && prevNext?.first && prevNext.first.uri !== uri
-      ? prevNext?.first
+    props.showFirstLast && posts?.first && posts.first.uri !== uri
+      ? posts.first
       : undefined;
   let lastPost =
-    props.showFirstLast && prevNext?.last && prevNext.last.uri !== uri
-      ? prevNext?.last
+    props.showFirstLast && posts?.last && posts.last.uri !== uri
+      ? posts.last
       : undefined;
 
   let { adjacent, edge } = arrangeByDirection(
@@ -55,26 +61,28 @@ export const PostPrevNextButtons = (props: {
         <div className="flex gap-2 items-center grow basis-1/2 min-w-0">
           {edge.left && (
             <>
-              <SpeedyLink
-                href={getPostLink(edge.left.uri)}
+              <PostNavLink
+                href={getPostLink(edge.left)}
                 className="flex flex-row gap-1 items-center min-w-4 "
               >
-                <DoubleArrowRightTiny className={`rotate-180 shrink-0 `} />
+                <DoubleArrowRightTiny
+                  className={`rotate-180 shrink-0 ${arrowColor}`}
+                />
                 {!adjacent.left && (
                   <div className="min-w-0 truncate">{edge.left.title}</div>
                 )}
-              </SpeedyLink>
+              </PostNavLink>
               {adjacent.left && <Separator />}
             </>
           )}
           {adjacent.left ? (
-            <SpeedyLink
-              href={getPostLink(adjacent.left.uri)}
+            <PostNavLink
+              href={getPostLink(adjacent.left)}
               className="flex flex-row gap-1 items-center min-w-0 grow"
             >
-              <ArrowRightTiny className="rotate-180 shrink-0" />
+              <ArrowRightTiny className={`rotate-180 shrink-0 ${arrowColor}`} />
               <div className="min-w-0 truncate">{adjacent.left.title}</div>
-            </SpeedyLink>
+            </PostNavLink>
           ) : (
             <div />
           )}
@@ -82,13 +90,13 @@ export const PostPrevNextButtons = (props: {
         <div className="flex gap-2 items-center grow justify-end basis-1/2 min-w-0">
           {adjacent.right ? (
             <>
-              <SpeedyLink
-                href={getPostLink(adjacent.right.uri)}
+              <PostNavLink
+                href={getPostLink(adjacent.right)}
                 className="flex flex-row gap-1 items-center truncate min-w-0 grow w-fit max-w-full text-right justify-end"
               >
                 <div className="min-w-0 truncate ">{adjacent.right.title}</div>
-                <ArrowRightTiny className="shrink-0" />
-              </SpeedyLink>
+                <ArrowRightTiny className={`shrink-0 ${arrowColor}`} />
+              </PostNavLink>
             </>
           ) : (
             <div />
@@ -96,15 +104,15 @@ export const PostPrevNextButtons = (props: {
           {edge.right && (
             <>
               {adjacent.right && <Separator />}
-              <SpeedyLink
-                href={getPostLink(edge.right.uri)}
+              <PostNavLink
+                href={getPostLink(edge.right)}
                 className="flex flex-row gap-1 items-center min-w-4"
               >
                 {!adjacent.right && (
                   <div className="min-w-0 truncate">{edge.right.title}</div>
                 )}
-                <DoubleArrowRightTiny className={`shrink-0 `} />
-              </SpeedyLink>
+                <DoubleArrowRightTiny className={`shrink-0 ${arrowColor}`} />
+              </PostNavLink>
             </>
           )}
         </div>
@@ -112,6 +120,27 @@ export const PostPrevNextButtons = (props: {
     </div>
   );
 };
+
+function PostNavLink(props: {
+  href: string | undefined;
+  className: string;
+  children: ReactNode;
+}) {
+  if (props.href === undefined)
+    return (
+      <div
+        aria-hidden
+        className={`${props.className} text-tertiary animate-pulse`}
+      >
+        {props.children}
+      </div>
+    );
+  return (
+    <SpeedyLink href={props.href} className={props.className}>
+      {props.children}
+    </SpeedyLink>
+  );
+}
 
 function arrangeByDirection(
   direction: PrevNextDirection,

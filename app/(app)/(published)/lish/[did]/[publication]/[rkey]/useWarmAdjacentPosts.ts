@@ -1,9 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AtUri } from "@atproto/api";
 import { useDocument } from "contexts/DocumentContext";
-import { getPublicationURL } from "src/utils/getPublicationURL";
+import type { ResolvedPrevNext } from "./usePostPrevNext";
 
 // An image that never resolves shouldn't hold speculative work back forever
 const SETTLE_TIMEOUT = 5000;
@@ -20,15 +19,18 @@ const SETTLE_TIMEOUT = 5000;
  * that isn't warmed navigates cold, and an image that fails here loads
  * normally when the reader reaches it.
  */
-export function useWarmAdjacentPosts(enabled: boolean) {
-  const { prevNext, publication, uri } = useDocument();
+export function useWarmAdjacentPosts(
+  enabled: boolean,
+  prevNext: ResolvedPrevNext | undefined,
+  hrefFor: (uri: string) => string,
+) {
+  const { uri } = useDocument();
   const router = useRouter();
   const settled = useImagesSettled(uri);
 
   useEffect(() => {
-    if (!settled || !enabled || !publication || !prevNext) return;
+    if (!settled || !enabled || !prevNext) return;
 
-    const base = getPublicationURL(publication);
     for (const target of [
       prevNext.next?.uri,
       prevNext.prev?.uri,
@@ -36,13 +38,12 @@ export function useWarmAdjacentPosts(enabled: boolean) {
       prevNext.prevPreload,
     ]) {
       if (!target) continue;
-      const href = `${base}/${new AtUri(target).rkey}`;
+      const href = hrefFor(target);
       // A publication on its own domain is a different origin — nothing the
       // router can warm.
       try {
         if (
-          new URL(href, window.location.href).origin !==
-          window.location.origin
+          new URL(href, window.location.href).origin !== window.location.origin
         )
           continue;
       } catch {
@@ -72,7 +73,7 @@ export function useWarmAdjacentPosts(enabled: boolean) {
       // Lets the browser abandon fetches the reader has moved past
       for (const image of images) if (!image.complete) image.src = "";
     };
-  }, [settled, enabled, publication, prevNext, router]);
+  }, [settled, enabled, prevNext, hrefFor, router]);
 }
 
 /**

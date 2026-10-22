@@ -25,7 +25,7 @@ import {
 import { resolveDocumentFilter } from "./resolveDocumentFilter";
 import { fetchPublicationForPage } from "app/(app)/(published)/lish/[did]/[publication]/getPublicationForPage";
 import { getPostImagePreloads } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/getPostImagePreloads";
-import { sortPostsForPrevNext } from "src/utils/prevNextPosts";
+import { prevNextAround, sortPostsForPrevNext } from "src/utils/prevNextPosts";
 import { acceptedReplyTargets } from "src/documentReplies";
 
 export const getPostPageData = cache(async function getPostPageData(
@@ -158,46 +158,25 @@ export const getPostPageData = cache(async function getPostPageData(
       ),
     );
 
-    const currentIndex = sortedDocs.findIndex(
-      (doc) => doc.uri === document.uri,
-    );
+    const around = prevNextAround(sortedDocs, document.uri);
 
-    if (currentIndex !== -1) {
-      const lastIndex = sortedDocs.length - 1;
-      const neighbour = (doc: (typeof sortedDocs)[number]): Neighbour => ({
+    if (around) {
+      type Doc = (typeof sortedDocs)[number];
+      const ref = (doc: Doc) => ({
         uri: doc.uri || "",
         title: doc.title || "",
+      });
+      const neighbour = (doc: Doc): Neighbour => ({
+        ...ref(doc),
         membersOnly: doc.membersOnly,
       });
       prevNext = {
-        prev:
-          currentIndex > 0
-            ? neighbour(sortedDocs[currentIndex - 1])
-            : undefined,
-        next:
-          currentIndex < lastIndex
-            ? neighbour(sortedDocs[currentIndex + 1])
-            : undefined,
-        first:
-          currentIndex > 0
-            ? {
-                uri: sortedDocs[0].uri || "",
-                title: sortedDocs[0].title || "",
-              }
-            : undefined,
-        last:
-          currentIndex < lastIndex
-            ? {
-                uri: sortedDocs[lastIndex].uri || "",
-                title: sortedDocs[lastIndex].title || "",
-              }
-            : undefined,
-        prevPreload:
-          currentIndex > 1 ? sortedDocs[currentIndex - 2].uri || "" : undefined,
-        nextPreload:
-          currentIndex < lastIndex - 1
-            ? sortedDocs[currentIndex + 2].uri || ""
-            : undefined,
+        prev: around.prev && neighbour(around.prev),
+        next: around.next && neighbour(around.next),
+        first: around.first && ref(around.first),
+        last: around.last && ref(around.last),
+        prevPreload: around.prevPreload?.uri || undefined,
+        nextPreload: around.nextPreload?.uri || undefined,
       };
     }
   }

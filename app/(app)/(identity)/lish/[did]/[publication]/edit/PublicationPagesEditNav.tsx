@@ -313,6 +313,33 @@ function AddPageButton(props: {
         }}
         className="flex flex-col gap-2"
       >
+        {!isExternal && (
+          <ToggleGroup
+            fullWidth
+            background="light"
+            value={pageType}
+            onChange={setPageType}
+            optionClassName="py-0.5"
+            options={[
+              {
+                value: "doc",
+                label: (
+                  <div className="flex items-center justify-center gap-1">
+                    <BlockDocPageSmall /> Text
+                  </div>
+                ),
+              },
+              {
+                value: "canvas",
+                label: (
+                  <div className="flex items-center justify-center gap-1">
+                    <BlockCanvasPageSmall /> Canvas
+                  </div>
+                ),
+              },
+            ]}
+          />
+        )}
         <InputWithLabel
           label="Page Title"
           type="text"
@@ -351,31 +378,6 @@ function AddPageButton(props: {
               Page URL: {props.publicationUrl?.replace(/^https?:\/\//, "")}
               {cleanPath(path)}
             </div>
-            <ToggleGroup
-              fullWidth
-              background="light"
-              value={pageType}
-              onChange={setPageType}
-              optionClassName="py-0.5"
-              options={[
-                {
-                  value: "doc",
-                  label: (
-                    <div className="flex items-center justify-center gap-1">
-                      <BlockDocPageSmall /> Doc
-                    </div>
-                  ),
-                },
-                {
-                  value: "canvas",
-                  label: (
-                    <div className="flex items-center justify-center gap-1">
-                      <BlockCanvasPageSmall /> Canvas
-                    </div>
-                  ),
-                },
-              ]}
-            />
           </>
         )}
         <hr className="border-border-light" />

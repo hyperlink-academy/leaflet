@@ -7,6 +7,7 @@ import type { ChapterCard } from "src/utils/chapterGrouping";
 import type { PublicationPostsListPost } from "src/utils/buildPublicationPosts";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
 import { PublicationPostsList } from "./PublicationPostsList";
+import { postsListFilterSearch } from "src/utils/postsListPagination";
 
 const MAX_CARD_WIDTH = 240;
 const GRID_GAP = 24;
@@ -26,6 +27,7 @@ export function ChapterShelf({
   showPageCount = true,
   disableLinks = false,
   className,
+  filterTags,
 }: {
   publication: { uri: string; record: unknown };
   publicationRecord: NormalizedPublication | null;
@@ -37,6 +39,7 @@ export function ChapterShelf({
   showPageCount?: boolean;
   disableLinks?: boolean;
   className?: string;
+  filterTags?: string[];
 }) {
   return (
     <div className={`relative w-full ${className ?? ""}`}>
@@ -53,6 +56,7 @@ export function ChapterShelf({
               posts={[latestPost]}
               view="medium"
               disableLinks={disableLinks}
+              filterTags={filterTags}
             />
           </div>
           <hr className="border-border-light my-4" />
@@ -63,6 +67,7 @@ export function ChapterShelf({
         pageWidth={publicationRecord?.theme?.pageWidth}
         showPageCount={showPageCount}
         disableLinks={disableLinks}
+        filterTags={filterTags}
       />
     </div>
   );
@@ -81,13 +86,16 @@ export function PublicationPostsChapterList({
   pageWidth,
   showPageCount = true,
   disableLinks = false,
+  filterTags,
 }: {
   cards: ChapterCard[];
 
   pageWidth?: number;
   showPageCount?: boolean;
   disableLinks?: boolean;
+  filterTags?: string[];
 }) {
+  const filterSearch = postsListFilterSearch(filterTags);
   return (
     <ChapterGrid pageWidth={pageWidth}>
       {cards.map((card) => (
@@ -96,6 +104,7 @@ export function PublicationPostsChapterList({
           card={card}
           showPageCount={showPageCount}
           disableLinks={disableLinks}
+          filterSearch={filterSearch}
         />
       ))}
     </ChapterGrid>
@@ -148,10 +157,12 @@ function ChapterItem({
   card,
   showPageCount,
   disableLinks,
+  filterSearch,
 }: {
   card: ChapterCard;
   showPageCount?: boolean;
   disableLinks?: boolean;
+  filterSearch: string;
 }) {
   const cardClassName =
     "chapterItem group flex flex-col gap-2 no-underline! text-primary min-w-0 w-full";
@@ -206,7 +217,7 @@ function ChapterItem({
       {disableLinks ? (
         <div className={cardClassName}>{content}</div>
       ) : (
-        <SpeedyLink href={card.href} className={cardClassName}>
+        <SpeedyLink href={card.href + filterSearch} className={cardClassName}>
           {content}
         </SpeedyLink>
       )}

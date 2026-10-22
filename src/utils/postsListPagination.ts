@@ -45,12 +45,36 @@ export function sortPostsForList<T extends SortablePost>(posts: T[]): T[] {
   );
 }
 
+export function postMatchesTags(
+  postTags: string[] | undefined,
+  filter: string[] | null | undefined,
+): boolean {
+  if (!filter || filter.length === 0) return true;
+  return !!postTags?.some((t) => filter.includes(t));
+}
+
 export function filterPostsByTags<T extends { record: { tags?: string[] } }>(
   posts: T[],
   tags?: string[] | null,
 ): T[] {
   if (!tags || tags.length === 0) return posts;
-  return posts.filter((p) => p.record.tags?.some((t) => tags.includes(t)));
+  return posts.filter((p) => postMatchesTags(p.record.tags, tags));
+}
+
+const POSTS_LIST_FILTER_PARAM = "tag";
+
+export function postsListFilterSearch(tags?: string[] | null): string {
+  if (!tags || tags.length === 0) return "";
+  const params = new URLSearchParams();
+  for (const tag of [...new Set(tags)].sort())
+    params.append(POSTS_LIST_FILTER_PARAM, tag);
+  return `?${params}`;
+}
+
+export function postsListFilterFromSearch(params: URLSearchParams): string[] {
+  return [...new Set(params.getAll(POSTS_LIST_FILTER_PARAM))]
+    .filter(Boolean)
+    .sort();
 }
 
 // A hydrate function turns a batch of post URIs into renderable posts (in the
@@ -172,13 +196,8 @@ export function readerControlledUris(
     .trim()
     .split(/\s+/)
     .filter(Boolean);
-  // Selecting several tags widens the list rather than narrowing it, matching
-  // the author-side `filterPostsByTags`.
-  const tags = state.tags ?? [];
   const filtered = index.filter(
-    (e) =>
-      (tags.length === 0 || !!e.tags?.some((t) => tags.includes(t))) &&
-      matchesSearch(e, terms),
+    (e) => postMatchesTags(e.tags, state.tags) && matchesSearch(e, terms),
   );
   const sorted = [...filtered].sort((a, b) => {
     if (state.sort === "oldest") return -compareLatest(a, b);

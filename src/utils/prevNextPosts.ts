@@ -21,6 +21,23 @@ export function sortPostsForPrevNext<T extends PrevNextCandidate>(docs: T[]) {
     );
 }
 
+export function prevNextAround<T extends { uri: string | null }>(
+  sorted: T[],
+  uri: string,
+) {
+  const index = sorted.findIndex((d) => d.uri === uri);
+  if (index === -1) return undefined;
+  const lastIndex = sorted.length - 1;
+  return {
+    prev: index > 0 ? sorted[index - 1] : undefined,
+    next: index < lastIndex ? sorted[index + 1] : undefined,
+    first: index > 0 ? sorted[0] : undefined,
+    last: index < lastIndex ? sorted[lastIndex] : undefined,
+    prevPreload: index > 1 ? sorted[index - 2] : undefined,
+    nextPreload: index < lastIndex - 1 ? sorted[index + 2] : undefined,
+  };
+}
+
 /**
  * The posts whose prev/next buttons point at `doc`. When `doc` is still in
  * `sorted` they're its index neighbours; when it has been deleted they're the

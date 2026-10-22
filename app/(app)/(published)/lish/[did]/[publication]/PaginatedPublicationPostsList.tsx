@@ -40,6 +40,7 @@ export function PaginatedPublicationPostsList({
   className,
   disableLinks = false,
   pageWidth,
+  filterTags,
 }: {
   publication: { uri: string; record: unknown };
   publicationRecord: NormalizedPublication | null;
@@ -55,6 +56,7 @@ export function PaginatedPublicationPostsList({
   className?: string;
   disableLinks?: boolean;
   pageWidth?: number;
+  filterTags?: string[];
 }) {
   const [readerState, setReaderState] =
     useState<PostsListReaderState>(DEFAULT_READER_STATE);
@@ -177,6 +179,7 @@ export function PaginatedPublicationPostsList({
               highlightFirstPost={highlightFirstPost}
               disableLinks={disableLinks}
               pageWidth={pageWidth}
+              filterTags={filterTags}
             />
           </div>
           {/* Fires the next batch while still ~1200px from the list's end. */}

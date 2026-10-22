@@ -547,6 +547,7 @@ export let Block = ({
               latestPost={seed.latestPost}
               highlightLatest={!!block.highlightFirstPost}
               showPageCount={block.showPageCount ?? true}
+              filterTags={block.filterByTags}
             />
           </div>
         );
@@ -564,6 +565,7 @@ export let Block = ({
             highlightFirstPost={!!block.highlightFirstPost}
             limit={block.limit}
             readerControls={resolveReaderControls(block)}
+            filterTags={block.filterByTags}
           />
         </div>
       );
