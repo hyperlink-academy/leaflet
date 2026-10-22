@@ -23,6 +23,11 @@ import { InteractionShareButton } from "components/Interactions/InteractionShare
 import { getDocumentURL } from "src/utils/getPublicationURL";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { usePostFrame } from "../postFrame";
+import { useClientSearchParams } from "src/hooks/useClientSearchParams";
+import {
+  postsListFilterFromSearch,
+  postsListFilterSearch,
+} from "src/utils/postsListPagination";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -211,6 +216,14 @@ export function popDrawerThreadToRoot(document_uri: string, hasTabs: boolean) {
   }));
 }
 
+function useSharePostUrl(postUrl: string) {
+  let params = useClientSearchParams();
+  return useMemo(
+    () => postUrl + postsListFilterSearch(postsListFilterFromSearch(params)),
+    [postUrl, params],
+  );
+}
+
 export const Interactions = (props: {
   quotesCount: number;
   commentsCount: number;
@@ -240,6 +253,7 @@ export const Interactions = (props: {
     document_uri,
     normalizedPublication,
   );
+  let shareUrl = useSharePostUrl(postUrl);
 
   let commentsAvailable = props.showComments;
   let mentionsAvailable = props.showMentions && props.quotesCount > 0;
@@ -291,7 +305,7 @@ export const Interactions = (props: {
       <div className="h-full  w-0 spacer" />
       <InteractionShareButton
         postRecord={normalizedDocument}
-        postUrl={postUrl}
+        postUrl={shareUrl}
         documentUri={document_uri}
         publication={normalizedPublication || undefined}
         pubUri={publication?.uri}
@@ -326,6 +340,7 @@ export const ExpandedInteractions = (props: {
     document_uri,
     normalizedPublication,
   );
+  let shareUrl = useSharePostUrl(postUrl);
 
   const handleQuotePrefetch = () => {
     if (quotesAndMentions) {
@@ -402,7 +417,7 @@ export const ExpandedInteractions = (props: {
 
             <InteractionShareButton
               postRecord={normalizedDocument}
-              postUrl={postUrl}
+              postUrl={shareUrl}
               documentUri={document_uri}
               publication={
                 normalizedPublication ? normalizedPublication : undefined
