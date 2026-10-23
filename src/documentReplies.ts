@@ -8,8 +8,10 @@ import type { Json } from "supabase/database.types";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 import {
   normalizeDocumentRecord,
+  normalizePublicationRecord,
   type NormalizedDocument,
 } from "src/utils/normalizeRecords";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { AtUri } from "@atproto/syntax";
 import { TID } from "@atproto/common";
 import { v7 } from "uuid";
@@ -151,20 +153,78 @@ export const replyBlocksOf = (document: NormalizedDocument | null) =>
     ids.PubLeafletBlocksReply,
   );
 
-export type ReplyTarget = { uri: string; title: string; href: string };
+// A post another post replies to, as the "in reply to" indicator shows it.
+export type ReplyTarget = {
+  uri: string;
+  title: string;
+  href: string;
+  publication: { name: string; icon: string | null } | null;
+  // Null when the author's profile doesn't resolve
+  authorHandle: string | null;
+  authorAvatar: string | null;
+  // The pub.leaflet.interactions.reply record submitting the replying post to
+  // this one; null until it's been submitted
+  replyUri: string | null;
+  // Not yet approved by this post's author: submitted and waiting, or, for an
+  // unpublished draft, to be submitted when it's published
+  pending: boolean;
+};
+
+// A document with its publication, as getPostPageData and getReplyTarget
+// select it.
+type ReplyTargetDocument = {
+  uri: string;
+  data: Json;
+  documents_in_publications: {
+    publications: { uri: string; record: Json | null } | null;
+  }[];
+};
+
+async function replyTargets(
+  targets: {
+    doc: ReplyTargetDocument;
+    replyUri: string | null;
+    pending: boolean;
+  }[],
+): Promise<ReplyTarget[]> {
+  const profiles = await getProfiles(
+    targets.map((t) => new AtUri(t.doc.uri).host),
+  );
+  return targets.flatMap(({ doc, replyUri, pending }) => {
+    const record = normalizeDocumentRecord(doc.data, doc.uri);
+    if (!record) return [];
+    const pub = doc.documents_in_publications[0]?.publications;
+    const pubRecord = pub ? normalizePublicationRecord(pub.record) : null;
+    const author = profiles.get(new AtUri(doc.uri).host);
+    return [
+      {
+        uri: doc.uri,
+        title: record.title || "Untitled",
+        href: getDocumentURL(record, doc.uri, pub),
+        publication:
+          pub && pubRecord
+            ? {
+                name: pubRecord.name,
+                icon: pubRecord.icon
+                  ? blobRefToSrc(pubRecord.icon.ref, new AtUri(pub.uri).host)
+                  : null,
+              }
+            : null,
+        authorHandle: author?.handle ?? null,
+        authorAvatar: author?.avatar ?? null,
+        replyUri,
+        pending,
+      },
+    ];
+  });
+}
 
 // A document's submissions as a reply, each with the document it replies to:
 // the embed getPostPageData selects.
 type ReplySubmission = {
   uri: string;
   subject: string;
-  documents: {
-    uri: string;
-    data: Json;
-    documents_in_publications: {
-      publications: { uri: string; record: Json | null } | null;
-    }[];
-  } | null;
+  documents: ReplyTargetDocument | null;
 };
 
 // The documents that show a document as an accepted reply.
@@ -184,24 +244,53 @@ export async function acceptedReplyTargets(
       submissions.map((r) => r.uri),
     );
   const allowed = new Set((allowedRows ?? []).map((r) => r.reply));
+  return replyTargets(
+    submissions.flatMap((row) =>
+      allowed.has(row.uri) && row.documents
+        ? [{ doc: row.documents, replyUri: row.uri, pending: false }]
+        : [],
+    ),
+  );
+}
 
-  return submissions.flatMap((row) => {
-    const subject = row.documents;
-    if (!allowed.has(row.uri) || !subject) return [];
-    const record = normalizeDocumentRecord(subject.data, subject.uri);
-    if (!record) return [];
-    return [
-      {
-        uri: subject.uri,
-        title: record.title || "Untitled",
-        href: getDocumentURL(
-          record,
-          subject.uri,
-          subject.documents_in_publications[0]?.publications,
-        ),
-      },
-    ];
-  });
+// The posts published `document` has been submitted as a reply to. Its author
+// also sees the ones still pending, the same as the reply blocks show them
+// their own pending submissions.
+export async function documentReplyTargets(
+  document: string,
+  viewer: string | null,
+): Promise<ReplyTarget[]> {
+  const { data: submissions } = await supabaseServerClient
+    .from("document_replies")
+    .select(
+      `uri, subject,
+      documents!document_replies_subject_fkey(uri, data,
+        documents_in_publications(publications(uri, record)))`,
+    )
+    .eq("document", document);
+  if (!submissions?.length) return [];
+  if (!viewer || !isDocumentOwner(document, viewer))
+    return acceptedReplyTargets(submissions);
+  const replies = submissions.map((s) => s.uri);
+  const [{ data: allowedRows }, { data: rejectedRows }] = await Promise.all([
+    supabaseServerClient
+      .from("document_reply_visibility")
+      .select("reply")
+      .in("reply", replies),
+    supabaseServerClient
+      .from("document_reply_rejections")
+      .select("reply")
+      .in("reply", replies),
+  ]);
+  const allowed = new Set((allowedRows ?? []).map((r) => r.reply));
+  const rejected = new Set((rejectedRows ?? []).map((r) => r.reply));
+  return replyTargets(
+    submissions.flatMap((s) =>
+      !rejected.has(s.uri) && s.documents
+        ? [{ doc: s.documents, replyUri: s.uri, pending: !allowed.has(s.uri) }]
+        : [],
+    ),
+  );
 }
 
 // The reply block on published document `subject` that a submission through
@@ -223,7 +312,8 @@ export async function subjectReplyBlock(
   );
 }
 
-// The post a reply draft answers, for the editor's "Replying to" indicator.
+// The post an unpublished reply draft answers, for the editor's "in reply to"
+// indicator; it's submitted when the draft is first published.
 export async function getReplyTarget(
   subject: string,
 ): Promise<ReplyTarget | null> {
@@ -233,17 +323,9 @@ export async function getReplyTarget(
     .eq("uri", subject)
     .maybeSingle();
   if (!doc) return null;
-  const record = normalizeDocumentRecord(doc.data, doc.uri);
-  if (!record) return null;
-  return {
-    uri: doc.uri,
-    title: record.title || "Untitled",
-    href: getDocumentURL(
-      record,
-      doc.uri,
-      doc.documents_in_publications[0]?.publications,
-    ),
-  };
+  return (
+    (await replyTargets([{ doc, replyUri: null, pending: true }]))[0] ?? null
+  );
 }
 
 export type CreateReplyError = "not_found" | "failed";

@@ -11,7 +11,12 @@ import { uploadCoverImage } from "src/utils/uploadCoverImage";
 import { CoverImageTiny } from "components/Icons/CoverImageTiny";
 import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { Separator } from "components/Layout";
-import { ReplyingTo, useReplyTarget } from "components/Pages/ReplyingTo";
+import {
+  ReplyingTo,
+  useDraftReplyTargets,
+  useWithdrawReply,
+} from "components/Pages/ReplyingTo";
+import type { ReplyTarget } from "src/documentReplies";
 import { AtUri } from "@atproto/syntax";
 import {
   getBasePublicationURL,
@@ -66,12 +71,32 @@ export const PublicationMetadata = (props: {
   let publishedAt = normalizedDocument?.publishedAt;
   let scheduledPublishAt = useLeafletScheduledPublishAt();
   let standaloneReplyTo = useEntity(rootEntity, "root/reply-to")?.data.value;
-  let replyTarget = useReplyTarget(pub?.reply_to ?? standaloneReplyTo);
+  let linkedReplyTo = pub?.reply_to ?? standaloneReplyTo;
+  let replyTargets = useDraftReplyTargets(linkedReplyTo, pub?.doc);
+  let { permissions } = useEntitySetContext();
+  let withdrawReply = useWithdrawReply();
+  let replyOwner =
+    pub?.publications?.identity_did ??
+    (pub?.doc ? new AtUri(pub.doc).host : null);
+  let canWithdraw =
+    permissions.write && (!replyOwner || replyOwner === identity?.atp_did);
+  let withdraw = async (target: ReplyTarget) => {
+    if (target.replyUri && !(await withdrawReply(target.replyUri)))
+      return false;
+    if (target.uri === linkedReplyTo)
+      await rep?.mutate.clearDraftReplyTo({ rootEntity, ignoreUndo: true });
+    return true;
+  };
+  let replyingTo = (className: string) => (
+    <ReplyingTo
+      targets={replyTargets}
+      newTab
+      onWithdraw={canWithdraw ? withdraw : undefined}
+      className={className}
+    />
+  );
 
-  if (!pub)
-    return replyTarget ? (
-      <ReplyingTo target={replyTarget} className="pb-2" />
-    ) : null;
+  if (!pub) return replyingTo("pb-2");
 
   if (typeof title !== "string") {
     title = pub?.title || "";
@@ -84,6 +109,7 @@ export const PublicationMetadata = (props: {
   return (
     <PostHeaderLayout
       compact={props.compact}
+      below={replyingTo("pt-3")}
       pubLink={
         <div className="flex gap-2 items-center min-w-0 w-full">
           {pub.publications && (
@@ -101,7 +127,6 @@ export const PublicationMetadata = (props: {
           <div className="font-bold text-tertiary px-1 h-[20px] text-sm flex place-items-center bg-border-light rounded-md ">
             DRAFT
           </div>
-          <ReplyingTo target={replyTarget} />
         </div>
       }
       postTitle={

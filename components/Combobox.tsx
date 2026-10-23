@@ -77,7 +77,10 @@ export const Combobox = ({
     }
   }, [results, setHighlighted, highlighted]);
 
+  // Listens on the window so the keys work wherever focus is while the results
+  // are showing, which means it must only listen while they are.
   useEffect(() => {
+    if (!open) return;
     let listener = async (e: KeyboardEvent) => {
       let action = resultListKey(e.key, ref.current?.dataset.side === "top");
       if (action === "select") {
@@ -92,7 +95,7 @@ export const Combobox = ({
     window.addEventListener("keydown", listener);
 
     return () => window.removeEventListener("keydown", listener);
-  }, [highlighted, setHighlighted, results]);
+  }, [open, highlighted, setHighlighted, results, onSelect]);
 
   return (
     <Popover.Root

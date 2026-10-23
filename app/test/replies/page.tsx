@@ -8,6 +8,7 @@ import {
 } from "components/Blocks/ReplyBlock/ReplyPicker";
 import { ReplyingTo } from "components/Pages/ReplyingTo";
 import { Err, Ok } from "src/result";
+import type { ReplyTarget } from "src/documentReplies";
 
 const candidates: ReplyCandidate[] = [
   "On slow mornings",
@@ -37,10 +38,50 @@ const publications: ReplyPublication[] = [
   },
 ];
 
-const target = {
+const target: ReplyTarget = {
   uri: "at://did:plc:author/pub.leaflet.document/x",
   title: "Why I stopped writing newsletters",
   href: "#",
+  publication: { name: "Kitchen Table", icon: null },
+  authorHandle: "author.bsky.social",
+  authorAvatar: null,
+  replyUri: "at://did:plc:viewer/pub.leaflet.interactions.reply/a",
+  pending: false,
+};
+
+const avatarTarget: ReplyTarget = {
+  uri: "at://did:plc:friend/pub.leaflet.document/z",
+  title: "A looseleaf with an author avatar",
+  href: "#",
+  publication: null,
+  authorHandle: "friend.bsky.social",
+  authorAvatar:
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23c08'/%3E%3C/svg%3E",
+  replyUri: "at://did:plc:viewer/pub.leaflet.interactions.reply/b",
+  pending: false,
+};
+
+const looseleafTarget: ReplyTarget = {
+  uri: "at://did:plc:other/pub.leaflet.document/y",
+  title: "A post with no publication, avatar or handle",
+  href: "#",
+  publication: null,
+  authorHandle: null,
+  authorAvatar: null,
+  replyUri: null,
+  pending: false,
+};
+
+const longTarget: ReplyTarget = {
+  uri: "at://did:plc:long/pub.leaflet.document/w",
+  title:
+    "A very long post title that has to truncate instead of wrapping onto another line",
+  href: "#",
+  publication: { name: "Field Notes", icon: null },
+  authorHandle: "someone-with-a-really-long-handle.example.com",
+  authorAvatar: null,
+  replyUri: "at://did:plc:viewer/pub.leaflet.interactions.reply/c",
+  pending: true,
 };
 
 const noop = async () => {};
@@ -112,30 +153,22 @@ export default function RepliesHarness() {
           onCreateDraft={noop}
         />
       </Case>
-      <Case title="Standalone editor chip">
-        <ReplyingTo target={target} className="pb-2" />
-      </Case>
-      <Case title="Editor header chip">
-        <div className="flex gap-2 items-center">
-          <span className="text-accent-contrast font-bold">Field Notes</span>
-          <div className="font-bold text-tertiary px-1 h-[20px] text-sm flex place-items-center bg-border-light rounded-md ">
-            DRAFT
-          </div>
-          <ReplyingTo target={target} />
+      <Case title="In reply to: several posts, truncating">
+        <div className="w-[min(600px,80vw)]">
+          <ReplyingTo
+            targets={[target, avatarTarget, looseleafTarget, longTarget]}
+          />
         </div>
       </Case>
-      <Case title="Publish page row">
-        <div className="flex flex-col gap-2 w-80">
-          <div className="flex justify-between gap-4">
-            <div className="text-tertiary">Publishing to</div>
-            <div className="font-bold text-secondary">Field Notes</div>
-          </div>
-          <div className="flex justify-between gap-4">
-            <div className="text-tertiary whitespace-nowrap">Replying to</div>
-            <a href={target.href} className="font-bold text-secondary truncate">
-              {target.title}
-            </a>
-          </div>
+      <Case title="In reply to: withdrawable (the first succeeds, the second fails)">
+        <div className="w-[min(600px,80vw)]">
+          <ReplyingTo
+            targets={[target, longTarget]}
+            onWithdraw={async (t) => {
+              await new Promise((r) => setTimeout(r, 800));
+              return t.uri === target.uri;
+            }}
+          />
         </div>
       </Case>
     </div>

@@ -23,6 +23,7 @@ import { createNewLeaflet } from "./createNewLeaflet";
 import {
   createReplyRecord,
   getReplyTarget as loadReplyTarget,
+  documentReplyTargets,
   loadDocumentReplies,
   subjectReplyBlock,
   MAX_REPLIES,
@@ -124,7 +125,9 @@ export async function resolveReplyLink(args: {
   const [{ data: row }, { data: existing }] = await Promise.all([
     supabaseServerClient
       .from("documents")
-      .select("uri, data, documents_in_publications(publications(name, record))")
+      .select(
+        "uri, data, documents_in_publications(publications(name, record))",
+      )
       .eq("uri", document)
       .maybeSingle(),
     supabaseServerClient
@@ -191,6 +194,11 @@ export async function createReplyDraft(args: {
 
 export async function getReplyTarget(subject: string) {
   return loadReplyTarget(subject);
+}
+
+export async function getDocumentReplyTargets(document: string) {
+  const identity = await getAuthIdentity();
+  return documentReplyTargets(document, identity?.atp_did ?? null);
 }
 
 export type ReplyError =
