@@ -78,7 +78,7 @@ export function RepliesHeader(props: {
 }) {
   if (!props.prompt && !props.action) return null;
   return (
-    <div className="flex flex-col items-center gap-2 pb-1">
+    <div className="flex flex-col items-center gap-2 sm:py-1 py-2">
       {props.prompt && (
         <h3 className={`w-full ${PROMPT_CLASS}`}>{props.prompt}</h3>
       )}
@@ -110,12 +110,16 @@ export function PendingRepliesHeader(props: {
   );
 }
 
-export function AcceptedRepliesHeader(props: { accepted: number }) {
+export function RepliesDivider(props: { label: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 w-full text-sm font-bold text-tertiary">
       <hr className="grow border-border-light" />
-      <span className="shrink-0 uppercase">Replies ({props.accepted})</span>
+      <span className="shrink-0 uppercase">{props.label}</span>
       <hr className="grow border-border-light" />
     </div>
   );
+}
+
+export function AcceptedRepliesHeader(props: { accepted: number }) {
+  return <RepliesDivider label={`Replies (${props.accepted})`} />;
 }

@@ -27,7 +27,7 @@ import type {
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { DEFAULT_REPLY_BUTTON_TEXT } from "./constants";
-import { RepliesList, RepliesModeration } from "./RepliesList";
+import { RepliesList, RepliesListWithModeration } from "./RepliesList";
 import { ReplyPicker } from "./ReplyPicker";
 
 const replyErrorMessages: Partial<Record<ReplyError["type"], string>> = {
@@ -156,7 +156,7 @@ export function DocumentReplies(props: {
       setBusy(false);
     };
     return (
-      <RepliesModeration
+      <RepliesListWithModeration
         replies={loaded.replies}
         showThemes={props.showThemes}
         prompt={props.prompt}

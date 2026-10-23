@@ -77,7 +77,7 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
   return (
     <BlockLayout
       isSelected={!!isSelected}
-      className={`replyBlock light-container rounded-lg! ${isSelected ? "border-border!" : ""}`}
+      className={`replyBlock light-container rounded-lg!  ${isSelected ? "border-border!" : ""}`}
       extraOptions={
         !props.preview ? (
           <BlockSettings label="Replies" className="w-xs">
