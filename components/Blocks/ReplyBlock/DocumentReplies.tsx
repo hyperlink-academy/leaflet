@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import useSWR from "swr";
 import { ButtonPrimary } from "components/Buttons";
-import { Popover } from "components/Popover";
+import { Modal } from "components/Modal";
 import { LoginModal } from "components/LoginButton";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { useIdentityData } from "components/IdentityProvider";
@@ -15,6 +15,7 @@ import {
   getDocumentReplies,
   getReplyCandidates,
   rejectReply,
+  resolveReplyLink,
   setReplyVisible,
   submitReply,
   withdrawReply,
@@ -28,11 +29,13 @@ import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { DEFAULT_REPLY_BUTTON_TEXT } from "./constants";
 import { RepliesList, RepliesListWithModeration } from "./RepliesList";
-import { ReplyPicker } from "./ReplyPicker";
+import { ReplyPicker, type ReplyCandidate } from "./ReplyPicker";
+import { Err, Ok, type OkValue } from "src/result";
 
 const replyErrorMessages: Partial<Record<ReplyError["type"], string>> = {
-  not_found: "We couldn't find that post.",
-  not_your_post: "Replies must be your own posts.",
+  not_found: "Hmmm… We couldn't find that post.",
+  not_your_post:
+    "Looks like you don't own this post! Replies must be your own posts.",
   same_post: "A post can't reply to itself.",
   already_submitted: "This post was already submitted.",
   replies_closed: "This post isn't taking replies.",
@@ -214,9 +217,9 @@ function ReplyButton(props: {
 }) {
   let [open, setOpen] = useState(false);
   return (
-    <Popover
+    <Modal
       asChild
-      align="end"
+      sheetOnMobile
       open={open}
       onOpenChange={setOpen}
       trigger={
@@ -233,7 +236,7 @@ function ReplyButton(props: {
           props.onSubmitted();
         }}
       />
-    </Popover>
+    </Modal>
   );
 }
 
@@ -243,8 +246,9 @@ function ReplyPickerForViewer(props: {
   onSubmitted: () => void;
 }) {
   let { identity } = useIdentityData();
-  let { data } = useSWR(["reply_candidates", identity?.atp_did], () =>
-    getReplyCandidates(),
+  let { data, mutate } = useSWR(
+    ["reply_candidates", identity?.atp_did, props.documentUri],
+    () => getReplyCandidates(props.documentUri),
   );
   let [submitting, setSubmitting] = useState(false);
   let run = useActionToast<ReplyError>(replyErrorMessages);
@@ -264,33 +268,51 @@ function ReplyPickerForViewer(props: {
       }}
       candidates={(data?.candidates ?? [])
         .filter((c) => c.uri !== props.documentUri)
-        .map((c) => ({
-          uri: c.uri,
-          title: c.title,
-          date: c.publishedAt ? (
-            <LocalizedDate
-              dateString={c.publishedAt}
-              omitYear
-              options={{ year: "2-digit", month: "short", day: "numeric" }}
-            />
-          ) : undefined,
-          publication: c.publicationName
-            ? { name: c.publicationName }
-            : undefined,
-        }))}
+        .map(toReplyCandidate)}
+      resolveLink={async (url) => {
+        let result = await resolveReplyLink({
+          subject: props.documentUri,
+          url,
+        });
+        if (result.ok) return Ok(toReplyCandidate(result.value));
+        return Err(
+          replyErrorMessages[result.error.type] ??
+            "We couldn't find that post.",
+        );
+      }}
       submitting={submitting}
-      onSubmit={async (reply) => {
+      onSubmit={async (document) => {
         setSubmitting(true);
         let ok = await run(() =>
           submitReply({
             subject: props.documentUri,
             block: props.block,
-            reply,
+            document,
           }),
         );
         setSubmitting(false);
-        if (ok) props.onSubmitted();
+        if (!ok) return;
+        mutate();
+        props.onSubmitted();
       }}
     />
   );
+}
+
+function toReplyCandidate(
+  c: OkValue<Awaited<ReturnType<typeof resolveReplyLink>>>,
+): ReplyCandidate {
+  return {
+    uri: c.uri,
+    title: c.title,
+    submitted: c.submitted,
+    date: c.publishedAt ? (
+      <LocalizedDate
+        dateString={c.publishedAt}
+        omitYear
+        options={{ year: "2-digit", month: "short", day: "numeric" }}
+      />
+    ) : undefined,
+    publication: c.publicationName ? { name: c.publicationName } : undefined,
+  };
 }

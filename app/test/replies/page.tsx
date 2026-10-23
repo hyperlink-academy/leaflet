@@ -7,18 +7,21 @@ import {
   type ReplyPublication,
 } from "components/Blocks/ReplyBlock/ReplyPicker";
 import { ReplyingTo } from "components/Pages/ReplyingTo";
+import { Err, Ok } from "src/result";
 
 const candidates: ReplyCandidate[] = [
   "On slow mornings",
   "Notes from the garden",
   "What I read in September",
-  "A fourth post that should not show",
-  "A fifth post that should not show",
+  "Late summer tomatoes",
+  "Letters I never sent",
+  "A sixth post to scroll to",
 ].map((title, i) => ({
   uri: `at://did:plc:viewer/pub.leaflet.document/${i}`,
   title,
   date: `Sep ${28 - i}`,
   publication: { name: "Field Notes" },
+  submitted: i === 1,
 }));
 
 const publications: ReplyPublication[] = [
@@ -42,6 +45,19 @@ const target = {
 
 const noop = async () => {};
 
+// Links containing "/p/" resolve to an older post; anything else isn't found.
+const resolveLink = async (url: string) => {
+  await new Promise((r) => setTimeout(r, 500));
+  return url.includes("/p/")
+    ? Ok({
+        uri: "at://did:plc:viewer/pub.leaflet.document/old",
+        title: "An older post found by link",
+        date: "Jan 3",
+        publication: { name: "Field Notes" },
+      })
+    : Err("We couldn't find that post.");
+};
+
 function Case(props: { title: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2" data-case={props.title}>
@@ -61,6 +77,7 @@ export default function RepliesHarness() {
           candidates={candidates}
           publications={publications}
           onSubmit={() => {}}
+          resolveLink={resolveLink}
           onCreateDraft={noop}
         />
       </Case>
@@ -69,11 +86,17 @@ export default function RepliesHarness() {
           candidates={[]}
           publications={[]}
           onSubmit={() => {}}
+          resolveLink={resolveLink}
           onCreateDraft={noop}
         />
       </Case>
       <Case title="Picker: still loading">
-        <ReplyPicker candidates={[]} onSubmit={() => {}} onCreateDraft={noop} />
+        <ReplyPicker
+          candidates={[]}
+          onSubmit={() => {}}
+          resolveLink={resolveLink}
+          onCreateDraft={noop}
+        />
       </Case>
       <Case title="Publication selector">
         <ReplyPublicationSelector

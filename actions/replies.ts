@@ -31,6 +31,7 @@ import {
 import { revalidateDocumentPaths } from "src/utils/revalidatePublication";
 import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
 import { supabaseServerClient } from "supabase/serverClient";
+import type { Json } from "supabase/database.types";
 import {
   Notification,
   pingIdentityToUpdateNotification,
@@ -44,37 +45,31 @@ export async function getDocumentReplies(
   return loadDocumentReplies(subject, identity?.atp_did ?? null);
 }
 
-// The viewer's own recent documents, offered as things to reply with, plus
-// the Leaflet publications they could write a new one in.
-export async function getReplyCandidates() {
+// The viewer's own recent documents, offered as things to reply to `subject`
+// with, plus the Leaflet publications they could write a new one in.
+export async function getReplyCandidates(subject: string) {
   const identity = await getAuthIdentity();
   if (!identity?.atp_did) return { candidates: [], publications: [] };
-  const [{ data: rows }, { data: publications }] = await Promise.all([
-    supabaseServerClient.rpc("get_profile_posts", {
-      p_did: identity.atp_did,
-      p_limit: 30,
-    }),
-    supabaseServerClient
-      .from("publications")
-      .select("uri, name, record")
-      .eq("identity_did", identity.atp_did),
-  ]);
+  const [{ data: rows }, { data: publications }, { data: replies }] =
+    await Promise.all([
+      supabaseServerClient.rpc("get_profile_posts", {
+        p_did: identity.atp_did,
+        p_limit: 30,
+      }),
+      supabaseServerClient
+        .from("publications")
+        .select("uri, name, record")
+        .eq("identity_did", identity.atp_did),
+      supabaseServerClient
+        .from("document_replies")
+        .select("document")
+        .eq("subject", subject)
+        .eq("replier_did", identity.atp_did),
+    ]);
+  const submitted = new Set((replies ?? []).map((r) => r.document));
   const candidates = deduplicateByUriOrdered(rows ?? []).flatMap((row) => {
-    const record = normalizeDocumentRecord(row.data, row.uri);
-    if (!record?.title) return [];
-    return [
-      {
-        uri: row.uri,
-        title: record.title,
-        publishedAt: record.publishedAt ?? null,
-        publicationName:
-          (row.publication_record
-            ? normalizePublicationRecord(row.publication_record)?.name
-            : null) ??
-          row.publication_name ??
-          null,
-      },
-    ];
+    const candidate = replyCandidate(row, submitted.has(row.uri));
+    return candidate?.title ? [candidate] : [];
   });
   return {
     candidates,
@@ -82,6 +77,90 @@ export async function getReplyCandidates() {
       isLeafletManagedPublication,
     ),
   };
+}
+
+function replyCandidate(
+  row: {
+    uri: string;
+    data: Json;
+    publication_record: Json | null;
+    publication_name: string | null;
+  },
+  submitted: boolean,
+) {
+  const record = normalizeDocumentRecord(row.data, row.uri);
+  if (!record) return null;
+  return {
+    uri: row.uri,
+    title: record.title,
+    publishedAt: record.publishedAt ?? null,
+    submitted,
+    publicationName:
+      (row.publication_record
+        ? normalizePublicationRecord(row.publication_record)?.name
+        : null) ??
+      row.publication_name ??
+      null,
+  };
+}
+
+// Looks up a pasted link to one of the viewer's posts, so it can be shown like
+// the other candidates before it's submitted as a reply to `subject`.
+export async function resolveReplyLink(args: {
+  subject: string;
+  url: string;
+}): Promise<
+  Result<NonNullable<ReturnType<typeof replyCandidate>>, ReplyError>
+> {
+  const identity = await getAuthIdentity();
+  if (!identity?.atp_did) return Err(notAuthenticated);
+  const document = await resolveStandardSitePostUrl(
+    args.url,
+    supabaseServerClient,
+  ).catch(() => null);
+  const error = replyDocumentError(document, identity.atp_did, args.subject);
+  if (error || !document) return Err(error ?? { type: "not_found" });
+
+  const [{ data: row }, { data: existing }] = await Promise.all([
+    supabaseServerClient
+      .from("documents")
+      .select("uri, data, documents_in_publications(publications(name, record))")
+      .eq("uri", document)
+      .maybeSingle(),
+    supabaseServerClient
+      .from("document_replies")
+      .select("uri")
+      .eq("subject", args.subject)
+      .eq("document", document)
+      .maybeSingle(),
+  ]);
+  const publication = row?.documents_in_publications[0]?.publications;
+  const candidate =
+    row &&
+    replyCandidate(
+      {
+        uri: row.uri,
+        data: row.data,
+        publication_record: publication?.record ?? null,
+        publication_name: publication?.name ?? null,
+      },
+      !!existing,
+    );
+  if (!candidate) return Err({ type: "not_found" });
+  return Ok({ ...candidate, title: candidate.title || "Untitled" });
+}
+
+// Why `document` can't be submitted as a reply to `subject`, short of it
+// having been submitted already.
+function replyDocumentError(
+  document: string | null,
+  did: string,
+  subject: string,
+): ReplyError | null {
+  if (!document) return { type: "not_found" };
+  if (!isDocumentOwner(document, did)) return { type: "not_your_post" };
+  if (document === subject) return { type: "same_post" };
+  return null;
 }
 
 // Starts a draft, in one of the viewer's publications or as a looseleaf, that
@@ -127,28 +206,20 @@ export type ReplyError =
     }
   | OAuthSessionError;
 
-// Submits one of the viewer's own documents, given by at-uri or by its public
-// URL, as a reply to `subject`. Submitting the same document twice is a no-op.
+// Submits one of the viewer's own documents, by at-uri, as a reply to
+// `subject`. Submitting the same document twice is an error.
 export async function submitReply(args: {
   subject: string;
   // Key of the reply block submitted through
   block: string | null;
-  reply: { uri: string } | { url: string };
+  document: string;
 }): Promise<Result<{ uri: string }, ReplyError>> {
   const identity = await getAuthIdentity();
   if (!identity?.atp_did) return Err(notAuthenticated);
   const did = identity.atp_did;
-
-  const document =
-    "uri" in args.reply
-      ? args.reply.uri
-      : await resolveStandardSitePostUrl(
-          args.reply.url,
-          supabaseServerClient,
-        ).catch(() => null);
-  if (!document) return Err({ type: "not_found" });
-  if (!isDocumentOwner(document, did)) return Err({ type: "not_your_post" });
-  if (document === args.subject) return Err({ type: "same_post" });
+  const document = args.document;
+  const error = replyDocumentError(document, did, args.subject);
+  if (error) return Err(error);
 
   const [block, { data: existing }] = await Promise.all([
     subjectReplyBlock(args.subject, args.block),
