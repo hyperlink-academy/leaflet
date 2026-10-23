@@ -57,37 +57,48 @@ export type DocumentReplies = {
 };
 
 // Readers get the replies the author made visible plus their own
-// submissions; the author gets everything, pending included. A null viewer
+// submissions; the author gets everything, pending included. Rejected replies
+// go to no one: the replier was notified instead. A null viewer
 // gets the public list, which is what cached pages render.
 export async function loadDocumentReplies(
   subject: string,
   viewer: string | null,
 ): Promise<DocumentReplies> {
-  const [{ data: rows }, { data: allowedRows }, { data: doc }] =
-    await Promise.all([
-      supabaseServerClient
-        .from("document_replies")
-        .select("uri, document, replier_did, record")
-        .eq("subject", subject)
-        .order("indexed_at", { ascending: true })
-        .limit(MAX_REPLIES),
-      supabaseServerClient
-        .from("document_reply_visibility")
-        .select("reply")
-        .eq("subject", subject),
-      supabaseServerClient
-        .from("documents")
-        .select("uri, data")
-        .eq("uri", subject)
-        .maybeSingle(),
-    ]);
+  const [
+    { data: rows },
+    { data: allowedRows },
+    { data: rejectedRows },
+    { data: doc },
+  ] = await Promise.all([
+    supabaseServerClient
+      .from("document_replies")
+      .select("uri, document, replier_did, record")
+      .eq("subject", subject)
+      .order("indexed_at", { ascending: true })
+      .limit(MAX_REPLIES),
+    supabaseServerClient
+      .from("document_reply_visibility")
+      .select("reply")
+      .eq("subject", subject),
+    supabaseServerClient
+      .from("document_reply_rejections")
+      .select("reply")
+      .eq("subject", subject),
+    supabaseServerClient
+      .from("documents")
+      .select("uri, data")
+      .eq("uri", subject)
+      .maybeSingle(),
+  ]);
   const isAuthor = !!viewer && isDocumentOwner(subject, viewer);
   const allowed = new Set((allowedRows ?? []).map((r) => r.reply));
+  const rejected = new Set((rejectedRows ?? []).map((r) => r.reply));
   const blocks = replyBlocksOf(
     doc && normalizeDocumentRecord(doc.data, doc.uri),
   );
 
   const shown = (rows ?? [])
+    .filter((r) => !rejected.has(r.uri))
     .map((r) => ({
       uri: r.uri,
       document: r.document,
@@ -122,7 +133,13 @@ export async function loadDocumentReplies(
     replies: shown.flatMap(({ document, replier_did, ...reply }) => {
       const post = postsByUri.get(document);
       return post
-        ? [{ ...reply, replier: interactionAuthor(replier_did, profiles), post }]
+        ? [
+            {
+              ...reply,
+              replier: interactionAuthor(replier_did, profiles),
+              post,
+            },
+          ]
         : [];
     }),
   };

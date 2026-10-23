@@ -53,6 +53,7 @@ export type NotificationData =
   | { type: "comment_mention"; comment_uri: string; mention_type: "document"; mentioned_uri: string }
   | { type: "recommend"; document_uri: string; recommend_uri: string }
   | { type: "post_reply"; document_uri: string; reply_uri: string }
+  | { type: "post_reply_accepted"; document_uri: string; reply_uri: string }
   | { type: "post_question"; document_uri: string; question_uri: string }
   | { type: "question_answered"; question_uri: string; document_uri: string }
   | { type: "new_member"; publication: string; membership_id: string };
@@ -66,6 +67,7 @@ export type HydratedNotification =
   | HydratedCommentMentionNotification
   | HydratedRecommendNotification
   | HydratedPostReplyNotification
+  | HydratedPostReplyAcceptedNotification
   | HydratedPostQuestionNotification
   | HydratedQuestionAnsweredNotification
   | HydratedNewMemberNotification;
@@ -73,7 +75,7 @@ export async function hydrateNotifications(
   notifications: NotificationRow[],
 ): Promise<Array<HydratedNotification>> {
   // Call all hydrators in parallel
-  const [commentNotifications, subscribeNotifications, quoteNotifications, bskyPostEmbedNotifications, mentionNotifications, commentMentionNotifications, recommendNotifications, newMemberNotifications, postReplyNotifications, postQuestionNotifications, questionAnsweredNotifications] = await Promise.all([
+  const [commentNotifications, subscribeNotifications, quoteNotifications, bskyPostEmbedNotifications, mentionNotifications, commentMentionNotifications, recommendNotifications, newMemberNotifications, postReplyNotifications, postReplyAcceptedNotifications, postQuestionNotifications, questionAnsweredNotifications] = await Promise.all([
     hydrateCommentNotifications(notifications),
     hydrateSubscribeNotifications(notifications),
     hydrateQuoteNotifications(notifications),
@@ -83,12 +85,13 @@ export async function hydrateNotifications(
     hydrateRecommendNotifications(notifications),
     hydrateNewMemberNotifications(notifications),
     hydratePostReplyNotifications(notifications),
+    hydratePostReplyAcceptedNotifications(notifications),
     hydratePostQuestionNotifications(notifications),
     hydrateQuestionAnsweredNotifications(notifications),
   ]);
 
   // Combine all hydrated notifications
-  const allHydrated = [...commentNotifications, ...subscribeNotifications, ...quoteNotifications, ...bskyPostEmbedNotifications, ...mentionNotifications, ...commentMentionNotifications, ...recommendNotifications, ...newMemberNotifications, ...postReplyNotifications, ...postQuestionNotifications, ...questionAnsweredNotifications];
+  const allHydrated = [...commentNotifications, ...subscribeNotifications, ...quoteNotifications, ...bskyPostEmbedNotifications, ...mentionNotifications, ...commentMentionNotifications, ...recommendNotifications, ...newMemberNotifications, ...postReplyNotifications, ...postReplyAcceptedNotifications, ...postQuestionNotifications, ...questionAnsweredNotifications];
 
   // Sort by created_at to maintain order
   allHydrated.sort(
@@ -663,10 +666,30 @@ export type HydratedPostReplyNotification = Awaited<
   ReturnType<typeof hydratePostReplyNotifications>
 >[0];
 
-async function hydratePostReplyNotifications(notifications: NotificationRow[]) {
+export type HydratedPostReplyAcceptedNotification = Awaited<
+  ReturnType<typeof hydratePostReplyAcceptedNotifications>
+>[0];
+
+// A reader replied to the recipient's post: the replier's profile.
+function hydratePostReplyNotifications(notifications: NotificationRow[]) {
+  return hydrateReplyNotifications(notifications, "post_reply", (r) => r.replier_did);
+}
+
+// An author accepted the recipient's reply to document_uri: the author's
+// profile.
+function hydratePostReplyAcceptedNotifications(notifications: NotificationRow[]) {
+  return hydrateReplyNotifications(notifications, "post_reply_accepted", (r) => new AtUri(r.subject).host);
+}
+
+async function hydrateReplyNotifications<T extends "post_reply" | "post_reply_accepted">(
+  notifications: NotificationRow[],
+  type: T,
+  profileDid: (reply: { replier_did: string; subject: string }) => string,
+) {
+  type Data = { type: T; reply_uri: string; document_uri: string };
   const replyNotifications = notifications.filter(
-    (n): n is NotificationRow & { data: ExtractNotificationType<"post_reply"> } =>
-      (n.data as NotificationData)?.type === "post_reply",
+    (n): n is NotificationRow & { data: Data } =>
+      (n.data as NotificationData)?.type === type,
   );
 
   if (replyNotifications.length === 0) {
@@ -675,7 +698,7 @@ async function hydratePostReplyNotifications(notifications: NotificationRow[]) {
 
   const { data: replies } = await supabaseServerClient
     .from("document_replies")
-    .select("uri, replier_did, document, record")
+    .select("uri, replier_did, subject, document, record")
     .in("uri", replyNotifications.map((n) => n.data.reply_uri));
   const documentUris = [
     ...replyNotifications.map((n) => n.data.document_uri),
@@ -686,7 +709,7 @@ async function hydratePostReplyNotifications(notifications: NotificationRow[]) {
     .select("uri, data, documents_in_publications(publications(record))")
     .in("uri", documentUris);
   const profiles = await getProfiles(
-    Array.from(new Set((replies ?? []).map((r) => r.replier_did))),
+    Array.from(new Set((replies ?? []).map(profileDid))),
   );
 
   return replyNotifications
@@ -704,10 +727,10 @@ async function hydratePostReplyNotifications(notifications: NotificationRow[]) {
         id: notification.id,
         recipient: notification.recipient,
         created_at: notification.created_at,
-        type: "post_reply" as const,
+        type,
         reply_uri: notification.data.reply_uri,
         document_uri: notification.data.document_uri,
-        profile: toNotificationProfile(profiles.get(reply.replier_did)),
+        profile: toNotificationProfile(profiles.get(profileDid(reply))),
         normalizedDocument,
         // The reply block it was submitted through
         anchor: interactionBlockAnchor("replies", block?.key),

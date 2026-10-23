@@ -550,6 +550,39 @@ export type Database = {
           },
         ]
       }
+      document_reply_rejections: {
+        Row: {
+          rejected_at: string
+          reply: string
+          subject: string
+        }
+        Insert: {
+          rejected_at?: string
+          reply: string
+          subject: string
+        }
+        Update: {
+          rejected_at?: string
+          reply?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_reply_rejections_reply_fkey"
+            columns: ["reply"]
+            isOneToOne: true
+            referencedRelation: "document_replies"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "document_reply_rejections_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       document_question_visibility: {
         Row: {
           indexed_at: string

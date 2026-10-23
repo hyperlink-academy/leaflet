@@ -5,7 +5,7 @@ import {
   ReplyPublicationSelector,
   type ReplyCandidate,
   type ReplyPublication,
-} from "components/Blocks/ReplyBlock/RepliesView";
+} from "components/Blocks/ReplyBlock/ReplyPicker";
 import { ReplyingTo } from "components/Pages/ReplyingTo";
 
 const candidates: ReplyCandidate[] = [

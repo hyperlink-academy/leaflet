@@ -31,6 +31,11 @@ import {
 import { revalidateDocumentPaths } from "src/utils/revalidatePublication";
 import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
 import { supabaseServerClient } from "supabase/serverClient";
+import {
+  Notification,
+  pingIdentityToUpdateNotification,
+} from "src/notifications";
+import { v7 } from "uuid";
 
 export async function getDocumentReplies(
   subject: string,
@@ -115,6 +120,7 @@ export type ReplyError =
         | "not_found"
         | "not_your_post"
         | "same_post"
+        | "already_submitted"
         | "replies_closed"
         | "not_owner"
         | "failed";
@@ -144,8 +150,17 @@ export async function submitReply(args: {
   if (!isDocumentOwner(document, did)) return Err({ type: "not_your_post" });
   if (document === args.subject) return Err({ type: "same_post" });
 
-  const block = await subjectReplyBlock(args.subject, args.block);
+  const [block, { data: existing }] = await Promise.all([
+    subjectReplyBlock(args.subject, args.block),
+    supabaseServerClient
+      .from("document_replies")
+      .select("uri")
+      .eq("subject", args.subject)
+      .eq("document", document)
+      .maybeSingle(),
+  ]);
   if (!block) return Err({ type: "replies_closed" });
+  if (existing) return Err({ type: "already_submitted" });
 
   const agent = await agentFor(did);
   if (!agent.ok) return Err(agent.error);
@@ -214,6 +229,56 @@ async function revalidateReply(reply: { subject: string; document?: string }) {
   );
 }
 
+// Rejects one reply on the viewer's own document, pending or accepted: it
+// drops out of every list.
+export async function rejectReply(args: {
+  subject: string;
+  reply: string;
+}): Promise<Result<null, ReplyError>> {
+  const identity = await getAuthIdentity();
+  if (!identity?.atp_did) return Err(notAuthenticated);
+  if (!isDocumentOwner(args.subject, identity.atp_did))
+    return Err({ type: "not_owner" });
+
+  const [{ data: reply }, { data: accepted }] = await Promise.all([
+    supabaseServerClient
+      .from("document_replies")
+      .select("uri")
+      .eq("uri", args.reply)
+      .eq("subject", args.subject)
+      .maybeSingle(),
+    supabaseServerClient
+      .from("document_reply_visibility")
+      .select("reply")
+      .eq("subject", args.subject)
+      .eq("reply", args.reply)
+      .maybeSingle(),
+  ]);
+  if (!reply) return Err({ type: "not_found" });
+  if (accepted) {
+    const hidden = await setReplyVisible({ ...args, visible: false });
+    if (!hidden.ok) return hidden;
+  }
+
+  const { error } = await supabaseServerClient
+    .from("document_reply_rejections")
+    .upsert(
+      { reply: args.reply, subject: args.subject },
+      { onConflict: "reply", ignoreDuplicates: true },
+    );
+  if (error) {
+    console.error("[replies] rejection insert failed", error);
+    return Err({ type: "failed" });
+  }
+
+  await broadcastDocumentEvent(
+    supabaseServerClient,
+    "reply_visibility",
+    args.subject,
+  );
+  return Ok(null);
+}
+
 // Shows or hides one reply on the viewer's own document. Which replies show
 // lives in one pub.leaflet.interactions.replyVisibility record in the
 // document's repo, keyed by the document's rkey so every change is a plain
@@ -231,7 +296,7 @@ export async function setReplyVisible(args: {
   const [{ data: replyRows }, { data: allowedRows }] = await Promise.all([
     supabaseServerClient
       .from("document_replies")
-      .select("uri, document")
+      .select("uri, document, replier_did")
       .eq("subject", args.subject)
       .limit(MAX_REPLIES),
     supabaseServerClient
@@ -303,9 +368,31 @@ export async function setReplyVisible(args: {
     "reply_visibility",
     args.subject,
   );
-  await revalidateReply({
-    subject: args.subject,
-    document: replyRows?.find((r) => r.uri === args.reply)?.document,
-  });
+  const reply = replyRows?.find((r) => r.uri === args.reply);
+  await revalidateReply({ subject: args.subject, document: reply?.document });
+  if (args.visible && reply && reply.replier_did !== identity.atp_did)
+    await notifyReplyAccepted(reply.replier_did, args.reply, args.subject);
   return Ok(null);
+}
+
+// Once per reply, so hiding and re-accepting it doesn't notify again.
+async function notifyReplyAccepted(
+  recipient: string,
+  reply_uri: string,
+  document_uri: string,
+) {
+  const { count } = await supabaseServerClient
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("recipient", recipient)
+    .eq("data->>type", "post_reply_accepted")
+    .eq("data->>reply_uri", reply_uri);
+  if (count) return;
+  const notification: Notification = {
+    id: v7(),
+    recipient,
+    data: { type: "post_reply_accepted", reply_uri, document_uri },
+  };
+  await supabaseServerClient.from("notifications").insert(notification);
+  await pingIdentityToUpdateNotification(recipient);
 }

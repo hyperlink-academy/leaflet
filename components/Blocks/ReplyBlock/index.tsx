@@ -14,11 +14,8 @@ import {
   DEFAULT_REPLY_PROMPT_TEXT,
 } from "./constants";
 import { DocumentReplies } from "./DocumentReplies";
-import {
-  RepliesDraft,
-  ReplyButtonTextInput,
-  ReplyPromptTextInput,
-} from "./RepliesView";
+import { RepliesEmptyDraft } from "./RepliesList";
+import { ReplyButtonTextInput, ReplyPromptTextInput } from "./RepliesHeader";
 import { BlockSettings } from "../SettingsTriggerButton";
 import { ToggleWithLabel } from "components/Toggle";
 
@@ -120,7 +117,7 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
               <hr className="mb-2 mt-1" />
             </>
           )}
-          <RepliesDraft prompt={prompt} action={button} />
+          <RepliesEmptyDraft prompt={prompt} action={button} />
         </>
       )}
     </BlockLayout>

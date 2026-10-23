@@ -7,12 +7,14 @@ import { LoginModal } from "components/LoginButton";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { useIdentityData } from "components/IdentityProvider";
 import { useActionToast } from "components/useActionToast";
+import { useToaster } from "components/Toast";
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
 import { mainSiteAuthBase } from "src/utils/customDomain";
 import {
   createReplyDraft,
   getDocumentReplies,
   getReplyCandidates,
+  rejectReply,
   setReplyVisible,
   submitReply,
   withdrawReply,
@@ -25,17 +27,14 @@ import type {
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { DEFAULT_REPLY_BUTTON_TEXT } from "./constants";
-import {
-  PendingRepliesToggle,
-  RepliesList,
-  RepliesModeration,
-  ReplyPicker,
-} from "./RepliesView";
+import { RepliesList, RepliesModeration } from "./RepliesList";
+import { ReplyPicker } from "./ReplyPicker";
 
 const replyErrorMessages: Partial<Record<ReplyError["type"], string>> = {
-  not_found: "We couldn't find that post. Is it published?",
-  not_your_post: "You can only reply with your own posts.",
+  not_found: "We couldn't find that post.",
+  not_your_post: "Replies must be your own posts.",
   same_post: "A post can't reply to itself.",
+  already_submitted: "This post was already submitted.",
   replies_closed: "This post isn't taking replies.",
 };
 
@@ -76,8 +75,8 @@ export function DocumentReplies(props: {
     mutate();
   });
   let [busy, setBusy] = useState(false);
-  let [open, setOpen] = useState(false);
   let run = useActionToast<ReplyError>(replyErrorMessages);
+  let toaster = useToaster();
   let withdraw = async (uri: string) => {
     if (await run(() => withdrawReply(uri)))
       await mutate(
@@ -95,26 +94,13 @@ export function DocumentReplies(props: {
   let ownsDocument = !!viewer && isDocumentOwner(props.documentUri, viewer);
   if (inEditor || ownsDocument) {
     let loaded = inEditor || data?.isAuthor ? data : undefined;
-    let pending = loaded?.isAuthor
-      ? loaded.replies.filter((r) => !r.visible).length
-      : 0;
-    if (open && pending === 0) setOpen(false);
-    let controls = (
-      <>
-        {props.action ?? (
-          <ReplyButton
-            label={label}
-            documentUri={props.documentUri}
-            block={props.block}
-            onSubmitted={() => mutate()}
-          />
-        )}
-        <PendingRepliesToggle
-          pending={pending}
-          open={open}
-          onToggle={() => setOpen(!open)}
-        />
-      </>
+    let controls = props.action ?? (
+      <ReplyButton
+        label={label}
+        documentUri={props.documentUri}
+        block={props.block}
+        onSubmitted={() => mutate()}
+      />
     );
     if (!loaded || !loaded.isAuthor)
       return (
@@ -133,10 +119,10 @@ export function DocumentReplies(props: {
         />
       );
 
-    let setVisible = async (reply: string, visible: boolean) => {
+    let accept = async (reply: string) => {
       setBusy(true);
       let ok = await run(() =>
-        setReplyVisible({ subject: props.documentUri, reply, visible }),
+        setReplyVisible({ subject: props.documentUri, reply, visible: true }),
       );
       if (ok)
         await mutate(
@@ -144,22 +130,39 @@ export function DocumentReplies(props: {
             current && {
               ...current,
               replies: current.replies.map((r) =>
-                r.uri === reply ? { ...r, visible } : r,
+                r.uri === reply ? { ...r, visible: true } : r,
               ),
             },
           { revalidate: false },
         );
       setBusy(false);
     };
+    let reject = async (reply: string) => {
+      setBusy(true);
+      let ok = await run(() =>
+        rejectReply({ subject: props.documentUri, reply }),
+      );
+      if (ok) {
+        await mutate(
+          (current) =>
+            current && {
+              ...current,
+              replies: current.replies.filter((r) => r.uri !== reply),
+            },
+          { revalidate: false },
+        );
+        toaster({ content: "Reply was removed", type: "success" });
+      }
+      setBusy(false);
+    };
     return (
       <RepliesModeration
         replies={loaded.replies}
         showThemes={props.showThemes}
-        showPending={open}
         prompt={props.prompt}
         busy={busy}
-        onAccept={(uri) => setVisible(uri, true)}
-        onHide={(uri) => setVisible(uri, false)}
+        onAccept={accept}
+        onReject={reject}
         onWithdraw={withdraw}
         action={controls}
       />
@@ -175,7 +178,9 @@ export function DocumentReplies(props: {
       onWithdraw={withdraw}
       action={
         identityPending ? (
-          <ButtonPrimary disabled>{label}</ButtonPrimary>
+          <ButtonPrimary disabled className={ACTION_CLASS}>
+            <span className="truncate">{label}</span>
+          </ButtonPrimary>
         ) : viewer ? (
           <ReplyButton
             label={label}
@@ -184,18 +189,22 @@ export function DocumentReplies(props: {
             onSubmitted={() => mutate()}
           />
         ) : (
-          <div className="flex flex-col justify-center">
-            <LoginModal
-              asChild
-              noEmailLogin
-              trigger={<ButtonPrimary>{label}</ButtonPrimary>}
-            />
-          </div>
+          <LoginModal
+            asChild
+            noEmailLogin
+            trigger={
+              <ButtonPrimary className={ACTION_CLASS}>
+                <span className="truncate">{label}</span>
+              </ButtonPrimary>
+            }
+          />
         )
       }
     />
   );
 }
+
+const ACTION_CLASS = "max-w-full min-w-0";
 
 function ReplyButton(props: {
   label: string;
@@ -210,7 +219,11 @@ function ReplyButton(props: {
       align="end"
       open={open}
       onOpenChange={setOpen}
-      trigger={<ButtonPrimary>{props.label}</ButtonPrimary>}
+      trigger={
+        <ButtonPrimary className={ACTION_CLASS}>
+          <span className="truncate">{props.label}</span>
+        </ButtonPrimary>
+      }
     >
       <ReplyPickerForViewer
         documentUri={props.documentUri}
