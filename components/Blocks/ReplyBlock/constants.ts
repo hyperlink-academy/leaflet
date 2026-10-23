@@ -1,3 +1,2 @@
-export const DEFAULT_REPLY_BUTTON_TEXT = "Reply with a post";
-export const DEFAULT_REPLY_PROMPT_TEXT =
-  "Have a response? Reply with a post of your own.";
+export const DEFAULT_REPLY_BUTTON_TEXT = "Link a Reply";
+export const DEFAULT_REPLY_PROMPT_TEXT = "Reply with a post of your own.";

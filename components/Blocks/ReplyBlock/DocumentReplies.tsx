@@ -39,18 +39,9 @@ const replyErrorMessages: Partial<Record<ReplyError["type"], string>> = {
   replies_closed: "This post isn't taking replies.",
 };
 
-// Replies to a published document, for whoever is looking: the document's
-// author moderates them, everyone else reads the visible ones and can submit
-// their own. `action` replaces the reader's reply button (the editor passes
-// its editable label). `initialReplies` is the public list a cached page was
-// rendered with; a signed-in viewer's own view (moderation, pending
-// submissions) replaces it once their identity is known. `initial` is the
-// viewer's own view as loaded with the editor page, shown until their
-// identity resolves and the first fetch replaces it.
+// Replies to a published document
 export function DocumentReplies(props: {
   documentUri: string;
-  // Key of the reply block this is (see resolveInteractionBlock): only its
-  // replies show, and new ones are submitted through it
   block: string | null;
   initialReplies?: DocumentReply[];
   initial?: DocumentRepliesData;
@@ -61,8 +52,6 @@ export function DocumentReplies(props: {
 }) {
   let { identity, identityPending } = useIdentityData();
   let viewer = identity?.atp_did ?? null;
-  // An anonymous reader of a cached page has nothing to add to the public
-  // list it was rendered with, until something happens to it.
   let [changed, setChanged] = useState(false);
   let needsFetch =
     !identityPending && (!!viewer || !props.initialReplies || changed);
@@ -102,20 +91,13 @@ export function DocumentReplies(props: {
   };
 
   let label = props.buttonText || DEFAULT_REPLY_BUTTON_TEXT;
-  // The editor and the document's owner keep the reply button (the author can
-  // reply with a post of their own) and get a toggle for the replies still
-  // waiting on them.
   let inEditor = props.action !== undefined;
   let ownsDocument = !!viewer && isDocumentOwner(props.documentUri, viewer);
   if (inEditor || ownsDocument) {
-    // On a published page `data` starts as the public list the page was
-    // rendered with, which isn't the owner's view of their replies.
     let loaded = inEditor || data?.isAuthor ? data : undefined;
     let pending = loaded?.isAuthor
       ? loaded.replies.filter((r) => !r.visible).length
       : 0;
-    // Once the last pending reply is dealt with the toggle goes away; the
-    // next one to arrive should start closed.
     if (open && pending === 0) setOpen(false);
     let controls = (
       <>
@@ -142,7 +124,7 @@ export function DocumentReplies(props: {
               ? loaded.replies
               : inEditor
                 ? []
-                : (data?.replies.filter((r) => r.visible) ?? [])
+                : data?.replies.filter((r) => r.visible) ?? []
           }
           showThemes={props.showThemes}
           prompt={props.prompt}
@@ -202,15 +184,13 @@ export function DocumentReplies(props: {
             onSubmitted={() => mutate()}
           />
         ) : (
-          <LoginModal
-            asChild
-            noEmailLogin
-            trigger={
-              <ButtonPrimary>
-                <BlueskyTiny /> {label}
-              </ButtonPrimary>
-            }
-          />
+          <div className="flex flex-col justify-center">
+            <LoginModal
+              asChild
+              noEmailLogin
+              trigger={<ButtonPrimary>{label}</ButtonPrimary>}
+            />
+          </div>
         )
       }
     />
@@ -289,7 +269,11 @@ function ReplyPickerForViewer(props: {
       onSubmit={async (reply) => {
         setSubmitting(true);
         let ok = await run(() =>
-          submitReply({ subject: props.documentUri, block: props.block, reply }),
+          submitReply({
+            subject: props.documentUri,
+            block: props.block,
+            reply,
+          }),
         );
         setSubmitting(false);
         if (ok) props.onSubmitted();

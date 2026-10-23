@@ -50,8 +50,6 @@ function useCommittedText(value: string, onCommit: (text: string) => void) {
     onKeyDown: (
       e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
     ) => {
-      // The selected block's window-level key handlers treat keys in an
-      // empty input as block commands (Backspace deletes the block).
       e.stopPropagation();
       if (e.key === "Enter") e.currentTarget.blur();
     },
@@ -83,7 +81,6 @@ export function ReplyPromptTextInput(props: {
   let shared = `[grid-area:1/1] whitespace-pre-wrap wrap-anywhere ${PROMPT_CLASS}`;
   return (
     <div className="grid">
-      {/* Sizes the textarea to its text, or to the placeholder it shows. */}
       <div aria-hidden className={`${shared} invisible`}>
         {input.value || DEFAULT_REPLY_PROMPT_TEXT}{" "}
       </div>
@@ -99,19 +96,17 @@ export function ReplyPromptTextInput(props: {
   );
 }
 
-const PROMPT_CLASS = "text-xl font-bold text-center text-primary";
+const PROMPT_CLASS = "text-lg font-bold text-center text-primary";
 
-// Above the replies: the author's prompt to readers as a heading, with
-// whatever acts on the block centered under it.
 function RepliesHeader(props: {
   prompt?: React.ReactNode;
   action?: React.ReactNode;
 }) {
   if (!props.prompt && !props.action) return null;
   return (
-    <div className="flex flex-col items-center gap-2 pt-1">
+    <div className="flex flex-col items-center gap-2 pb-1">
       {props.prompt && (
-        <h2 className={`w-full ${PROMPT_CLASS}`}>{props.prompt}</h2>
+        <h3 className={`w-full ${PROMPT_CLASS}`}>{props.prompt}</h3>
       )}
       {props.action && (
         <div className="flex flex-wrap items-center justify-center gap-2">
@@ -122,8 +117,6 @@ function RepliesHeader(props: {
   );
 }
 
-// Opens the replies the author hasn't accepted yet; nothing when there are
-// none.
 export function PendingRepliesToggle(props: {
   pending: number;
   open: boolean;
@@ -145,10 +138,12 @@ export function RepliesDraft(props: {
   return (
     <div className="flex flex-col gap-5">
       <RepliesHeader prompt={props.prompt} action={props.action} />
-      <div className="light-container text-sm italic text-tertiary text-center p-3 sm:p-4">
-        <div className="text-base font-bold">Replies open when you publish</div>
-        Readers can submit their own posts as replies. You choose which ones
-        appear here.
+      <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4">
+        <div className="text-base font-bold">
+          Replies will open when you publish this post.
+        </div>
+        Here, readers can submit their own posts as replies to this post.
+        Replies are shown on your published post once you approve them.
       </div>
     </div>
   );
@@ -175,7 +170,6 @@ function ReplyPost(props: {
   );
 }
 
-// A reply under who submitted it, with whatever acts on it beside them.
 function ReplyRow(props: {
   reply: DocumentReply;
   showTheme?: boolean;
@@ -258,12 +252,9 @@ const MAX_REPLY_CANDIDATES = 3;
 
 export function ReplyPicker(props: {
   candidates: ReplyCandidate[];
-  // The viewer's publications, to start a new reply post in. Undefined while
-  // still loading, so the empty-state prompt doesn't flash.
   publications?: ReplyPublication[];
   submitting?: boolean;
   onSubmit: (reply: { uri: string } | { url: string }) => void;
-  // Start a draft in the chosen publication, or a looseleaf for null
   onCreateDraft: (publication_uri: string | null) => Promise<void>;
 }) {
   let [url, setUrl] = useState("");
@@ -460,12 +451,7 @@ export function RepliesModeration(props: {
   return (
     <div className="flex flex-col gap-5">
       <RepliesHeader prompt={props.prompt} action={props.action} />
-      {props.replies.length === 0 && (
-        <div className="light-container text-sm italic text-tertiary text-center p-3">
-          No one has replied yet. Submissions will show up here for you to
-          accept.
-        </div>
-      )}
+
       {props.showPending && pending.length > 0 && (
         <div className="light-container flex flex-col gap-2 p-2">
           {pending.map((reply) => (
