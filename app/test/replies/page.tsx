@@ -7,8 +7,46 @@ import {
   type ReplyPublication,
 } from "components/Blocks/ReplyBlock/ReplyPicker";
 import { ReplyingTo } from "components/Pages/ReplyingTo";
+import { RepliesList } from "components/Blocks/ReplyBlock/RepliesList";
 import { Err, Ok } from "src/result";
-import type { ReplyTarget } from "src/documentReplies";
+import type { ReplyDraft, ReplyTarget } from "src/documentReplies";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+
+const replyDrafts: ReplyDraft[] = [
+  {
+    leaflet: "00000000-0000-0000-0000-000000000001",
+    title: "A reply I'm still working on",
+    block: null,
+    publication: {
+      uri: "at://did:plc:viewer/pub.leaflet.publication/a",
+      record: normalizePublicationRecord({
+        $type: "pub.leaflet.publication",
+        name: "Field Notes",
+        base_path: "fieldnotes.leaflet.pub",
+      }),
+    },
+  },
+  {
+    leaflet: "00000000-0000-0000-0000-000000000002",
+    title: "Untitled",
+    block: null,
+    publication: null,
+  },
+];
+
+function DraftsHarness() {
+  let [drafts, setDrafts] = React.useState(replyDrafts);
+  return (
+    <RepliesList
+      replies={[]}
+      drafts={drafts}
+      showThemes
+      onWithdrawDraft={(leaflet) =>
+        setDrafts((d) => d.filter((x) => x.leaflet !== leaflet))
+      }
+    />
+  );
+}
 
 const candidates: ReplyCandidate[] = [
   "On slow mornings",
@@ -169,6 +207,11 @@ export default function RepliesHarness() {
               return t.uri === target.uri;
             }}
           />
+        </div>
+      </Case>
+      <Case title="Reply block: my drafts above pending">
+        <div className="w-[min(600px,80vw)]">
+          <DraftsHarness />
         </div>
       </Case>
     </div>

@@ -12,6 +12,7 @@ import {
   type NormalizedDocument,
 } from "src/utils/normalizeRecords";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { getLeafletTitle } from "src/utils/getLeafletTitle";
 import { AtUri } from "@atproto/syntax";
 import { TID } from "@atproto/common";
 import { v7 } from "uuid";
@@ -52,16 +53,29 @@ export type DocumentReply = {
   post: StandardSitePostData;
 };
 
+// One of the viewer's unpublished drafts that publishing will submit as a
+// reply.
+export type ReplyDraft = {
+  // The draft's permission token, which its editor URL is keyed by
+  leaflet: string;
+  title: string;
+  // Key of the reply block it was started from, as on DocumentReply
+  block: string | null;
+  // As on a published reply's post, so the draft can wear its theme
+  publication: StandardSitePostData["publication"];
+};
+
 export type DocumentReplies = {
   // The viewer owns the document and moderates its replies
   isAuthor: boolean;
   replies: DocumentReply[];
+  drafts: ReplyDraft[];
 };
 
 // Readers get the replies the author made visible plus their own
-// submissions; the author gets everything, pending included. Rejected replies
-// go to no one: the replier was notified instead. A null viewer
-// gets the public list, which is what cached pages render.
+// submissions and drafts; the author gets everything, pending included.
+// Rejected replies go to no one: the replier was notified instead. A null
+// viewer gets the public list, which is what cached pages render.
 export async function loadDocumentReplies(
   subject: string,
   viewer: string | null,
@@ -71,6 +85,7 @@ export async function loadDocumentReplies(
     { data: allowedRows },
     { data: rejectedRows },
     { data: doc },
+    viewerDrafts,
   ] = await Promise.all([
     supabaseServerClient
       .from("document_replies")
@@ -91,6 +106,7 @@ export async function loadDocumentReplies(
       .select("uri, data")
       .eq("uri", subject)
       .maybeSingle(),
+    viewer ? loadReplyDrafts(subject, viewer) : [],
   ]);
   const isAuthor = !!viewer && isDocumentOwner(subject, viewer);
   const allowed = new Set((allowedRows ?? []).map((r) => r.reply));
@@ -98,6 +114,10 @@ export async function loadDocumentReplies(
   const blocks = replyBlocksOf(
     doc && normalizeDocumentRecord(doc.data, doc.uri),
   );
+  const drafts = viewerDrafts.map((d) => ({
+    ...d,
+    block: resolveInteractionBlock(blocks, d.block)?.key ?? null,
+  }));
 
   const shown = (rows ?? [])
     .filter((r) => !rejected.has(r.uri))
@@ -114,7 +134,7 @@ export async function loadDocumentReplies(
       mine: !!viewer && r.replier_did === viewer,
     }))
     .filter((r) => isAuthor || r.visible || r.mine);
-  if (shown.length === 0) return { isAuthor, replies: [] };
+  if (shown.length === 0) return { isAuthor, replies: [], drafts };
 
   const [
     {
@@ -132,6 +152,7 @@ export async function loadDocumentReplies(
 
   return {
     isAuthor,
+    drafts,
     replies: shown.flatMap(({ document, replier_did, ...reply }) => {
       const post = postsByUri.get(document);
       return post
@@ -145,6 +166,44 @@ export async function loadDocumentReplies(
         : [];
     }),
   };
+}
+
+// The drafts the viewer linked as replies to `subject`, with the raw block
+// key they were started from. A published draft whose reply failed to submit
+// keeps its link for the next publish, but isn't a draft here.
+async function loadReplyDrafts(
+  subject: string,
+  viewer: string,
+): Promise<ReplyDraft[]> {
+  const { data: rows } = await supabaseServerClient
+    .from("reply_drafts")
+    .select(
+      `leaflet, block,
+      permission_tokens(title,
+        leaflets_in_publications(title, doc, archived, publications(uri, record)),
+        leaflets_to_documents(title, document))`,
+    )
+    .eq("subject", subject)
+    .eq("identity_did", viewer);
+  return (rows ?? []).flatMap(
+    ({ leaflet, block, permission_tokens: token }) => {
+      if (!token) return [];
+      const inPublication = token.leaflets_in_publications[0];
+      if (inPublication?.archived || inPublication?.doc) return [];
+      if (token.leaflets_to_documents.some((d) => d.document)) return [];
+      const pub = inPublication?.publications;
+      return [
+        {
+          leaflet,
+          title: getLeafletTitle(token) || "Untitled",
+          block,
+          publication: pub
+            ? { uri: pub.uri, record: normalizePublicationRecord(pub.record) }
+            : null,
+        },
+      ];
+    },
+  );
 }
 
 export const replyBlocksOf = (document: NormalizedDocument | null) =>

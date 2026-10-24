@@ -1257,24 +1257,6 @@ const updatePublicationDraft: Mutation<{
   });
 };
 
-// Unlinks a draft from the post it was started as a reply to, so publishing
-// it doesn't submit it as one. Publication drafts keep the link on their join
-// row, standalone drafts as root facts.
-const clearDraftReplyTo: Mutation<{ rootEntity: string }> = async (
-  args,
-  ctx,
-) => {
-  await ctx.runOnServer(async ({ supabase }) => {
-    await supabase
-      .from("leaflets_in_publications")
-      .update({ reply_to: null, reply_to_block: null })
-      .eq("leaflet", ctx.permission_token_id);
-  });
-  for (let attribute of ["root/reply-to", "root/reply-to-block"] as const)
-    for (let fact of await ctx.scanIndex.eav(args.rootEntity, attribute))
-      await ctx.retractFact(fact.id);
-};
-
 const updateLeafletMetadata: Mutation<{
   title?: string;
   description?: string | null;
@@ -1619,7 +1601,6 @@ export const mutations = {
   addGalleryImage,
   removeGalleryImage,
   updatePublicationDraft,
-  clearDraftReplyTo,
   updateLeafletMetadata,
   toggleDraftContributor,
   toggleCollapsedBlocks,

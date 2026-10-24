@@ -6,26 +6,32 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 import { CheckTiny } from "components/Icons/CheckTiny";
 import { Separator } from "components/Layout";
 import { DotLoader } from "components/utils/DotLoader";
-import { StandardSitePostItemView } from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
+import {
+  PubInfo,
+  StandardSitePostItemView,
+} from "components/Blocks/StandardSitePostBlock/StandardSitePostItem";
+import { PublicationPostItemSmall } from "app/(app)/(published)/lish/[did]/[publication]/PublicationPostItem/PublicationPostItemSmall";
 import { PublicationThemeWrapper } from "components/ThemeManager/PublicationThemeProvider";
-import type { DocumentReply } from "src/documentReplies";
-import { hasSeveralAuthors } from "../InteractionAuthorName";
+import { mainSiteAuthBase } from "src/utils/customDomain";
+import type { DocumentReply, ReplyDraft } from "src/documentReplies";
 import {
   AcceptedRepliesHeader,
   PendingRepliesHeader,
   RepliesDivider,
   RepliesHeader,
 } from "./RepliesHeader";
+import { EditTiny } from "components/Icons/EditTiny";
 
 export function RepliesList(props: {
   replies: DocumentReply[];
+  drafts?: ReplyDraft[];
   showThemes?: boolean;
   prompt?: React.ReactNode;
   action?: React.ReactNode;
   onWithdraw?: (uri: string) => void;
+  onWithdrawDraft?: (leaflet: string) => void;
 }) {
   let { onWithdraw } = props;
-  let showHandles = repliersDiffer(props.replies);
   let myPending = props.replies.filter((r) => r.mine && !r.visible);
   let accepted = [
     ...props.replies.filter((r) => r.mine && r.visible),
@@ -34,9 +40,6 @@ export function RepliesList(props: {
   let row = (reply: DocumentReply) => (
     <ReplyRow
       key={reply.uri}
-      reply={reply}
-      showTheme={props.showThemes}
-      showHandle={showHandles}
       control={
         reply.mine &&
         onWithdraw && (
@@ -49,11 +52,18 @@ export function RepliesList(props: {
           </button>
         )
       }
-    />
+    >
+      <ReplyPost post={reply.post} showTheme={props.showThemes} />
+    </ReplyRow>
   );
   return (
     <div className="flex flex-col gap-4">
       <RepliesHeader prompt={props.prompt} action={props.action} />
+      <DraftReplies
+        drafts={props.drafts}
+        showThemes={props.showThemes}
+        onWithdraw={props.onWithdrawDraft}
+      />
       {props.replies.length > 0 && (
         <>
           {myPending.length > 0 && (
@@ -78,17 +88,18 @@ export function RepliesList(props: {
 // them, the pending ones. Either can be removed.
 export function RepliesListWithModeration(props: {
   replies: DocumentReply[];
+  drafts?: ReplyDraft[];
   showThemes?: boolean;
   busy?: boolean;
   onAccept: (uri: string) => void;
   onReject: (uri: string) => Promise<void>;
   onWithdraw: (uri: string) => void;
+  onWithdrawDraft?: (leaflet: string) => void;
   prompt?: React.ReactNode;
   action?: React.ReactNode;
 }) {
   let pending = props.replies.filter((r) => !r.visible);
   let visible = props.replies.filter((r) => r.visible);
-  let showHandles = repliersDiffer(props.replies);
   let [pendingOpen, setPendingOpen] = useState(true);
   let withdraw = (reply: DocumentReply) =>
     reply.mine && (
@@ -104,6 +115,11 @@ export function RepliesListWithModeration(props: {
   return (
     <div className="flex flex-col gap-4">
       <RepliesHeader prompt={props.prompt} action={props.action} />
+      <DraftReplies
+        drafts={props.drafts}
+        showThemes={props.showThemes}
+        onWithdraw={props.onWithdrawDraft}
+      />
       {pending.length > 0 && (
         <div className="flex flex-col gap-2">
           <PendingRepliesHeader
@@ -116,9 +132,6 @@ export function RepliesListWithModeration(props: {
               {pending.map((reply) => (
                 <ReplyRow
                   key={reply.uri}
-                  reply={reply}
-                  showTheme={props.showThemes}
-                  showHandle={showHandles}
                   control={
                     <>
                       <RejectReplyButton
@@ -136,7 +149,9 @@ export function RepliesListWithModeration(props: {
                       {withdraw(reply)}
                     </>
                   }
-                />
+                >
+                  <ReplyPost post={reply.post} showTheme={props.showThemes} />
+                </ReplyRow>
               ))}
             </>
           )}
@@ -149,9 +164,6 @@ export function RepliesListWithModeration(props: {
           {visible.map((reply) => (
             <ReplyRow
               key={reply.uri}
-              reply={reply}
-              showTheme={props.showThemes}
-              showHandle={showHandles}
               control={
                 <>
                   <RejectReplyButton
@@ -161,7 +173,9 @@ export function RepliesListWithModeration(props: {
                   {withdraw(reply)}
                 </>
               }
-            />
+            >
+              <ReplyPost post={reply.post} showTheme={props.showThemes} />
+            </ReplyRow>
           ))}
         </div>
       )}
@@ -187,18 +201,17 @@ export function RepliesEmptyDraft(props: {
   );
 }
 
+// A row in the replies list, with its controls tabbed onto the top edge.
 function ReplyRow(props: {
-  reply: DocumentReply;
-  showTheme?: boolean;
-  showHandle?: boolean;
   control?: React.ReactNode;
+  children: React.ReactNode;
 }) {
   return (
     <div
       className={`replyPostRow relative flex flex-col gap-0.5 ${props.control && "mt-[10px]"}`}
     >
       <div className="transparent-container overflow-hidden">
-        <ReplyPost post={props.reply.post} showTheme={props.showTheme} />
+        {props.children}
       </div>
       {props.control && (
         <div className=" absolute right-2 -top-[10px] opaque-container z-10 shrink-0 flex items-center gap-2 text-tertiary place-items-end px-1.5">
@@ -209,8 +222,66 @@ function ReplyRow(props: {
   );
 }
 
-const repliersDiffer = (replies: DocumentReply[]) =>
-  hasSeveralAuthors(replies.map((r) => r.replier));
+// The viewer's unpublished drafts that will be submitted as replies here when
+// published.
+function DraftReplies(props: {
+  drafts?: ReplyDraft[];
+  showThemes?: boolean;
+  onWithdraw?: (leaflet: string) => void;
+}) {
+  let drafts = props.drafts ?? [];
+  if (drafts.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-2">
+      <RepliesDivider label={`Drafts (${drafts.length})`} />
+      {drafts.map((draft) => {
+        let editUrl = `${mainSiteAuthBase()}/${draft.leaflet}`;
+        return (
+          <ReplyRow
+            key={draft.leaflet}
+            control={
+              <>
+                {props.onWithdraw && (
+                  <>
+                    <button
+                      aria-label="Withdraw draft reply"
+                      className="text-sm text-tertiary hover:text-accent-contrast"
+                      onClick={() => props.onWithdraw?.(draft.leaflet)}
+                    >
+                      Withdraw
+                    </button>
+                    <Separator classname="h-4!" />
+                  </>
+                )}
+                <a
+                  href={editUrl}
+                  className="text-sm font-bold text-accent-contrast no-underline! flex gap-1 shrink-0 items-center"
+                >
+                  Edit <EditTiny />
+                </a>
+              </>
+            }
+          >
+            <ReplyTheme
+              pubRecord={draft.publication?.record}
+              enabled={props.showThemes}
+            >
+              <PublicationPostItemSmall
+                href={editUrl}
+                title={draft.title}
+                pubInfo={
+                  draft.publication && (
+                    <PubInfo publication={draft.publication} />
+                  )
+                }
+              />
+            </ReplyTheme>
+          </ReplyRow>
+        );
+      })}
+    </div>
+  );
+}
 
 function RejectReplyButton(props: {
   disabled?: boolean;
@@ -269,14 +340,31 @@ function ReplyPost(props: {
   showTheme?: boolean;
 }) {
   return (
-    <PublicationThemeWrapper
+    <ReplyTheme
       postRecord={props.post.record}
-      pubRecord={props.post.publication?.record ?? undefined}
-      enabled={!!props.showTheme}
+      pubRecord={props.post.publication?.record}
+      enabled={props.showTheme}
     >
-      <div className={props.showTheme ? "bg-bg-page" : ""}>
-        <StandardSitePostItemView post={props.post} size="small" />
-      </div>
+      <StandardSitePostItemView post={props.post} size="small" />
+    </ReplyTheme>
+  );
+}
+
+// A reply on a page background: its own post's theme when the block shows
+// themes, otherwise the host post's.
+function ReplyTheme(props: {
+  postRecord?: DocumentReply["post"]["record"];
+  pubRecord?: NonNullable<DocumentReply["post"]["publication"]>["record"];
+  enabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <PublicationThemeWrapper
+      postRecord={props.postRecord}
+      pubRecord={props.pubRecord ?? undefined}
+      enabled={!!props.enabled}
+    >
+      <div className="bg-bg-page">{props.children}</div>
     </PublicationThemeWrapper>
   );
 }

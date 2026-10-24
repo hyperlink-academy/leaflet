@@ -2248,6 +2248,52 @@ export type Database = {
           },
         ]
       }
+      reply_drafts: {
+        Row: {
+          block: string | null
+          created_at: string
+          identity_did: string
+          leaflet: string
+          subject: string
+        }
+        Insert: {
+          block?: string | null
+          created_at?: string
+          identity_did: string
+          leaflet: string
+          subject: string
+        }
+        Update: {
+          block?: string | null
+          created_at?: string
+          identity_did?: string
+          leaflet?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reply_drafts_identity_did_fkey"
+            columns: ["identity_did"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+          {
+            foreignKeyName: "reply_drafts_leaflet_fkey"
+            columns: ["leaflet"]
+            isOneToOne: true
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reply_drafts_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       replicache_clients: {
         Row: {
           client_group: string

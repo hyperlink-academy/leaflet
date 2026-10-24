@@ -24,8 +24,8 @@ import { TagPopover } from "components/Interactions/InteractionsPreview";
 import {
   ReplyingTo,
   useDocumentReplyTargets,
-  useWithdrawReply,
 } from "components/Pages/ReplyingTo";
+import { useWithdrawReply } from "components/Blocks/ReplyBlock/useWithdrawReply";
 import { useIdentityData } from "components/IdentityProvider";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 
@@ -56,7 +56,7 @@ export function PostHeader(props: {
   let editLink = usePostEditLink(document?.uri, pub?.identity_did);
   let { headerInteractions } = usePostFrame();
   let { identity } = useIdentityData();
-  let withdrawReply = useWithdrawReply();
+  let { withdrawReply } = useWithdrawReply();
   let ownsPost =
     !!document?.uri &&
     !!identity?.atp_did &&

@@ -107,6 +107,12 @@ export function useLeafletScheduledPublishAt() {
   let scheduled = data?.publication_scheduled_posts;
   return scheduled?.status === "scheduled" ? scheduled.publish_at : null;
 }
+// The post this draft will be submitted as a reply to on first publish, and
+// who linked it, if it's a reply draft.
+export function useLeafletReplyDraft() {
+  let { data } = useLeafletData();
+  return data?.reply_drafts ?? null;
+}
 export function useLeafletDomains() {
   let { data, mutate } = useLeafletData();
   return { data: data?.custom_domain_routes, mutate: mutate };

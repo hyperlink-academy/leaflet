@@ -2,13 +2,7 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { AtUri } from "@atproto/syntax";
-import {
-  getDocumentReplyTargets,
-  getReplyTarget,
-  withdrawReply,
-  type ReplyError,
-} from "actions/replies";
-import { useActionToast } from "components/useActionToast";
+import { getDocumentReplyTargets, getReplyTarget } from "actions/replies";
 import { PubIcon } from "components/ActionBar/Publications";
 import { Avatar } from "components/Avatar";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
@@ -41,18 +35,6 @@ export function useDraftReplyTargets(
   );
   if (document) return submitted ?? [];
   return linked ? [linked] : [];
-}
-
-const withdrawErrorMessages: Partial<Record<ReplyError["type"], string>> = {
-  not_owner: "Only the author of the reply can withdraw it.",
-};
-
-// Deletes a submitted reply record, toasting on failure; resolves whether it
-// worked.
-export function useWithdrawReply() {
-  let run = useActionToast<ReplyError>(withdrawErrorMessages);
-  return async (replyUri: string) =>
-    !!(await run(() => withdrawReply(replyUri)));
 }
 
 // Marks a post, draft or published, as a reply to others: one row per post it

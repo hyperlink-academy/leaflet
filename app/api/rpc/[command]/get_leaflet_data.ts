@@ -29,7 +29,8 @@ export const get_leaflet_data = makeRoute({
         ${leaflets_in_publications_query},
         ${leaflets_to_documents_query},
         ${draft_publication_query},
-        publication_scheduled_posts(publish_at, status)`,
+        publication_scheduled_posts(publish_at, status),
+        reply_drafts(subject, block, identity_did)`,
       )
       .eq("id", token_id)
       .single();
@@ -37,12 +38,13 @@ export const get_leaflet_data = makeRoute({
     type t = typeof res;
     type data = Exclude<t["data"], null>;
 
-    //All of these shenanigans are to make entity_set optional so that we don't have to write it when we create this data elsewhere, mainly in LeafletList
+    //All of these shenanigans are to make entity_set (and reply_drafts, which only the editor reads) optional so that we don't have to write it when we create this data elsewhere, mainly in LeafletList
     return {
       result: res as Omit<t, "data"> & {
         data:
           | null
-          | (Omit<data, "permission_token_rights"> & {
+          | (Omit<data, "permission_token_rights" | "reply_drafts"> & {
+              reply_drafts?: data["reply_drafts"];
               permission_token_rights: (Omit<
                 data["permission_token_rights"][0],
                 "entity_sets"

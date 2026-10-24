@@ -18,7 +18,6 @@ import {
   resolveReplyLink,
   setReplyVisible,
   submitReply,
-  withdrawReply,
   type ReplyError,
 } from "actions/replies";
 import type {
@@ -29,6 +28,7 @@ import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { DEFAULT_REPLY_BUTTON_TEXT } from "./constants";
 import { RepliesList, RepliesListWithModeration } from "./RepliesList";
+import { useWithdrawReply } from "./useWithdrawReply";
 import { ReplyPicker, type ReplyCandidate } from "./ReplyPicker";
 import { Err, Ok, type OkValue } from "src/result";
 
@@ -66,12 +66,14 @@ export function DocumentReplies(props: {
         (props.initialReplies && {
           isAuthor: false,
           replies: props.initialReplies,
+          drafts: [],
         }),
     },
   );
   let data = allReplies && {
     ...allReplies,
     replies: allReplies.replies.filter((r) => r.block === props.block),
+    drafts: allReplies.drafts.filter((d) => d.block === props.block),
   };
   useDocumentEvents(props.documentUri, ["reply", "reply_visibility"], () => {
     setChanged(true);
@@ -80,13 +82,25 @@ export function DocumentReplies(props: {
   let [busy, setBusy] = useState(false);
   let run = useActionToast<ReplyError>(replyErrorMessages);
   let toaster = useToaster();
+  let { withdrawReply, withdrawReplyDraft } = useWithdrawReply();
   let withdraw = async (uri: string) => {
-    if (await run(() => withdrawReply(uri)))
+    if (await withdrawReply(uri))
       await mutate(
         (current) =>
           current && {
             ...current,
             replies: current.replies.filter((r) => r.uri !== uri),
+          },
+        { revalidate: false },
+      );
+  };
+  let withdrawDraft = async (leaflet: string) => {
+    if (await withdrawReplyDraft(leaflet))
+      await mutate(
+        (current) =>
+          current && {
+            ...current,
+            drafts: current.drafts.filter((d) => d.leaflet !== leaflet),
           },
         { revalidate: false },
       );
@@ -115,9 +129,11 @@ export function DocumentReplies(props: {
                 ? []
                 : data?.replies.filter((r) => r.visible) ?? []
           }
+          drafts={data?.drafts}
           showThemes={props.showThemes}
           prompt={props.prompt}
           onWithdraw={withdraw}
+          onWithdrawDraft={withdrawDraft}
           action={controls}
         />
       );
@@ -161,12 +177,14 @@ export function DocumentReplies(props: {
     return (
       <RepliesListWithModeration
         replies={loaded.replies}
+        drafts={loaded.drafts}
         showThemes={props.showThemes}
         prompt={props.prompt}
         busy={busy}
         onAccept={accept}
         onReject={reject}
         onWithdraw={withdraw}
+        onWithdrawDraft={withdrawDraft}
         action={controls}
       />
     );
@@ -176,9 +194,11 @@ export function DocumentReplies(props: {
   return (
     <RepliesList
       replies={data.replies}
+      drafts={data.drafts}
       showThemes={props.showThemes}
       prompt={props.prompt}
       onWithdraw={withdraw}
+      onWithdrawDraft={withdrawDraft}
       action={
         identityPending ? (
           <ButtonPrimary disabled className={ACTION_CLASS}>

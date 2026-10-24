@@ -179,21 +179,43 @@ export async function createReplyDraft(args: {
   if (!identity?.atp_did) return Err(notAuthenticated);
   const block = await subjectReplyBlock(args.subject, args.block);
   if (!block) return Err({ type: "replies_closed" });
-  const replyTo = { subject: args.subject, block: block.key };
   const leaflet = args.publication_uri
-    ? await createPublicationDraft(args.publication_uri, "doc", { replyTo })
+    ? await createPublicationDraft(args.publication_uri, "doc")
     : await createNewLeaflet({
         pageType: "doc",
         redirectUser: false,
-        replyTo,
         analytics: { kind: "reply_looseleaf" },
       });
   if (!leaflet) return Err({ type: "not_owner" });
+  const { error } = await supabaseServerClient.from("reply_drafts").insert({
+    leaflet,
+    subject: args.subject,
+    block: block.key ?? null,
+    identity_did: identity.atp_did,
+  });
+  if (error) return Err({ type: "failed" });
   return Ok({ leaflet });
 }
 
 export async function getReplyTarget(subject: string) {
   return loadReplyTarget(subject);
+}
+
+// Unlinks one of the viewer's drafts from the post it was started as a reply
+// to, so publishing it doesn't submit it. Only whoever linked it can.
+export async function withdrawReplyDraft(
+  leaflet: string,
+): Promise<Result<null, ReplyError>> {
+  const identity = await getAuthIdentity();
+  if (!identity?.atp_did) return Err(notAuthenticated);
+  const { data, error } = await supabaseServerClient
+    .from("reply_drafts")
+    .delete()
+    .eq("leaflet", leaflet)
+    .eq("identity_did", identity.atp_did)
+    .select("leaflet");
+  if (error) return Err({ type: "failed" });
+  return data.length > 0 ? Ok(null) : Err({ type: "not_owner" });
 }
 
 export async function getDocumentReplyTargets(document: string) {
