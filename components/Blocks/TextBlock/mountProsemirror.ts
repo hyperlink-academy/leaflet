@@ -29,6 +29,7 @@ import { useLinkPopoverStore } from "components/LinkPopover";
 import { useEditorCommentSheetStore } from "components/EditorComments/editorCommentStores";
 import { useEditorCommentPopoverStore } from "components/EditorComments/EditorCommentPopover";
 import { commentDraftPlugin } from "./commentDraftPlugin";
+import { searchHighlightPlugin } from "components/FindReplace/searchHighlightPlugin";
 import { stripCommentMarks } from "./stripCommentMarks";
 import { useCollabText } from "./useCollabText";
 
@@ -88,6 +89,7 @@ export function useMountProsemirror({
         keymap(baseKeymap),
         highlightSelectionPlugin,
         commentDraftPlugin,
+        searchHighlightPlugin,
         autolink({
           type: schema.marks.link,
           shouldAutoLink: () => true,
