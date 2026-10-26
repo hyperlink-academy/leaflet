@@ -182,7 +182,7 @@ describe("blocksToFeedHtml", () => {
       },
     ]);
     expect(html).toBe(
-      `<img src="${BASE}/api/atproto_images?did=${DID}&amp;cid=bafycid&amp;width=1200&amp;v=1" alt="an &quot;image&quot;" width="800" height="600"/>`,
+      `<img src="${BASE}/api/atproto_images?did=${DID}&amp;cid=bafycid&amp;width=1200&amp;format=email&amp;v=2" alt="an &quot;image&quot;" width="800" height="600"/>`,
     );
   });
 

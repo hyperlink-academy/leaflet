@@ -3,7 +3,10 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServerClient } from "supabase/serverClient";
 import { snapToImageWidth } from "supabase/imageSizes";
-import { encodeImageVariant } from "src/utils/serverImageEncoding";
+import {
+  encodeImageVariant,
+  variantFormatDir,
+} from "src/utils/serverImageEncoding";
 
 // Downscaling for storage images, used by the next/image loader
 // (supabase/supabase-image-loader.js). Resizing here with sharp instead of
@@ -20,6 +23,7 @@ const CACHE_CONTROL =
   "public, max-age=31536000, immutable, s-maxage=86400, stale-while-revalidate=604800";
 const CDN_CACHE_CONTROL =
   "public, s-maxage=31536000, immutable, stale-while-revalidate=604800";
+const RETRY_CACHE_CONTROL = "public, max-age=60, s-maxage=60";
 
 function parseDimension(value: string | null): number | undefined {
   if (!value) return undefined;
@@ -32,13 +36,13 @@ function publicUrl(bucketAndPath: string) {
   return `${process.env.NEXT_PUBLIC_SUPABASE_API_URL}/storage/v1/object/public/${bucketAndPath}`;
 }
 
-function redirect(to: string) {
+function redirect(to: string, cacheControl?: string) {
   return new NextResponse(null, {
     status: 302,
     headers: {
       Location: to,
-      "Cache-Control": CACHE_CONTROL,
-      "CDN-Cache-Control": CDN_CACHE_CONTROL,
+      "Cache-Control": cacheControl ?? CACHE_CONTROL,
+      "CDN-Cache-Control": cacheControl ?? CDN_CACHE_CONTROL,
     },
   });
 }
@@ -58,7 +62,7 @@ export async function GET(req: NextRequest) {
 
   if (!width && !format) return redirect(publicUrl(path));
 
-  const variantPath = `resized/${format ? `${format}/` : ""}w${width ?? 0}/${path}`;
+  const variantPath = `resized/${variantFormatDir(format)}w${width ?? 0}/${path}`;
   const variantUrl = publicUrl(`${VARIANT_BUCKET}/${variantPath}`);
 
   const existing = await fetch(variantUrl, { method: "HEAD" });
@@ -73,7 +77,7 @@ export async function GET(req: NextRequest) {
       format,
       resize: width ? { width, withoutEnlargement: true } : undefined,
     });
-    // Already email-safe with no resize asked for, so there is no variant
+    // The source already satisfies the request, so there is no variant
     // worth storing.
     if (!output) return redirect(publicUrl(path));
 
@@ -91,6 +95,7 @@ export async function GET(req: NextRequest) {
     // Not something sharp can decode (or a corrupt upload) — serve the
     // original instead.
     console.log("failed to resize storage image", path, e);
+    return redirect(publicUrl(path));
   }
-  return redirect(publicUrl(path));
+  return redirect(publicUrl(path), RETRY_CACHE_CONTROL);
 }

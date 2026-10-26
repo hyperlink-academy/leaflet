@@ -7,6 +7,7 @@ import { snapToImageWidth } from "supabase/imageSizes";
 import {
   encodeImageVariant,
   parseImageFormat,
+  variantFormatDir,
 } from "src/utils/serverImageEncoding";
 import { transcodeGifToMp4 } from "src/utils/serverVideoEncoding";
 
@@ -144,7 +145,7 @@ export async function GET(req: NextRequest) {
     const isVideo = format === "mp4";
     const variantPath = isVideo
       ? `${COVER_IMAGE_PREFIX}/resized/mp4/${params.cid}`
-      : `${COVER_IMAGE_PREFIX}/resized/${format ? `${format}/` : ""}w${width ?? 0}-h${height ?? 0}/${params.cid}`;
+      : `${COVER_IMAGE_PREFIX}/resized/${variantFormatDir(format)}w${width ?? 0}-h${height ?? 0}/${params.cid}`;
     const variantUrl = publicUrl(variantPath);
     const existing = await fetch(variantUrl, { method: "HEAD" });
     if (existing.ok) return redirect(variantUrl);
@@ -167,7 +168,7 @@ export async function GET(req: NextRequest) {
                     ? { width, height, fit: "inside", withoutEnlargement: true }
                     : undefined,
               });
-          // Already email-safe with no resize asked for (or not an animated
+          // The source already satisfies the request (or isn't an animated
           // GIF), so there is no variant worth storing.
           if (!output) return redirect(original.url);
 
@@ -182,11 +183,12 @@ export async function GET(req: NextRequest) {
           console.log("failed to store cover variant", variantPath, error);
         } catch (e) {
           console.log("failed to encode cover variant", variantPath, e);
+          if (!isVideo) return redirect(original.url);
         }
       }
       // Couldn't produce a variant; the cached original still beats
       // streaming the full blob through this function.
-      return redirect(original.url, isVideo ? RETRY_CACHE_CONTROL : undefined);
+      return redirect(original.url, RETRY_CACHE_CONTROL);
     }
     if (isVideo) return new NextResponse(null, { status: 404 });
     // Fall through to streaming if nothing could be cached.

@@ -1,5 +1,7 @@
 import { BlobRef } from "@atproto/lexicon";
 
+const EMAIL_URL_VERSION = "2";
+
 // `baseUrl` produces an absolute URL (needed for outbound email where the proxy
 // path can't resolve against the document origin).
 //
@@ -35,13 +37,13 @@ export const blobRefToSrc = (
     if (!path) return link;
     let src = `${prefix}/api/resized_images?path=${encodeURIComponent(path)}&format=${transform.format}`;
     if (transform.width) src += `&width=${transform.width}`;
-    return src;
+    return `${src}&v=${EMAIL_URL_VERSION}`;
   }
   let src = `${prefix}/api/atproto_images?did=${did}&cid=${link}`;
   if (transform?.width) src += `&width=${transform.width}`;
   if (transform?.height) src += `&height=${transform.height}`;
   if (transform?.format) src += `&format=${transform.format}`;
-  src += "&v=1";
+  src += `&v=${transform?.format === "email" ? EMAIL_URL_VERSION : "1"}`;
   return src;
 };
 

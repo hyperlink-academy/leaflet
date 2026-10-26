@@ -10,7 +10,8 @@ const EMAIL_SAFE_FORMATS = new Set(["png", "jpeg", "gif"]);
 // headroom against a second: 4:4:4 keeps colour detail at the hard edges
 // (text, UI chrome, line art) that subsampling smears and that compound most
 // visibly across generations.
-const JPEG_OPTIONS = { quality: 90, chromaSubsampling: "4:4:4" } as const;
+const JPEG_OPTIONS = { quality: 90, chromaSubsampling: "4:4:4", mozjpeg: true };
+const JPEG_SOURCE_OPTIONS = { quality: 80, mozjpeg: true };
 
 // How much larger a lossless PNG may be than the JPEG before it stops being
 // worth it. Flat, low-colour content — screenshots and diagrams, where a
@@ -27,6 +28,12 @@ const PNG_SIZE_TOLERANCE = 1.5;
 // depends on an encoder default is a regression waiting to happen.
 const WEB_WEBP_QUALITY = 80;
 
+const EMAIL_VARIANT_DIR = "email-v2";
+
+export function variantFormatDir(format: string | undefined) {
+  return format === "email" ? `${EMAIL_VARIANT_DIR}/` : "";
+}
+
 // The only variant format the image proxies will produce. Kept to a closed
 // allowlist for the same reason widths are snapped to a ladder: the value is
 // caller-controlled and each distinct one mints a permanent stored variant.
@@ -37,8 +44,10 @@ export function parseImageFormat(
 }
 
 // Encodes a stored variant for an image-proxy request, or null when the
-// original bytes already satisfy it (email-safe source, no resize asked for)
-// and the caller should redirect to the source instead of storing anything.
+// original bytes already satisfy it and the caller should redirect to the
+// source instead of storing anything: the source is already within the
+// requested size and in a format the target renders, and re-encoding
+// wouldn't make it smaller.
 //
 // rotate() applies EXIF orientation, which imgproxy did implicitly; callers
 // pass withoutEnlargement in `resize` to mirror imgproxy's no-upscale default.
@@ -53,57 +62,73 @@ export async function encodeImageVariant(
     return opts.resize ? p.resize(opts.resize) : p;
   };
   const metadata = await sharp(input).metadata();
+  const animated = (metadata.pages ?? 1) > 1;
+  const { width = 0, height = 0 } = metadata.autoOrient ?? metadata;
+  const shrinks =
+    !!opts.resize &&
+    ((!!opts.resize.width && width > opts.resize.width) ||
+      (!!opts.resize.height && height > opts.resize.height));
 
+  let encoded: { data: Buffer; format: string };
   if (opts.format === "email") {
-    const encoded = await encodeForEmail(input, pipeline, metadata);
-    if (encoded) return encoded;
+    encoded = await encodeForEmail(input, pipeline, metadata, animated);
+  } else if (animated) {
+    if (!opts.resize) return null;
+    encoded = await encode(pipeline());
+  } else {
+    encoded = await encode(pipeline().webp({ quality: WEB_WEBP_QUALITY }));
   }
-  if (!opts.resize) return null;
 
-  const resized = await applyWebEncoding(pipeline(), metadata.format).toBuffer({
-    resolveWithObject: true,
-  });
-  return { data: resized.data, format: resized.info.format };
+  const acceptable =
+    opts.format === "email"
+      ? EMAIL_SAFE_FORMATS.has(metadata.format ?? "")
+      : true;
+  const upright = (metadata.orientation ?? 1) === 1;
+  if (!shrinks && upright && acceptable && encoded.data.length >= input.length)
+    return null;
+  return encoded;
 }
 
-function applyWebEncoding(
-  pipeline: sharp.Sharp,
-  sourceFormat: string | undefined,
-): sharp.Sharp {
-  return sourceFormat === "webp"
-    ? pipeline.webp({ quality: WEB_WEBP_QUALITY })
-    : pipeline;
+async function encode(pipeline: sharp.Sharp) {
+  const { data, info } = await pipeline.toBuffer({ resolveWithObject: true });
+  return { data, format: info.format };
 }
 
-// Null when the source is already something every mail client renders. Costs
-// several decodes of the same input, paid once per stored variant and then
-// served from cache indefinitely.
+// Still images become PNG or JPEG, whichever is right for the content (see
+// PNG_SIZE_TOLERANCE); animation survives only as GIF. Costs several encodes
+// of the same input, paid once per stored variant and then served from cache
+// indefinitely.
 async function encodeForEmail(
   input: Buffer,
   pipeline: () => sharp.Sharp,
   metadata: sharp.Metadata,
-): Promise<{ data: Buffer; format: "png" | "jpeg" | "gif" } | null> {
-  // Flattening an animated source to a still would silently drop frames, and
-  // GIF is the only animated format with universal client support.
-  if ((metadata.pages ?? 1) > 1) {
-    if (metadata.format === "gif") return null;
-    return { data: await pipeline().gif().toBuffer(), format: "gif" };
+  animated: boolean,
+) {
+  if (animated) {
+    return encode(metadata.format === "gif" ? pipeline() : pipeline().gif());
   }
 
-  if (metadata.format && EMAIL_SAFE_FORMATS.has(metadata.format)) return null;
+  const encodePng = () => encode(pipeline().png({ compressionLevel: 9 }));
 
   // JPEG can't carry transparency, so genuine alpha settles it. `hasAlpha`
   // only reports that a channel exists, and treating an unused one as
   // load-bearing would put multi-megabyte stills in people's inboxes.
   const { isOpaque } = await sharp(input).stats();
-  if (!isOpaque)
-    return { data: await pipeline().png().toBuffer(), format: "png" };
+  if (!isOpaque) return encodePng();
+
+  if (metadata.format === "jpeg")
+    return encode(
+      pipeline().jpeg({
+        ...JPEG_SOURCE_OPTIONS,
+        chromaSubsampling: metadata.chromaSubsampling?.startsWith("4:4:4")
+          ? "4:4:4"
+          : "4:2:0",
+      }),
+    );
 
   const [png, jpeg] = await Promise.all([
-    pipeline().png({ compressionLevel: 9 }).toBuffer(),
-    pipeline().jpeg(JPEG_OPTIONS).toBuffer(),
+    encodePng(),
+    encode(pipeline().jpeg(JPEG_OPTIONS)),
   ]);
-  return png.length <= jpeg.length * PNG_SIZE_TOLERANCE
-    ? { data: png, format: "png" }
-    : { data: jpeg, format: "jpeg" };
+  return png.data.length <= jpeg.data.length * PNG_SIZE_TOLERANCE ? png : jpeg;
 }

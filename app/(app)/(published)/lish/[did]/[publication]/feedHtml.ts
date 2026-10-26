@@ -82,6 +82,7 @@ function createFeedRenderContext(
     renderImage(
       blobRefToSrc(b.image.ref, ctx.did, ctx.baseUrl, {
         width: POST_BODY_IMAGE_WIDTH,
+        format: "email",
       }),
       b.alt,
       b.aspectRatio,
