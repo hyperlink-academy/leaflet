@@ -42,6 +42,40 @@ const UNSUB_PLACEHOLDER =
 const MANAGE_PLACEHOLDER =
   "https://placeholder.leaflet.pub/manage-subscription-replace-me";
 
+const WARM_CONCURRENCY = 4;
+const WARM_TIMEOUT_MS = 30_000;
+
+async function warmEmailImages(html: string, assetsBaseUrl: string) {
+  const apiPrefix = `${assetsBaseUrl}/api/`;
+  const urls = [
+    ...new Set(
+      [...html.matchAll(/<img[^>]*?\ssrc="([^"]+)"/g)]
+        .map((m) => m[1].replace(/&amp;/g, "&"))
+        .filter((src) => src.startsWith(apiPrefix)),
+    ),
+  ];
+  const failed: string[] = [];
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: WARM_CONCURRENCY }, async () => {
+      while (next < urls.length) {
+        const url = urls[next++];
+        try {
+          const res = await fetch(url, {
+            redirect: "manual",
+            signal: AbortSignal.timeout(WARM_TIMEOUT_MS),
+          });
+          if (res.status >= 400) failed.push(`${res.status} ${url}`);
+        } catch (e) {
+          failed.push(`${e} ${url}`);
+        }
+      }
+    }),
+  );
+  if (failed.length) console.log("[email] image warm failed", failed);
+  return { warmed: urls.length, failed };
+}
+
 // Inngest's step.run, narrowed to what the broadcast needs. Step results are
 // JSON-serialized, which every value this module memoizes survives unchanged.
 export type RunStep = <T>(id: string, fn: () => Promise<T>) => Promise<T>;
@@ -438,6 +472,10 @@ export async function broadcastPostEmail(
         }),
       );
     });
+
+    await run(`warm-images-${group.key}`, () =>
+      warmEmailImages(htmlTemplate, assetsBaseUrl),
+    );
 
     const bytesPerMessage = Buffer.byteLength(
       JSON.stringify(buildMessage(group.recipients[0], htmlTemplate)),
