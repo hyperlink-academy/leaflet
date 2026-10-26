@@ -6,6 +6,7 @@ import { revalidatePublicationSettingsPaths } from "src/utils/revalidatePublicat
 import { LeafletConfirmEmail } from "emails/leafletConfirmEmail";
 import { Ok, Err, type Result } from "src/result";
 import { loadPaidMembers } from "src/emailPosts/broadcast";
+import { disableEmailSubscription } from "src/subscriptions/email";
 import {
   EMAIL_REGEX,
   generateConfirmationCode,
@@ -218,8 +219,9 @@ export async function clearReplyToEmail(
   return Ok(null);
 }
 
-// Hard delete so the address leaves the owner's list and a later signup starts
-// fresh. Paid members keep their row: it's how their membership gets delivered.
+// Unsubscribes rather than deletes, so a send already in flight can still log
+// its events against the row. Paid members keep their row: it's how their
+// membership gets delivered.
 export async function removeEmailSubscriber(
   publicationUri: string,
   subscriberId: string,
@@ -229,7 +231,7 @@ export async function removeEmailSubscriber(
 
   const { data: subscriber, error: readError } = await supabaseServerClient
     .from("publication_email_subscribers")
-    .select("identity_id, email")
+    .select("id, state, identity_id, email")
     .eq("id", subscriberId)
     .eq("publication", publicationUri)
     .maybeSingle();
@@ -242,13 +244,5 @@ export async function removeEmailSubscriber(
   if ((await loadPaidMembers(publicationUri))(subscriber))
     return Err("paid_member");
 
-  const { error } = await supabaseServerClient
-    .from("publication_email_subscribers")
-    .delete()
-    .eq("id", subscriberId);
-  if (error) {
-    console.error("[newsletterSettings] subscriber delete failed:", error);
-    return Err("database_error");
-  }
-  return Ok(null);
+  return disableEmailSubscription(publicationUri, null, [subscriber]);
 }

@@ -128,7 +128,9 @@ export function PublicationSubscribers(props: {
           {isDefaultStatusFilter ? (
             <>
               <p className="font-bold">No confirmed subscribers yet</p>
-              <p>Change the filter to see unconfirmed or unsubscribed readers.</p>
+              <p>
+                Change the filter to see unconfirmed or unsubscribed readers.
+              </p>
             </>
           ) : (
             <p className="font-bold">No subscribers match your filters!</p>
@@ -280,13 +282,15 @@ const SubscriberListItem = (props: {
           </span>
         )}
         <SubscriberDate createdAt={props.createdAt} />
-        {props.emailSubscriberId && props.memberTier?.kind !== "paid" && (
-          <RemoveEmailMenu
-            publicationUri={props.publicationUri}
-            subscriberId={props.emailSubscriberId}
-            email={props.email}
-          />
-        )}
+        {props.emailSubscriberId &&
+          props.status !== "unsubscribed" &&
+          props.memberTier?.kind !== "paid" && (
+            <RemoveEmailMenu
+              publicationUri={props.publicationUri}
+              subscriberId={props.emailSubscriberId}
+              email={props.email}
+            />
+          )}
       </div>
     </div>
   );
