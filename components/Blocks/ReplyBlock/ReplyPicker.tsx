@@ -7,7 +7,7 @@ import { PubIcon } from "components/ActionBar/Publications";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
 import { resultListKey, stepHighlight } from "components/Combobox";
-import { mainSiteAuthBase } from "src/utils/customDomain";
+import { CreateLeafletAd } from "components/CreateLeafletAd";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { AtUri } from "@atproto/syntax";
@@ -110,58 +110,59 @@ export function ReplyPicker(props: {
         disabled={loading || props.submitting}
         onClick={() => setChoosingPublication(true)}
       >
-        Write a reply post <GoToArrowLined />
+        Write a reply post on Leaflet <GoToArrowLined />
       </ButtonSecondary>
-      <hr className="border-border-light" />
-      <div className="flex flex-col gap-2">
-        <Input
-          autoFocus
-          className="postSearch input-with-border w-full px-2!"
-          placeholder="Search your post or paste a link"
-          value={query}
-          onChange={(e) => setQuery(e.currentTarget.value)}
-          onKeyDown={(e) => {
-            let action = resultListKey(e.key);
-            if (!action) return;
-            e.preventDefault();
-            if (action === "select") {
-              if (active) submit(active.uri);
-            } else {
-              let uris = selectable.map((c) => c.uri);
-              setHighlighted(stepHighlight(uris, active?.uri, action) ?? null);
-            }
-          }}
-          autoComplete="off"
-          role="combobox"
-          aria-expanded
-          aria-controls={listId}
-          aria-activedescendant={active ? optionId(active.uri) : undefined}
-        />
-        <div
-          id={listId}
-          role="listbox"
-          className="postSearchResults flex flex-col overflow-y-auto gap-0.5"
-          style={{ height: VISIBLE_ROWS * ROW_HEIGHT_PX }}
-        >
-          {pastedUrl
-            ? !link
-              ? message(<Spinner />)
-              : link.ok
-                ? row(link.value)
-                : message(link.error)
-            : matches.length > 0
-              ? matches.map(row)
-              : message(
-                  loading ? (
-                    <Spinner />
-                  ) : props.candidates.length === 0 ? (
-                    "You haven't published any posts yet."
-                  ) : (
-                    "No posts match that title."
-                  ),
-                )}
-        </div>
-      </div>
+      {!loading && props.candidates.length === 0 ? null : (
+        <>
+          {" "}
+          <hr />
+          <div className="flex flex-col gap-2">
+            <Input
+              autoFocus
+              className="postSearch input-with-border w-full px-2!"
+              placeholder="Search your posts or paste a link"
+              value={query}
+              onChange={(e) => setQuery(e.currentTarget.value)}
+              onKeyDown={(e) => {
+                let action = resultListKey(e.key);
+                if (!action) return;
+                e.preventDefault();
+                if (action === "select") {
+                  if (active) submit(active.uri);
+                } else {
+                  let uris = selectable.map((c) => c.uri);
+                  setHighlighted(
+                    stepHighlight(uris, active?.uri, action) ?? null,
+                  );
+                }
+              }}
+              autoComplete="off"
+              role="combobox"
+              aria-expanded
+              aria-controls={listId}
+              aria-activedescendant={active ? optionId(active.uri) : undefined}
+            />
+            <div
+              id={listId}
+              role="listbox"
+              className="postSearchResults flex flex-col overflow-y-auto gap-0.5"
+              style={{ height: VISIBLE_ROWS * ROW_HEIGHT_PX }}
+            >
+              {pastedUrl
+                ? !link
+                  ? message(<Spinner />)
+                  : link.ok
+                    ? row(link.value)
+                    : message(link.error)
+                : matches.length > 0
+                  ? matches.map(row)
+                  : message(
+                      loading ? <Spinner /> : "No posts match that title.",
+                    )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -329,11 +330,7 @@ export function ReplyPublicationSelector(props: {
           );
         })}
       </div>
-      {props.publications.length === 0 && (
-        <a className="text-sm" href={`${mainSiteAuthBase()}/lish/createPub`}>
-          Don't have a blog yet? Start one with Leaflet!
-        </a>
-      )}
+      {props.publications.length === 0 && <CreateLeafletAd />}
     </div>
   );
 }
