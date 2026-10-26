@@ -58,7 +58,7 @@ so convert accordingly (hex ↔ `r, g, b` triple ↔ `rgb(r, g, b)` string).
    expression, **not** a triple — match `BaseThemeProvider`'s runtime fallback.
    Note `--bg-leaflet` = outer/page background (`#FDFCFA`), `--bg-page` = card
    (`#FFFFFF`).
-4. **`emails/shared.tsx`** — `defaultEmailTheme` (`rgb(...)` strings) *and* the
+4. **`emails/shared.tsx`** — `defaultEmailTheme` (hex strings) *and* the
    `@react-email` tailwind `colors` block lower in the same file. Gmail strips
    `color-mix()`, so `highlight-1` here must be a **literal** rgb resolved via the
    same math `mixRgb`/`defaultHighlightBackground` uses:

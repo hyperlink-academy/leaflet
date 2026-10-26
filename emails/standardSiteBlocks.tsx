@@ -1,4 +1,4 @@
-import { Column, Img, Link, Row, Section } from "@react-email/components";
+import { Column, Img, Row, Section } from "@react-email/components";
 import { AtUri } from "@atproto/syntax";
 import React, { type CSSProperties } from "react";
 import type { StandardSitePostData } from "app/api/rpc/[command]/get_standard_site_posts";
@@ -15,6 +15,7 @@ import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { resolveEmailTheme } from "./fromPublication";
 import {
   bgcolorAttr,
+  Link,
   pickAccentContrast,
   resolveColors,
   type EmailTheme,
@@ -75,7 +76,7 @@ const resolveCardTheme = (
   const bgPage = resolved?.pageBackground
     ? t.pageBackground
     : isStandalone
-      ? "rgb(255, 255, 255)"
+      ? "#ffffff"
       : t.backgroundColor;
   return {
     ...t,

@@ -1,8 +1,7 @@
-import { render } from "@react-email/render";
 import type { AppBskyFeedDefs } from "@atproto/api";
 import { supabaseServerClient } from "supabase/serverClient";
 import { PostEmail, type PostEmailPage } from "emails/post";
-import { compactEmailHtml } from "emails/compactHtml";
+import { renderEmail } from "emails/renderEmail";
 import { emailPropsFromPublication } from "emails/fromPublication";
 import {
   PubLeafletContent,
@@ -449,7 +448,7 @@ export async function broadcastPostEmail(
     // Render once per group with a placeholder, then string-replace per
     // recipient.
     const htmlTemplate = await run(`render-template-${group.key}`, async () => {
-      return render(
+      return renderEmail(
         PostEmail({
           ...pubProps,
           postTitle: args.postTitle,
@@ -471,7 +470,7 @@ export async function broadcastPostEmail(
           manageUrl: MANAGE_PLACEHOLDER,
           membersUpsell: group.upsell ? membersUpsell : undefined,
         }),
-      ).then(compactEmailHtml);
+      );
     });
 
     await run(`warm-images-${group.key}`, () =>

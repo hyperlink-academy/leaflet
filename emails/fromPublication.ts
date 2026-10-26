@@ -1,4 +1,4 @@
-import { defaultEmailTheme, type EmailTheme } from "./shared";
+import { defaultEmailTheme, rgbHex, type EmailTheme } from "./shared";
 import type { PubLeafletPublication } from "lexicons/api";
 import type * as SiteStandardThemeBasic from "lexicons/api/types/site/standard/theme/basic";
 import { resolvePublicationTheme } from "lexicons/src/normalize";
@@ -18,7 +18,7 @@ const colorToCss = (color: unknown, fallback: string): string => {
   if (c.$type === "pub.leaflet.theme.color#rgba") {
     return `rgba(${c.r}, ${c.g}, ${c.b}, ${(c.a ?? 100) / 100})`;
   }
-  return `rgb(${c.r}, ${c.g}, ${c.b})`;
+  return rgbHex(c.r, c.g ?? 0, c.b ?? 0);
 };
 
 export const resolveEmailTheme = (

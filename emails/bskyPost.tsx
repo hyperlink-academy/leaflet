@@ -1,11 +1,4 @@
-import {
-  Column,
-  Img,
-  Link,
-  Row,
-  Section,
-  Text as ReactEmailText,
-} from "@react-email/components";
+import { Column, Img, Row, Section } from "@react-email/components";
 import {
   AppBskyEmbedExternal,
   AppBskyEmbedImages,
@@ -20,7 +13,9 @@ import {
 } from "@atproto/api";
 import React, { type CSSProperties } from "react";
 import {
+  Link,
   makeEmailIconUrl,
+  Paragraph,
   renderTextWithBreaks,
   type EmailTheme,
   type ResolvedColors,
@@ -108,7 +103,7 @@ export const BskyPostEmailBlock = ({
   if (hasPwiOptOut(post.author)) {
     return (
       <Card colors={colors}>
-        <ReactEmailText
+        <Paragraph
           style={{
             color: colors.tertiary,
             fontFamily: theme.bodyFont,
@@ -120,10 +115,8 @@ export const BskyPostEmailBlock = ({
         >
           The author of this post has requested their posts not be displayed on
           external sites.
-        </ReactEmailText>
-        <ReactEmailText
-          style={{ fontSize: 14, lineHeight: 1.4, margin: "4px 0 0" }}
-        >
+        </Paragraph>
+        <Paragraph style={{ fontSize: 14, lineHeight: 1.4, margin: "4px 0 0" }}>
           <Link
             href={url}
             style={{
@@ -134,7 +127,7 @@ export const BskyPostEmailBlock = ({
           >
             See the full post on Bluesky
           </Link>
-        </ReactEmailText>
+        </Paragraph>
       </Card>
     );
   }
@@ -244,7 +237,7 @@ const PostByline = ({
   url: string;
   ctx: EmailCtx;
 }) => (
-  <ReactEmailText
+  <Paragraph
     style={{
       fontFamily: ctx.theme.bodyFont,
       fontSize: 14,
@@ -263,7 +256,7 @@ const PostByline = ({
         <span style={{ color: ctx.colors.tertiary }}> · {dateLabel}</span>
       ) : null}
     </Link>
-  </ReactEmailText>
+  </Paragraph>
 );
 
 // Port of BlueskyRichText: link/mention/tag facets become accent links,
@@ -318,7 +311,7 @@ const BskyRichTextEmail = ({
     }
   }
   return (
-    <ReactEmailText
+    <Paragraph
       style={{
         color: ctx.colors.secondary,
         fontFamily: ctx.theme.bodyFont,
@@ -328,7 +321,7 @@ const BskyRichTextEmail = ({
       }}
     >
       {nodes}
-    </ReactEmailText>
+    </Paragraph>
   );
 };
 
@@ -452,7 +445,7 @@ const ImagesEmbed = ({
         />
       </Link>
       {remaining > 0 ? (
-        <ReactEmailText
+        <Paragraph
           style={{
             fontFamily: ctx.theme.bodyFont,
             fontSize: 14,
@@ -469,7 +462,7 @@ const ImagesEmbed = ({
           >
             +{remaining} more — view on Bluesky
           </Link>
-        </ReactEmailText>
+        </Paragraph>
       ) : null}
     </>
   );
@@ -609,7 +602,7 @@ const VideoEmbed = ({
         />
       </Link>
     ) : null}
-    <ReactEmailText
+    <Paragraph
       style={{
         fontFamily: ctx.theme.bodyFont,
         fontSize: 14,
@@ -627,7 +620,7 @@ const VideoEmbed = ({
       >
         ▶ Watch on Bluesky
       </Link>
-    </ReactEmailText>
+    </Paragraph>
   </>
 );
 

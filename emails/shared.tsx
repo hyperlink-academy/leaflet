@@ -1,5 +1,5 @@
-import { Head, Img, Link, pixelBasedPreset } from "@react-email/components";
-import React from "react";
+import { Head, Img, pixelBasedPreset } from "@react-email/components";
+import React, { type ComponentProps } from "react";
 import { compareColors } from "components/ThemeManager/themeUtils";
 
 export type EmailTheme = {
@@ -18,11 +18,11 @@ export type EmailTheme = {
 };
 
 export const defaultEmailTheme: EmailTheme = {
-  primary: "rgb(39, 39, 39)",
-  pageBackground: "rgb(255, 255, 255)",
-  backgroundColor: "rgb(253, 252, 250)",
-  accentBackground: "rgb(87, 130, 43)",
-  accentText: "rgb(255, 255, 255)",
+  primary: "#272727",
+  pageBackground: "#FFFFFF",
+  backgroundColor: "#FDFCFA",
+  accentBackground: "#57822B",
+  accentText: "#FFFFFF",
   headingFont: "Georgia, serif",
   bodyFont: "Verdana, sans-serif",
   pageWidth: 624,
@@ -56,7 +56,10 @@ const parseColor = (input: string): [number, number, number] => {
   return [0, 0, 0];
 };
 
-// Linear sRGB mix of two colors. We resolve theme tints to literal rgb() at
+export const rgbHex = (r: number, g: number, b: number) =>
+  `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+
+// Linear sRGB mix of two colors. We resolve theme tints to literal colors at
 // render time because Gmail's CSS sanitizer drops `color-mix(...)` —
 // leaving borders invisible and tinted text falling back to defaults.
 // Linear mixing isn't perceptually identical to the oklab original, but
@@ -65,10 +68,8 @@ export const mixRgb = (a: string, b: string, bPercent: number): string => {
   const [ar, ag, ab] = parseColor(a);
   const [br, bg, bb] = parseColor(b);
   const t = bPercent / 100;
-  const round = (x: number) => Math.round(x);
-  return `rgb(${round(ar * (1 - t) + br * t)}, ${round(
-    ag * (1 - t) + bg * t,
-  )}, ${round(ab * (1 - t) + bb * t)})`;
+  const mix = (x: number, y: number) => Math.round(x * (1 - t) + y * t);
+  return rgbHex(mix(ar, br), mix(ag, bg), mix(ab, bb));
 };
 
 // Mirrors BaseThemeProvider's `--accent-contrast` selection: of the two
@@ -239,6 +240,25 @@ export const confirmEmailTailwindConfig = {
     },
   },
 };
+
+export const Paragraph = ({ style, ...props }: ComponentProps<"p">) => (
+  <p
+    {...props}
+    style={{ fontSize: "14px", lineHeight: "24px", margin: "16px 0", ...style }}
+  />
+);
+
+export const Link = ({
+  target = "_blank",
+  style,
+  ...props
+}: ComponentProps<"a">) => (
+  <a
+    {...props}
+    target={target}
+    style={{ color: "#067df7", textDecoration: "none", ...style }}
+  />
+);
 
 // Wraps `<Head>` with the viewport meta that prevents iOS Mail / Gmail iOS
 // from auto-shrinking the email to fit a wider-than-viewport layout (which

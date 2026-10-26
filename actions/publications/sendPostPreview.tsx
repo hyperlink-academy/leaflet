@@ -1,6 +1,5 @@
 "use server";
 
-import { render } from "@react-email/render";
 import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { getCurrentDeploymentDomain } from "src/utils/getCurrentDeploymentDomain";
@@ -8,7 +7,7 @@ import { Ok, Err, type Result } from "src/result";
 import { EMAIL_REGEX } from "src/utils/confirmationEmail";
 import { hydrateBskyPostBlocks } from "src/utils/fetchBskyPosts";
 import { fetchStandardSiteBlockData } from "src/utils/fetchStandardSiteBlockData";
-import { compactEmailHtml } from "emails/compactHtml";
+import { renderEmail } from "emails/renderEmail";
 import { PostEmail } from "emails/post";
 import { isConfirmedContributor } from "src/contributorPermissions";
 import { draftContributorDids, draftPagesForEmail } from "src/emailPosts/draft";
@@ -91,7 +90,7 @@ export async function sendPostPreview(args: {
 
   let html: string;
   try {
-    html = await render(
+    html = await renderEmail(
       PostEmail({
         ...pubProps,
         postTitle: args.title || "(untitled)",
@@ -115,7 +114,7 @@ export async function sendPostPreview(args: {
         assetsBaseUrl,
         // Omitting unsubscribeUrl triggers the "(preview)" footer branch.
       }),
-    ).then(compactEmailHtml);
+    );
   } catch (e) {
     console.error("[sendPostPreview] render failed:", e);
     return Err("render_failed");

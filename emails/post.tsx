@@ -11,8 +11,6 @@ import {
   Hr,
   Html,
   Img,
-  Link,
-  Text as ReactEmailText,
   Section,
   Row,
   CodeBlock as ReactEmailCodeBlock,
@@ -54,11 +52,14 @@ import {
   bgcolorAttr,
   defaultEmailTheme,
   LeafletWatermark,
+  Link,
   MailHead,
   makeEmailIconUrl,
   makeStaticUrl,
   mixRgb,
+  Paragraph,
   renderTextWithBreaks,
+  rgbHex,
   resolveColors,
   type EmailTheme,
   type ResolvedColors,
@@ -895,7 +896,7 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                         </ReactEmailHeading>
 
                         {p.postDescription ? (
-                          <ReactEmailText
+                          <Paragraph
                             style={{
                               color: c.secondary,
                               fontFamily: theme.bodyFont,
@@ -906,7 +907,7 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                             }}
                           >
                             {p.postDescription}
-                          </ReactEmailText>
+                          </Paragraph>
                         ) : null}
 
                         {byline ? (
@@ -915,7 +916,7 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                           >
                             <Row style={{ minWidth: "100%" }}>
                               <Column style={{ verticalAlign: "middle" }}>
-                                <ReactEmailText
+                                <Paragraph
                                   style={{
                                     color: c.tertiary,
                                     fontFamily: theme.bodyFont,
@@ -925,7 +926,7 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                                   }}
                                 >
                                   {byline}
-                                </ReactEmailText>
+                                </Paragraph>
                               </Column>
                               {p.postUrl ? (
                                 <>
@@ -1275,7 +1276,7 @@ const BlockRenderer = ({
   );
   const handlers: BlockHandlers<React.ReactNode> = {
     "pub.leaflet.blocks.text": (block) => (
-      <ReactEmailText
+      <Paragraph
         style={{
           color: theme.primary,
           fontFamily: theme.bodyFont,
@@ -1295,7 +1296,7 @@ const BlockRenderer = ({
         ) : (
           " "
         )}
-      </ReactEmailText>
+      </Paragraph>
     ),
     "pub.leaflet.blocks.header": (block) => {
       const level = Math.min(3, Math.max(1, Math.floor(block.level ?? 1))) as
@@ -1330,7 +1331,7 @@ const BlockRenderer = ({
           <Column style={{ width: 2, backgroundColor: colors.border }} />
           <Column style={{ width: 8 }} />
           <Column>
-            <ReactEmailText
+            <Paragraph
               style={{
                 color: theme.primary,
                 fontFamily: theme.bodyFont,
@@ -1346,7 +1347,7 @@ const BlockRenderer = ({
                 theme={theme}
                 assetsBaseUrl={assetsBaseUrl}
               />
-            </ReactEmailText>
+            </Paragraph>
           </Column>
         </Row>
       </Section>
@@ -1604,7 +1605,7 @@ const BlockDataNotFound = ({
   bordered?: boolean;
 }) => {
   const text = (
-    <ReactEmailText
+    <Paragraph
       style={{
         color: colors.tertiary,
         fontFamily: theme.bodyFont,
@@ -1615,7 +1616,7 @@ const BlockDataNotFound = ({
       }}
     >
       {label}
-    </ReactEmailText>
+    </Paragraph>
   );
   if (!bordered) return text;
   return (
@@ -1645,7 +1646,7 @@ export const Text = (props: {
 }) => {
   const fontSize = props.small ? 14 : 16;
   return (
-    <ReactEmailText
+    <Paragraph
       className={props.className}
       style={{
         fontSize,
@@ -1655,7 +1656,7 @@ export const Text = (props: {
       }}
     >
       {props.children}
-    </ReactEmailText>
+    </Paragraph>
   );
 };
 
@@ -2803,7 +2804,7 @@ const InteractionEmailBlock = ({
     }}
   >
     {prompt ? (
-      <ReactEmailText
+      <Paragraph
         style={{
           color: theme.primary,
           fontFamily: theme.bodyFont,
@@ -2815,7 +2816,7 @@ const InteractionEmailBlock = ({
         }}
       >
         {prompt}
-      </ReactEmailText>
+      </Paragraph>
     ) : null}
     {inputPlaceholder ? (
       <Link
@@ -2963,7 +2964,7 @@ const BlockNotSupported = ({
         padding: "16px 12px",
       }}
     >
-      <ReactEmailText
+      <Paragraph
         style={{
           color: c.tertiary,
           fontFamily: theme.bodyFont,
@@ -2975,9 +2976,9 @@ const BlockNotSupported = ({
         }}
       >
         This media isn't supported in email...
-      </ReactEmailText>
+      </Paragraph>
       {postUrl ? (
-        <ReactEmailText
+        <Paragraph
           style={{
             fontSize: 14,
             lineHeight: 1.4,
@@ -2995,7 +2996,7 @@ const BlockNotSupported = ({
           >
             See full post
           </Link>
-        </ReactEmailText>
+        </Paragraph>
       ) : null}
     </Section>
   );
@@ -3034,7 +3035,7 @@ const MembersUpsell = ({
         padding: "20px 12px",
       }}
     >
-      <ReactEmailText
+      <Paragraph
         style={{
           color: theme.primary,
           fontFamily: theme.bodyFont,
@@ -3046,8 +3047,8 @@ const MembersUpsell = ({
         }}
       >
         This post is for members
-      </ReactEmailText>
-      <ReactEmailText
+      </Paragraph>
+      <Paragraph
         style={{
           color: c.secondary,
           fontFamily: theme.bodyFont,
@@ -3059,7 +3060,7 @@ const MembersUpsell = ({
       >
         Subscribe to see the full content — become a member of {publicationName}
         {priceLabel ? ` starting at ${priceLabel}/month` : ""}.
-      </ReactEmailText>
+      </Paragraph>
       {/* Bulletproof centered button — same table pattern as ButtonBlock. */}
       <table
         role="presentation"
@@ -3170,12 +3171,12 @@ function highlightFacetBackground(
   const a = (color as { a?: number }).a;
   return typeof a === "number"
     ? `rgba(${r}, ${g}, ${b}, ${a / 100})`
-    : `rgb(${r}, ${g}, ${b})`;
+    : rgbHex(r, g, b);
 }
 
 // Mirrors the web's default --highlight-1:
 //   color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 75%)
-// Gmail strips color-mix(), so we resolve it to a literal rgb() at render time.
+// Gmail strips color-mix(), so we resolve it to a literal color at render time.
 const defaultHighlightBackground = (theme: EmailTheme): string =>
   mixRgb(theme.accentBackground, theme.pageBackground, 75);
 
