@@ -245,8 +245,7 @@ export async function removeEmailSubscriber(
   const { error } = await supabaseServerClient
     .from("publication_email_subscribers")
     .delete()
-    .eq("id", subscriberId)
-    .eq("publication", publicationUri);
+    .eq("id", subscriberId);
   if (error) {
     console.error("[newsletterSettings] subscriber delete failed:", error);
     return Err("database_error");

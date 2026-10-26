@@ -345,17 +345,14 @@ function RemoveEmailMenu(props: {
                   props.publicationUri,
                   props.subscriberId,
                 );
-                if (!res.ok) {
-                  toaster({
-                    content:
-                      res.error === "paid_member"
-                        ? "Paid members can't be removed from the list"
-                        : "Couldn't remove this email",
-                    type: "error",
-                  });
-                  return;
-                }
-                router.refresh();
+                if (res.ok) return router.refresh();
+                toaster({
+                  content:
+                    res.error === "paid_member"
+                      ? "Paid members can't be removed from the list"
+                      : "Couldn't remove this email",
+                  type: "error",
+                });
               })
             }
           >

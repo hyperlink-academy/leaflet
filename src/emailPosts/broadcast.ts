@@ -553,17 +553,21 @@ export async function broadcastPostEmail(
         // An owner can delete a subscriber row mid-send; its events would
         // violate the FK forever and strand every later chunk.
         if (error?.code === "23503") {
-          const { data: remaining } = await supabaseServerClient
+          const remaining = await supabaseServerClient
             .from("publication_email_subscribers")
             .select("id")
             .in(
               "id",
               rows.map((r) => r.subscriber),
             );
-          const ids = new Set((remaining ?? []).map((r) => r.id));
-          ({ error } = await supabaseServerClient
-            .from("publication_email_subscriber_events")
-            .insert(rows.filter((r) => ids.has(r.subscriber))));
+          const ids = new Set(remaining.data?.map((r) => r.id));
+          error =
+            remaining.error ??
+            (
+              await supabaseServerClient
+                .from("publication_email_subscriber_events")
+                .insert(rows.filter((r) => ids.has(r.subscriber)))
+            ).error;
         }
         if (error) {
           throw new Error(
