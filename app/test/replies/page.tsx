@@ -124,7 +124,6 @@ const longTarget: ReplyTarget = {
 
 const noop = async () => {};
 
-// Links containing "/p/" resolve to an older post; anything else isn't found.
 const resolveLink = async (url: string) => {
   await new Promise((r) => setTimeout(r, 500));
   return url.includes("/p/")

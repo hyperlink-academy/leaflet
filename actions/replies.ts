@@ -46,8 +46,8 @@ export async function getDocumentReplies(
   return loadDocumentReplies(subject, identity?.atp_did ?? null);
 }
 
-// The viewer's own recent documents, offered as things to reply to `subject`
-// with, plus the Leaflet publications they could write a new one in.
+// The viewer's own recent documents, offered as things to reply with, plus
+// the Leaflet publications they could write a new one in.
 export async function getReplyCandidates(subject: string) {
   const identity = await getAuthIdentity();
   if (!identity?.atp_did) return { candidates: [], publications: [] };
@@ -105,8 +105,6 @@ function replyCandidate(
   };
 }
 
-// Looks up a pasted link to one of the viewer's posts, so it can be shown like
-// the other candidates before it's submitted as a reply to `subject`.
 export async function resolveReplyLink(args: {
   subject: string;
   url: string;
@@ -153,8 +151,6 @@ export async function resolveReplyLink(args: {
   return Ok({ ...candidate, title: candidate.title || "Untitled" });
 }
 
-// Why `document` can't be submitted as a reply to `subject`, short of it
-// having been submitted already.
 function replyDocumentError(
   document: string | null,
   did: string,
@@ -201,8 +197,6 @@ export async function getReplyTarget(subject: string) {
   return loadReplyTarget(subject);
 }
 
-// Unlinks one of the viewer's drafts from the post it was started as a reply
-// to, so publishing it doesn't submit it. Only whoever linked it can.
 export async function withdrawReplyDraft(
   leaflet: string,
 ): Promise<Result<null, ReplyError>> {
@@ -236,8 +230,6 @@ export type ReplyError =
     }
   | OAuthSessionError;
 
-// Submits one of the viewer's own documents, by at-uri, as a reply to
-// `subject`. Submitting the same document twice is an error.
 export async function submitReply(args: {
   subject: string;
   // Key of the reply block submitted through
@@ -330,8 +322,6 @@ async function revalidateReply(reply: { subject: string; document?: string }) {
   );
 }
 
-// Rejects one reply on the viewer's own document, pending or accepted: it
-// drops out of every list.
 export async function rejectReply(args: {
   subject: string;
   reply: string;
@@ -476,7 +466,6 @@ export async function setReplyVisible(args: {
   return Ok(null);
 }
 
-// Once per reply, so hiding and re-accepting it doesn't notify again.
 async function notifyReplyAccepted(
   recipient: string,
   reply_uri: string,

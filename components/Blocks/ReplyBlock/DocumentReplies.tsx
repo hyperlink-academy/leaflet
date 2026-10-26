@@ -41,7 +41,6 @@ const replyErrorMessages: Partial<Record<ReplyError["type"], string>> = {
   replies_closed: "This post isn't taking replies.",
 };
 
-// Replies to a published document
 export function DocumentReplies(props: {
   documentUri: string;
   block: string | null;

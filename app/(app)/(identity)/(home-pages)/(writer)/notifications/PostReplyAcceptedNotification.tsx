@@ -13,7 +13,6 @@ export const PostReplyAcceptedNotification = (
 
   if (!docRecord) return null;
 
-  // Links to the post's replies, where the accepted reply now shows.
   const href =
     getDocumentURL(docRecord, props.document_uri, pubRecord) +
     `#${props.anchor}`;

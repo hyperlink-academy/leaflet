@@ -12,18 +12,12 @@ import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { ProfilePopover } from "components/ProfilePopover";
 import type { ReplyTarget } from "src/documentReplies";
 
-// What published `document` has been submitted as a reply to, as the viewer
-// may see it: pending submissions too, if it's theirs. Undefined until loaded
-// or when `document` is null.
 export function useDocumentReplyTargets(document: string | null | undefined) {
   return useSWR(document ? ["document_reply_targets", document] : null, () =>
     getDocumentReplyTargets(document!),
   ).data;
 }
 
-// What an editor draft replies to. Once published, that's what its document
-// was actually submitted to; before, the post it was started from, which it'll
-// be submitted to on first publish.
 export function useDraftReplyTargets(
   linkedSubject: string | null | undefined,
   document: string | null | undefined,
@@ -37,13 +31,9 @@ export function useDraftReplyTargets(
   return linked ? [linked] : [];
 }
 
-// Marks a post, draft or published, as a reply to others: one row per post it
-// replies to, each linking to that post.
 export function ReplyingTo(props: {
   targets: ReplyTarget[];
-  // From the editor, so following the link doesn't leave the draft
   newTab?: boolean;
-  // Only passed when the viewer can withdraw; resolves whether it worked
   onWithdraw?: (target: ReplyTarget) => Promise<boolean>;
   className?: string;
 }) {
@@ -58,8 +48,6 @@ export function ReplyingTo(props: {
           key={target.uri}
           className="light-container w-full px-3 py-2 text-sm text-secondary flex items-center gap-2"
         >
-          {/* The post and its author truncate to keep the row on one line;
-              on mobile there's only room for the post. */}
           <div className="grow flex items-center gap-1 min-w-0">
             <span className="shrink-0 pr-0.5">In reply to</span>
             <a

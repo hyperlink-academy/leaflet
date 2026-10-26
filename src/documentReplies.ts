@@ -53,15 +53,10 @@ export type DocumentReply = {
   post: StandardSitePostData;
 };
 
-// One of the viewer's unpublished drafts that publishing will submit as a
-// reply.
 export type ReplyDraft = {
-  // The draft's permission token, which its editor URL is keyed by
   leaflet: string;
   title: string;
-  // Key of the reply block it was started from, as on DocumentReply
   block: string | null;
-  // As on a published reply's post, so the draft can wear its theme
   publication: StandardSitePostData["publication"];
 };
 
@@ -73,9 +68,8 @@ export type DocumentReplies = {
 };
 
 // Readers get the replies the author made visible plus their own
-// submissions and drafts; the author gets everything, pending included.
-// Rejected replies go to no one: the replier was notified instead. A null
-// viewer gets the public list, which is what cached pages render.
+// submissions; the author gets everything, pending included. A null viewer
+// gets the public list, which is what cached pages render.
 export async function loadDocumentReplies(
   subject: string,
   viewer: string | null,
@@ -168,9 +162,6 @@ export async function loadDocumentReplies(
   };
 }
 
-// The drafts the viewer linked as replies to `subject`, with the raw block
-// key they were started from. A published draft whose reply failed to submit
-// keeps its link for the next publish, but isn't a draft here.
 async function loadReplyDrafts(
   subject: string,
   viewer: string,
@@ -212,25 +203,17 @@ export const replyBlocksOf = (document: NormalizedDocument | null) =>
     ids.PubLeafletBlocksReply,
   );
 
-// A post another post replies to, as the "in reply to" indicator shows it.
 export type ReplyTarget = {
   uri: string;
   title: string;
   href: string;
   publication: { name: string; icon: string | null } | null;
-  // Null when the author's profile doesn't resolve
   authorHandle: string | null;
   authorAvatar: string | null;
-  // The pub.leaflet.interactions.reply record submitting the replying post to
-  // this one; null until it's been submitted
   replyUri: string | null;
-  // Not yet approved by this post's author: submitted and waiting, or, for an
-  // unpublished draft, to be submitted when it's published
   pending: boolean;
 };
 
-// A document with its publication, as getPostPageData and getReplyTarget
-// select it.
 type ReplyTargetDocument = {
   uri: string;
   data: Json;
@@ -312,9 +295,6 @@ export async function acceptedReplyTargets(
   );
 }
 
-// The posts published `document` has been submitted as a reply to. Its author
-// also sees the ones still pending, the same as the reply blocks show them
-// their own pending submissions.
 export async function documentReplyTargets(
   document: string,
   viewer: string | null,
@@ -371,8 +351,7 @@ export async function subjectReplyBlock(
   );
 }
 
-// The post an unpublished reply draft answers, for the editor's "in reply to"
-// indicator; it's submitted when the draft is first published.
+// The post a reply draft answers, for the editor's "Replying to" indicator.
 export async function getReplyTarget(
   subject: string,
 ): Promise<ReplyTarget | null> {

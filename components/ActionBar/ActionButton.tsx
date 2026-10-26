@@ -18,7 +18,6 @@ export const ActionButton = forwardRef<
     active?: boolean;
     className?: string;
     subtext?: string;
-    // Shown at the far end, alongside the label
     trailing?: React.ReactNode;
     labelOnMobile?: boolean;
     z?: boolean;

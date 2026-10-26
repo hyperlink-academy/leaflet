@@ -670,13 +670,10 @@ export type HydratedPostReplyAcceptedNotification = Awaited<
   ReturnType<typeof hydratePostReplyAcceptedNotifications>
 >[0];
 
-// A reader replied to the recipient's post: the replier's profile.
 function hydratePostReplyNotifications(notifications: NotificationRow[]) {
   return hydrateReplyNotifications(notifications, "post_reply", (r) => r.replier_did);
 }
 
-// An author accepted the recipient's reply to document_uri: the author's
-// profile.
 function hydratePostReplyAcceptedNotifications(notifications: NotificationRow[]) {
   return hydrateReplyNotifications(notifications, "post_reply_accepted", (r) => new AtUri(r.subject).host);
 }

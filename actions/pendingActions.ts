@@ -5,9 +5,6 @@ import { loadPendingActions } from "src/pendingActions";
 import type { PublicationsPendingActions } from "src/pendingActionKinds";
 import { supabaseServerClient } from "supabase/serverClient";
 
-// What's waiting on the viewer across the publications they own, by
-// publication and then post. Only an owner acts on its posts' questions and
-// replies, so contributors' publications aren't included.
 export async function getMyPendingActions(): Promise<PublicationsPendingActions> {
   const identity = await getAuthIdentity();
   if (!identity?.atp_did) return {};

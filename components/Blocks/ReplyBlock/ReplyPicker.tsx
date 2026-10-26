@@ -16,7 +16,6 @@ import { Err, type Result } from "src/result";
 import { GoToArrowLined } from "components/Icons/GoToArrowLined";
 
 export type ReplyCandidate = {
-  // at-uri of one of the viewer's own documents
   uri: string;
   title: string;
   date?: React.ReactNode;
@@ -38,8 +37,6 @@ export function ReplyPicker(props: {
   publications?: ReplyPublication[];
   submitting?: boolean;
   onSubmit: (uri: string) => void;
-  // Looks up a pasted link to one of the viewer's posts; errors are messages
-  // to show in its place.
   resolveLink: (url: string) => Promise<Result<ReplyCandidate, string>>;
   onCreateDraft: (publication_uri: string | null) => Promise<void>;
 }) {
@@ -67,8 +64,6 @@ export function ReplyPicker(props: {
   );
   let rows = pastedUrl ? (link?.ok ? [link.value] : []) : matches;
   let selectable = rows.filter((c) => !c.submitted);
-  // Falls back to the first selectable row whenever the highlighted one is
-  // filtered out, so Enter always picks something visible.
   let active =
     selectable.find((c) => c.uri === highlighted) ?? selectable[0] ?? null;
   let optionId = (uri: string) =>
@@ -183,8 +178,6 @@ function isUrl(text: string) {
   }
 }
 
-// The resolved link once the lookup for the current `url` settles, so a slow
-// lookup for an earlier paste can't show in place of the latest one.
 function useResolvedLink(
   url: string | null,
   resolve: (url: string) => Promise<Result<ReplyCandidate, string>>,
@@ -198,7 +191,6 @@ function useResolvedLink(
   useEffect(() => {
     if (!url) return;
     let stale = false;
-    // Debounced so typing a URL out doesn't look up every prefix of it.
     let handler = setTimeout(async () => {
       let result = await resolveRef
         .current(url)

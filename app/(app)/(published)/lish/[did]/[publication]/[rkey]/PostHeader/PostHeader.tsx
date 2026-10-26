@@ -61,8 +61,6 @@ export function PostHeader(props: {
     !!document?.uri &&
     !!identity?.atp_did &&
     isDocumentOwner(document.uri, identity.atp_did);
-  // The page is cached for everyone, so it carries only accepted replies; the
-  // post's author also fetches the ones still pending.
   let ownReplyTargets = useDocumentReplyTargets(
     ownsPost ? document?.uri : null,
   );

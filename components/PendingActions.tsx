@@ -12,9 +12,6 @@ import {
   type PostPendingActions,
 } from "src/pendingActionKinds";
 
-// What's waiting on the viewer in each publication they own, by post. One
-// request for the whole sidebar and dashboard; revalidates on focus, so acting
-// on a post in another tab clears it here.
 function useMyPendingActions() {
   let { identity } = useIdentityData();
   let did = identity?.atp_did;
@@ -25,14 +22,11 @@ function useMyPendingActions() {
   );
 }
 
-// One publication's pending items, by post uri.
 export function usePublicationPendingActions(publication: string | undefined) {
   let actions = useMyPendingActions();
   return (publication && actions[publication]) || {};
 }
 
-// Shown while anything in `publication` is waiting on the viewer; nothing
-// otherwise.
 export function PendingActionsIndicator(props: { publication: string }) {
   let actions = combinePendingActions(
     usePublicationPendingActions(props.publication),
@@ -48,8 +42,6 @@ export function PendingActionsIndicator(props: { publication: string }) {
   );
 }
 
-// How many items on one post are waiting on the viewer; opens a list of them
-// with a link to the post, where they're dealt with.
 export function PendingActionsCount(props: {
   actions?: PostPendingActions;
   postUrl: string;

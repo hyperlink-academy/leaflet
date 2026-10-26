@@ -38,7 +38,7 @@ export const get_leaflet_data = makeRoute({
     type t = typeof res;
     type data = Exclude<t["data"], null>;
 
-    //All of these shenanigans are to make entity_set (and reply_drafts, which only the editor reads) optional so that we don't have to write it when we create this data elsewhere, mainly in LeafletList
+    //All of these shenanigans are to make entity_set optional so that we don't have to write it when we create this data elsewhere, mainly in LeafletList
     return {
       result: res as Omit<t, "data"> & {
         data:

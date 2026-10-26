@@ -1,12 +1,9 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import type { PendingActionKind, PendingActions } from "src/pendingActionKinds";
 
-// Counts one kind of pending item on each of `documents`, keyed by document
-// uri; documents with none can be left out.
 type PendingCounter = (documents: string[]) => Promise<Map<string, number>>;
 
 const counters: Record<PendingActionKind, PendingCounter> = {
-  // Replies the author hasn't accepted or rejected
   replies: async (documents) => {
     const [{ data: replies }, { data: accepted }, { data: rejected }] =
       await Promise.all([
@@ -31,8 +28,6 @@ const counters: Record<PendingActionKind, PendingCounter> = {
       (r) => r.subject,
     );
   },
-  // Questions the author hasn't answered, accepted or hidden: the same rule
-  // as QuestionState's "pending"
   questions: async (documents) => {
     const [{ data: questions }, { data: marked }] = await Promise.all([
       supabaseServerClient
@@ -60,8 +55,6 @@ function countBy<T>(rows: T[], key: (row: T) => string) {
   return counts;
 }
 
-// What's waiting on the author across `documents`. Callers check that the
-// viewer is that author.
 export async function loadPendingActions(
   documents: string[],
 ): Promise<PendingActions> {

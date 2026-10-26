@@ -31,7 +31,6 @@ export type NavigationTabs = {
   [name: string]: {
     href: string;
     icon?: React.ReactNode;
-    // Shown at the tab's far end, e.g. that something in it needs attention
     indicator?: React.ReactNode;
   };
 };

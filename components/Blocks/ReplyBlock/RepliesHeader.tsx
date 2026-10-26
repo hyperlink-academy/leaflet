@@ -7,8 +7,6 @@ import {
   DEFAULT_REPLY_PROMPT_TEXT,
 } from "./constants";
 
-// Local draft of a committed string: one undo step per edit rather than per
-// keystroke.
 function useCommittedText(value: string, onCommit: (text: string) => void) {
   let [text, setText] = useState(value);
   let [committed, setCommitted] = useState(value);

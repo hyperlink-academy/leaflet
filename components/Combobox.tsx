@@ -3,9 +3,6 @@ import * as Popover from "@radix-ui/react-popover";
 import { NestedCardThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { Input } from "./Input";
 
-// What a key does in a list of results driven from a search input: arrows step
-// the highlight, Enter selects it. `reversed` is for lists rendered above
-// their input, where the first result sits at the bottom.
 export function resultListKey(
   key: string,
   reversed = false,
@@ -16,9 +13,6 @@ export function resultListKey(
   return null;
 }
 
-// The result `step` away from `current`, wrapping at either end. With nothing
-// highlighted, stepping forward starts at the first result and back at the
-// last.
 export function stepHighlight<T>(
   results: T[],
   current: T | undefined,
@@ -77,8 +71,6 @@ export const Combobox = ({
     }
   }, [results, setHighlighted, highlighted]);
 
-  // Listens on the window so the keys work wherever focus is while the results
-  // are showing, which means it must only listen while they are.
   useEffect(() => {
     if (!open) return;
     let listener = async (e: KeyboardEvent) => {

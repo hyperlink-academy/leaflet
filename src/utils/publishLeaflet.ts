@@ -575,8 +575,7 @@ async function publish({
 
   // A draft started from another post's reply block submits itself as a
   // reply once it's published. Best-effort: the post is already live, and
-  // the author can still submit it by hand from the reply block. The link
-  // stays until it's submitted, so a failure is retried on the next publish.
+  // the author can still submit it by hand from the reply block.
   const { data: replyDraft } = await supabaseServerClient
     .from("reply_drafts")
     .select("subject, block")

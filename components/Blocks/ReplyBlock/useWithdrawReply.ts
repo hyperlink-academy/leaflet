@@ -10,9 +10,6 @@ const withdrawErrorMessages: Partial<Record<ReplyError["type"], string>> = {
   not_owner: "Only the author of the reply can withdraw it.",
 };
 
-// Taking back a reply: a submitted one's record, given its uri, or a draft's
-// link to the post it'll reply to, given the draft's leaflet. Each resolves
-// whether it worked, toasting either way.
 export function useWithdrawReply() {
   let run = useActionToast<ReplyError>(withdrawErrorMessages);
   let toaster = useToaster();

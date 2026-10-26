@@ -84,8 +84,6 @@ export function RepliesList(props: {
   );
 }
 
-// The author's view: visible replies and, in a collapsible section above
-// them, the pending ones. Either can be removed.
 export function RepliesListWithModeration(props: {
   replies: DocumentReply[];
   drafts?: ReplyDraft[];
@@ -201,7 +199,6 @@ export function RepliesEmptyDraft(props: {
   );
 }
 
-// A row in the replies list, with its controls tabbed onto the top edge.
 function ReplyRow(props: {
   control?: React.ReactNode;
   children: React.ReactNode;
@@ -222,8 +219,6 @@ function ReplyRow(props: {
   );
 }
 
-// The viewer's unpublished drafts that will be submitted as replies here when
-// published.
 function DraftReplies(props: {
   drafts?: ReplyDraft[];
   showThemes?: boolean;
@@ -350,8 +345,6 @@ function ReplyPost(props: {
   );
 }
 
-// A reply on a page background: its own post's theme when the block shows
-// themes, otherwise the host post's.
 function ReplyTheme(props: {
   postRecord?: DocumentReply["post"]["record"];
   pubRecord?: NonNullable<DocumentReply["post"]["publication"]>["record"];
