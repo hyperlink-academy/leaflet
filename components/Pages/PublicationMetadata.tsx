@@ -71,9 +71,6 @@ export const PublicationMetadata = (props: {
   let replyDraft = useLeafletReplyDraft();
   let replyTargets = useDraftReplyTargets(replyDraft?.subject, pub?.doc);
   let { withdrawReply, withdrawReplyDraft } = useWithdrawReply();
-  // Who withdrawReply and withdrawReplyDraft let through: once published, the
-  // account the reply record was written from; before, whoever linked the
-  // draft.
   let canWithdraw =
     !!identity?.atp_did &&
     (pub?.doc
@@ -92,7 +89,7 @@ export const PublicationMetadata = (props: {
     />
   );
 
-  if (!pub) return replyingTo("pb-2");
+  if (!pub) return replyingTo("px-3 sm:px-4 sm:pt-3 pt-2 pb-2");
 
   if (typeof title !== "string") {
     title = pub?.title || "";

@@ -102,7 +102,7 @@ export function PendingRepliesHeader(props: {
     >
       <hr className="grow border-border-light" />
       <span className="flex items-center gap-1 shrink-0 uppercase">
-        Pending ({props.pending})
+        Approval Pending ({props.pending})
         <ArrowDownTiny className={props.open ? "" : "rotate-90"} />
       </span>
       <hr className="grow border-border-light" />
