@@ -27,11 +27,20 @@ import { ButtonPrimary } from "components/Buttons";
 import { useTutorialNavTour } from "app/(app)/(identity)/(home-pages)/(writer)/home/Tutorial/TutorialNavTooltip";
 import { HomeSmall } from "components/Icons/HomeSmall";
 
+export type NavigationTabs = {
+  [name: string]: {
+    href: string;
+    icon?: React.ReactNode;
+    // Shown at the tab's far end, e.g. that something in it needs attention
+    indicator?: React.ReactNode;
+  };
+};
+
 type NavigationProps = {
   pageTitle: React.ReactNode;
   publication?: string;
   actions?: React.ReactNode;
-  tabs?: { [name: string]: { href: string; icon?: React.ReactNode } };
+  tabs?: NavigationTabs;
 };
 
 function safeDecode(p: string): string {
@@ -88,21 +97,24 @@ export const NavigationContent = (props: NavigationProps) => {
       )}
       {props.tabs && (
         <>
-          {Object.entries(props.tabs).map(([name, { href, icon }]) => (
-            <SpeedyLink
-              eager
-              key={name}
-              href={href}
-              className="hover:no-underline!"
-            >
-              <ActionButton
-                labelOnMobile
-                icon={icon ?? <TabsSmall />}
-                label={name}
-                active={href === activeTabHref}
-              />
-            </SpeedyLink>
-          ))}
+          {Object.entries(props.tabs).map(
+            ([name, { href, icon, indicator }]) => (
+              <SpeedyLink
+                eager
+                key={name}
+                href={href}
+                className="hover:no-underline!"
+              >
+                <ActionButton
+                  labelOnMobile
+                  icon={icon ?? <TabsSmall />}
+                  label={name}
+                  trailing={indicator}
+                  active={href === activeTabHref}
+                />
+              </SpeedyLink>
+            ),
+          )}
         </>
       )}
       {onWriterPage && <PublicationButtons />}

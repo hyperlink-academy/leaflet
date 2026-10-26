@@ -18,6 +18,8 @@ export const ActionButton = forwardRef<
     active?: boolean;
     className?: string;
     subtext?: string;
+    // Shown at the far end, alongside the label
+    trailing?: React.ReactNode;
     labelOnMobile?: boolean;
     z?: boolean;
   }
@@ -31,6 +33,7 @@ export const ActionButton = forwardRef<
     active,
     labelOnMobile,
     subtext,
+    trailing,
     className,
     ...buttonProps
   } = _props;
@@ -46,6 +49,11 @@ export const ActionButton = forwardRef<
   }, [sidebar, inOpenPopover]);
 
   // let showLabelOnMobile = labelOnMobile !== false && (primary || secondary);
+  let labelVisibility = sidebar.open
+    ? "block"
+    : labelOnMobile
+      ? "sm:hidden block"
+      : "hidden";
 
   return (
     <button
@@ -77,7 +85,7 @@ export const ActionButton = forwardRef<
         {icon}
       </div>
       <div
-        className={`w-fill flex flex-col ${subtext && "leading-snug"}  sm:max-w-full min-w-0 mr-1  ${sidebar.open ? "block" : labelOnMobile ? "sm:hidden block" : "hidden"}`}
+        className={`w-fill flex flex-col ${subtext && "leading-snug"}  sm:max-w-full min-w-0 mr-1  ${labelVisibility}`}
       >
         <div className="truncate text-left">{label}</div>
         {subtext && (
@@ -88,6 +96,11 @@ export const ActionButton = forwardRef<
           </div>
         )}
       </div>
+      {trailing && (
+        <div className={`ml-auto shrink-0 self-center ${labelVisibility}`}>
+          {trailing}
+        </div>
+      )}
     </button>
   );
 });

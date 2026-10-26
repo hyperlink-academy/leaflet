@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import {
   DesktopNavigation,
   NavigationContent,
+  type NavigationTabs,
 } from "components/ActionBar/DesktopNavigation";
 import { Sidebar, useSidebarStore } from "components/ActionBar/Sidebar";
 import { DashboardIdContext } from "./dashboardState";
@@ -15,7 +16,7 @@ type DashboardShellProps = {
   pageTitle: React.ReactNode;
   publication?: string;
   actions?: React.ReactNode;
-  tabs?: { [name: string]: { href: string; icon?: React.ReactNode } };
+  tabs?: NavigationTabs;
   children: React.ReactNode;
 };
 

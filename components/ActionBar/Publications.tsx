@@ -14,6 +14,7 @@ import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { LoginModal } from "components/LoginButton";
 import { TutorialNavTooltip } from "app/(app)/(identity)/(home-pages)/(writer)/home/Tutorial/TutorialNavTooltip";
+import { PendingActionsIndicator } from "components/PendingActions";
 
 export const PublicationButtons = (props: { className?: string }) => {
   let { identity } = useIdentityData();
@@ -122,6 +123,7 @@ const PublicationOption = (props: {
             pubName={record.name}
           />
         }
+        trailing={<PendingActionsIndicator publication={props.uri} />}
         className={` ${props.className}`}
       />
     </SpeedyLink>
