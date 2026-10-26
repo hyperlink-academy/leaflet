@@ -548,9 +548,24 @@ export async function broadcastPostEmail(
         // The subscriber snapshot dedupes retries on these rows, so a lost
         // insert would re-email the whole batch on a resend. Throw so Inngest
         // retries the (atomic) insert and surfaces exhaustion in onFailure.
-        const { error } = await supabaseServerClient
+        let { error } = await supabaseServerClient
           .from("publication_email_subscriber_events")
           .insert(rows);
+        // An owner can delete a subscriber row mid-send; its events would
+        // violate the FK forever and strand every later chunk.
+        if (error?.code === "23503") {
+          const { data: remaining } = await supabaseServerClient
+            .from("publication_email_subscribers")
+            .select("id")
+            .in(
+              "id",
+              rows.map((r) => r.subscriber),
+            );
+          const ids = new Set((remaining ?? []).map((r) => r.id));
+          ({ error } = await supabaseServerClient
+            .from("publication_email_subscriber_events")
+            .insert(rows.filter((r) => ids.has(r.subscriber))));
+        }
         if (error) {
           throw new Error(
             `event insert failed for batch ${group.key}-${ci}: ${error.message}`,

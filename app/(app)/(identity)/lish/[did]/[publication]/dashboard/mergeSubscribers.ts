@@ -111,6 +111,7 @@ export function mergePublicationSubscribers<
     const existing = linkedDid ? byDid.get(linkedDid) : undefined;
     if (existing && status === "subscribed") {
       existing.email = s.email;
+      existing.emailSubscriberId = s.id;
       continue;
     }
     emailOnly.push({
@@ -120,6 +121,7 @@ export function mergePublicationSubscribers<
         ? profiles.get(linkedDid)?.handle ?? undefined
         : undefined,
       email: s.email,
+      emailSubscriberId: s.id,
       created_at: s.created_at,
       status,
       memberTier: resolveMemberTier(status === "subscribed", paid),

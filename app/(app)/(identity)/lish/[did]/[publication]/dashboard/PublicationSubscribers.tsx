@@ -1,7 +1,8 @@
 "use client";
-import { Fragment, useState } from "react";
+import { Fragment, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { ButtonPrimary } from "components/Buttons";
-import { useSmoker } from "components/Toast";
+import { useSmoker, useToaster } from "components/Toast";
 import { Modal } from "components/Modal";
 import { ShareTiny } from "components/Icons/ShareTiny";
 import { SharePublicationComposer } from "components/Subscribe/SubscribeSuccessFollowUps";
@@ -17,6 +18,8 @@ import {
 } from "components/PageLayouts/dashboardState";
 import { AtmosphereAccount } from "components/Icons/AtmosphereAccount";
 import { EmailTiny } from "components/Icons/EmailTiny";
+import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
+import { removeEmailSubscriber } from "actions/publications/newsletterSettings";
 import { DashboardPageLayout } from "components/PageLayouts/DashboardPageLayout";
 import { DashboardEmptyState } from "./DashboardEmptyState";
 import {
@@ -38,6 +41,9 @@ export type MergedSubscriber = {
   did: string | undefined;
   handle: string | undefined;
   email: string | undefined;
+  // The publication_email_subscribers row behind `email`, when there is one;
+  // paid members surfaced only from their billing row have none.
+  emailSubscriberId?: string;
   created_at: string;
   status: SubscriberStatus;
   memberTier?: MemberTier;
@@ -139,6 +145,8 @@ export function PublicationSubscribers(props: {
                     handle={subscriber.handle}
                     did={subscriber.did}
                     email={subscriber.email}
+                    emailSubscriberId={subscriber.emailSubscriberId}
+                    publicationUri={props.publicationUri}
                     createdAt={subscriber.created_at}
                     status={subscriber.status}
                     memberTier={subscriber.memberTier}
@@ -213,6 +221,8 @@ const SubscriberListItem = (props: {
   handle: string | undefined;
   did: string | undefined;
   email: string | undefined;
+  emailSubscriberId: string | undefined;
+  publicationUri: string;
   createdAt: string;
   status: SubscriberStatus;
   memberTier?: MemberTier;
@@ -270,10 +280,92 @@ const SubscriberListItem = (props: {
           </span>
         )}
         <SubscriberDate createdAt={props.createdAt} />
+        {props.emailSubscriberId && props.memberTier?.kind !== "paid" && (
+          <RemoveEmailMenu
+            publicationUri={props.publicationUri}
+            subscriberId={props.emailSubscriberId}
+            email={props.email}
+          />
+        )}
       </div>
     </div>
   );
 };
+
+function RemoveEmailMenu(props: {
+  publicationUri: string;
+  subscriberId: string;
+  email: string | undefined;
+}) {
+  let router = useRouter();
+  let toaster = useToaster();
+  let [confirming, setConfirming] = useState(false);
+  let [pending, startTransition] = useTransition();
+
+  return (
+    <Menu
+      asChild
+      align="end"
+      className="text-sm max-w-xs"
+      onOpenChange={(open) => !open && setConfirming(false)}
+      trigger={
+        <button
+          type="button"
+          aria-label="Subscriber options"
+          className="text-tertiary hover:text-accent-contrast"
+          disabled={pending}
+        >
+          <MoreOptionsVerticalTiny />
+        </button>
+      }
+    >
+      {!confirming ? (
+        <MenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            setConfirming(true);
+          }}
+        >
+          Remove email from list
+        </MenuItem>
+      ) : (
+        <div className="flex flex-col items-center gap-1 px-2 py-1 text-center">
+          <div className="font-bold text-secondary">Remove this email?</div>
+          <div className="text-tertiary break-all">{props.email}</div>
+          <div className="text-tertiary">
+            They won&apos;t get emails unless they subscribe again.
+          </div>
+          <ButtonPrimary
+            compact
+            className="mt-1"
+            disabled={pending}
+            onClick={() =>
+              startTransition(async () => {
+                let res = await removeEmailSubscriber(
+                  props.publicationUri,
+                  props.subscriberId,
+                );
+                if (!res.ok) {
+                  toaster({
+                    content:
+                      res.error === "paid_member"
+                        ? "Paid members can't be removed from the list"
+                        : "Couldn't remove this email",
+                    type: "error",
+                  });
+                  return;
+                }
+                router.refresh();
+              })
+            }
+          >
+            {pending ? "Removing…" : "Remove"}
+          </ButtonPrimary>
+        </div>
+      )}
+    </Menu>
+  );
+}
 
 function SubscriberDate(props: { createdAt: string }) {
   const formattedDate = useLocalizedDate(props.createdAt, {

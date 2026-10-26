@@ -5,6 +5,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { revalidatePublicationSettingsPaths } from "src/utils/revalidatePublication";
 import { LeafletConfirmEmail } from "emails/leafletConfirmEmail";
 import { Ok, Err, type Result } from "src/result";
+import { loadPaidMembers } from "src/emailPosts/broadcast";
 import {
   EMAIL_REGEX,
   generateConfirmationCode,
@@ -19,6 +20,7 @@ type SetReplyToError =
   | "invalid_email"
   | "database_error"
   | ConfirmationError;
+type RemoveSubscriberError = "unauthorized" | "paid_member" | "database_error";
 type ConfirmError =
   | "unauthorized"
   | "no_pending_verification"
@@ -211,6 +213,42 @@ export async function clearReplyToEmail(
     .eq("publication", publicationUri);
   if (error) {
     console.error("[newsletterSettings] clear reply-to failed:", error);
+    return Err("database_error");
+  }
+  return Ok(null);
+}
+
+// Hard delete so the address leaves the owner's list and a later signup starts
+// fresh. Paid members keep their row: it's how their membership gets delivered.
+export async function removeEmailSubscriber(
+  publicationUri: string,
+  subscriberId: string,
+): Promise<Result<null, RemoveSubscriberError>> {
+  if (!(await assertPublicationOwner(publicationUri)))
+    return Err("unauthorized");
+
+  const { data: subscriber, error: readError } = await supabaseServerClient
+    .from("publication_email_subscribers")
+    .select("identity_id, email")
+    .eq("id", subscriberId)
+    .eq("publication", publicationUri)
+    .maybeSingle();
+  if (readError) {
+    console.error("[newsletterSettings] subscriber read failed:", readError);
+    return Err("database_error");
+  }
+  if (!subscriber) return Ok(null);
+
+  if ((await loadPaidMembers(publicationUri))(subscriber))
+    return Err("paid_member");
+
+  const { error } = await supabaseServerClient
+    .from("publication_email_subscribers")
+    .delete()
+    .eq("id", subscriberId)
+    .eq("publication", publicationUri);
+  if (error) {
+    console.error("[newsletterSettings] subscriber delete failed:", error);
     return Err("database_error");
   }
   return Ok(null);
