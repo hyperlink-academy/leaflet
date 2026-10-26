@@ -2729,6 +2729,12 @@ export type Database = {
           uri: string
         }[]
       }
+      log_subscriber_events: {
+        Args: {
+          p_events: Json
+        }
+        Returns: undefined
+      }
       parse_iso_timestamp: {
         Args: {
           "": string
