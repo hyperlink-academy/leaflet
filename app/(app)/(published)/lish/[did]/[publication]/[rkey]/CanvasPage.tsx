@@ -43,7 +43,7 @@ export function CanvasPage({
     profile,
     contributors,
     preferences,
-    prerenderedCodeBlocks,
+    prerenderedBlocks,
     bskyPostData,
     standardSitePostData,
     pollData,
@@ -95,7 +95,7 @@ export function CanvasPage({
             <CanvasContent
               page={page}
               did={did}
-              prerenderedCodeBlocks={prerenderedCodeBlocks}
+              prerenderedBlocks={prerenderedBlocks}
               bskyPostData={bskyPostData}
               standardSitePostData={standardSitePostData}
               pollData={pollData}

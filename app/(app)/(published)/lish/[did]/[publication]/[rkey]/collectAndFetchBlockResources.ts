@@ -1,6 +1,7 @@
 import { ids } from "lexicons/api/lexicons";
 import {
   PubLeafletBlocksBskyPost,
+  PubLeafletBlocksMath,
   PubLeafletBlocksPoll,
   PubLeafletBlocksStandardSitePost,
   PubLeafletBlocksStandardSitePublication,
@@ -21,6 +22,8 @@ import {
 } from "app/api/rpc/[command]/get_standard_site_publications";
 import { extractBlocksByType } from "src/utils/extractBlocksByType";
 import { extractCodeBlocks } from "./extractCodeBlocks";
+import { renderMath } from "./Blocks/renderMath";
+import katex from "katex";
 import { fetchPollData, type PollData } from "./fetchPollData";
 import { fetchBskyPosts } from "src/utils/fetchBskyPosts";
 import { loadDocumentReplies, type DocumentReply } from "src/documentReplies";
@@ -29,9 +32,7 @@ import {
   type DocumentQuestion,
 } from "src/documentQuestions";
 
-type Page =
-  | PubLeafletPagesLinearDocument.Main
-  | PubLeafletPagesCanvas.Main;
+type Page = PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main;
 
 export async function collectAndFetchBlockResources({
   agent,
@@ -58,10 +59,10 @@ export async function collectAndFetchBlockResources({
   replyData: DocumentReply[];
   // The answered questions, for a document carrying a questions block.
   questionData: DocumentQuestion[];
-  prerenderedCodeBlocks: Map<string, string>;
+  prerenderedBlocks: Map<string, string>;
 }> {
-  const pageBlocks: PubLeafletPagesLinearDocument.Block[] = pages.flatMap(
-    (p) => pageBlocksInOrder(p).map((b) => b.block),
+  const pageBlocks: PubLeafletPagesLinearDocument.Block[] = pages.flatMap((p) =>
+    pageBlocksInOrder(p).map((b) => b.block),
   );
   const hasQuestionsBlock = pageBlocks.some(
     (b) => b.block.$type === ids.PubLeafletBlocksQuestions,
@@ -137,18 +138,25 @@ export async function collectAndFetchBlockResources({
       : [];
 
   // Keyed `${pageId}:${blockIndex}` to match PostContent's lookup: the root
-  // page renders with no pageId, subpages with their page id.
-  const prerenderedCodeBlocks = new Map<string, string>();
+  // page renders with no pageId, subpages with their page id. Math is cheap and
+  // synchronous, so every page gets it and no client ever loads katex.
+  const prerenderedBlocks = new Map<string, string>();
   await Promise.all(
     pages.map(async (page, pageIndex) => {
+      const pageKey = pageIndex === 0 ? "" : page.id ?? "";
+      for (const { block, index } of pageBlocksInOrder(page))
+        if (PubLeafletBlocksMath.isMain(block.block))
+          prerenderedBlocks.set(
+            `${pageKey}:${index.join(".")}`,
+            renderMath(katex, block.block.tex),
+          );
       if (skipCodeBlocks) return;
       const isServerRendered =
         pageIndex === 0 || (!!openPageId && page.id === openPageId);
       if (!isServerRendered) return;
       const pageCode = await extractCodeBlocks(page);
-      const pageKey = pageIndex === 0 ? "" : (page.id ?? "");
       for (const [blockIndex, html] of pageCode) {
-        prerenderedCodeBlocks.set(`${pageKey}:${blockIndex}`, html);
+        prerenderedBlocks.set(`${pageKey}:${blockIndex}`, html);
       }
     }),
   );
@@ -160,6 +168,6 @@ export async function collectAndFetchBlockResources({
     pollData,
     replyData,
     questionData,
-    prerenderedCodeBlocks,
+    prerenderedBlocks,
   };
 }

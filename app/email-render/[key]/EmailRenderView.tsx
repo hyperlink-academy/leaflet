@@ -33,7 +33,7 @@ export function EmailRenderView(props: {
     bskyPostData: AppBskyFeedDefs.PostView[];
     standardSitePostData: StandardSitePostData[];
     pollData: PollData[];
-    prerenderedCodeBlocks: Map<string, string>;
+    prerenderedBlocks: Map<string, string>;
   };
 }) {
   let { spec } = props;

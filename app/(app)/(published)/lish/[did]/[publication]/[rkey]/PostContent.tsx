@@ -1,5 +1,4 @@
 "use client";
-import dynamic from "next/dynamic";
 import { questionsAudience } from "src/questionsAudience";
 import {
   blockSpacingClassName,
@@ -38,6 +37,7 @@ import {
 import { snapToImageWidth } from "supabase/imageSizes";
 import { srcDocSandbox } from "src/utils/srcDocSandbox";
 import { TextBlock } from "./Blocks/TextBlock";
+import { StaticMathBlock } from "./Blocks/StaticMathBlock";
 import { InkSvg } from "components/Blocks/DrawingBlock/InkSvg";
 import { PubCodeBlock } from "./Blocks/PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
@@ -86,12 +86,6 @@ import { useOptionalPostResources } from "./PostDataProvider";
 import { PostHeader } from "./PostHeader/PostHeader";
 import { usePostHeaderBlockData } from "./PostHeader/postHeaderBlockContext";
 
-// SSR renders math into the page, so katex only loads (and hydrates the
-// server markup) on posts that have a math block.
-const StaticMathBlock = dynamic(() =>
-  import("./Blocks/StaticMathBlock").then((m) => m.StaticMathBlock),
-);
-
 // Mirrors HeadingStyle in components/Blocks/TextBlock/index.tsx so published
 // headers match the editor exactly. Keep the two in sync — see the
 // mirror-editor-block-styles skill.
@@ -127,7 +121,7 @@ export function PostContent({
   did,
   preview,
   className,
-  prerenderedCodeBlocks,
+  prerenderedBlocks,
   bskyPostData,
   standardSitePostData,
   pageId,
@@ -142,7 +136,7 @@ export function PostContent({
   did: string;
   preview?: boolean;
   className?: string;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
   // Server-fetched like standardSitePostData so the block is in the SSR HTML;
@@ -175,7 +169,7 @@ export function PostContent({
             nextBlock={blocks[index + 1]}
             index={[index]}
             preview={preview}
-            prerenderedCodeBlocks={prerenderedCodeBlocks}
+            prerenderedBlocks={prerenderedBlocks}
             pollData={pollData}
             footnoteIndexMap={footnoteIndexMap}
             postsListData={postsListData}
@@ -196,7 +190,7 @@ export let Block = ({
   preview,
   previousBlock,
   nextBlock,
-  prerenderedCodeBlocks,
+  prerenderedBlocks,
   bskyPostData,
   standardSitePostData,
   standardSitePublicationData,
@@ -220,7 +214,7 @@ export let Block = ({
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   previousBlock?: PubLeafletPagesLinearDocument.Block;
   nextBlock?: PubLeafletPagesLinearDocument.Block;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
   standardSitePublicationData?: StandardSitePublicationData[];
@@ -239,6 +233,10 @@ export let Block = ({
   let replyData = postResources?.replyData;
   let questionData = postResources?.questionData;
   let currentPublicationUri = document?.publication?.uri ?? null;
+  let prerendered = () =>
+    prerenderedBlocks?.get(
+      `${pageId && pageId !== pages[0]?.id ? pageId : ""}:${index.join(".")}`,
+    );
   let blockProps = {
     style: {
       scrollMarginTop: "4rem",
@@ -317,6 +315,7 @@ export let Block = ({
           standardSitePostData={standardSitePostData}
           isCanvas={isCanvas}
           pages={pages}
+          prerenderedBlocks={prerenderedBlocks}
           className={className}
           display={block.display}
         />
@@ -663,14 +662,12 @@ export let Block = ({
         />
       </div>
     ),
-    "pub.leaflet.blocks.math": (block) => {
-      return <StaticMathBlock block={block} />;
-    },
-    "pub.leaflet.blocks.code": (block) => {
-      let pageKey = pageId && pageId !== pages[0]?.id ? pageId : "";
-      let html = prerenderedCodeBlocks?.get(`${pageKey}:${index.join(".")}`);
-      return <PubCodeBlock block={block} prerenderedCode={html} />;
-    },
+    "pub.leaflet.blocks.math": (block) => (
+      <StaticMathBlock block={block} html={prerendered()} />
+    ),
+    "pub.leaflet.blocks.code": (block) => (
+      <PubCodeBlock block={block} prerenderedCode={prerendered()} />
+    ),
     "pub.leaflet.blocks.website": (block) => {
       return (
         <a

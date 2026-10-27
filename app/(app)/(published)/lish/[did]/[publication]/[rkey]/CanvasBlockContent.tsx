@@ -20,7 +20,7 @@ import { PollData } from "./fetchPollData";
 
 type BlockDataProps = {
   did: string;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
   pollData: PollData[];

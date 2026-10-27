@@ -53,7 +53,7 @@ export function PostPageShell(props: {
                 contributors={contributorProfiles}
                 document={document}
                 did={did}
-                prerenderedCodeBlocks={props.post.prerenderedCodeBlocks}
+                prerenderedBlocks={props.post.prerenderedBlocks}
                 commentsSlot={props.commentsSlot}
               />
             </LeafletLayout>
