@@ -14,7 +14,7 @@ import { PostHeader } from "./PostHeader/PostHeader";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { useInlineDrawer } from "./Interactions/useDrawerOpen";
 import { DrawerThreadPageProvider } from "./Interactions/drawerThreadContext";
-import { PageWrapper } from "components/Pages/Page";
+import { PageWrapper } from "components/Pages/PageWrapper";
 import { decodeQuotePosition } from "src/utils/quotePosition";
 import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
