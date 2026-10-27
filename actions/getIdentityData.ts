@@ -5,6 +5,7 @@ import { cache } from "react";
 import { deduplicateByUri } from "src/utils/deduplicateRecords";
 import { isLeafletManagedPublication } from "src/utils/isLeafletManagedPublication";
 import { getProfiles } from "src/identity";
+import { toDocumentPreviews } from "src/utils/documentPreview";
 import {
   bskyProfileFromCache,
   ENTITLEMENT_EMBEDS,
@@ -13,6 +14,10 @@ import {
   processConnectedAccount,
   SUBSCRIPTION_STATE_EMBEDS,
 } from "src/identityPayload";
+const LISTED_LEAFLET = `id, root_entity, title, description,
+  permission_token_rights(*),
+  leaflets_to_documents(*, documents(uri, indexed_at, data)),
+  leaflets_in_publications(*, documents(uri, indexed_at, data), publications(uri, record))`;
 export const getIdentityData = cache(uncachedGetIdentityData);
 async function uncachedGetIdentityData() {
   let auth_token = await getValidAuthToken();
@@ -28,26 +33,13 @@ async function uncachedGetIdentityData() {
             permission_token_on_homepage(
               archived,
               created_at,
-              permission_tokens!inner(
-                id,
-                root_entity,
-                title,
-                description,
-                permission_token_rights(*),
-                leaflets_to_documents(*, documents(uri, indexed_at, data)),
-                leaflets_in_publications(*, documents(uri, indexed_at, data), publications(uri, record))
-              )
+              permission_tokens!inner(${LISTED_LEAFLET})
             ),
             ${ENTITLEMENT_EMBEDS},
             publications!publications_identity_did_fkey(*),
             leaflet_contributors!leaflet_contributors_contributor_did_fkey(
               created_at,
-              permission_tokens!leaflet_contributors_leaflet_fkey!inner(
-                id, root_entity, title, description,
-                permission_token_rights(*),
-                leaflets_to_documents(*, documents(uri, indexed_at, data)),
-                leaflets_in_publications(*, documents(uri, indexed_at, data), publications(uri, record))
-              )
+              permission_tokens!leaflet_contributors_leaflet_fkey!inner(${LISTED_LEAFLET})
             ),
             publication_contributors!publication_contributors_contributor_did_fkey(
               created_at,
@@ -76,7 +68,7 @@ async function uncachedGetIdentityData() {
     user_subscriptions: subscription,
     stripe_connected_accounts: connectedAccount,
     ...identity
-  } = auth_res.data.identities;
+  } = toDocumentPreviews(auth_res.data.identities);
 
   const entitlements = keyEntitlements(entitlementRows);
 
