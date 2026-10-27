@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { pageOfParent } from "src/utils/blockGroups";
 import { elementId } from "src/utils/elementId";
 import {
@@ -561,12 +561,16 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
 };
 
 const useMentionState = (entityID: string, blockProps: BlockProps) => {
-  // Select the view directly: it's stable for the lifetime of the mount, so
-  // this never re-renders on typing (the full entry object is rebuilt on
-  // every transaction).
-  let view = useEditorStates((s) => s.editorStates[entityID]?.view);
-  let viewRef = useRef(view || null);
-  viewRef.current = view || null;
+  // Read lazily so the block holds no store subscription: every block mounts
+  // this, and the autocomplete only touches the view from event handlers.
+  let viewRef = useMemo(
+    () => ({
+      get current() {
+        return useEditorStates.getState().editorStates[entityID]?.view ?? null;
+      },
+    }),
+    [entityID],
+  );
 
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
