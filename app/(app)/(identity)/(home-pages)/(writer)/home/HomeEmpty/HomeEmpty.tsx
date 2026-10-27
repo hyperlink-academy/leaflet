@@ -1,8 +1,7 @@
 "use client";
 import { ButtonPrimary } from "components/Buttons";
 import { GoToArrowLined } from "components/Icons/GoToArrowLined";
-import { createNewLeaflet } from "actions/createNewLeaflet";
-import { useIsMobile } from "src/hooks/isMobile";
+import { useCreateLeaflet } from "../Actions/CreateNewButton";
 import { SpeedyLink } from "components/SpeedyLink";
 
 export function HomeEmptyState() {
@@ -48,7 +47,7 @@ const PublicationOption = () => {
 };
 
 const DocOption = () => {
-  let isMobile = useIsMobile();
+  let createLeaflet = useCreateLeaflet();
 
   return (
     <div className="light-container p-3 flex sm:flex-row flex-col gap-4">
@@ -66,21 +65,7 @@ const DocOption = () => {
         <ButtonPrimary
           fullWidth
           className="mt-2"
-          onClick={async () => {
-            let openNewLeaflet = (id: string) => {
-              if (isMobile) {
-                window.location.href = `/${id}?focusFirstBlock&addToHome`;
-              } else {
-                window.open(`/${id}?focusFirstBlock&addToHome`, "_blank");
-              }
-            };
-
-            let id = await createNewLeaflet({
-              pageType: "doc",
-              redirectUser: false,
-            });
-            openNewLeaflet(id);
-          }}
+          onClick={() => createLeaflet("doc")}
         >
           New Doc <GoToArrowLined />
         </ButtonPrimary>
