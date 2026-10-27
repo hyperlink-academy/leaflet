@@ -65,9 +65,11 @@ export function useMountProsemirror({
   let entity_set = useEntitySetContext();
   let propsRef = useRef({ ...props, entity_set, alignment });
   let handlePaste = useHandlePaste(entityID, propsRef);
+  let handlePasteRef = useRef(handlePaste);
 
   propsRef.current = { ...props, entity_set, alignment };
   repRef.current = rep.rep;
+  handlePasteRef.current = handlePaste;
 
   useLayoutEffect(() => {
     if (!mountRef.current) return;
@@ -100,7 +102,7 @@ export function useMountProsemirror({
       { mount: mountRef.current },
       {
         state: editor,
-        handlePaste,
+        handlePaste: (view, e) => handlePasteRef.current(view, e),
         transformCopied: stripCommentMarks,
         transformPasted: stripCommentMarks,
         handleDOMEvents: {
@@ -366,7 +368,10 @@ export function useMountProsemirror({
     // block's parent but keep the same entityID, and rebuilding the EditorView
     // on reparent destroyed the caret (dropping focus to <body> on every
     // structural edit and its undo/redo). The view reads parent via propsRef.
-  }, [entityID, value, cursorPlugin, handlePaste, rep]);
+    // Likewise the Replicache client, which attaches after hydration, and the
+    // paste handler built on it are read through refs, so their arrival
+    // doesn't rebuild every editor on the page.
+  }, [entityID, value, cursorPlugin, rep.undoManager]);
   return { mountRef, overlay };
 }
 
