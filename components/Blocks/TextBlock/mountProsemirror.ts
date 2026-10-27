@@ -16,7 +16,7 @@ import { highlightSelectionPlugin } from "./plugins";
 import { autolink } from "./autolink-plugin";
 import { restoreEditorState, useEditorStates } from "src/state/useEditorState";
 import {
-  useEntity,
+  type Fact,
   useReplicache,
   type ReplicacheMutators,
 } from "src/replicache";
@@ -50,9 +50,11 @@ function commentAnchor(event: Event) {
 
 export function useMountProsemirror({
   props,
+  alignment,
   openMentionAutocomplete,
 }: {
   props: BlockProps;
+  alignment: Fact<"block/text-alignment">["data"]["value"];
   openMentionAutocomplete: () => void;
 }) {
   let { entityID } = props;
@@ -61,8 +63,6 @@ export function useMountProsemirror({
   const repRef = useRef<Replicache<ReplicacheMutators> | null>(null);
   let { yText: value, cursorPlugin, overlay } = useCollabText(entityID);
   let entity_set = useEntitySetContext();
-  let alignment =
-    useEntity(entityID, "block/text-alignment")?.data.value || "left";
   let propsRef = useRef({ ...props, entity_set, alignment });
   let handlePaste = useHandlePaste(entityID, propsRef);
 

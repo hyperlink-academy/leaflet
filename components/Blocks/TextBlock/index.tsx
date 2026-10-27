@@ -269,6 +269,7 @@ function BaseTextBlock(props: BlockProps & { className?: string }) {
 
   let { mountRef, overlay } = useMountProsemirror({
     props,
+    alignment,
     openMentionAutocomplete,
   });
 
