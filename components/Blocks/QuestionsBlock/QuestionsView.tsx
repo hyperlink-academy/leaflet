@@ -19,7 +19,7 @@ import {
   hasSeveralAuthors,
   InteractionAuthorName,
 } from "../InteractionAuthorName";
-import { ReplyButtonTextInput } from "../ReplyBlock/RepliesView";
+import { ReplyButtonTextInput } from "../ReplyBlock/RepliesHeader";
 import { DEFAULT_QUESTIONS_BUTTON_TEXT } from "./constants";
 import {
   questionsAudienceNotice,

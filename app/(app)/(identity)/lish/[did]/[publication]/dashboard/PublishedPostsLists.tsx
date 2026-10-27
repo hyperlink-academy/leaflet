@@ -21,6 +21,11 @@ import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 import { useIdentityData } from "components/IdentityProvider";
 import { EmailTiny } from "components/Icons/EmailTiny";
 import { Popover } from "components/Popover";
+import {
+  PendingPublicationActionsCount,
+  usePendingPublicationActions,
+} from "components/PendingPublicationActions";
+import type { PostPendingPublicationActions } from "src/pendingPublicationActionKinds";
 
 export function PublishedPostsList(props: {
   searchValue: string;
@@ -29,6 +34,9 @@ export function PublishedPostsList(props: {
   let { data } = usePublicationData();
   let { publication, documents } = data || {};
   const pubRecord = useNormalizedPublicationRecord();
+  const pendingPublicationActions = usePendingPublicationActions(
+    publication?.uri,
+  );
   if (!publication) return null;
   if (!documents || documents.length === 0)
     return <PublishedEmpty publication={publication.uri} />;
@@ -52,6 +60,7 @@ export function PublishedPostsList(props: {
           doc={doc}
           publication={publication}
           pubRecord={pubRecord}
+          pendingPublicationActions={pendingPublicationActions[doc.uri]}
           showPageBackground={props.showPageBackground}
         />
       ))}
@@ -94,6 +103,7 @@ function PublishedPostItem(props: {
     NonNullable<ReturnType<typeof usePublicationData>["data"]>["publication"]
   >;
   pubRecord: ReturnType<typeof useNormalizedPublicationRecord>;
+  pendingPublicationActions?: PostPendingPublicationActions;
   showPageBackground: boolean;
 }) {
   const { doc, publication, pubRecord, showPageBackground } = props;
@@ -102,9 +112,6 @@ function PublishedPostItem(props: {
     (l) => l.doc === doc.uri,
   );
   const docUrl = getDocumentURL(doc.record, doc.uri, publication);
-
-  // Owners can edit every post; contributors can only edit posts where they
-  // appear in that leaflet's leaflet_contributors.
   const isOwner =
     !!identity?.atp_did && identity.atp_did === publication.identity_did;
   const canEdit =
@@ -126,13 +133,22 @@ function PublishedPostItem(props: {
           }}
         >
           <div className="flex justify-between gap-2">
-            <a className="hover:no-underline!" target="_blank" href={docUrl}>
-              <h3 className="text-primary grow leading-snug">
-                {doc.record.title === "" || doc.record.title === undefined
-                  ? "Untitled"
-                  : doc.record.title}
-              </h3>
-            </a>
+            <div className="flex items-start gap-2 min-w-0 ">
+              <a className="hover:no-underline!" target="_blank" href={docUrl}>
+                <h3 className="text-primary grow leading-snug">
+                  {doc.record.title === "" || doc.record.title === undefined
+                    ? "Untitled"
+                    : doc.record.title}
+                </h3>
+              </a>
+              <div className="">
+                <div className="spacer h-[3px]" />
+                <PendingPublicationActionsCount
+                  actions={props.pendingPublicationActions}
+                  postUrl={docUrl}
+                />
+              </div>
+            </div>
             <div className="flex justify-start items-center flex-row gap-2">
               {doc.postSend ? <PostSendStatus send={doc.postSend} /> : null}
               {leaflet && leaflet.permission_tokens && canEdit && (
@@ -204,80 +220,6 @@ function PublishedPostItem(props: {
     </Fragment>
   );
 }
-
-// function OptionsMenu(props: { document_uri: string }) {
-//   let { mutate, data } = usePublicationData();
-//   let [state, setState] = useState<"normal" | "confirm">("normal");
-
-//   if (state === "normal") {
-//     return (
-//       <>
-//         <ShareButton
-//           className="justify-end"
-//           text={
-//             <div className="flex gap-2">
-//               Share Post Link
-//               <ShareSmall />
-//             </div>
-//           }
-//           subtext=""
-//           smokerText="Post link copied!"
-//           id="get-post-link"
-//           fullLink={postLink?.includes("https") ? postLink : undefined}
-//           link={postLink}
-//         />
-
-//         <hr className="border-border-light" />
-//         <MenuItem
-//           className="justify-end"
-//           onSelect={async (e) => {
-//             e.preventDefault();
-//             setState("confirm");
-//             return;
-//           }}
-//         >
-//           Delete Post
-//           <DeleteSmall />
-//         </MenuItem>
-//       </>
-//     );
-//   }
-//   if (state === "confirm") {
-//     return (
-//       <div className="flex flex-col items-center font-bold text-secondary px-2 py-1">
-//         Are you sure?
-//         <div className="text-sm text-tertiary font-normal">
-//           This action cannot be undone!
-//         </div>
-//         <ButtonPrimary
-//           className="mt-2"
-//           onClick={async () => {
-//             await mutate((data) => {
-//               if (!data) return data;
-//               return {
-//                 ...data,
-//                 publication: {
-//                   ...data.publication!,
-//                   leaflets_in_publications:
-//                     data.publication?.leaflets_in_publications.filter(
-//                       (l) => l.doc !== props.document_uri,
-//                     ) || [],
-//                   documents_in_publications:
-//                     data.publication?.documents_in_publications.filter(
-//                       (d) => d.documents?.uri !== props.document_uri,
-//                     ) || [],
-//                 },
-//               };
-//             }, false);
-//             await deletePost(props.document_uri);
-//           }}
-//         >
-//           Delete
-//         </ButtonPrimary>
-//       </div>
-//     );
-//   }
-//}
 
 function PublishedDate(props: { dateString: string }) {
   const formattedDate = useLocalizedDate(props.dateString, {

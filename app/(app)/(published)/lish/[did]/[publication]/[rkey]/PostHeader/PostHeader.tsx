@@ -21,7 +21,13 @@ import {
   bylineSeparator,
 } from "src/utils/byline";
 import { TagPopover } from "components/Interactions/InteractionsPreview";
-import { ReplyingTo } from "../ReplyingTo";
+import {
+  ReplyingTo,
+  useDocumentReplyTargets,
+} from "components/Pages/ReplyingTo";
+import { useWithdrawReply } from "components/Blocks/ReplyBlock/useWithdrawReply";
+import { useIdentityData } from "components/IdentityProvider";
+import { isDocumentOwner } from "src/utils/isDocumentOwner";
 
 // Re-export so existing importers of `BylineProfile` from this module keep
 // working. The serializable byline profile (subset of the profile cache shape)
@@ -49,12 +55,32 @@ export function PostHeader(props: {
   let pub = props.data?.documents_in_publications[0]?.publications;
   let editLink = usePostEditLink(document?.uri, pub?.identity_did);
   let { headerInteractions } = usePostFrame();
+  let { identity } = useIdentityData();
+  let { withdrawReply } = useWithdrawReply();
+  let ownsPost =
+    !!document?.uri &&
+    !!identity?.atp_did &&
+    isDocumentOwner(document.uri, identity.atp_did);
+  let ownReplyTargets = useDocumentReplyTargets(
+    ownsPost ? document?.uri : null,
+  );
 
   if (!document?.data || !record) return null;
   return (
     <PostHeaderLayout
       compact={props.compact}
-      below={<ReplyingTo targets={document.replyingTo} />}
+      below={
+        <ReplyingTo
+          targets={ownReplyTargets ?? document.replyingTo}
+          onWithdraw={
+            ownsPost
+              ? async (target) =>
+                  !!target.replyUri && (await withdrawReply(target.replyUri))
+              : undefined
+          }
+          className="pt-3"
+        />
+      }
       pubLink={
         <>
           {pub && (
@@ -71,7 +97,7 @@ export function PostHeader(props: {
             // takes width off the pub name — enough to wrap it and push the
             // title and byline down.
             <a
-              className="absolute -right-3 sm:-right-4 top-0 bottom-0 rounded-full flex place-items-center"
+              className="absolute right-0 top-0 bottom-0 rounded-full flex place-items-center"
               href={editLink}
             >
               <EditTiny className="shrink-0" />

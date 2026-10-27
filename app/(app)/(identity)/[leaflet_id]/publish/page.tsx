@@ -44,7 +44,8 @@ export default async function PublishLeafletPage(props: Props) {
        leaflets_to_documents(
          *,
          documents(*)
-       )`,
+       ),
+       reply_drafts(subject)`,
     )
     .eq("id", leaflet_id)
     .single();
@@ -105,24 +106,35 @@ export default async function PublishLeafletPage(props: Props) {
   // (ShareOptions falls back to `publicationOwnerProfile ?? viewerProfile`).
   let shouldFetchOwnerProfile =
     !!publicationOwnerDid && publicationOwnerDid !== identity.atp_did;
-  let [viewerProfile, publicationOwnerProfile, subscriberCount] =
-    await Promise.all([
-      agent.getProfile({ actor: identity.atp_did }),
-      shouldFetchOwnerProfile
-        ? agent
-            .getProfile({ actor: publicationOwnerDid! })
-            .then((res) => res.data)
-            .catch(() => undefined)
-        : Promise.resolve(undefined),
-      newsletterEnabled
-        ? supabaseServerClient
-            .from("publication_email_subscribers")
-            .select("*", { count: "exact", head: true })
-            .eq("publication", publication!.uri)
-            .eq("state", "confirmed")
-            .then(({ count }) => count ?? 0)
-        : Promise.resolve(undefined),
-    ]);
+  let [
+    viewerProfile,
+    publicationOwnerProfile,
+    subscriberCount,
+    replyTarget,
+    scheduling,
+  ] = await Promise.all([
+    agent.getProfile({ actor: identity.atp_did }),
+    shouldFetchOwnerProfile
+      ? agent
+          .getProfile({ actor: publicationOwnerDid! })
+          .then((res) => res.data)
+          .catch(() => undefined)
+      : Promise.resolve(undefined),
+    newsletterEnabled
+      ? supabaseServerClient
+          .from("publication_email_subscribers")
+          .select("*", { count: "exact", head: true })
+          .eq("publication", publication!.uri)
+          .eq("state", "confirmed")
+          .then(({ count }) => count ?? 0)
+      : Promise.resolve(undefined),
+    data.reply_drafts ? getReplyTarget(data.reply_drafts.subject) : null,
+    loadSchedulingOptions({
+      leaflet_id,
+      publication_uri: publication?.uri,
+      published: !!data.leaflets_in_publications[0]?.doc,
+    }),
+  ]);
 
   // Parse entitiesToDelete from URL params
   let searchParams = await props.searchParams;
@@ -141,25 +153,6 @@ export default async function PublishLeafletPage(props: Props) {
   let hasDraft =
     data.leaflets_in_publications.length > 0 ||
     data.leaflets_to_documents.length > 0;
-
-  let replyTo: string | null =
-    data.leaflets_in_publications[0]?.reply_to ?? null;
-  if (!replyTo && data.leaflets_in_publications.length === 0) {
-    let { data: fact } = await supabaseServerClient
-      .from("facts")
-      .select("data")
-      .eq("entity", rootEntity)
-      .eq("attribute", "root/reply-to")
-      .maybeSingle();
-    replyTo = (fact?.data as { value?: string } | null)?.value ?? null;
-  }
-  let replyTarget = replyTo ? await getReplyTarget(replyTo) : null;
-
-  let scheduling = await loadSchedulingOptions({
-    leaflet_id,
-    publication_uri: publication?.uri,
-    published: !!data.leaflets_in_publications[0]?.doc,
-  });
 
   return (
     <ReplicacheProvider

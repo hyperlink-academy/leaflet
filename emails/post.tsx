@@ -2808,7 +2808,7 @@ const InteractionEmailBlock = ({
         style={{
           color: theme.primary,
           fontFamily: theme.bodyFont,
-          fontSize: 20,
+          fontSize: 18,
           fontWeight: "bold",
           lineHeight: 1.3,
           margin: "4px 0 0",

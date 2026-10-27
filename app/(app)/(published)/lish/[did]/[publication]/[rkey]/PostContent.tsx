@@ -492,7 +492,7 @@ export let Block = ({
         <div className={className} {...blockProps}>
           <InteractionBlockFrame
             anchor={interactionBlockAnchor("replies", block.key)}
-            className="replyBlock block-border w-full p-2 sm:p-3"
+            className="replyBlock light-container rounded-lg! block-border w-full p-2 sm:p-3 overflow-hidden"
           >
             {() => (
               <DocumentReplies

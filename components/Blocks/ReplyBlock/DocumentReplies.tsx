@@ -2,20 +2,22 @@
 import React, { useState } from "react";
 import useSWR from "swr";
 import { ButtonPrimary } from "components/Buttons";
-import { Popover } from "components/Popover";
+import { Modal } from "components/Modal";
 import { LoginModal } from "components/LoginButton";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { useIdentityData } from "components/IdentityProvider";
 import { useActionToast } from "components/useActionToast";
+import { useToaster } from "components/Toast";
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
 import { mainSiteAuthBase } from "src/utils/customDomain";
 import {
   createReplyDraft,
   getDocumentReplies,
   getReplyCandidates,
+  rejectReply,
+  resolveReplyLink,
   setReplyVisible,
   submitReply,
-  withdrawReply,
   type ReplyError,
 } from "actions/replies";
 import type {
@@ -25,32 +27,22 @@ import type {
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { DEFAULT_REPLY_BUTTON_TEXT } from "./constants";
-import {
-  PendingRepliesToggle,
-  RepliesList,
-  RepliesModeration,
-  ReplyPicker,
-} from "./RepliesView";
+import { RepliesList, RepliesListWithModeration } from "./RepliesList";
+import { useWithdrawReply } from "./useWithdrawReply";
+import { ReplyPicker, type ReplyCandidate } from "./ReplyPicker";
+import { Err, Ok, type OkValue } from "src/result";
 
 const replyErrorMessages: Partial<Record<ReplyError["type"], string>> = {
-  not_found: "We couldn't find that post. Is it published?",
-  not_your_post: "You can only reply with your own posts.",
+  not_found: "Hmmm… We couldn't find that post.",
+  not_your_post:
+    "Looks like you don't own this post! Replies must be your own posts.",
   same_post: "A post can't reply to itself.",
+  already_submitted: "This post was already submitted.",
   replies_closed: "This post isn't taking replies.",
 };
 
-// Replies to a published document, for whoever is looking: the document's
-// author moderates them, everyone else reads the visible ones and can submit
-// their own. `action` replaces the reader's reply button (the editor passes
-// its editable label). `initialReplies` is the public list a cached page was
-// rendered with; a signed-in viewer's own view (moderation, pending
-// submissions) replaces it once their identity is known. `initial` is the
-// viewer's own view as loaded with the editor page, shown until their
-// identity resolves and the first fetch replaces it.
 export function DocumentReplies(props: {
   documentUri: string;
-  // Key of the reply block this is (see resolveInteractionBlock): only its
-  // replies show, and new ones are submitted through it
   block: string | null;
   initialReplies?: DocumentReply[];
   initial?: DocumentRepliesData;
@@ -61,8 +53,6 @@ export function DocumentReplies(props: {
 }) {
   let { identity, identityPending } = useIdentityData();
   let viewer = identity?.atp_did ?? null;
-  // An anonymous reader of a cached page has nothing to add to the public
-  // list it was rendered with, until something happens to it.
   let [changed, setChanged] = useState(false);
   let needsFetch =
     !identityPending && (!!viewer || !props.initialReplies || changed);
@@ -75,22 +65,25 @@ export function DocumentReplies(props: {
         (props.initialReplies && {
           isAuthor: false,
           replies: props.initialReplies,
+          drafts: [],
         }),
     },
   );
   let data = allReplies && {
     ...allReplies,
     replies: allReplies.replies.filter((r) => r.block === props.block),
+    drafts: allReplies.drafts.filter((d) => d.block === props.block),
   };
   useDocumentEvents(props.documentUri, ["reply", "reply_visibility"], () => {
     setChanged(true);
     mutate();
   });
   let [busy, setBusy] = useState(false);
-  let [open, setOpen] = useState(false);
   let run = useActionToast<ReplyError>(replyErrorMessages);
+  let toaster = useToaster();
+  let { withdrawReply, withdrawReplyDraft } = useWithdrawReply();
   let withdraw = async (uri: string) => {
-    if (await run(() => withdrawReply(uri)))
+    if (await withdrawReply(uri))
       await mutate(
         (current) =>
           current && {
@@ -100,39 +93,30 @@ export function DocumentReplies(props: {
         { revalidate: false },
       );
   };
+  let withdrawDraft = async (leaflet: string) => {
+    if (await withdrawReplyDraft(leaflet))
+      await mutate(
+        (current) =>
+          current && {
+            ...current,
+            drafts: current.drafts.filter((d) => d.leaflet !== leaflet),
+          },
+        { revalidate: false },
+      );
+  };
 
   let label = props.buttonText || DEFAULT_REPLY_BUTTON_TEXT;
-  // The editor and the document's owner keep the reply button (the author can
-  // reply with a post of their own) and get a toggle for the replies still
-  // waiting on them.
   let inEditor = props.action !== undefined;
   let ownsDocument = !!viewer && isDocumentOwner(props.documentUri, viewer);
   if (inEditor || ownsDocument) {
-    // On a published page `data` starts as the public list the page was
-    // rendered with, which isn't the owner's view of their replies.
     let loaded = inEditor || data?.isAuthor ? data : undefined;
-    let pending = loaded?.isAuthor
-      ? loaded.replies.filter((r) => !r.visible).length
-      : 0;
-    // Once the last pending reply is dealt with the toggle goes away; the
-    // next one to arrive should start closed.
-    if (open && pending === 0) setOpen(false);
-    let controls = (
-      <>
-        {props.action ?? (
-          <ReplyButton
-            label={label}
-            documentUri={props.documentUri}
-            block={props.block}
-            onSubmitted={() => mutate()}
-          />
-        )}
-        <PendingRepliesToggle
-          pending={pending}
-          open={open}
-          onToggle={() => setOpen(!open)}
-        />
-      </>
+    let controls = props.action ?? (
+      <ReplyButton
+        label={label}
+        documentUri={props.documentUri}
+        block={props.block}
+        onSubmitted={() => mutate()}
+      />
     );
     if (!loaded || !loaded.isAuthor)
       return (
@@ -142,19 +126,21 @@ export function DocumentReplies(props: {
               ? loaded.replies
               : inEditor
                 ? []
-                : (data?.replies.filter((r) => r.visible) ?? [])
+                : data?.replies.filter((r) => r.visible) ?? []
           }
+          drafts={data?.drafts}
           showThemes={props.showThemes}
           prompt={props.prompt}
           onWithdraw={withdraw}
+          onWithdrawDraft={withdrawDraft}
           action={controls}
         />
       );
 
-    let setVisible = async (reply: string, visible: boolean) => {
+    let accept = async (reply: string) => {
       setBusy(true);
       let ok = await run(() =>
-        setReplyVisible({ subject: props.documentUri, reply, visible }),
+        setReplyVisible({ subject: props.documentUri, reply, visible: true }),
       );
       if (ok)
         await mutate(
@@ -162,23 +148,42 @@ export function DocumentReplies(props: {
             current && {
               ...current,
               replies: current.replies.map((r) =>
-                r.uri === reply ? { ...r, visible } : r,
+                r.uri === reply ? { ...r, visible: true } : r,
               ),
             },
           { revalidate: false },
         );
       setBusy(false);
     };
+    let reject = async (reply: string) => {
+      setBusy(true);
+      let ok = await run(() =>
+        rejectReply({ subject: props.documentUri, reply }),
+      );
+      if (ok) {
+        await mutate(
+          (current) =>
+            current && {
+              ...current,
+              replies: current.replies.filter((r) => r.uri !== reply),
+            },
+          { revalidate: false },
+        );
+        toaster({ content: "Reply was removed", type: "success" });
+      }
+      setBusy(false);
+    };
     return (
-      <RepliesModeration
+      <RepliesListWithModeration
         replies={loaded.replies}
+        drafts={loaded.drafts}
         showThemes={props.showThemes}
-        showPending={open}
         prompt={props.prompt}
         busy={busy}
-        onAccept={(uri) => setVisible(uri, true)}
-        onHide={(uri) => setVisible(uri, false)}
+        onAccept={accept}
+        onReject={reject}
         onWithdraw={withdraw}
+        onWithdrawDraft={withdrawDraft}
         action={controls}
       />
     );
@@ -188,12 +193,16 @@ export function DocumentReplies(props: {
   return (
     <RepliesList
       replies={data.replies}
+      drafts={data.drafts}
       showThemes={props.showThemes}
       prompt={props.prompt}
       onWithdraw={withdraw}
+      onWithdrawDraft={withdrawDraft}
       action={
         identityPending ? (
-          <ButtonPrimary disabled>{label}</ButtonPrimary>
+          <ButtonPrimary disabled className={ACTION_CLASS}>
+            <span className="truncate">{label}</span>
+          </ButtonPrimary>
         ) : viewer ? (
           <ReplyButton
             label={label}
@@ -206,8 +215,8 @@ export function DocumentReplies(props: {
             asChild
             noEmailLogin
             trigger={
-              <ButtonPrimary>
-                <BlueskyTiny /> {label}
+              <ButtonPrimary className={ACTION_CLASS}>
+                <span className="truncate">{label}</span>
               </ButtonPrimary>
             }
           />
@@ -217,6 +226,8 @@ export function DocumentReplies(props: {
   );
 }
 
+const ACTION_CLASS = "max-w-full min-w-0";
+
 function ReplyButton(props: {
   label: string;
   documentUri: string;
@@ -225,12 +236,16 @@ function ReplyButton(props: {
 }) {
   let [open, setOpen] = useState(false);
   return (
-    <Popover
+    <Modal
       asChild
-      align="end"
+      sheetOnMobile
       open={open}
       onOpenChange={setOpen}
-      trigger={<ButtonPrimary>{props.label}</ButtonPrimary>}
+      trigger={
+        <ButtonPrimary className={ACTION_CLASS}>
+          <span className="truncate">{props.label}</span>
+        </ButtonPrimary>
+      }
     >
       <ReplyPickerForViewer
         documentUri={props.documentUri}
@@ -240,7 +255,7 @@ function ReplyButton(props: {
           props.onSubmitted();
         }}
       />
-    </Popover>
+    </Modal>
   );
 }
 
@@ -250,8 +265,9 @@ function ReplyPickerForViewer(props: {
   onSubmitted: () => void;
 }) {
   let { identity } = useIdentityData();
-  let { data } = useSWR(["reply_candidates", identity?.atp_did], () =>
-    getReplyCandidates(),
+  let { data, mutate } = useSWR(
+    ["reply_candidates", identity?.atp_did, props.documentUri],
+    () => getReplyCandidates(props.documentUri),
   );
   let [submitting, setSubmitting] = useState(false);
   let run = useActionToast<ReplyError>(replyErrorMessages);
@@ -271,29 +287,51 @@ function ReplyPickerForViewer(props: {
       }}
       candidates={(data?.candidates ?? [])
         .filter((c) => c.uri !== props.documentUri)
-        .map((c) => ({
-          uri: c.uri,
-          title: c.title,
-          date: c.publishedAt ? (
-            <LocalizedDate
-              dateString={c.publishedAt}
-              omitYear
-              options={{ year: "2-digit", month: "short", day: "numeric" }}
-            />
-          ) : undefined,
-          publication: c.publicationName
-            ? { name: c.publicationName }
-            : undefined,
-        }))}
+        .map(toReplyCandidate)}
+      resolveLink={async (url) => {
+        let result = await resolveReplyLink({
+          subject: props.documentUri,
+          url,
+        });
+        if (result.ok) return Ok(toReplyCandidate(result.value));
+        return Err(
+          replyErrorMessages[result.error.type] ??
+            "We couldn't find that post.",
+        );
+      }}
       submitting={submitting}
-      onSubmit={async (reply) => {
+      onSubmit={async (document) => {
         setSubmitting(true);
         let ok = await run(() =>
-          submitReply({ subject: props.documentUri, block: props.block, reply }),
+          submitReply({
+            subject: props.documentUri,
+            block: props.block,
+            document,
+          }),
         );
         setSubmitting(false);
-        if (ok) props.onSubmitted();
+        if (!ok) return;
+        mutate();
+        props.onSubmitted();
       }}
     />
   );
+}
+
+function toReplyCandidate(
+  c: OkValue<Awaited<ReturnType<typeof resolveReplyLink>>>,
+): ReplyCandidate {
+  return {
+    uri: c.uri,
+    title: c.title,
+    submitted: c.submitted,
+    date: c.publishedAt ? (
+      <LocalizedDate
+        dateString={c.publishedAt}
+        omitYear
+        options={{ year: "2-digit", month: "short", day: "numeric" }}
+      />
+    ) : undefined,
+    publication: c.publicationName ? { name: c.publicationName } : undefined,
+  };
 }
