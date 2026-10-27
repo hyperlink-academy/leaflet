@@ -5,10 +5,8 @@ import { useState, useRef, useEffect } from "react";
 import { SpeedyLink } from "components/SpeedyLink";
 import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
-import {
-  EAGERLY_VISIBLE_CARDS,
-  useReportCardVisible,
-} from "./LeafletCardReplicache";
+import { useReportCardVisible } from "./LeafletCardReplicache";
+import { EAGERLY_VISIBLE_CARDS } from "src/utils/homeLeaflets";
 
 export const LeafletListItem = (props: {
   archived?: boolean | null;

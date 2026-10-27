@@ -17,10 +17,13 @@ import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { HomeEmptyState } from "./HomeEmpty/HomeEmpty";
 import { CreateNewLeafletButton } from "./Actions/CreateNewButton";
+import { LeafletCardReplicache } from "./LeafletList/LeafletCardReplicache";
 import {
   EAGERLY_VISIBLE_CARDS,
-  LeafletCardReplicache,
-} from "./LeafletList/LeafletCardReplicache";
+  identityHomeLeaflets,
+  newestFirst,
+} from "src/utils/homeLeaflets";
+import type { Fact } from "src/replicache";
 import { EmptyState } from "components/EmptyState";
 import { TutorialBanner } from "./Tutorial/TutorialBanner";
 import { TutorialTakeover } from "./Tutorial/TutorialTakeover";
@@ -62,9 +65,12 @@ type _ShareLinkColumnsPresent = LeafletsInPublications extends {
   : never;
 const _shareLinkColumnsPresent: _ShareLinkColumnsPresent = true;
 
+type PreviewFacts = { [root_entity: string]: Fact<any>[] };
+
 export const HomeContent = (props: {
   entityID: string | null;
   titles: { [root_entity: string]: string };
+  previewFacts: PreviewFacts;
 }) => {
   let hasBackgroundImage = !!useEntity(
     props.entityID,
@@ -130,6 +136,7 @@ export const HomeContent = (props: {
     >
       <HomeLeafletList
         titles={props.titles}
+        previewFacts={props.previewFacts}
         searchValue={debouncedSearchValue}
       />
       {tutorial && <TutorialBanner />}
@@ -139,6 +146,7 @@ export const HomeContent = (props: {
 
 function HomeLeafletList(props: {
   titles: { [root_entity: string]: string };
+  previewFacts: PreviewFacts;
   searchValue: string;
 }) {
   let { identity } = useIdentityData();
@@ -148,25 +156,7 @@ function HomeLeafletList(props: {
   });
   let leaflets: Leaflet[];
   if (identity) {
-    let owned = identity.permission_token_on_homepage.map((ptoh) => ({
-      added_at: ptoh.created_at,
-      token: ptoh.permission_tokens as PermissionToken,
-      archived: ptoh.archived,
-    }));
-    let ownedIds = new Set(owned.map((l) => l.token.id));
-    let contributed = (identity.contributor_leaflets ?? [])
-      .filter((row) => !ownedIds.has(row.permission_tokens.id))
-      .map((row) => ({
-        added_at: row.created_at,
-        token: row.permission_tokens as unknown as PermissionToken,
-        // Contributed leaflets have no personal homepage row, so archived
-        // state comes from the publication's draft list
-        archived:
-          row.permission_tokens.leaflets_in_publications?.some(
-            (l) => l.archived,
-          ) ?? false,
-      }));
-    leaflets = [...owned, ...contributed];
+    leaflets = identityHomeLeaflets(identity);
   } else {
     leaflets = localLeaflets
       .sort((a, b) => (a.added_at > b.added_at ? -1 : 1))
@@ -182,6 +172,7 @@ function HomeLeafletList(props: {
         searchValue={props.searchValue}
         leaflets={leaflets}
         titles={props.titles}
+        previewFacts={props.previewFacts}
         showPreview
       />
       <div className="spacer sm:block hidden h-4 w-full bg-transparent shrink-0 " />
@@ -192,6 +183,7 @@ function HomeLeafletList(props: {
 export function LeafletList(props: {
   leaflets: Leaflet[];
   titles: { [root_entity: string]: string };
+  previewFacts?: PreviewFacts;
   defaultDisplay: Exclude<DashboardState["display"], undefined>;
   searchValue: string;
   showPreview?: boolean;
@@ -224,6 +216,7 @@ export function LeafletList(props: {
           leaflet={leaflet}
           loggedIn={!!identity}
           eagerLoadFacts={index < EAGERLY_VISIBLE_CARDS}
+          previewFacts={props.previewFacts?.[leaflet.root_entity]}
         >
           <StaticLeafletDataContext
             value={{
@@ -277,13 +270,7 @@ function useSearchedLeaflets(
         return titleA.toLocaleLowerCase() > titleB.toLocaleLowerCase() ? 1 : -1;
       }
     } else {
-      return a.added_at === b.added_at
-        ? a.token.root_entity > b.token.root_entity
-          ? -1
-          : 1
-        : a.added_at > b.added_at
-          ? -1
-          : 1;
+      return newestFirst(a, b);
     }
   });
 
