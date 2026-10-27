@@ -1,4 +1,5 @@
 "use client";
+import dynamic from "next/dynamic";
 import { questionsAudience } from "src/questionsAudience";
 import {
   blockSpacingClassName,
@@ -37,7 +38,6 @@ import {
 import { snapToImageWidth } from "supabase/imageSizes";
 import { srcDocSandbox } from "src/utils/srcDocSandbox";
 import { TextBlock } from "./Blocks/TextBlock";
-import { StaticMathBlock } from "./Blocks/StaticMathBlock";
 import { InkSvg } from "components/Blocks/DrawingBlock/InkSvg";
 import { PubCodeBlock } from "./Blocks/PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
@@ -85,6 +85,12 @@ import { interactionBlockAnchor } from "src/utils/interactionBlockAnchor";
 import { useOptionalPostResources } from "./PostDataProvider";
 import { PostHeader } from "./PostHeader/PostHeader";
 import { usePostHeaderBlockData } from "./PostHeader/postHeaderBlockContext";
+
+// SSR renders math into the page, so katex only loads (and hydrates the
+// server markup) on posts that have a math block.
+const StaticMathBlock = dynamic(() =>
+  import("./Blocks/StaticMathBlock").then((m) => m.StaticMathBlock),
+);
 
 // Mirrors HeadingStyle in components/Blocks/TextBlock/index.tsx so published
 // headers match the editor exactly. Keep the two in sync — see the
