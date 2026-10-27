@@ -79,6 +79,7 @@ export type ReplicacheMutators = {
 export type PermissionToken = {
   id: string;
   root_entity: string;
+  title?: string | null;
   permission_token_rights: {
     created_at: string;
     entity_set: string;
