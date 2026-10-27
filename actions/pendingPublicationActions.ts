@@ -2,9 +2,9 @@
 
 import { getAuthIdentity } from "src/auth";
 import type {
-  PendingActionKind,
-  PublicationsPendingActions,
-} from "src/pendingActionKinds";
+  PendingPublicationActionKind,
+  PublicationsWithPendingActions,
+} from "src/pendingPublicationActionKinds";
 import { supabaseServerClient } from "supabase/serverClient";
 
 function ownedPublicationInteractions(did: string) {
@@ -31,7 +31,7 @@ type DocumentInteractions = NonNullable<
 >;
 
 const counters: Record<
-  PendingActionKind,
+  PendingPublicationActionKind,
   (document: DocumentInteractions) => number
 > = {
   replies: (document) => {
@@ -53,15 +53,15 @@ const counters: Record<
   },
 };
 
-const kinds = Object.keys(counters) as PendingActionKind[];
+const kinds = Object.keys(counters) as PendingPublicationActionKind[];
 
-export async function getMyPendingActions(): Promise<PublicationsPendingActions> {
+export async function getMyPendingPublicationActions(): Promise<PublicationsWithPendingActions> {
   const identity = await getAuthIdentity();
   if (!identity?.atp_did) return {};
   const { data: publications } = await ownedPublicationInteractions(
     identity.atp_did,
   );
-  const actions: PublicationsPendingActions = {};
+  const actions: PublicationsWithPendingActions = {};
   for (const publication of publications ?? [])
     for (const { document, documents } of publication.documents_in_publications)
       for (const kind of kinds) {

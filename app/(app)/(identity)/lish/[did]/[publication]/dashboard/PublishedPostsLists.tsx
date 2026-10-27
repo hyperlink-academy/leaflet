@@ -22,10 +22,10 @@ import { useIdentityData } from "components/IdentityProvider";
 import { EmailTiny } from "components/Icons/EmailTiny";
 import { Popover } from "components/Popover";
 import {
-  PendingActionsCount,
-  usePublicationPendingActions,
-} from "components/PendingActions";
-import type { PostPendingActions } from "src/pendingActionKinds";
+  PendingPublicationActionsCount,
+  usePendingPublicationActions,
+} from "components/PendingPublicationActions";
+import type { PostPendingPublicationActions } from "src/pendingPublicationActionKinds";
 
 export function PublishedPostsList(props: {
   searchValue: string;
@@ -34,7 +34,9 @@ export function PublishedPostsList(props: {
   let { data } = usePublicationData();
   let { publication, documents } = data || {};
   const pubRecord = useNormalizedPublicationRecord();
-  const pendingActions = usePublicationPendingActions(publication?.uri);
+  const pendingPublicationActions = usePendingPublicationActions(
+    publication?.uri,
+  );
   if (!publication) return null;
   if (!documents || documents.length === 0)
     return <PublishedEmpty publication={publication.uri} />;
@@ -58,7 +60,7 @@ export function PublishedPostsList(props: {
           doc={doc}
           publication={publication}
           pubRecord={pubRecord}
-          pendingActions={pendingActions[doc.uri]}
+          pendingPublicationActions={pendingPublicationActions[doc.uri]}
           showPageBackground={props.showPageBackground}
         />
       ))}
@@ -101,7 +103,7 @@ function PublishedPostItem(props: {
     NonNullable<ReturnType<typeof usePublicationData>["data"]>["publication"]
   >;
   pubRecord: ReturnType<typeof useNormalizedPublicationRecord>;
-  pendingActions?: PostPendingActions;
+  pendingPublicationActions?: PostPendingPublicationActions;
   showPageBackground: boolean;
 }) {
   const { doc, publication, pubRecord, showPageBackground } = props;
@@ -141,8 +143,8 @@ function PublishedPostItem(props: {
               </a>
               <div className="">
                 <div className="spacer h-[3px]" />
-                <PendingActionsCount
-                  actions={props.pendingActions}
+                <PendingPublicationActionsCount
+                  actions={props.pendingPublicationActions}
                   postUrl={docUrl}
                 />
               </div>
