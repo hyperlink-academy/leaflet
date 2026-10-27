@@ -42,14 +42,12 @@ export function LeafletCardReplicache(props: {
   const contextValue = useMemo(() => ({ notifyVisible }), [notifyVisible]);
 
   const initialFacts = facts ?? [];
-  const providerKey = `${props.leaflet.id}:${facts ? "loaded" : "loading"}`;
 
   return (
     <CardVisibilityContext.Provider value={contextValue}>
       <ReplicacheProvider
         disablePull
         initialFactsOnly={props.loggedIn}
-        key={providerKey}
         rootEntity={props.leaflet.root_entity}
         token={props.leaflet}
         name={props.leaflet.root_entity}
