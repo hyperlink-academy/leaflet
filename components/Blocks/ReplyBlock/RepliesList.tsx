@@ -15,7 +15,6 @@ import { PublicationThemeWrapper } from "components/ThemeManager/PublicationThem
 import { mainSiteAuthBase } from "src/utils/customDomain";
 import type { DocumentReply, ReplyDraft } from "src/documentReplies";
 import {
-  AcceptedRepliesHeader,
   PendingRepliesHeader,
   RepliesDivider,
   RepliesHeader,
@@ -158,7 +157,7 @@ export function RepliesListWithModeration(props: {
 
       {visible.length > 0 && (
         <div className="flex flex-col gap-2">
-          <AcceptedRepliesHeader accepted={visible.length} />
+          <RepliesDivider label={`Replies (${visible.length})`} />
           {visible.map((reply) => (
             <ReplyRow
               key={reply.uri}

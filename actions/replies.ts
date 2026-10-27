@@ -23,7 +23,7 @@ import { createNewLeaflet } from "./createNewLeaflet";
 import {
   createReplyRecord,
   getReplyTarget as loadReplyTarget,
-  documentReplyTargets,
+  replyTargets,
   loadDocumentReplies,
   subjectReplyBlock,
   MAX_REPLIES,
@@ -215,7 +215,21 @@ export async function withdrawReplyDraft(
 }
 
 export async function getDocumentReplyTargets(document: string) {
-  return documentReplyTargets(document, viewerDid());
+  const [{ data: submissions }, viewer] = await Promise.all([
+    supabaseServerClient
+      .from("document_replies")
+      .select(
+        `uri, subject, document_reply_rejections(reply),
+        documents!document_replies_subject_fkey(uri, data,
+          documents_in_publications(publications(uri, record)))`,
+      )
+      .eq("document", document),
+    viewerDid(),
+  ]);
+  return replyTargets(
+    (submissions ?? []).filter((s) => !s.document_reply_rejections),
+    { includePending: !!viewer && isDocumentOwner(document, viewer) },
+  );
 }
 
 export type ReplyError =

@@ -262,9 +262,9 @@ type ReplySubmission = {
   documents: ReplyTargetDocument | null;
 };
 
-async function submissionTargets(
+export async function replyTargets(
   submissions: ReplySubmission[],
-  includePending: boolean,
+  { includePending = false } = {},
 ): Promise<ReplyTarget[]> {
   if (submissions.length === 0) return [];
   const [{ data: allowedRows }, profiles] = await Promise.all([
@@ -291,34 +291,6 @@ async function submissionTargets(
     });
     return target ? [target] : [];
   });
-}
-
-// The documents that show a document as an accepted reply.
-export function acceptedReplyTargets(
-  submissions: ReplySubmission[],
-): Promise<ReplyTarget[]> {
-  return submissionTargets(submissions, false);
-}
-
-export async function documentReplyTargets(
-  document: string,
-  viewer: string | null | Promise<string | null>,
-): Promise<ReplyTarget[]> {
-  const [{ data: submissions }, viewerDid] = await Promise.all([
-    supabaseServerClient
-      .from("document_replies")
-      .select(
-        `uri, subject, document_reply_rejections(reply),
-        documents!document_replies_subject_fkey(uri, data,
-          documents_in_publications(publications(uri, record)))`,
-      )
-      .eq("document", document),
-    viewer,
-  ]);
-  return submissionTargets(
-    (submissions ?? []).filter((s) => !s.document_reply_rejections),
-    !!viewerDid && isDocumentOwner(document, viewerDid),
-  );
 }
 
 // The reply block on published document `subject` that a submission through

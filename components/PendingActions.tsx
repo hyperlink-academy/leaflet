@@ -12,19 +12,13 @@ import {
   type PostPendingActions,
 } from "src/pendingActionKinds";
 
-function useMyPendingActions() {
+export function usePublicationPendingActions(publication: string | undefined) {
   let { identity } = useIdentityData();
   let did = identity?.atp_did;
-  return (
-    useSWR(did ? ["my_pending_actions", did] : null, () =>
-      getMyPendingActions(),
-    ).data ?? {}
+  let { data } = useSWR(did ? ["my_pending_actions", did] : null, () =>
+    getMyPendingActions(),
   );
-}
-
-export function usePublicationPendingActions(publication: string | undefined) {
-  let actions = useMyPendingActions();
-  return (publication && actions[publication]) || {};
+  return (publication && data?.[publication]) || {};
 }
 
 export function PendingActionsIndicator(props: { publication: string }) {

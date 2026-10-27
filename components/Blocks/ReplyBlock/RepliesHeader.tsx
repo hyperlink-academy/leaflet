@@ -117,7 +117,3 @@ export function RepliesDivider(props: { label: React.ReactNode }) {
     </div>
   );
 }
-
-export function AcceptedRepliesHeader(props: { accepted: number }) {
-  return <RepliesDivider label={`Replies (${props.accepted})`} />;
-}
