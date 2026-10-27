@@ -2,7 +2,7 @@ import { getIdentityData } from "actions/getIdentityData";
 import { getHomeLeaflet } from "src/homeLeaflet";
 import { getLeafletTitle } from "src/utils/getLeafletTitle";
 import {
-  EAGERLY_VISIBLE_CARDS,
+  SERVER_RENDERED_PREVIEWS,
   identityHomeLeaflets,
   newestFirst,
 } from "src/utils/homeLeaflets";
@@ -35,7 +35,7 @@ export default async function Home() {
     ? identityHomeLeaflets(auth_res)
         .filter((l) => !l.archived)
         .sort(newestFirst)
-        .slice(0, EAGERLY_VISIBLE_CARDS)
+        .slice(0, SERVER_RENDERED_PREVIEWS)
         .map((l) => l.token.root_entity)
     : [];
   let { result: previews } = await getFactsForRoots.handler(

@@ -2,9 +2,14 @@ import type { Identity } from "components/IdentityProvider";
 import type { Fact, PermissionToken } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 
-// Cards assumed on-screen before the IntersectionObserver has fired: the home
-// page server-renders their previews, and cards past them fetch on scroll.
+// Cards assumed on-screen before the IntersectionObserver has fired: they
+// render their preview and fetch facts on mount, in one batched call.
 export const EAGERLY_VISIBLE_CARDS = 16;
+// Of those, the ones whose previews the home page server-renders: a phone's
+// first screen. Each costs its facts in every home payload, including the
+// editor's /home prefetch.
+export const SERVER_RENDERED_PREVIEWS = 8;
+
 type Listed = { added_at: string; token: { root_entity: string } };
 // Home's default card order. The server seeds previews for the first cards in
 // this order, so it has to be the same comparator the list sorts by.
