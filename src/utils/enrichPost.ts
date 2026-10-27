@@ -3,11 +3,10 @@ import { getPublicationURL } from "src/utils/getPublicationURL";
 import { getConstellationBacklinks } from "src/utils/getPostPageData";
 import { getDocumentURL } from "src/utils/getPublicationURL";
 import {
-  getDocumentPages,
   normalizeDocumentRecord,
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
-import { truncatePagesAtMembersDelimiter } from "src/membership";
+import { toDocumentPreviews } from "src/utils/documentPreview";
 import { idResolver } from "src/identity";
 import { supabaseServerClient } from "supabase/serverClient";
 import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
@@ -30,8 +29,11 @@ type RawDocument = {
   }[];
 };
 
+// countBacklinks: false keeps the DB mention count instead of merging in
+// constellation backlinks (one network round trip per post).
 export async function enrichDocumentToPost(
   doc: RawDocument,
+  { countBacklinks = true } = {},
 ): Promise<Post | null> {
   const pub = doc.documents_in_publications?.[0]?.publications;
   const uri = new AtUri(doc.uri);
@@ -46,21 +48,18 @@ export async function enrichDocumentToPost(
     return null;
   }
 
-  // The reader feed has no per-user membership context, so members-only posts
-  // only surface their preview; the post page itself unlocks for members.
-  const docPages = getDocumentPages(normalizedData);
-  if (docPages) truncatePagesAtMembersDelimiter(docPages);
-
   const normalizedPubRecord = pub
     ? normalizePublicationRecord(pub.record)
     : null;
 
-  const mentionsCount = await getAccurateMentionsCount(
-    normalizedData,
-    doc.uri,
-    normalizedPubRecord,
-    doc.document_mentions_in_bsky?.[0]?.count || 0,
-  );
+  const mentionsCount = countBacklinks
+    ? await getAccurateMentionsCount(
+        normalizedData,
+        doc.uri,
+        normalizedPubRecord,
+        doc.document_mentions_in_bsky?.[0]?.count || 0,
+      )
+    : undefined;
 
   const contributors = await resolveBylineProfiles(normalizedData, uri.host);
 
@@ -81,7 +80,7 @@ export async function enrichDocumentToPost(
       document_mentions_in_bsky: doc.document_mentions_in_bsky,
       recommends_on_documents: doc.recommends_on_documents,
       mentionsCount,
-      data: normalizedData,
+      data: toDocumentPreviews(normalizedData),
       uri: doc.uri,
       sort_date: doc.sort_date,
     },
