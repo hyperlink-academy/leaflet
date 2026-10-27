@@ -265,21 +265,7 @@ export function useMountProsemirror({
       },
     );
 
-    const unsubscribe = useEditorStates.subscribe(
-      (s) => s.editorStates[entityID],
-      (editorState) => {
-        if (editorState?.initial) return;
-        if (editorState?.editor)
-          editorState.view?.updateState(editorState.editor);
-      },
-    );
-
-    let editorState = useEditorStates.getState().editorStates[entityID];
-    if (editorState?.editor && !editorState.initial)
-      editorState.view?.updateState(editorState.editor);
-
     return () => {
-      unsubscribe();
       view.destroy();
       useEditorStates.setState((s) => ({
         ...s,
@@ -291,96 +277,90 @@ export function useMountProsemirror({
     };
 
     function dispatchTransaction(this: EditorView, tr: any) {
-      useEditorStates.setState((s) => {
-        let oldEditorState = this.state;
-        let newState = this.state.apply(tr);
-        let docHasChanges = tr.steps.length !== 0 || tr.docChanged;
-        // Changes synced in from a peer over yjs carry the ySync change origin.
-        // The peer that made the edit already fired the orphan-diff mutations
-        // below, so skip them here to avoid deleting the same footnote/comment
-        // twice from every client.
-        let isRemoteChange = !!tr.getMeta(ySyncPluginKey)?.isChangeOrigin;
+      let oldEditorState = this.state;
+      let newState = this.state.apply(tr);
+      let docHasChanges = tr.steps.length !== 0 || tr.docChanged;
+      // Changes synced in from a peer over yjs carry the ySync change origin.
+      // The peer that made the edit already fired the orphan-diff mutations
+      // below, so skip them here to avoid deleting the same footnote/comment
+      // twice from every client.
+      let isRemoteChange = !!tr.getMeta(ySyncPluginKey)?.isChangeOrigin;
 
-        // Diff for removed/added footnote nodes
-        if (docHasChanges && !isRemoteChange) {
-          let oldFootnotes = new Set<string>();
-          let newFootnotes = new Set<string>();
-          oldEditorState.doc.descendants((n) => {
-            if (n.type.name === "footnote")
-              oldFootnotes.add(n.attrs.footnoteEntityID);
-          });
-          newState.doc.descendants((n) => {
-            if (n.type.name === "footnote")
-              newFootnotes.add(n.attrs.footnoteEntityID);
-          });
-          // Removed footnotes
-          for (let id of oldFootnotes) {
-            if (!newFootnotes.has(id)) {
-              repRef.current?.mutate.deleteFootnote({
-                footnoteEntityID: id,
-                blockID: entityID,
-              });
-            }
-          }
-
-          // Diff comment marks: deleting all the commented text deletes the
-          // comment, like removing a footnote node deletes the footnote
-          let collectCommentIDs = (doc: Node, into: Set<string>) => {
-            doc.descendants((n) => {
-              for (let m of n.marks)
-                if (m.type.name === "comment")
-                  for (let id of ((m.attrs.commentID as string) || "").split(
-                    " ",
-                  )) {
-                    if (id) into.add(id);
-                  }
+      // Diff for removed/added footnote nodes
+      if (docHasChanges && !isRemoteChange) {
+        let oldFootnotes = new Set<string>();
+        let newFootnotes = new Set<string>();
+        oldEditorState.doc.descendants((n) => {
+          if (n.type.name === "footnote")
+            oldFootnotes.add(n.attrs.footnoteEntityID);
+        });
+        newState.doc.descendants((n) => {
+          if (n.type.name === "footnote")
+            newFootnotes.add(n.attrs.footnoteEntityID);
+        });
+        // Removed footnotes
+        for (let id of oldFootnotes) {
+          if (!newFootnotes.has(id)) {
+            repRef.current?.mutate.deleteFootnote({
+              footnoteEntityID: id,
+              blockID: entityID,
             });
-          };
-          let oldComments = new Set<string>();
-          let newComments = new Set<string>();
-          collectCommentIDs(oldEditorState.doc, oldComments);
-          collectCommentIDs(newState.doc, newComments);
-          // Resolving a thread strips its anchor mark locally, so this also
-          // fires for a just-resolved comment on the resolver's own client;
-          // deleteEditorComment is idempotent, so the redundant delete is harmless.
-          for (let id of oldComments) {
-            if (!newComments.has(id)) {
-              repRef.current?.mutate.deleteEditorComment({
-                commentEntityID: id,
-                blockID: entityID,
-              });
-            }
           }
         }
 
-        // Handle undo/redo history with timeout-based grouping
-        let isBulkOp = tr.getMeta("bulkOp");
-        let setState = (s: EditorState) => () => {
-          let view = useEditorStates.getState().editorStates[entityID]?.view;
-          if (!view?.hasFocus() && !isBulkOp) view?.focus();
-          restoreEditorState(entityID, s);
+        // Diff comment marks: deleting all the commented text deletes the
+        // comment, like removing a footnote node deletes the footnote
+        let collectCommentIDs = (doc: Node, into: Set<string>) => {
+          doc.descendants((n) => {
+            for (let m of n.marks)
+              if (m.type.name === "comment")
+                for (let id of ((m.attrs.commentID as string) || "").split(
+                  " ",
+                )) {
+                  if (id) into.add(id);
+                }
+          });
         };
+        let oldComments = new Set<string>();
+        let newComments = new Set<string>();
+        collectCommentIDs(oldEditorState.doc, oldComments);
+        collectCommentIDs(newState.doc, newComments);
+        // Resolving a thread strips its anchor mark locally, so this also
+        // fires for a just-resolved comment on the resolver's own client;
+        // deleteEditorComment is idempotent, so the redundant delete is harmless.
+        for (let id of oldComments) {
+          if (!newComments.has(id)) {
+            repRef.current?.mutate.deleteEditorComment({
+              commentEntityID: id,
+              blockID: entityID,
+            });
+          }
+        }
+      }
 
-        trackUndoRedo(
-          tr,
-          rep.undoManager,
-          entityID,
-          setState(oldEditorState),
-          setState(newState),
-        );
+      // Handle undo/redo history with timeout-based grouping
+      let isBulkOp = tr.getMeta("bulkOp");
+      let setState = (s: EditorState) => () => {
+        let view = useEditorStates.getState().editorStates[entityID]?.view;
+        if (!view?.hasFocus() && !isBulkOp) view?.focus();
+        restoreEditorState(entityID, s);
+      };
 
-        return {
-          editorStates: {
-            ...s.editorStates,
-            [entityID]: {
-              editor: newState,
-              view: this as unknown as EditorView,
-              initial: false,
-              keymap: km,
-            },
-          },
-        };
-      });
+      trackUndoRedo(
+        tr,
+        rep.undoManager,
+        entityID,
+        setState(oldEditorState),
+        setState(newState),
+      );
+
+      useEditorStates.setState((s) => ({
+        editorStates: {
+          ...s.editorStates,
+          [entityID]: { editor: newState, view: this, keymap: km },
+        },
+      }));
+      this.updateState(newState);
     }
     // `parent` is intentionally NOT a dependency: indent/outdent change a
     // block's parent but keep the same entityID, and rebuilding the EditorView
