@@ -130,7 +130,10 @@ export function ReplicacheProvider(props: {
   disablePull?: boolean;
 }) {
   let [rep, setRep] = useState<null | Replicache<ReplicacheMutators>>(null);
-  let [undoManager] = useState(createUndoManager());
+  let [undoManager] = useState(createUndoManager);
+  // Read-only previews (home cards, version viewer) render dozens of these;
+  // only a client that pulls has anything to undo or peers to broadcast to.
+  let live = !props.initialFactsOnly && !props.disablePull;
   let tokenRef = useRef(props.token);
   tokenRef.current = props.token;
   let rootEntityRef = useRef(props.rootEntity);
@@ -140,6 +143,7 @@ export function ReplicacheProvider(props: {
   sessionDidRef.current = identity?.atp_did ?? null;
   let token_signature = tokenSignature(props.token);
   useEffect(() => {
+    if (!live) return;
     return addShortcut([
       {
         metaKey: true,
@@ -165,7 +169,7 @@ export function ReplicacheProvider(props: {
         },
       },
     ]);
-  }, [undoManager]);
+  }, [undoManager, live]);
   useEffect(() => {
     if (props.initialFactsOnly) return;
     let supabase = supabaseBrowserClient();
@@ -275,12 +279,13 @@ export function ReplicacheProvider(props: {
         permission_token: props.token,
       }}
     >
-      <YjsRealtimeProvider
-        name={props.name}
-        enabled={!props.initialFactsOnly && !props.disablePull}
-      >
-        {props.children}
-      </YjsRealtimeProvider>
+      {live ? (
+        <YjsRealtimeProvider name={props.name}>
+          {props.children}
+        </YjsRealtimeProvider>
+      ) : (
+        props.children
+      )}
     </ReplicacheContext.Provider>
   );
 }

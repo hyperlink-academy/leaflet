@@ -318,15 +318,13 @@ export const useYjsRealtime = () => useContext(YjsRealtimeContext);
 
 export function YjsRealtimeProvider(props: {
   name: string;
-  enabled: boolean;
   children: React.ReactNode;
 }) {
   // The shared awareness is created synchronously and lives for the whole
   // provider lifetime, independent of the channel: editors capture it in
   // their cursor plugins at mount, so its identity must not change when the
-  // connection appears (or when `enabled` is off — then it simply never has
-  // peers). Its doc exists only to give the awareness a clientID; cursor
-  // relative positions are always resolved against the blocks' own docs.
+  // connection appears. Its doc exists only to give the awareness a clientID;
+  // cursor relative positions are always resolved against the blocks' own docs.
   let [awareness] = useState(() => new Awareness(new Y.Doc()));
   let [connection, setConnection] = useState<YjsRealtimeConnection | null>(
     null,
@@ -353,14 +351,13 @@ export function YjsRealtimeProvider(props: {
     awareness.setLocalStateField("user", { name: userName, hue: sessionHue });
   }, [awareness, userName]);
   useEffect(() => {
-    if (!props.enabled) return;
     let conn = new YjsRealtimeConnection(props.name, awareness);
     setConnection(conn);
     return () => {
       conn.destroy();
       setConnection(null);
     };
-  }, [props.name, props.enabled, awareness]);
+  }, [props.name, awareness]);
   let value = useMemo(
     () => ({ connection, awareness }),
     [connection, awareness],

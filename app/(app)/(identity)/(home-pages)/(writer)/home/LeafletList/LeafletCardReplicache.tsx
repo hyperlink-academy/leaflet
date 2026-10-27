@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 import { ReplicacheProvider, type PermissionToken } from "src/replicache";
 import { useLeafletFacts } from "./HomeLeafletFactsProvider";
 
@@ -9,6 +15,7 @@ import { useLeafletFacts } from "./HomeLeafletFactsProvider";
 // both so the initial view resolves in a single batched getFactsForRoots call —
 // a card that renders eagerly but fetches lazily lands in a second RPC batch.
 export const EAGERLY_VISIBLE_CARDS = 16;
+const noFacts: never[] = [];
 
 const CardVisibilityContext = createContext<{
   notifyVisible: () => void;
@@ -25,29 +32,22 @@ export function LeafletCardReplicache(props: {
   children: React.ReactNode;
 }) {
   const [hasBeenVisible, setHasBeenVisible] = useState(props.eagerLoadFacts);
-  const { facts } = useLeafletFacts(
-    props.leaflet.root_entity,
-    hasBeenVisible,
-  );
+  const { facts } = useLeafletFacts(props.leaflet.root_entity, hasBeenVisible);
 
   const notifyVisible = useCallback(() => {
     setHasBeenVisible((v) => v || true);
   }, []);
   const contextValue = useMemo(() => ({ notifyVisible }), [notifyVisible]);
 
-  const initialFacts = facts ?? [];
-  const providerKey = `${props.leaflet.id}:${facts ? "loaded" : "loading"}`;
-
   return (
     <CardVisibilityContext.Provider value={contextValue}>
       <ReplicacheProvider
         disablePull
         initialFactsOnly={props.loggedIn}
-        key={providerKey}
         rootEntity={props.leaflet.root_entity}
         token={props.leaflet}
         name={props.leaflet.root_entity}
-        initialFacts={initialFacts}
+        initialFacts={facts ?? noFacts}
       >
         {props.children}
       </ReplicacheProvider>
