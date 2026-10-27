@@ -64,13 +64,28 @@ export const scanIndex = (tx: ReadTransaction) => ({
   },
 });
 
-export const scanIndexLocal = (initialFacts: Fact<any>[]) => ({
-  eav<A extends Attribute>(entity: string, attribute: A) {
-    return initialFacts.filter(
-      (f) => f.entity === entity && f.attribute === attribute,
-    ) as SafeArray<Fact<A>>;
-  },
-});
+// Every block's hooks read their facts out of the same initialFacts array
+// until the first pull lands, so the array is grouped by entity and attribute
+// once and shared by all of those reads.
+const localIndexes = new WeakMap<Fact<any>[], Map<string, Fact<any>[]>>();
+const indexFacts = (facts: Fact<any>[]) => {
+  let index = new Map<string, Fact<any>[]>();
+  for (let f of facts) {
+    let key = `${f.entity}-${f.attribute}`;
+    let list = index.get(key);
+    if (list) list.push(f);
+    else index.set(key, [f]);
+  }
+  return index;
+};
+export const scanIndexLocal = (initialFacts: Fact<any>[]) => {
+  let index = localIndexes.get(initialFacts) ?? indexFacts(initialFacts);
+  localIndexes.set(initialFacts, index);
+  return {
+    eav: <A extends Attribute>(entity: string, attribute: A) =>
+      [...(index.get(`${entity}-${attribute}`) ?? [])] as SafeArray<Fact<A>>,
+  };
+};
 
 // Base utility type for making types compatible with ReadonlyJSONObject
 export type AsReadonlyJSONObject<T> = T & {

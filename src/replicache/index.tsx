@@ -28,6 +28,7 @@ import { createUndoManager } from "src/undoManager";
 import { useIdentityData } from "components/IdentityProvider";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import { YjsRealtimeProvider } from "src/yjsRealtime";
+import { scanIndexLocal } from "./utils";
 
 export type Fact<A extends Attribute> = {
   id: string;
@@ -294,10 +295,7 @@ export function useEntity<A extends Attribute>(
 ): CardinalityResult<A> {
   let { rep, initialFacts } = useReplicache();
   let fallbackData = useMemo(
-    () =>
-      initialFacts.filter(
-        (f) => f.entity === entity && f.attribute === attribute,
-      ),
+    () => (entity ? scanIndexLocal(initialFacts).eav(entity, attribute) : []),
     [entity, attribute, initialFacts],
   );
   let data = useSubscribe(
