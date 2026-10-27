@@ -11,17 +11,20 @@ export const getFactsForRoots = makeRoute({
     roots: z.array(z.string()),
   }),
   handler: async ({ roots }, { supabase }: Pick<Env, "supabase">) => {
-    const { data } = await supabase.rpc("get_facts_for_roots", {
-      max_depth: 3,
-      roots,
-    });
-    const byRoot = Map.groupBy(
-      (data ?? []) as unknown as (Fact<Attribute> & { root_id: string })[],
-      (f) => f.root_id,
+    // One call per root: given several, the function walks them one after
+    // another, and the home page waits on this for its first screen.
+    const results = await Promise.all(
+      roots.map((root) =>
+        supabase.rpc("get_facts_for_roots", { roots: [root], max_depth: 3 }),
+      ),
     );
     const facts: { [root: string]: Fact<Attribute>[] } = {};
-    for (const [root, rootFacts] of byRoot)
-      facts[root] = toPreviewFacts(root, rootFacts);
+    roots.forEach((root, i) => {
+      facts[root] = toPreviewFacts(
+        root,
+        (results[i].data ?? []) as unknown as Fact<Attribute>[],
+      );
+    });
     return { result: { facts } };
   },
 });
