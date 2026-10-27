@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { Popover } from "components/Popover";
 import { Avatar } from "components/Avatar";
@@ -8,10 +9,8 @@ import { InfoSmall } from "components/Icons/InfoSmall";
 import { LoginModal } from "components/LoginButton";
 import { BaseTextBlock } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
-import {
-  FacetedTextComposer,
-  type FacetedText,
-} from "components/FacetedTextComposer";
+import type { FacetedText } from "components/FacetedTextComposer";
+import { ComposerPlaceholder } from "components/FacetedTextComposer/ComposerPlaceholder";
 import type { DocumentQuestion, QuestionState } from "src/documentQuestions";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import {
@@ -78,6 +77,12 @@ function AudienceNotice(props: { audience?: QuestionsAudience }) {
   if (!restriction) return null;
   return <span className="text-sm text-tertiary italic">{restriction}</span>;
 }
+
+const FacetedTextComposer = dynamic(
+  () =>
+    import("components/FacetedTextComposer").then((m) => m.FacetedTextComposer),
+  { ssr: false, loading: () => <ComposerPlaceholder className="min-h-20!" /> },
+);
 
 export function QuestionComposer(props: {
   draftKey: string | null;

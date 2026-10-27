@@ -13,7 +13,7 @@ import { AppBskyFeedDefs } from "@atproto/api";
 import { InteractionDrawer } from "./Interactions/InteractionDrawer";
 import { useInlineDrawer } from "./Interactions/useDrawerOpen";
 import { BookendSpacer, SandwichSpacer } from "components/LeafletLayout";
-import { PageOptionButton } from "components/Pages/PageOptions";
+import { PageOptionButton } from "components/Pages/PageWrapper";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { Fragment } from "react";
 import { PollData } from "./fetchPollData";

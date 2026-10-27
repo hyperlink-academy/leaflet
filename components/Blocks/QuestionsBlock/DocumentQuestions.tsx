@@ -1,5 +1,6 @@
 "use client";
 import React, { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import useSWR from "swr";
 import { AtUri } from "@atproto/syntax";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
@@ -23,7 +24,7 @@ import type {
 } from "src/documentQuestions";
 import type { QuestionsAudience } from "src/questionsAudience";
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
-import { ComposerPlaceholder } from "components/FacetedTextComposer";
+import { ComposerPlaceholder } from "components/FacetedTextComposer/ComposerPlaceholder";
 import {
   QuestionComposer,
   QuestionComposerPreview,
@@ -33,11 +34,13 @@ import {
 } from "./QuestionsView";
 import { PublishedAnswer } from "./PublishedAnswer";
 import type { FacetedText } from "components/FacetedTextComposer";
-import {
-  AnswerEditor,
-  useHasAnswerDraft,
-  useStartAnswer,
-} from "./AnswerEditor";
+import { useHasAnswerDraft, useStartAnswer } from "./answerDraft";
+
+// Only the author answers, from the editor, where the block editor this pulls
+// in is already loaded.
+const AnswerEditor = dynamic(() =>
+  import("./AnswerEditor").then((m) => m.AnswerEditor),
+);
 
 const questionErrorMessages: Partial<Record<QuestionError["type"], string>> = {
   not_found: "We couldn't find that post.",

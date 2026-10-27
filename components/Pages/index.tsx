@@ -16,7 +16,7 @@ import { LeafletSidebar } from "app/(app)/(editor)/[leaflet_id]/Sidebar";
 import { Page } from "./Page";
 import { ListDndProvider } from "components/Blocks/ListDnd";
 import { IframePageView } from "./IframePageView";
-import { PageOptionButton } from "./PageOptions";
+import { PageOptionButton } from "./PageWrapper";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
 
@@ -103,9 +103,7 @@ export function Pages(props: { rootPage: string }) {
               <IframePageView
                 url={page.url}
                 onOpen={(url) => {
-                  useUIState
-                    .getState()
-                    .openPage(page, { type: "iframe", url });
+                  useUIState.getState().openPage(page, { type: "iframe", url });
                   requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                       scrollIntoViewIfNeeded(
@@ -120,9 +118,7 @@ export function Pages(props: { rootPage: string }) {
                 pageOptions={
                   <div className="pageOptions w-fit z-10 absolute sm:-right-[19px] right-3 sm:top-3 top-0 flex sm:flex-col flex-row-reverse gap-1 items-start">
                     <PageOptionButton
-                      onClick={() =>
-                        useUIState.getState().closePage(page)
-                      }
+                      onClick={() => useUIState.getState().closePage(page)}
                     >
                       <CloseTiny />
                     </PageOptionButton>
