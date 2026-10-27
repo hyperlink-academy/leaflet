@@ -72,49 +72,52 @@ export type DocumentReplies = {
 // gets the public list, which is what cached pages render.
 export async function loadDocumentReplies(
   subject: string,
-  viewer: string | null,
+  viewer: string | null | Promise<string | null>,
 ): Promise<DocumentReplies> {
-  const [
-    { data: rows },
-    { data: allowedRows },
-    { data: rejectedRows },
-    { data: doc },
-    viewerDrafts,
-  ] = await Promise.all([
-    supabaseServerClient
-      .from("document_replies")
-      .select("uri, document, replier_did, record")
-      .eq("subject", subject)
-      .order("indexed_at", { ascending: true })
-      .limit(MAX_REPLIES),
-    supabaseServerClient
-      .from("document_reply_visibility")
-      .select("reply")
-      .eq("subject", subject),
-    supabaseServerClient
-      .from("document_reply_rejections")
-      .select("reply")
-      .eq("subject", subject),
-    supabaseServerClient
-      .from("documents")
-      .select("uri, data")
-      .eq("uri", subject)
-      .maybeSingle(),
-    viewer ? loadReplyDrafts(subject, viewer) : [],
+  const viewerDid = Promise.resolve(viewer);
+  const [{ blocks, ...replies }, drafts] = await Promise.all([
+    loadReplies(subject, viewerDid),
+    viewerDid.then((did) => (did ? loadReplyDrafts(subject, did) : [])),
   ]);
+  return {
+    ...replies,
+    drafts: drafts.map((d) => ({
+      ...d,
+      block: resolveInteractionBlock(blocks, d.block)?.key ?? null,
+    })),
+  };
+}
+
+async function loadReplies(subject: string, viewerDid: Promise<string | null>) {
+  const [{ data: rows }, { data: allowedRows }, { data: doc }, viewer] =
+    await Promise.all([
+      supabaseServerClient
+        .from("document_replies")
+        .select(
+          "uri, document, replier_did, record, document_reply_rejections(reply)",
+        )
+        .eq("subject", subject)
+        .order("indexed_at", { ascending: true })
+        .limit(MAX_REPLIES),
+      supabaseServerClient
+        .from("document_reply_visibility")
+        .select("reply")
+        .eq("subject", subject),
+      supabaseServerClient
+        .from("documents")
+        .select("uri, data")
+        .eq("uri", subject)
+        .maybeSingle(),
+      viewerDid,
+    ]);
   const isAuthor = !!viewer && isDocumentOwner(subject, viewer);
   const allowed = new Set((allowedRows ?? []).map((r) => r.reply));
-  const rejected = new Set((rejectedRows ?? []).map((r) => r.reply));
   const blocks = replyBlocksOf(
     doc && normalizeDocumentRecord(doc.data, doc.uri),
   );
-  const drafts = viewerDrafts.map((d) => ({
-    ...d,
-    block: resolveInteractionBlock(blocks, d.block)?.key ?? null,
-  }));
 
   const shown = (rows ?? [])
-    .filter((r) => !rejected.has(r.uri))
+    .filter((r) => !r.document_reply_rejections)
     .map((r) => ({
       uri: r.uri,
       document: r.document,
@@ -128,7 +131,7 @@ export async function loadDocumentReplies(
       mine: !!viewer && r.replier_did === viewer,
     }))
     .filter((r) => isAuthor || r.visible || r.mine);
-  if (shown.length === 0) return { isAuthor, replies: [], drafts };
+  if (shown.length === 0) return { isAuthor, blocks, replies: [] };
 
   const [
     {
@@ -146,7 +149,7 @@ export async function loadDocumentReplies(
 
   return {
     isAuthor,
-    drafts,
+    blocks,
     replies: shown.flatMap(({ document, replier_did, ...reply }) => {
       const post = postsByUri.get(document);
       return post
@@ -222,43 +225,33 @@ type ReplyTargetDocument = {
   }[];
 };
 
-async function replyTargets(
-  targets: {
-    doc: ReplyTargetDocument;
-    replyUri: string | null;
-    pending: boolean;
-  }[],
-): Promise<ReplyTarget[]> {
-  const profiles = await getProfiles(
-    targets.map((t) => new AtUri(t.doc.uri).host),
-  );
-  return targets.flatMap(({ doc, replyUri, pending }) => {
-    const record = normalizeDocumentRecord(doc.data, doc.uri);
-    if (!record) return [];
-    const pub = doc.documents_in_publications[0]?.publications;
-    const pubRecord = pub ? normalizePublicationRecord(pub.record) : null;
-    const author = profiles.get(new AtUri(doc.uri).host);
-    return [
-      {
-        uri: doc.uri,
-        title: record.title || "Untitled",
-        href: getDocumentURL(record, doc.uri, pub),
-        publication:
-          pub && pubRecord
-            ? {
-                name: pubRecord.name,
-                icon: pubRecord.icon
-                  ? blobRefToSrc(pubRecord.icon.ref, new AtUri(pub.uri).host)
-                  : null,
-              }
-            : null,
-        authorHandle: author?.handle ?? null,
-        authorAvatar: author?.avatar ?? null,
-        replyUri,
-        pending,
-      },
-    ];
-  });
+function replyTarget(
+  doc: ReplyTargetDocument,
+  profiles: Awaited<ReturnType<typeof getProfiles>>,
+  reply: Pick<ReplyTarget, "replyUri" | "pending">,
+): ReplyTarget | null {
+  const record = normalizeDocumentRecord(doc.data, doc.uri);
+  if (!record) return null;
+  const pub = doc.documents_in_publications[0]?.publications;
+  const pubRecord = pub ? normalizePublicationRecord(pub.record) : null;
+  const author = profiles.get(new AtUri(doc.uri).host);
+  return {
+    uri: doc.uri,
+    title: record.title || "Untitled",
+    href: getDocumentURL(record, doc.uri, pub),
+    publication:
+      pub && pubRecord
+        ? {
+            name: pubRecord.name,
+            icon: pubRecord.icon
+              ? blobRefToSrc(pubRecord.icon.ref, new AtUri(pub.uri).host)
+              : null,
+          }
+        : null,
+    authorHandle: author?.handle ?? null,
+    authorAvatar: author?.avatar ?? null,
+    ...reply,
+  };
 }
 
 // A document's submissions as a reply, each with the document it replies to:
@@ -269,66 +262,62 @@ type ReplySubmission = {
   documents: ReplyTargetDocument | null;
 };
 
-// The documents that show a document as an accepted reply.
-export async function acceptedReplyTargets(
+async function submissionTargets(
   submissions: ReplySubmission[],
+  includePending: boolean,
 ): Promise<ReplyTarget[]> {
   if (submissions.length === 0) return [];
-  const { data: allowedRows } = await supabaseServerClient
-    .from("document_reply_visibility")
-    .select("reply")
-    .in(
-      "subject",
-      submissions.map((r) => r.subject),
-    )
-    .in(
-      "reply",
-      submissions.map((r) => r.uri),
-    );
+  const [{ data: allowedRows }, profiles] = await Promise.all([
+    supabaseServerClient
+      .from("document_reply_visibility")
+      .select("reply")
+      .in(
+        "subject",
+        submissions.map((s) => s.subject),
+      )
+      .in(
+        "reply",
+        submissions.map((s) => s.uri),
+      ),
+    getProfiles(submissions.map((s) => new AtUri(s.subject).host)),
+  ]);
   const allowed = new Set((allowedRows ?? []).map((r) => r.reply));
-  return replyTargets(
-    submissions.flatMap((row) =>
-      allowed.has(row.uri) && row.documents
-        ? [{ doc: row.documents, replyUri: row.uri, pending: false }]
-        : [],
-    ),
-  );
+  return submissions.flatMap((s) => {
+    const pending = !allowed.has(s.uri);
+    if (!s.documents || (pending && !includePending)) return [];
+    const target = replyTarget(s.documents, profiles, {
+      replyUri: s.uri,
+      pending,
+    });
+    return target ? [target] : [];
+  });
+}
+
+// The documents that show a document as an accepted reply.
+export function acceptedReplyTargets(
+  submissions: ReplySubmission[],
+): Promise<ReplyTarget[]> {
+  return submissionTargets(submissions, false);
 }
 
 export async function documentReplyTargets(
   document: string,
-  viewer: string | null,
+  viewer: string | null | Promise<string | null>,
 ): Promise<ReplyTarget[]> {
-  const { data: submissions } = await supabaseServerClient
-    .from("document_replies")
-    .select(
-      `uri, subject,
-      documents!document_replies_subject_fkey(uri, data,
-        documents_in_publications(publications(uri, record)))`,
-    )
-    .eq("document", document);
-  if (!submissions?.length) return [];
-  if (!viewer || !isDocumentOwner(document, viewer))
-    return acceptedReplyTargets(submissions);
-  const replies = submissions.map((s) => s.uri);
-  const [{ data: allowedRows }, { data: rejectedRows }] = await Promise.all([
+  const [{ data: submissions }, viewerDid] = await Promise.all([
     supabaseServerClient
-      .from("document_reply_visibility")
-      .select("reply")
-      .in("reply", replies),
-    supabaseServerClient
-      .from("document_reply_rejections")
-      .select("reply")
-      .in("reply", replies),
+      .from("document_replies")
+      .select(
+        `uri, subject, document_reply_rejections(reply),
+        documents!document_replies_subject_fkey(uri, data,
+          documents_in_publications(publications(uri, record)))`,
+      )
+      .eq("document", document),
+    viewer,
   ]);
-  const allowed = new Set((allowedRows ?? []).map((r) => r.reply));
-  const rejected = new Set((rejectedRows ?? []).map((r) => r.reply));
-  return replyTargets(
-    submissions.flatMap((s) =>
-      !rejected.has(s.uri) && s.documents
-        ? [{ doc: s.documents, replyUri: s.uri, pending: !allowed.has(s.uri) }]
-        : [],
-    ),
+  return submissionTargets(
+    (submissions ?? []).filter((s) => !s.document_reply_rejections),
+    !!viewerDid && isDocumentOwner(document, viewerDid),
   );
 }
 
@@ -355,15 +344,15 @@ export async function subjectReplyBlock(
 export async function getReplyTarget(
   subject: string,
 ): Promise<ReplyTarget | null> {
-  const { data: doc } = await supabaseServerClient
-    .from("documents")
-    .select("uri, data, documents_in_publications(publications(uri, record))")
-    .eq("uri", subject)
-    .maybeSingle();
-  if (!doc) return null;
-  return (
-    (await replyTargets([{ doc, replyUri: null, pending: true }]))[0] ?? null
-  );
+  const [{ data: doc }, profiles] = await Promise.all([
+    supabaseServerClient
+      .from("documents")
+      .select("uri, data, documents_in_publications(publications(uri, record))")
+      .eq("uri", subject)
+      .maybeSingle(),
+    getProfiles([new AtUri(subject).host]),
+  ]);
+  return doc && replyTarget(doc, profiles, { replyUri: null, pending: true });
 }
 
 export type CreateReplyError = "not_found" | "failed";

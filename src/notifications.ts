@@ -693,18 +693,16 @@ async function hydrateReplyNotifications<T extends "post_reply" | "post_reply_ac
     return [];
   }
 
-  const { data: replies } = await supabaseServerClient
-    .from("document_replies")
-    .select("uri, replier_did, subject, document, record")
-    .in("uri", replyNotifications.map((n) => n.data.reply_uri));
-  const documentUris = [
-    ...replyNotifications.map((n) => n.data.document_uri),
-    ...(replies ?? []).map((r) => r.document),
-  ];
-  const { data: documents } = await supabaseServerClient
-    .from("documents")
-    .select("uri, data, documents_in_publications(publications(record))")
-    .in("uri", documentUris);
+  const [{ data: replies }, { data: documents }] = await Promise.all([
+    supabaseServerClient
+      .from("document_replies")
+      .select("uri, replier_did, subject, record, documents!document_replies_document_fkey(uri, data)")
+      .in("uri", replyNotifications.map((n) => n.data.reply_uri)),
+    supabaseServerClient
+      .from("documents")
+      .select("uri, data, documents_in_publications(publications(record))")
+      .in("uri", replyNotifications.map((n) => n.data.document_uri)),
+  ]);
   const profiles = await getProfiles(
     Array.from(new Set((replies ?? []).map(profileDid))),
   );
@@ -713,7 +711,7 @@ async function hydrateReplyNotifications<T extends "post_reply" | "post_reply_ac
     .map((notification) => {
       const reply = replies?.find((r) => r.uri === notification.data.reply_uri);
       const document = documents?.find((d) => d.uri === notification.data.document_uri);
-      const replyDocument = documents?.find((d) => d.uri === reply?.document);
+      const replyDocument = reply?.documents;
       if (!reply || !document || !replyDocument) return null;
       const normalizedDocument = normalizeDocumentRecord(document.data, document.uri);
       const block = resolveInteractionBlock(

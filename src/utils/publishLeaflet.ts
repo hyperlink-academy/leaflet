@@ -261,9 +261,14 @@ async function publish({
       .in("id", entitiesToDelete);
   }
 
-  let { data } = await supabaseServerClient.rpc("get_facts", {
-    root: root_entity,
-  });
+  let [{ data }, { data: replyDraft }] = await Promise.all([
+    supabaseServerClient.rpc("get_facts", { root: root_entity }),
+    supabaseServerClient
+      .from("reply_drafts")
+      .select("subject, block")
+      .eq("leaflet", leaflet_id)
+      .maybeSingle(),
+  ]);
   let facts = (data as unknown as Fact<Attribute>[]) || [];
 
   // Determine the rkey early: it's the record's path field and it scopes the
@@ -576,11 +581,6 @@ async function publish({
   // A draft started from another post's reply block submits itself as a
   // reply once it's published. Best-effort: the post is already live, and
   // the author can still submit it by hand from the reply block.
-  const { data: replyDraft } = await supabaseServerClient
-    .from("reply_drafts")
-    .select("subject, block")
-    .eq("leaflet", leaflet_id)
-    .maybeSingle();
   if (replyDraft) {
     const reply = await createReplyRecord({
       did: credentialSession.did!,

@@ -1,71 +1,67 @@
 import { supabaseServerClient } from "supabase/serverClient";
-import type { PendingActionKind, PendingActions } from "src/pendingActionKinds";
+import type {
+  PendingActionKind,
+  PublicationsPendingActions,
+} from "src/pendingActionKinds";
 
-type PendingCounter = (documents: string[]) => Promise<Map<string, number>>;
+function ownedPublicationInteractions(did: string) {
+  return supabaseServerClient
+    .from("publications")
+    .select(
+      `uri,
+      documents_in_publications(document,
+        documents(
+          document_replies!document_replies_subject_fkey(uri),
+          document_reply_visibility(reply),
+          document_reply_rejections(reply),
+          document_questions!document_questions_subject_fkey(uri,
+            document_question_answers(uri)),
+          document_question_visibility(question)))`,
+    )
+    .eq("identity_did", did);
+}
 
-const counters: Record<PendingActionKind, PendingCounter> = {
-  replies: async (documents) => {
-    const [{ data: replies }, { data: accepted }, { data: rejected }] =
-      await Promise.all([
-        supabaseServerClient
-          .from("document_replies")
-          .select("uri, subject")
-          .in("subject", documents),
-        supabaseServerClient
-          .from("document_reply_visibility")
-          .select("reply")
-          .in("subject", documents),
-        supabaseServerClient
-          .from("document_reply_rejections")
-          .select("reply")
-          .in("subject", documents),
-      ]);
+type DocumentInteractions = NonNullable<
+  NonNullable<
+    Awaited<ReturnType<typeof ownedPublicationInteractions>>["data"]
+  >[number]["documents_in_publications"][number]["documents"]
+>;
+
+const counters: Record<
+  PendingActionKind,
+  (document: DocumentInteractions) => number
+> = {
+  replies: (document) => {
     const decided = new Set(
-      [...(accepted ?? []), ...(rejected ?? [])].map((r) => r.reply),
+      [
+        ...document.document_reply_visibility,
+        ...document.document_reply_rejections,
+      ].map((r) => r.reply),
     );
-    return countBy(
-      (replies ?? []).filter((r) => !decided.has(r.uri)),
-      (r) => r.subject,
-    );
+    return document.document_replies.filter((r) => !decided.has(r.uri)).length;
   },
-  questions: async (documents) => {
-    const [{ data: questions }, { data: marked }] = await Promise.all([
-      supabaseServerClient
-        .from("document_questions")
-        .select("uri, subject, document_question_answers(uri)")
-        .in("subject", documents),
-      supabaseServerClient
-        .from("document_question_visibility")
-        .select("question")
-        .in("subject", documents),
-    ]);
-    const decided = new Set((marked ?? []).map((r) => r.question));
-    return countBy(
-      (questions ?? []).filter(
-        (q) => !q.document_question_answers && !decided.has(q.uri),
-      ),
-      (q) => q.subject,
+  questions: (document) => {
+    const decided = new Set(
+      document.document_question_visibility.map((r) => r.question),
     );
+    return document.document_questions.filter(
+      (q) => !q.document_question_answers && !decided.has(q.uri),
+    ).length;
   },
 };
 
-function countBy<T>(rows: T[], key: (row: T) => string) {
-  const counts = new Map<string, number>();
-  for (const row of rows) counts.set(key(row), (counts.get(key(row)) ?? 0) + 1);
-  return counts;
-}
-
+const kinds = Object.keys(counters) as PendingActionKind[];
 export async function loadPendingActions(
-  documents: string[],
-): Promise<PendingActions> {
-  if (documents.length === 0) return {};
-  const kinds = Object.keys(counters) as PendingActionKind[];
-  const counts = await Promise.all(kinds.map((k) => counters[k](documents)));
-  const actions: PendingActions = {};
-  kinds.forEach((kind, i) => {
-    for (const [document, n] of counts[i]) {
-      if (n > 0) (actions[document] ??= {})[kind] = n;
-    }
-  });
+  did: string,
+): Promise<PublicationsPendingActions> {
+  const { data: publications } = await ownedPublicationInteractions(did);
+  const actions: PublicationsPendingActions = {};
+  for (const publication of publications ?? [])
+    for (const { document, documents } of publication.documents_in_publications)
+      for (const kind of kinds) {
+        const n = documents ? counters[kind](documents) : 0;
+        if (n > 0)
+          ((actions[publication.uri] ??= {})[document] ??= {})[kind] = n;
+      }
   return actions;
 }
