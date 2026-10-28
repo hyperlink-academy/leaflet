@@ -23,7 +23,18 @@ export const ThemeDefaults = {
 // have a small overall distance yet be clearly distinguishable by hue (e.g.
 // dark blue vs black). Checking chromaDiff lets callers tell apart "two
 // similar grays" from "a dark chromatic color next to a gray/black".
+//
+// Every theme provider makes four of these comparisons per render, and a page
+// like home mounts one per card over the same handful of theme colors.
+const comparisons = new Map<string, ReturnType<typeof measureColors>>();
 export function compareColors(color1: string, color2: string) {
+  let key = `${color1}|${color2}`;
+  let result = comparisons.get(key);
+  if (!result) comparisons.set(key, (result = measureColors(color1, color2)));
+  return result;
+}
+
+function measureColors(color1: string, color2: string) {
   ColorSpace.register(sRGB);
   ColorSpace.register(OKLab);
 
