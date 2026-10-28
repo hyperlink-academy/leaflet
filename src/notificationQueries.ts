@@ -1,5 +1,6 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { hydrateNotifications } from "src/notifications";
+import { toDocumentPreviews } from "src/utils/documentPreview";
 import {
   groupNotifications,
   type NotificationListItem,
@@ -38,7 +39,7 @@ export async function getNotificationPage(
   }
   let { data } = await query;
   let rows = data || [];
-  let hydrated = await hydrateNotifications(rows);
+  let hydrated = toDocumentPreviews(await hydrateNotifications(rows));
   // cursor comes from the raw rows, not the hydrated ones — hydration drops
   // rows whose subject was deleted and those still advance the window
   let nextCursor =

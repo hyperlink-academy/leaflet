@@ -28,7 +28,7 @@ import { type Profile } from "src/identity";
 import { PostInfo } from "../../BskyPostContent";
 import { Avatar } from "components/Avatar";
 import { EmptyState } from "components/EmptyState";
-import { ComposerPlaceholder } from "components/FacetedTextComposer";
+import { ComposerPlaceholder } from "components/FacetedTextComposer/ComposerPlaceholder";
 
 export type Comment = {
   record: Json;

@@ -3,7 +3,7 @@
 import React, { useMemo } from "react";
 import { useIframeChannel } from "src/hooks/useIframeChannel";
 import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
-import { PageWrapper } from "./Page";
+import { PageWrapper } from "./PageWrapper";
 
 export function IframePageView(props: {
   url: string;

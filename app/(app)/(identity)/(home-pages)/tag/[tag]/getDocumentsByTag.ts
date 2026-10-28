@@ -1,18 +1,9 @@
 "use server";
 
-import { getPublicationURL } from "src/utils/getPublicationURL";
 import { supabaseServerClient } from "supabase/serverClient";
-import { AtUri } from "@atproto/api";
-import { idResolver } from "src/identity";
 import type { Post } from "actions/reader/getReaderFeed";
-import {
-  getDocumentPages,
-  normalizeDocumentRecord,
-  normalizePublicationRecord,
-} from "src/utils/normalizeRecords";
-import { truncatePagesAtMembersDelimiter } from "src/membership";
+import { enrichDocumentToPost } from "src/utils/enrichPost";
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
-import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
 import { getTagDocumentUrisByTrending } from "./getTagDocumentUrisByTrending";
 import { getPublicationTagDocumentUris } from "./getPublicationTagDocumentUris";
 
@@ -98,67 +89,19 @@ async function getPostsInOrder(uris: string[]): Promise<Post[]> {
   // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
   const byUri = new Map(deduplicateByUriOrdered(rows).map((d) => [d.uri, d]));
   return toPosts(
-    uris
-      .map((uri) => byUri.get(uri))
-      .filter((d): d is DocumentRow => !!d),
+    uris.map((uri) => byUri.get(uri)).filter((d): d is DocumentRow => !!d),
   );
 }
 
 async function toPosts(documents: DocumentRow[]): Promise<Post[]> {
   const posts = await Promise.all(
-    documents.map(async (doc) => {
-      const pub = doc.documents_in_publications[0]?.publications;
-
-      // Skip if document doesn't have a publication
-      if (!pub) {
-        return null;
-      }
-
-      // Skip if document has no sort_date
-      if (!doc.sort_date) {
-        return null;
-      }
-
-      // Normalize the document data - skip unrecognized formats
-      const normalizedData = normalizeDocumentRecord(doc.data, doc.uri);
-      if (!normalizedData) {
-        return null;
-      }
-
-      // Public listing with no membership context — serve only the preview of
-      // members-only posts.
-      const docPages = getDocumentPages(normalizedData);
-      if (docPages) truncatePagesAtMembersDelimiter(docPages);
-
-      const normalizedPubRecord = normalizePublicationRecord(pub?.record);
-
-      const uri = new AtUri(doc.uri);
-      const handle = await idResolver.did.resolve(uri.host);
-
-      const post: Post = {
-        publication: {
-          href: getPublicationURL(pub),
-          pubRecord: normalizedPubRecord,
-          uri: pub?.uri || "",
-        },
-        ownerDid: handle?.alsoKnownAs?.[0]
-          ? `@${handle.alsoKnownAs[0].slice(5)}`
-          : null,
-        contributors: await resolveBylineProfiles(normalizedData, uri.host),
-        documents: {
-          comments_on_documents: doc.comments_on_documents,
-          document_mentions_in_bsky: doc.document_mentions_in_bsky,
-          recommends_on_documents: doc.recommends_on_documents,
-          data: normalizedData,
-          uri: doc.uri,
-          sort_date: doc.sort_date,
-        },
-      };
-      return post;
-    }),
+    documents
+      .filter(
+        (doc): doc is DocumentRow & { sort_date: string } =>
+          !!doc.sort_date && !!doc.documents_in_publications[0]?.publications,
+      )
+      .map((doc) => enrichDocumentToPost(doc, { countBacklinks: false })),
   );
-
-  // Filter out null entries (documents without publications)
   return posts.filter((p): p is Post => p !== null);
 }
 

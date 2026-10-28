@@ -7,6 +7,7 @@ import { Block } from "components/Blocks/Block";
 import { List, parseBlocksToList } from "./parseBlocksToList";
 import { getBlocksWithTypeLocal } from "src/replicache/getBlocks";
 import Katex from "katex";
+import { htmlToMarkdown } from "src/htmlMarkdownParsers";
 import { renderFootnoteDefHTML } from "./renderFootnoteDefHTML";
 
 // Definition HTML for each footnote the block owns, keyed by entity id, so the
@@ -23,13 +24,21 @@ async function getFootnoteDefs(tx: ReadTransaction, entity: string) {
   return defs;
 }
 
-// Only used to fill the clipboard on copy, so comment anchors are omitted
-// (renderComments={false}) — see stripCommentMarks in components/Blocks/TextBlock
-export async function getBlocksAsHTML(
+// Comment anchors are omitted from the clipboard (renderComments={false}) —
+// see stripCommentMarks in components/Blocks/TextBlock.
+export async function copyBlocks(
   rep: Replicache<ReplicacheMutators>,
   selectedBlocks: Block[],
 ) {
-  return rep?.query((tx) => renderBlocks(selectedBlocks, tx));
+  let html = (await rep.query((tx) => renderBlocks(selectedBlocks, tx))).join(
+    "\n",
+  );
+  await navigator.clipboard.write([
+    new ClipboardItem({
+      "text/html": new Blob([html], { type: "text/html" }),
+      "text/plain": new Blob([htmlToMarkdown(html)], { type: "text/plain" }),
+    }),
+  ]);
 }
 
 async function renderBlocks(blocks: Block[], tx: ReadTransaction) {

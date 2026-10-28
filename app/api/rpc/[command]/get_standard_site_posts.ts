@@ -3,13 +3,12 @@ import { AtUri } from "@atproto/syntax";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import {
-  getDocumentPages,
   normalizeDocumentRecord,
   normalizePublicationRecord,
   type NormalizedDocument,
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
-import { truncatePagesAtMembersDelimiter } from "src/membership";
+import { toDocumentPreviews } from "src/utils/documentPreview";
 import { getProfiles } from "src/identity";
 import {
   getBylineDids,
@@ -73,12 +72,8 @@ export const get_standard_site_posts = makeRoute({
     const normalizedByUri = new Map<string, NormalizedDocument>();
     for (const d of documents || []) {
       const normalized = normalizeDocumentRecord(d.data, d.uri);
-      if (!normalized) continue;
-      // Unauthenticated endpoint feeding embed previews: gated blocks never
-      // leave the server regardless of viewer.
-      const pages = getDocumentPages(normalized);
-      if (pages) truncatePagesAtMembersDelimiter(pages);
-      normalizedByUri.set(d.uri, normalized);
+      if (normalized)
+        normalizedByUri.set(d.uri, toDocumentPreviews(normalized));
     }
 
     const dids = Array.from(
@@ -106,7 +101,10 @@ export const get_standard_site_posts = makeRoute({
 
         const pubRow = d.documents_in_publications?.[0]?.publications;
         const publication = pubRow
-          ? { uri: pubRow.uri, record: normalizePublicationRecord(pubRow.record) }
+          ? {
+              uri: pubRow.uri,
+              record: normalizePublicationRecord(pubRow.record),
+            }
           : null;
 
         let did: string | null;
@@ -115,9 +113,7 @@ export const get_standard_site_posts = makeRoute({
         } catch {
           did = null;
         }
-        const author = did
-          ? toBylineProfiles([did], profiles)[0]
-          : null;
+        const author = did ? toBylineProfiles([did], profiles)[0] : null;
         // Only expose contributors when the byline is more than just the
         // single author/owner; otherwise consumers fall back to `author`
         // (byte-for-byte identical to the previous single-author behavior).

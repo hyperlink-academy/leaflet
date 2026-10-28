@@ -85,6 +85,8 @@ let useLeafletData = () => {
         ? (await callRPC("get_leaflet_data", { token_id: permission_token.id }))
             ?.result.data
         : undefined,
+    // The editor page seeds this key with the data it just rendered from.
+    { revalidateIfStale: false },
   );
   if (staticLeafletData) return { data: staticLeafletData, mutate: res.mutate };
   return res;

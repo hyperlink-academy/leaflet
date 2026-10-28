@@ -9,7 +9,6 @@ export let useEditorStates = create(
       [entity: string]:
         | {
             editor: InstanceType<typeof EditorState>;
-            initial?: boolean;
             view: InstanceType<typeof EditorView>;
             keymap?: { [key: string]: Command };
           }
@@ -24,16 +23,15 @@ export const setEditorState = (
     editor: InstanceType<typeof EditorState>;
   },
 ) => {
-  useEditorStates.setState((oldState) => {
-    let existingState = oldState.editorStates[entityID];
-    if (!existingState) return oldState;
-    return {
-      editorStates: {
-        ...oldState.editorStates,
-        [entityID]: { ...existingState, ...s },
-      },
-    };
-  });
+  let existingState = useEditorStates.getState().editorStates[entityID];
+  if (!existingState) return;
+  useEditorStates.setState((oldState) => ({
+    editorStates: {
+      ...oldState.editorStates,
+      [entityID]: { ...existingState, ...s },
+    },
+  }));
+  existingState.view?.updateState(s.editor);
 };
 
 // Undo/redo snapshots are whole EditorStates, tied to the editor that recorded

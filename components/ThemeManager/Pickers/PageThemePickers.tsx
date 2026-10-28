@@ -24,7 +24,7 @@ import { ColorPicker, thumbStyle } from "./ColorPicker";
 import { FontPicker } from "./TextPickers";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { Replicache } from "replicache";
-import { CanvasBackgroundPattern } from "components/Canvas";
+import { CanvasBackgroundPattern } from "components/CanvasBackgroundPattern";
 import { Toggle } from "components/Toggle";
 import { DeleteSmall } from "components/Icons/DeleteSmall";
 

@@ -41,7 +41,7 @@ export default async function EmailRenderPage(props: {
             JSON.stringify(resources.standardSitePostData),
           ),
           pollData: resources.pollData,
-          prerenderedCodeBlocks: resources.prerenderedCodeBlocks,
+          prerenderedBlocks: resources.prerenderedBlocks,
         }}
       />
     </>

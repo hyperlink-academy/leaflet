@@ -1,10 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import {
-  loadStripe,
-  type Stripe as StripeJs,
-  type Appearance,
-} from "@stripe/stripe-js";
+import { loadStripe } from "@stripe/stripe-js/pure";
+import type { Stripe as StripeJs, Appearance } from "@stripe/stripe-js";
 import {
   Elements,
   PaymentElement,

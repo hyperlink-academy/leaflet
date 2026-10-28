@@ -1,40 +1,14 @@
 "use client";
 import { useEffect, useState } from "react";
-import { v5, v7 } from "uuid";
 import { Blocks } from "components/Blocks";
-import { useEntitySetContext } from "components/EntitySetProvider";
 import { useToaster } from "components/Toast";
 import { useActionToast } from "components/useActionToast";
-import { useEntity, useReplicache } from "src/replicache";
+import { useReplicache } from "src/replicache";
+import { answerEntityFor } from "./answerDraft";
 import { registerBlockGroup } from "src/utils/blockGroups";
 import { flushPendingTextWrites } from "components/Blocks/TextBlock/useCollabText";
 import { publishAnswer, type QuestionError } from "actions/questions";
 import { AnswerEditorFrame } from "./QuestionsView";
-
-// A question's answer entity is named after it, so nothing has to be looked
-// up to find the draft (or know there isn't one).
-export function answerEntityFor(blockEntity: string, question: string) {
-  return v5(question, blockEntity);
-}
-
-export function useHasAnswerDraft(blockEntity: string, question: string) {
-  return !!useEntity(answerEntityFor(blockEntity, question), "answer/question");
-}
-
-export function useStartAnswer(blockEntity: string) {
-  let { rep } = useReplicache();
-  let { set } = useEntitySetContext();
-  return (question: string) =>
-    rep?.mutate.createQuestionAnswer({
-      blockEntity,
-      answerEntity: answerEntityFor(blockEntity, question),
-      answerFactID: v5(`ref:${question}`, blockEntity),
-      question,
-      permission_set: set,
-      firstBlockEntity: v7(),
-      firstBlockFactID: v7(),
-    });
-}
 
 const publishErrorMessages: Partial<Record<QuestionError["type"], string>> = {
   empty: "Write an answer first.",

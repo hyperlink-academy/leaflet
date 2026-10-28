@@ -71,7 +71,9 @@ const docMounts = new WeakMap<Y.Doc, number>();
 
 export function useYJSValue(entityID: string) {
   const [ydoc] = useState(() => {
-    let doc = new Y.Doc();
+    // An explicit guid skips yjs's default uuidv4, which costs ~30
+    // crypto.getRandomValues calls per doc — per block, on every page load.
+    let doc = new Y.Doc({ guid: entityID });
     let recent = recentDocs.get(entityID);
     if (recent) Y.applyUpdate(doc, Y.encodeStateAsUpdate(recent));
     return doc;
@@ -106,20 +108,16 @@ export function useYJSValue(entityID: string) {
   // ./schemaVersion) — leave it unapplied and go stale; the read-only
   // fallback renders the fact directly.
   const factValue = docStateFromReplicache?.data.value;
-  const factTooNew = useMemo(
-    () =>
-      !!factValue &&
-      updateSchemaVersion(base64.toByteArray(factValue)) > SCHEMA_VERSION,
-    [factValue],
-  );
+  const factTooNew = useMemo(() => {
+    if (!factValue) return false;
+    const update = base64.toByteArray(factValue);
+    if (updateSchemaVersion(update) > SCHEMA_VERSION) return true;
+    Y.applyUpdate(ydoc, update);
+    return false;
+  }, [factValue, ydoc]);
   useEffect(() => {
     if (factTooNew) markClientStale();
   }, [factTooNew]);
-
-  if (docStateFromReplicache && !factTooNew) {
-    const update = base64.toByteArray(docStateFromReplicache.data.value);
-    Y.applyUpdate(ydoc, update);
-  }
 
   // Broadcast local edits to connected peers and apply theirs as they
   // arrive. Cursors travel through the connection's shared awareness; doc

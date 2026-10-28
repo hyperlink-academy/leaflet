@@ -35,8 +35,7 @@ const nextConfig = {
         // because they sit inside route groups. Keep them out of the search
         // index — unfurl bots fetch og:image URLs directly and ignore robots
         // directives, so previews are unaffected.
-        source:
-          "/:path*/:image(opengraph\\-image|opengraph\\-image\\-\\w+)",
+        source: "/:path*/:image(opengraph\\-image|opengraph\\-image\\-\\w+)",
         headers: [{ key: "X-Robots-Tag", value: "noindex" }],
       },
     ];
@@ -64,6 +63,9 @@ const nextConfig = {
   },
   reactCompiler: true,
   experimental: {
+    // Merges the smallest shared chunks: each costs a request on every load,
+    // and the editor and home routes were splitting into ~40.
+    turbopackChunking: { minChunkSize: 60000 },
     serverActions: {
       bodySizeLimit: "5mb",
     },

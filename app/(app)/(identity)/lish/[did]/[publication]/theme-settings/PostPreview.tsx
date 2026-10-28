@@ -129,7 +129,7 @@ export function PostPreview(props: {
               showFirstLast: preferences?.showFirstLast,
               prevNextDirection: preferences?.prevNextDirection,
             }}
-            prerenderedCodeBlocks={new Map()}
+            prerenderedBlocks={new Map()}
             bskyPostData={[]}
             standardSitePostData={[]}
             standardSitePublicationData={[]}
