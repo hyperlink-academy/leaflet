@@ -32,16 +32,15 @@ export function LeafletCardReplicache(props: {
   const [hasBeenVisible, setHasBeenVisible] = useState(props.eagerLoadFacts);
   const { facts: fetchedFacts } = useLeafletFacts(
     props.leaflet.root_entity,
-    hasBeenVisible && !props.previewFacts,
+    hasBeenVisible,
   );
-  const facts = props.previewFacts ?? fetchedFacts;
+  // The seed can come from a router-cached /home, so the fetch still runs.
+  const facts = fetchedFacts ?? props.previewFacts;
 
   const notifyVisible = useCallback(() => {
     setHasBeenVisible((v) => v || true);
   }, []);
   const contextValue = useMemo(() => ({ notifyVisible }), [notifyVisible]);
-
-  const initialFacts = facts ?? [];
 
   return (
     <CardVisibilityContext.Provider value={contextValue}>
@@ -51,7 +50,7 @@ export function LeafletCardReplicache(props: {
         rootEntity={props.leaflet.root_entity}
         token={props.leaflet}
         name={props.leaflet.root_entity}
-        initialFacts={initialFacts}
+        initialFacts={facts ?? []}
       >
         {props.children}
       </ReplicacheProvider>
