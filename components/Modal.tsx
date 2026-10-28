@@ -130,14 +130,14 @@ const DialogModal = ({
           overflow-y-scroll no-scrollbar max-w-[calc(100vw-32px)] h-fit max-h-[calc(100dvh-32px)] flex flex-col w-full sm:w-max text-primary
           `}
         >
-          <div className="flex gap-3 justify-end">
+          <div className="flex gap-2 justify-end">
             {onBack && (
               <button
-                className="bg-bg-page rounded-full mb-2 mr-0  z-10 w-fit p-0.5 place-self-end border border-border-light text-tertiary"
+                className="bg-bg-page rounded-full mb-2 mr-0  z-10 w-fit py-0.5 pl-1 pr-1.5 place-self-end border border-border-light text-tertiary flex gap-1.5  items-center shrink-0 leading-none"
                 type="button"
                 onClick={onBack}
               >
-                <GoToArrowLined className="rotate-180" />
+                <GoToArrowLined className="rotate-180 text-xs" /> Back
               </button>
             )}
             <Dialog.Close className="bg-bg-page rounded-full mb-2 mr-0  z-10 w-fit p-0.5 place-self-end border border-border-light text-tertiary">

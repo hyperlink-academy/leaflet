@@ -14,11 +14,8 @@ import {
   DEFAULT_REPLY_PROMPT_TEXT,
 } from "./constants";
 import { DocumentReplies } from "./DocumentReplies";
-import {
-  RepliesDraft,
-  ReplyButtonTextInput,
-  ReplyPromptTextInput,
-} from "./RepliesView";
+import { RepliesEmptyDraft } from "./RepliesList";
+import { ReplyButtonTextInput, ReplyPromptTextInput } from "./RepliesHeader";
 import { BlockSettings } from "../SettingsTriggerButton";
 import { ToggleWithLabel } from "components/Toggle";
 
@@ -37,52 +34,50 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
   let documentUri = data?.documents?.uri;
   let { replies: initial } = useEditorBlockData();
 
-  // Readers can only reply once the published document carries the block, so
-  // a block added since the last publish is still a draft.
   let blockKey = publishedBlockKey(
     normalizedDocument,
     ids.PubLeafletBlocksReply,
     props.entityID,
   );
 
-  let button =
-    permissions.write && !props.preview ? (
-      <ReplyButtonTextInput
-        value={buttonText}
-        onCommit={(value) =>
-          rep?.mutate.assertFact({
-            entity: props.entityID,
-            attribute: "reply/button-text",
-            data: { type: "string", value },
-          })
-        }
-      />
-    ) : (
-      <ButtonPrimary disabled>
-        {buttonText || DEFAULT_REPLY_BUTTON_TEXT}
-      </ButtonPrimary>
-    );
+  let editable = permissions.write && !props.preview;
 
-  let prompt =
-    permissions.write && !props.preview ? (
-      <ReplyPromptTextInput
-        value={promptText}
-        onCommit={(value) =>
-          rep?.mutate.assertFact({
-            entity: props.entityID,
-            attribute: "reply/prompt-text",
-            data: { type: "string", value },
-          })
-        }
-      />
-    ) : (
-      promptText || DEFAULT_REPLY_PROMPT_TEXT
-    );
+  let button = editable ? (
+    <ReplyButtonTextInput
+      value={buttonText}
+      onCommit={(value) =>
+        rep?.mutate.assertFact({
+          entity: props.entityID,
+          attribute: "reply/button-text",
+          data: { type: "string", value },
+        })
+      }
+    />
+  ) : (
+    <ButtonPrimary disabled>
+      {buttonText || DEFAULT_REPLY_BUTTON_TEXT}
+    </ButtonPrimary>
+  );
+
+  let prompt = editable ? (
+    <ReplyPromptTextInput
+      value={promptText}
+      onCommit={(value) =>
+        rep?.mutate.assertFact({
+          entity: props.entityID,
+          attribute: "reply/prompt-text",
+          data: { type: "string", value },
+        })
+      }
+    />
+  ) : (
+    promptText || DEFAULT_REPLY_PROMPT_TEXT
+  );
 
   return (
     <BlockLayout
       isSelected={!!isSelected}
-      className="replyBlock"
+      className={`replyBlock light-container rounded-lg!  ${isSelected ? "border-border!" : ""}`}
       extraOptions={
         !props.preview ? (
           <BlockSettings label="Replies" className="w-xs">
@@ -112,7 +107,18 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
           initial={initial}
         />
       ) : (
-        <RepliesDraft prompt={prompt} action={button} />
+        <>
+          {" "}
+          {editable && !promptText && !buttonText && (
+            <>
+              <div className="text-center w-full text-sm text-tertiary italic ">
+                Click the prompt and button text to edit them.
+              </div>
+              <hr className="mb-2 mt-1" />
+            </>
+          )}
+          <RepliesEmptyDraft prompt={prompt} action={button} />
+        </>
       )}
     </BlockLayout>
   );

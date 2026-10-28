@@ -17,18 +17,6 @@ const RootAttributes = {
     type: "string-array",
     cardinality: "many",
   },
-  // The at-uri of the post a standalone draft answers; its first publish
-  // submits it as a reply. Publication drafts carry this on their join row
-  // instead.
-  "root/reply-to": {
-    type: "string",
-    cardinality: "one",
-  },
-  // The key of the reply block on that post the draft was started from
-  "root/reply-to-block": {
-    type: "string",
-    cardinality: "one",
-  },
 } as const;
 const PageAttributes = {
   "card/block": {

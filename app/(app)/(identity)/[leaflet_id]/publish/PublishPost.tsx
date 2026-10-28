@@ -33,6 +33,7 @@ import { TagSelector } from "components/Tags";
 import { latestSendAt } from "src/emailPosts/types";
 import { PublishingTo } from "./PublishingTo";
 import type { ReplyTarget } from "src/documentReplies";
+import { ReplyingTo } from "components/Pages/ReplyingTo";
 import {
   cancelScheduledPost,
   saveScheduledPost,
@@ -74,7 +75,7 @@ type Props = {
   };
   // Set when this draft answers another post and publishing submits it as a
   // reply.
-  replyTarget?: ReplyTarget | null;
+  replyTargets?: ReplyTarget[];
 };
 
 type PublishState =
@@ -392,24 +393,12 @@ const PublishPostForm = (
           {state === "post-details" ? (
             <>
               <h2>Publish: Post Details</h2>
+              <ReplyingTo targets={props.replyTargets ?? []} newTab />
               <PublishingTo
                 publication_uri={props.publication_uri}
                 record={props.pubRecord}
               />
-              {props.replyTarget && (
-                <div className="flex justify-between gap-4">
-                  <div className="text-tertiary whitespace-nowrap">
-                    Replying to
-                  </div>
-                  <a
-                    href={props.replyTarget.href}
-                    target="_blank"
-                    className="font-bold text-secondary truncate"
-                  >
-                    {props.replyTarget.title}
-                  </a>
-                </div>
-              )}
+
               <hr className="border-border-light" />
 
               <BackdateOptions

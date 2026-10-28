@@ -51,10 +51,10 @@ export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
     ${isSelected ? "block-border-selected border-none!" : ""}
   `}
     >
-      <hr className="grow border-border-light" />
+      <hr className="grow min-w-4" />
       <div className="flex items-center gap-2 min-w-0 font-bold">
         <LockTiny className="shrink-0" />
-        <span className="w-max shrink-0">Only for</span>
+        <span className="w-max shrink-0">Unlocked for</span>
         {permissions.write ? (
           <TierSelector
             entityID={props.entityID}
@@ -67,7 +67,7 @@ export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
           gateSummary(policy, tiers)
         )}
       </div>
-      <hr className="grow border-border-light" />
+      <hr className="grow min-w-4" />
     </div>
   );
 };
@@ -78,13 +78,26 @@ type Tier = {
   monthly_price_cents: number;
 };
 
+// With a single tier, "paid members" and "members of that tier" are the same
+// readers, so name the tier instead.
+function paidLabel(tiers: Tier[]) {
+  return tiers.length === 1 ? tiers[0].name : "All Paid Members";
+}
+
 function gateSummary(policy: GatePolicy, tiers: Tier[]) {
-  if (policy.audience === "subscribers") return "Subscribers";
-  if (policy.audience === "paid") return "Paid Members";
+  if (policy.audience === "subscribers") return "All Subscribers";
+  if (policy.audience === "paid") return paidLabel(tiers);
   const names = tiers
     .filter((tier) => policy.tierIds.includes(tier.id))
     .map((tier) => tier.name);
-  return names.length > 0 ? names.join(", ") : "Selected Tiers";
+  return names.length > 0 ? (
+    <span>
+      <span className="sm:block hidden">{names.join(", ")}</span>
+      <span className="block sm:hidden">Selected Tiers ({names.length})</span>
+    </span>
+  ) : (
+    "Selected Tiers"
+  );
 }
 
 function TierSelector(props: {
@@ -191,14 +204,34 @@ function TierSelector(props: {
         Unlocked for…{" "}
       </div>
       <RadioMenuGroup value={props.policy.audience} onValueChange={setAudience}>
-        <RadioMenuItem value="subscribers">Subscribers</RadioMenuItem>
+        <RadioMenuItem
+          value="subscribers"
+          selected={props.policy.audience === "subscribers"}
+        >
+          <div className="flex flex-col min-w-0 leading-tight">
+            <span>All Subscribers</span>
+            <span className="text-tertiary text-xs font-normal">
+              All free and paid subscribers
+            </span>
+          </div>
+        </RadioMenuItem>
 
         {(props.tiers.length > 0 || props.policy.audience === "paid") && (
-          <RadioMenuItem value="paid">Paid Members</RadioMenuItem>
+          <RadioMenuItem
+            value="paid"
+            selected={props.policy.audience === "paid"}
+          >
+            {paidLabel(props.tiers)}
+          </RadioMenuItem>
         )}
-        {props.tiers.length > 0 && (
+        {/* A post already gated to selected tiers keeps this option so the
+            current choice stays visible after the publication drops to one
+            tier. */}
+        {(props.tiers.length > 1 ||
+          (props.tiers.length === 1 && props.policy.audience === "tiers")) && (
           <RadioMenuItem
             value="tiers"
+            selected={props.policy.audience === "tiers"}
             // Keep the menu open so the tier checkboxes it reveals can be used
             onSelect={(e) => e.preventDefault()}
           >
@@ -206,31 +239,32 @@ function TierSelector(props: {
           </RadioMenuItem>
         )}
       </RadioMenuGroup>
-      {props.policy.audience === "tiers" && props.tiers.length > 0 && (
-        <MenuSeparator />
-      )}
-      <div className="flex flex-col gap-0.5">
-        {props.policy.audience === "tiers" &&
-          props.tiers.map((tier) => (
+
+      {props.policy.audience === "tiers" && (
+        <div className="flex flex-col gap-0.5 py-1">
+          {props.tiers.map((tier) => (
             <CheckboxMenuItem
+              compact
               key={tier.id}
-              // Selecting would close the menu, but the whole point here is
-              // checking off several tiers in a row.
               onSelect={(e) => {
                 e.preventDefault();
                 toggleTier(tier);
               }}
               checked={checkedIds.includes(tier.id)}
+              className="pl-2 py-0.5!"
             >
-              <div className="flex flex-col min-w-0 leading-tight">
-                <span className="truncate">{tier.name}</span>
+              <div className="flex flex-col min-w-0 leading-snug ">
+                <span className="truncate font-normal text-secondary">
+                  {tier.name}
+                </span>
                 <span className="text-tertiary text-xs font-normal">
                   {formatPrice(tier.monthly_price_cents)}/month
                 </span>
               </div>
             </CheckboxMenuItem>
           ))}
-      </div>
+        </div>
+      )}
     </Menu>
   );
 }

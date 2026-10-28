@@ -1165,10 +1165,7 @@ const addGalleryImage: Mutation<{
 
   let position = args.position;
   if (!position) {
-    let children = await ctx.scanIndex.eav(
-      args.galleryEntity,
-      "gallery/image",
-    );
+    let children = await ctx.scanIndex.eav(args.galleryEntity, "gallery/image");
     let lastChild = children.toSorted(byPosition)[children.length - 1];
     position = generateKeyBetween(lastChild?.data.position || null, null);
   }

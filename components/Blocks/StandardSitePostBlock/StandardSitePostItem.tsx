@@ -263,7 +263,7 @@ export function StandardSitePostItemView({
   return <PublicationPostItemSmall {...commonProps} />;
 }
 
-function PubInfo({
+export function PubInfo({
   publication,
 }: {
   publication: NonNullable<StandardSitePostData["publication"]>;

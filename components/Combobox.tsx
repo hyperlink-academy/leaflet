@@ -3,6 +3,27 @@ import * as Popover from "@radix-ui/react-popover";
 import { NestedCardThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { Input } from "./Input";
 
+export function resultListKey(
+  key: string,
+  reversed = false,
+): 1 | -1 | "select" | null {
+  if (key === "Enter") return "select";
+  if (key === "ArrowDown") return reversed ? -1 : 1;
+  if (key === "ArrowUp") return reversed ? 1 : -1;
+  return null;
+}
+
+export function stepHighlight<T>(
+  results: T[],
+  current: T | undefined,
+  step: 1 | -1,
+): T | undefined {
+  if (results.length === 0) return undefined;
+  let i = current === undefined ? -1 : results.indexOf(current);
+  if (i === -1) return step === 1 ? results[0] : results[results.length - 1];
+  return results[(i + step + results.length) % results.length];
+}
+
 export const Combobox = ({
   results,
   onSelect,
@@ -51,48 +72,22 @@ export const Combobox = ({
   }, [results, setHighlighted, highlighted]);
 
   useEffect(() => {
+    if (!open) return;
     let listener = async (e: KeyboardEvent) => {
-      let reverseDir = ref.current?.dataset.side === "top";
-      let currentHighlightIndex = results.findIndex(
-        (result) => highlighted && result === highlighted,
-      );
-
-      if (reverseDir ? e.key === "ArrowUp" : e.key === "ArrowDown") {
-        setHighlighted(
-          results[
-            currentHighlightIndex === results.length - 1 ||
-            currentHighlightIndex === undefined
-              ? 0
-              : currentHighlightIndex + 1
-          ],
-        );
-        return;
-      }
-      if (reverseDir ? e.key === "ArrowDown" : e.key === "ArrowUp") {
-        setHighlighted(
-          results[
-            currentHighlightIndex === 0 ||
-            currentHighlightIndex === undefined ||
-            currentHighlightIndex === -1
-              ? results.length - 1
-              : currentHighlightIndex - 1
-          ],
-        );
-        return;
-      }
-
-      // on enter, select the highlighted item
-      if (e.key === "Enter") {
+      let action = resultListKey(e.key, ref.current?.dataset.side === "top");
+      if (action === "select") {
         e.preventDefault();
         onSelect?.();
         setInternalOpen(false);
+      } else if (action) {
+        setHighlighted(stepHighlight(results, highlighted, action));
       }
     };
 
     window.addEventListener("keydown", listener);
 
     return () => window.removeEventListener("keydown", listener);
-  }, [highlighted, setHighlighted, results]);
+  }, [open, highlighted, setHighlighted, results, onSelect]);
 
   return (
     <Popover.Root

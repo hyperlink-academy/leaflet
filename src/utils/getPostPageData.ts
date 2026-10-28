@@ -26,7 +26,7 @@ import { resolveDocumentFilter } from "./resolveDocumentFilter";
 import { fetchPublicationForPage } from "app/(app)/(published)/lish/[did]/[publication]/getPublicationForPage";
 import { getPostImagePreloads } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/getPostImagePreloads";
 import { prevNextAround, sortPostsForPrevNext } from "src/utils/prevNextPosts";
-import { acceptedReplyTargets } from "src/documentReplies";
+import { replyTargets } from "src/documentReplies";
 
 export const getPostPageData = cache(async function getPostPageData(
   did: string,
@@ -200,7 +200,7 @@ export const getPostPageData = cache(async function getPostPageData(
     await Promise.all([
       getConstellationBacklinks(absolutePostUrl, document.uri),
       getPostImagePreloads(warm),
-      acceptedReplyTargets(document.document_replies),
+      replyTargets(document.document_replies),
     ]);
   for (const neighbour of warm)
     neighbour.images = neighbourImages.get(neighbour.uri);

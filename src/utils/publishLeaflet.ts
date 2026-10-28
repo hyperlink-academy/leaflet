@@ -261,9 +261,14 @@ async function publish({
       .in("id", entitiesToDelete);
   }
 
-  let { data } = await supabaseServerClient.rpc("get_facts", {
-    root: root_entity,
-  });
+  let [{ data }, { data: replyDraft }] = await Promise.all([
+    supabaseServerClient.rpc("get_facts", { root: root_entity }),
+    supabaseServerClient
+      .from("reply_drafts")
+      .select("subject, block")
+      .eq("leaflet", leaflet_id)
+      .maybeSingle(),
+  ]);
   let facts = (data as unknown as Fact<Attribute>[]) || [];
 
   // Determine the rkey early: it's the record's path field and it scopes the
@@ -576,27 +581,23 @@ async function publish({
   // A draft started from another post's reply block submits itself as a
   // reply once it's published. Best-effort: the post is already live, and
   // the author can still submit it by hand from the reply block.
-  const rootFact = (attribute: "root/reply-to" | "root/reply-to-block") =>
-    scanIndexLocal(facts).eav(root_entity, attribute)[0]?.data.value;
-  const replyTo: string | undefined = publication_uri
-    ? draft?.reply_to
-    : rootFact("root/reply-to");
-  const replyToBlock: string | undefined = publication_uri
-    ? (draft?.reply_to_block ?? undefined)
-    : rootFact("root/reply-to-block");
-  if (!existingDocUri && replyTo) {
+  if (replyDraft) {
     const reply = await createReplyRecord({
       did: credentialSession.did!,
-      subject: replyTo,
-      block: replyToBlock,
+      subject: replyDraft.subject,
+      block: replyDraft.block ?? undefined,
       document: result.uri,
       agent,
     }).catch((e) => {
       console.error("[publish] reply record failed", e);
       return null;
     });
-    if (reply && !reply.ok)
-      console.error("[publish] reply record failed", reply.error);
+    if (reply?.ok)
+      await supabaseServerClient
+        .from("reply_drafts")
+        .delete()
+        .eq("leaflet", leaflet_id);
+    else if (reply) console.error("[publish] reply record failed", reply.error);
   }
 
   // Create notifications for mentions (only on first publish)

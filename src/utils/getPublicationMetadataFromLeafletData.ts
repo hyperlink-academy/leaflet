@@ -22,8 +22,6 @@ export type PublicationMetadata = {
   doc: string | null;
   /** Set when this draft only goes out as an email, never published. */
   email_only?: boolean;
-  /** The post this draft answers; it's submitted as a reply on first publish. */
-  reply_to?: string | null;
   publications: {
     identity_did: string;
     name: string;
@@ -104,4 +102,15 @@ export function getPublicationMetadataFromLeafletData(
   }
 
   return null;
+}
+
+// What a leaflet's "Replying to" indicator shows: its published document's
+// submissions, or else its reply draft's subject.
+export function leafletReplyTargetsFor(
+  data?: GetLeafletDataReturnType["result"]["data"],
+) {
+  return {
+    document: getPublicationMetadataFromLeafletData(data)?.doc,
+    draftSubject: data?.reply_drafts?.subject,
+  };
 }

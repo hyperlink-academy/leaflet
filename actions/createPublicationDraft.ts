@@ -9,8 +9,6 @@ export async function createPublicationDraft(
   pageType: "canvas" | "doc" = "doc",
   options: {
     emailOnly?: boolean;
-    // The post (and its reply block) this draft will reply to
-    replyTo?: { subject: string; block?: string };
   } = {},
 ) {
   let identity = await getAuthIdentity();
@@ -43,8 +41,6 @@ export async function createPublicationDraft(
     leaflet: newLeaflet,
     doc: null,
     email_only: !!options.emailOnly,
-    reply_to: options.replyTo?.subject ?? null,
-    reply_to_block: options.replyTo?.block ?? null,
   });
 
   // If a contributor created the draft, automatically add them as a draft

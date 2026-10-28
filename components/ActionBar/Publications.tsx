@@ -14,6 +14,7 @@ import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { LoginModal } from "components/LoginButton";
 import { TutorialNavTooltip } from "app/(app)/(identity)/(home-pages)/(writer)/home/Tutorial/TutorialNavTooltip";
+import { PendingPublicationActionsIndicator } from "components/PendingPublicationActions";
 
 export const PublicationButtons = (props: { className?: string }) => {
   let { identity } = useIdentityData();
@@ -121,6 +122,9 @@ const PublicationOption = (props: {
             }
             pubName={record.name}
           />
+        }
+        trailing={
+          <PendingPublicationActionsIndicator publication={props.uri} />
         }
         className={` ${props.className}`}
       />

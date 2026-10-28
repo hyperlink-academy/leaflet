@@ -2,6 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   useLeafletPublicationData,
+  useLeafletReplyDraft,
+  useLeafletReplyTargets,
   useLeafletScheduledPublishAt,
 } from "components/PageSWRDataProvider";
 import { useRef, useState } from "react";
@@ -11,7 +13,9 @@ import { uploadCoverImage } from "src/utils/uploadCoverImage";
 import { CoverImageTiny } from "components/Icons/CoverImageTiny";
 import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { Separator } from "components/Layout";
-import { ReplyingTo, useReplyTarget } from "components/Pages/ReplyingTo";
+import { ReplyingTo } from "components/Pages/ReplyingTo";
+import { useWithdrawReply } from "components/Blocks/ReplyBlock/useWithdrawReply";
+import type { ReplyTarget } from "src/documentReplies";
 import { AtUri } from "@atproto/syntax";
 import {
   getBasePublicationURL,
@@ -40,7 +44,7 @@ export const PublicationMetadata = (props: {
   noInteractions?: boolean;
   compact?: boolean;
 }) => {
-  let { rep, permission_token, rootEntity } = useReplicache();
+  let { rep, permission_token } = useReplicache();
   let leaflet_id = permission_token.id;
   let {
     data: pub,
@@ -65,13 +69,28 @@ export const PublicationMetadata = (props: {
   );
   let publishedAt = normalizedDocument?.publishedAt;
   let scheduledPublishAt = useLeafletScheduledPublishAt();
-  let standaloneReplyTo = useEntity(rootEntity, "root/reply-to")?.data.value;
-  let replyTarget = useReplyTarget(pub?.reply_to ?? standaloneReplyTo);
+  let replyDraft = useLeafletReplyDraft();
+  let replyTargets = useLeafletReplyTargets() ?? [];
+  let { withdrawReply, withdrawReplyDraft } = useWithdrawReply();
+  let canWithdraw =
+    !!identity?.atp_did &&
+    (pub?.doc
+      ? new AtUri(pub.doc).host === identity.atp_did
+      : replyDraft?.identity_did === identity.atp_did);
+  let withdraw = (target: ReplyTarget) =>
+    target.replyUri
+      ? withdrawReply(target.replyUri)
+      : withdrawReplyDraft(leaflet_id);
+  let replyingTo = (className: string) => (
+    <ReplyingTo
+      targets={replyTargets}
+      newTab
+      onWithdraw={canWithdraw ? withdraw : undefined}
+      className={className}
+    />
+  );
 
-  if (!pub)
-    return replyTarget ? (
-      <ReplyingTo target={replyTarget} className="pb-2" />
-    ) : null;
+  if (!pub) return replyingTo("px-3 sm:px-4 sm:pt-3 pt-2 pb-2");
 
   if (typeof title !== "string") {
     title = pub?.title || "";
@@ -84,6 +103,7 @@ export const PublicationMetadata = (props: {
   return (
     <PostHeaderLayout
       compact={props.compact}
+      below={replyingTo("pt-3")}
       pubLink={
         <div className="flex gap-2 items-center min-w-0 w-full">
           {pub.publications && (
@@ -101,7 +121,6 @@ export const PublicationMetadata = (props: {
           <div className="font-bold text-tertiary px-1 h-[20px] text-sm flex place-items-center bg-border-light rounded-md ">
             DRAFT
           </div>
-          <ReplyingTo target={replyTarget} />
         </div>
       }
       postTitle={
