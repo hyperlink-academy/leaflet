@@ -75,7 +75,7 @@ type Props = {
   };
   // Set when this draft answers another post and publishing submits it as a
   // reply.
-  replyTarget?: ReplyTarget | null;
+  replyTargets?: ReplyTarget[];
 };
 
 type PublishState =
@@ -393,10 +393,7 @@ const PublishPostForm = (
           {state === "post-details" ? (
             <>
               <h2>Publish: Post Details</h2>
-              <ReplyingTo
-                targets={props.replyTarget ? [props.replyTarget] : []}
-                newTab
-              />
+              <ReplyingTo targets={props.replyTargets ?? []} newTab />
               <PublishingTo
                 publication_uri={props.publication_uri}
                 record={props.pubRecord}

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { AtUri } from "@atproto/syntax";
-import { getDocumentReplyTargets, getReplyTarget } from "actions/replies";
+import { getReplyTargets } from "actions/replies";
 import { PubIcon } from "components/ActionBar/Publications";
 import { Avatar } from "components/Avatar";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
@@ -10,25 +10,17 @@ import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTin
 import { Menu, MenuItem } from "components/Menu";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { ProfilePopover } from "components/ProfilePopover";
-import type { ReplyTarget } from "src/documentReplies";
+import type { ReplyTarget, ReplyTargetsFor } from "src/documentReplies";
 
-export function useDocumentReplyTargets(document: string | null | undefined) {
-  return useSWR(document ? ["document_reply_targets", document] : null, () =>
-    getDocumentReplyTargets(document!),
-  ).data;
-}
+export const replyTargetsKey = ({ document, draftSubject }: ReplyTargetsFor) =>
+  document
+    ? ["reply_targets", document]
+    : draftSubject
+      ? ["reply_targets", null, draftSubject]
+      : null;
 
-export function useDraftReplyTargets(
-  linkedSubject: string | null | undefined,
-  document: string | null | undefined,
-): ReplyTarget[] {
-  let submitted = useDocumentReplyTargets(document);
-  let { data: linked } = useSWR(
-    !document && linkedSubject ? ["reply_target", linkedSubject] : null,
-    () => getReplyTarget(linkedSubject!),
-  );
-  if (document) return submitted ?? [];
-  return linked ? [linked] : [];
+export function useReplyTargets(args: ReplyTargetsFor) {
+  return useSWR(replyTargetsKey(args), () => getReplyTargets(args)).data;
 }
 
 export function ReplyingTo(props: {

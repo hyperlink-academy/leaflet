@@ -1,12 +1,15 @@
 "use client";
-import { SWRConfig } from "swr";
+import { SWRConfig, unstable_serialize } from "swr";
 import { useReplicache } from "src/replicache";
 import useSWR from "swr";
 import { callRPC } from "app/api/rpc/client";
 import { getPollData } from "actions/pollActions";
 import type { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { createContext, useContext, useMemo } from "react";
-import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationMetadataFromLeafletData";
+import {
+  getPublicationMetadataFromLeafletData,
+  leafletReplyTargetsFor,
+} from "src/utils/getPublicationMetadataFromLeafletData";
 import { getPublicationURL, getDocumentURL } from "src/utils/getPublicationURL";
 import { AtUri } from "@atproto/syntax";
 import {
@@ -16,7 +19,8 @@ import {
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import type { DocumentQuestions } from "src/documentQuestions";
-import type { DocumentReplies } from "src/documentReplies";
+import type { DocumentReplies, ReplyTarget } from "src/documentReplies";
+import { replyTargetsKey, useReplyTargets } from "components/Pages/ReplyingTo";
 
 // Reader-submitted content on the published document, loaded by the editor
 // page for the viewer so the questions and reply blocks render it on first
@@ -35,15 +39,23 @@ export function PageSWRDataProvider(props: {
   leaflet_id: string;
   leaflet_data: GetLeafletDataReturnType["result"];
   poll_data: Awaited<ReturnType<typeof getPollData>>;
+  reply_targets?: ReplyTarget[];
   block_data?: EditorBlockData;
   children: React.ReactNode;
 }) {
+  let replyKey = replyTargetsKey(
+    leafletReplyTargetsFor(props.leaflet_data.data),
+  );
   return (
     <SWRConfig
       value={{
         fallback: {
           poll_data: props.poll_data,
           [`${props.leaflet_id}-leaflet_data`]: props.leaflet_data.data,
+          ...(replyKey &&
+            props.reply_targets && {
+              [unstable_serialize(replyKey)]: props.reply_targets,
+            }),
         },
       }}
     >
@@ -106,6 +118,10 @@ export function useLeafletScheduledPublishAt() {
   let { data } = useLeafletData();
   let scheduled = data?.publication_scheduled_posts;
   return scheduled?.status === "scheduled" ? scheduled.publish_at : null;
+}
+export function useLeafletReplyTargets() {
+  let { data } = useLeafletData();
+  return useReplyTargets(leafletReplyTargetsFor(data));
 }
 export function useLeafletReplyDraft() {
   let { data } = useLeafletData();

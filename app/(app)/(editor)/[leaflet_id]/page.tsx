@@ -22,13 +22,16 @@ import {
   type GetLeafletDataReturnType,
 } from "app/api/rpc/[command]/get_leaflet_data";
 import { getSessionDid } from "src/identityPayload";
-import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationMetadataFromLeafletData";
+import {
+  getPublicationMetadataFromLeafletData,
+  leafletReplyTargetsFor,
+} from "src/utils/getPublicationMetadataFromLeafletData";
 import { FontLoader, extractFontsFromFacts } from "components/FontLoader";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { documentHasBlock } from "src/utils/documentHasBlock";
 import { ids } from "lexicons/api/lexicons";
 import { loadDocumentQuestions } from "src/documentQuestions";
-import { loadDocumentReplies } from "src/documentReplies";
+import { loadDocumentReplies, loadReplyTargets } from "src/documentReplies";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -77,12 +80,14 @@ export default async function LeafletPage(props: Props) {
 
   let token = res.data;
   let viewer = getSessionDid();
-  let [initialFacts, poll_data, viewerDid, block_data] = await Promise.all([
-    getInitialFacts(rootEntity),
-    getPollData(token.permission_token_rights.map((ptr) => ptr.entity_set)),
-    viewer,
-    viewer.then((did) => getEditorBlockData(token, did)),
-  ]);
+  let [initialFacts, poll_data, viewerDid, block_data, reply_targets] =
+    await Promise.all([
+      getInitialFacts(rootEntity),
+      getPollData(token.permission_token_rights.map((ptr) => ptr.entity_set)),
+      viewer,
+      viewer.then((did) => getEditorBlockData(token, did)),
+      loadReplyTargets(leafletReplyTargetsFor(token), viewer),
+    ]);
 
   // Extract font settings from facts for server-side font loading
   const { headingFontId, bodyFontId } = extractFontsFromFacts(
@@ -98,6 +103,7 @@ export default async function LeafletPage(props: Props) {
         poll_data={poll_data}
         leaflet_id={res.data.id}
         leaflet_data={res}
+        reply_targets={reply_targets}
         block_data={block_data}
       >
         <Leaflet

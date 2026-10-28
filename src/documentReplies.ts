@@ -206,6 +206,11 @@ export const replyBlocksOf = (document: NormalizedDocument | null) =>
     ids.PubLeafletBlocksReply,
   );
 
+export type ReplyTargetsFor = {
+  document?: string | null;
+  draftSubject?: string | null;
+};
+
 export type ReplyTarget = {
   uri: string;
   title: string;
@@ -312,19 +317,42 @@ export async function subjectReplyBlock(
   );
 }
 
-// The post a reply draft answers, for the editor's "Replying to" indicator.
-export async function getReplyTarget(
-  subject: string,
-): Promise<ReplyTarget | null> {
+// The posts a leaflet replies to, for its "Replying to" indicator: what its
+// published document was submitted as a reply to (its author also sees
+// submissions still pending), or else the post its draft will be submitted to.
+export async function loadReplyTargets(
+  { document, draftSubject }: ReplyTargetsFor,
+  viewer: string | null | Promise<string | null>,
+): Promise<ReplyTarget[]> {
+  if (document) {
+    const [{ data: submissions }, viewerDid] = await Promise.all([
+      supabaseServerClient
+        .from("document_replies")
+        .select(
+          `uri, subject, document_reply_rejections(reply),
+          documents!document_replies_subject_fkey(uri, data,
+            documents_in_publications(publications(uri, record)))`,
+        )
+        .eq("document", document),
+      viewer,
+    ]);
+    return replyTargets(
+      (submissions ?? []).filter((s) => !s.document_reply_rejections),
+      { includePending: !!viewerDid && isDocumentOwner(document, viewerDid) },
+    );
+  }
+  if (!draftSubject) return [];
   const [{ data: doc }, profiles] = await Promise.all([
     supabaseServerClient
       .from("documents")
       .select("uri, data, documents_in_publications(publications(uri, record))")
-      .eq("uri", subject)
+      .eq("uri", draftSubject)
       .maybeSingle(),
-    getProfiles([new AtUri(subject).host]),
+    getProfiles([new AtUri(draftSubject).host]),
   ]);
-  return doc && replyTarget(doc, profiles, { replyUri: null, pending: true });
+  const target =
+    doc && replyTarget(doc, profiles, { replyUri: null, pending: true });
+  return target ? [target] : [];
 }
 
 export type CreateReplyError = "not_found" | "failed";

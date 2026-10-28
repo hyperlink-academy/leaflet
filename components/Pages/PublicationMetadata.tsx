@@ -3,6 +3,7 @@ import Image from "next/image";
 import {
   useLeafletPublicationData,
   useLeafletReplyDraft,
+  useLeafletReplyTargets,
   useLeafletScheduledPublishAt,
 } from "components/PageSWRDataProvider";
 import { useRef, useState } from "react";
@@ -12,7 +13,7 @@ import { uploadCoverImage } from "src/utils/uploadCoverImage";
 import { CoverImageTiny } from "components/Icons/CoverImageTiny";
 import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { Separator } from "components/Layout";
-import { ReplyingTo, useDraftReplyTargets } from "components/Pages/ReplyingTo";
+import { ReplyingTo } from "components/Pages/ReplyingTo";
 import { useWithdrawReply } from "components/Blocks/ReplyBlock/useWithdrawReply";
 import type { ReplyTarget } from "src/documentReplies";
 import { AtUri } from "@atproto/syntax";
@@ -69,7 +70,7 @@ export const PublicationMetadata = (props: {
   let publishedAt = normalizedDocument?.publishedAt;
   let scheduledPublishAt = useLeafletScheduledPublishAt();
   let replyDraft = useLeafletReplyDraft();
-  let replyTargets = useDraftReplyTargets(replyDraft?.subject, pub?.doc);
+  let replyTargets = useLeafletReplyTargets() ?? [];
   let { withdrawReply, withdrawReplyDraft } = useWithdrawReply();
   let canWithdraw =
     !!identity?.atp_did &&

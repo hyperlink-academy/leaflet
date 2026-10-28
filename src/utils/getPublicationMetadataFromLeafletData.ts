@@ -103,3 +103,14 @@ export function getPublicationMetadataFromLeafletData(
 
   return null;
 }
+
+// What a leaflet's "Replying to" indicator shows: its published document's
+// submissions, or else its reply draft's subject.
+export function leafletReplyTargetsFor(
+  data?: GetLeafletDataReturnType["result"]["data"],
+) {
+  return {
+    document: getPublicationMetadataFromLeafletData(data)?.doc,
+    draftSubject: data?.reply_drafts?.subject,
+  };
+}

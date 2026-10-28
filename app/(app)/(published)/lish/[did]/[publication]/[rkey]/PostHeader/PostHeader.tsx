@@ -21,10 +21,7 @@ import {
   bylineSeparator,
 } from "src/utils/byline";
 import { TagPopover } from "components/Interactions/InteractionsPreview";
-import {
-  ReplyingTo,
-  useDocumentReplyTargets,
-} from "components/Pages/ReplyingTo";
+import { ReplyingTo, useReplyTargets } from "components/Pages/ReplyingTo";
 import { useWithdrawReply } from "components/Blocks/ReplyBlock/useWithdrawReply";
 import { useIdentityData } from "components/IdentityProvider";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
@@ -61,9 +58,9 @@ export function PostHeader(props: {
     !!document?.uri &&
     !!identity?.atp_did &&
     isDocumentOwner(document.uri, identity.atp_did);
-  let ownReplyTargets = useDocumentReplyTargets(
-    ownsPost ? document?.uri : null,
-  );
+  let ownReplyTargets = useReplyTargets({
+    document: ownsPost ? document?.uri : null,
+  });
 
   if (!document?.data || !record) return null;
   return (

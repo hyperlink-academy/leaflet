@@ -9,7 +9,7 @@ import { isUuid } from "src/utils/isUuid";
 import { redirect } from "next/navigation";
 import { scheduledPostIneligibleReason } from "src/scheduledPosts/eligibility";
 import type { ScheduledPost } from "src/scheduledPosts/types";
-import { getReplyTarget } from "src/documentReplies";
+import { loadReplyTargets } from "src/documentReplies";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -110,7 +110,7 @@ export default async function PublishLeafletPage(props: Props) {
     viewerProfile,
     publicationOwnerProfile,
     subscriberCount,
-    replyTarget,
+    replyTargets,
     scheduling,
   ] = await Promise.all([
     agent.getProfile({ actor: identity.atp_did }),
@@ -128,7 +128,7 @@ export default async function PublishLeafletPage(props: Props) {
           .eq("state", "confirmed")
           .then(({ count }) => count ?? 0)
       : Promise.resolve(undefined),
-    data.reply_drafts ? getReplyTarget(data.reply_drafts.subject) : null,
+    loadReplyTargets({ draftSubject: data.reply_drafts?.subject }, null),
     loadSchedulingOptions({
       leaflet_id,
       publication_uri: publication?.uri,
@@ -177,7 +177,7 @@ export default async function PublishLeafletPage(props: Props) {
         entitiesToDelete={entitiesToDelete}
         hasDraft={hasDraft}
         scheduling={scheduling}
-        replyTarget={replyTarget}
+        replyTargets={replyTargets}
       />
     </ReplicacheProvider>
   );

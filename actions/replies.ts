@@ -22,12 +22,12 @@ import { createPublicationDraft } from "./createPublicationDraft";
 import { createNewLeaflet } from "./createNewLeaflet";
 import {
   createReplyRecord,
-  getReplyTarget as loadReplyTarget,
-  replyTargets,
   loadDocumentReplies,
+  loadReplyTargets,
   subjectReplyBlock,
   MAX_REPLIES,
   type DocumentReplies,
+  type ReplyTargetsFor,
 } from "src/documentReplies";
 import { revalidateDocumentPaths } from "src/utils/revalidatePublication";
 import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
@@ -195,10 +195,6 @@ export async function createReplyDraft(args: {
   return Ok({ leaflet });
 }
 
-export async function getReplyTarget(subject: string) {
-  return loadReplyTarget(subject);
-}
-
 export async function withdrawReplyDraft(
   leaflet: string,
 ): Promise<Result<null, ReplyError>> {
@@ -214,22 +210,8 @@ export async function withdrawReplyDraft(
   return data.length > 0 ? Ok(null) : Err({ type: "not_owner" });
 }
 
-export async function getDocumentReplyTargets(document: string) {
-  const [{ data: submissions }, viewer] = await Promise.all([
-    supabaseServerClient
-      .from("document_replies")
-      .select(
-        `uri, subject, document_reply_rejections(reply),
-        documents!document_replies_subject_fkey(uri, data,
-          documents_in_publications(publications(uri, record)))`,
-      )
-      .eq("document", document),
-    viewerDid(),
-  ]);
-  return replyTargets(
-    (submissions ?? []).filter((s) => !s.document_reply_rejections),
-    { includePending: !!viewer && isDocumentOwner(document, viewer) },
-  );
+export async function getReplyTargets(args: ReplyTargetsFor) {
+  return loadReplyTargets(args, viewerDid());
 }
 
 export type ReplyError =
