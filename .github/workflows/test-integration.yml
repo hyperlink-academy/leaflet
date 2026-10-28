@@ -14,6 +14,7 @@ on:
       - "supabase/database.types.ts"
       - "drizzle/**"
       - "scripts/generate-db-types.mjs"
+      - ".github/actions/postgres-meta-image/**"
       - "vitest.config.ts"
       - "package.json"
       - "package-lock.json"
@@ -35,5 +36,6 @@ jobs:
           command: npm run test:integration
       # The stack run-tests started is a fresh migrate of supabase/migrations;
       # its generated types must equal the committed ones.
+      - uses: ./.github/actions/postgres-meta-image
       - name: Generated DB types match migrations
         run: node scripts/generate-db-types.mjs --check

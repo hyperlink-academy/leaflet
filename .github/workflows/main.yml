@@ -71,6 +71,7 @@ jobs:
           node-version: 24
           cache: "npm"
       - run: "npm i"
+      - uses: ./.github/actions/postgres-meta-image
       - run: |
           export PROD_DB_URL=$(node -e 'console.log(`postgresql://postgres.${process.env.PRODUCTION_PROJECT_ID}:${encodeURIComponent(process.env.SUPABASE_DB_PASSWORD)}@aws-0-us-west-1.pooler.supabase.com:5432/postgres?sslmode=require`)')
           echo "::add-mask::$PROD_DB_URL"
