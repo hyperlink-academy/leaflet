@@ -53,3 +53,25 @@ jobs:
       - uses: supabase/setup-cli@v1
       - run: supabase link --project-ref $PRODUCTION_PROJECT_ID
       - run: supabase db push
+
+  # Production introspection (catalog reads only) after the deploy: anything
+  # that differs from the committed types is prod drift no migration explains
+  # (dashboard edits, hand-run DDL).
+  prod-schema-drift:
+    needs: deploy-supabase
+    runs-on: ubuntu-latest
+    name: Prod schema matches committed types
+    env:
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PRODUCTION_PROJECT_ID: bdefzwcumgzjwllsnaej
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: "npm"
+      - run: "npm i"
+      - run: |
+          export PROD_DB_URL=$(node -e 'console.log(`postgresql://postgres.${process.env.PRODUCTION_PROJECT_ID}:${encodeURIComponent(process.env.SUPABASE_DB_PASSWORD)}@aws-0-us-west-1.pooler.supabase.com:5432/postgres?sslmode=require`)')
+          echo "::add-mask::$PROD_DB_URL"
+          node scripts/generate-db-types.mjs --prod --check

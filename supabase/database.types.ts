@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          operationName?: string
-          query?: string
-          variables?: Json
-          extensions?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       atp_poll_records: {
@@ -373,6 +348,216 @@ export type Database = {
           },
         ]
       }
+      document_question_answers: {
+        Row: {
+          indexed_at: string
+          question: string
+          record: Json
+          subject: string
+          uri: string
+        }
+        Insert: {
+          indexed_at?: string
+          question: string
+          record: Json
+          subject: string
+          uri: string
+        }
+        Update: {
+          indexed_at?: string
+          question?: string
+          record?: Json
+          subject?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_question_answers_question_fkey"
+            columns: ["question"]
+            isOneToOne: true
+            referencedRelation: "document_questions"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "document_question_answers_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      document_question_visibility: {
+        Row: {
+          indexed_at: string
+          question: string
+          state: string
+          subject: string
+          uri: string
+        }
+        Insert: {
+          indexed_at?: string
+          question: string
+          state: string
+          subject: string
+          uri: string
+        }
+        Update: {
+          indexed_at?: string
+          question?: string
+          state?: string
+          subject?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_question_visibility_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      document_questions: {
+        Row: {
+          asker_did: string
+          cid: string
+          indexed_at: string
+          record: Json
+          subject: string
+          uri: string
+        }
+        Insert: {
+          asker_did: string
+          cid: string
+          indexed_at?: string
+          record: Json
+          subject: string
+          uri: string
+        }
+        Update: {
+          asker_did?: string
+          cid?: string
+          indexed_at?: string
+          record?: Json
+          subject?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_questions_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      document_replies: {
+        Row: {
+          document: string
+          indexed_at: string
+          record: Json
+          replier_did: string
+          subject: string
+          uri: string
+        }
+        Insert: {
+          document: string
+          indexed_at?: string
+          record: Json
+          replier_did: string
+          subject: string
+          uri: string
+        }
+        Update: {
+          document?: string
+          indexed_at?: string
+          record?: Json
+          replier_did?: string
+          subject?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_replies_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "document_replies_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      document_reply_rejections: {
+        Row: {
+          rejected_at: string
+          reply: string
+          subject: string
+        }
+        Insert: {
+          rejected_at?: string
+          reply: string
+          subject: string
+        }
+        Update: {
+          rejected_at?: string
+          reply?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_reply_rejections_reply_fkey"
+            columns: ["reply"]
+            isOneToOne: true
+            referencedRelation: "document_replies"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "document_reply_rejections_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      document_reply_visibility: {
+        Row: {
+          indexed_at: string
+          reply: string
+          subject: string
+          uri: string
+        }
+        Insert: {
+          indexed_at?: string
+          reply: string
+          subject: string
+          uri: string
+        }
+        Update: {
+          indexed_at?: string
+          reply?: string
+          subject?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_reply_visibility_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       document_tags: {
         Row: {
           tag: string
@@ -479,220 +664,11 @@ export type Database = {
           },
         ]
       }
-      document_replies: {
-        Row: {
-          document: string
-          indexed_at: string
-          record: Json
-          replier_did: string
-          subject: string
-          uri: string
-        }
-        Insert: {
-          document: string
-          indexed_at?: string
-          record: Json
-          replier_did: string
-          subject: string
-          uri: string
-        }
-        Update: {
-          document?: string
-          indexed_at?: string
-          record?: Json
-          replier_did?: string
-          subject?: string
-          uri?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "document_replies_document_fkey"
-            columns: ["document"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["uri"]
-          },
-          {
-            foreignKeyName: "document_replies_subject_fkey"
-            columns: ["subject"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["uri"]
-          },
-        ]
-      }
-      document_reply_visibility: {
-        Row: {
-          indexed_at: string
-          reply: string
-          subject: string
-          uri: string
-        }
-        Insert: {
-          indexed_at?: string
-          reply: string
-          subject: string
-          uri: string
-        }
-        Update: {
-          indexed_at?: string
-          reply?: string
-          subject?: string
-          uri?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "document_reply_visibility_subject_fkey"
-            columns: ["subject"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["uri"]
-          },
-        ]
-      }
-      document_reply_rejections: {
-        Row: {
-          rejected_at: string
-          reply: string
-          subject: string
-        }
-        Insert: {
-          rejected_at?: string
-          reply: string
-          subject: string
-        }
-        Update: {
-          rejected_at?: string
-          reply?: string
-          subject?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "document_reply_rejections_reply_fkey"
-            columns: ["reply"]
-            isOneToOne: true
-            referencedRelation: "document_replies"
-            referencedColumns: ["uri"]
-          },
-          {
-            foreignKeyName: "document_reply_rejections_subject_fkey"
-            columns: ["subject"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["uri"]
-          },
-        ]
-      }
-      document_question_visibility: {
-        Row: {
-          indexed_at: string
-          question: string
-          state: string
-          subject: string
-          uri: string
-        }
-        Insert: {
-          indexed_at?: string
-          question: string
-          state: string
-          subject: string
-          uri: string
-        }
-        Update: {
-          indexed_at?: string
-          question?: string
-          state?: string
-          subject?: string
-          uri?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "document_question_visibility_subject_fkey"
-            columns: ["subject"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["uri"]
-          },
-        ]
-      }
-      document_questions: {
-        Row: {
-          asker_did: string
-          cid: string
-          indexed_at: string
-          record: Json
-          subject: string
-          uri: string
-        }
-        Insert: {
-          asker_did: string
-          cid: string
-          indexed_at?: string
-          record: Json
-          subject: string
-          uri: string
-        }
-        Update: {
-          asker_did?: string
-          cid?: string
-          indexed_at?: string
-          record?: Json
-          subject?: string
-          uri?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "document_questions_subject_fkey"
-            columns: ["subject"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["uri"]
-          },
-        ]
-      }
-      document_question_answers: {
-        Row: {
-          indexed_at: string
-          question: string
-          record: Json
-          subject: string
-          uri: string
-        }
-        Insert: {
-          indexed_at?: string
-          question: string
-          record: Json
-          subject: string
-          uri: string
-        }
-        Update: {
-          indexed_at?: string
-          question?: string
-          record?: Json
-          subject?: string
-          uri?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "document_question_answers_question_fkey"
-            columns: ["question"]
-            isOneToOne: true
-            referencedRelation: "document_questions"
-            referencedColumns: ["uri"]
-          },
-          {
-            foreignKeyName: "document_question_answers_subject_fkey"
-            columns: ["subject"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["uri"]
-          },
-        ]
-      }
       documents: {
         Row: {
           bsky_like_count: number
           data: Json
+          identity_did: string | null
           indexed: boolean
           indexed_at: string
           recommend_count: number
@@ -702,19 +678,21 @@ export type Database = {
         Insert: {
           bsky_like_count?: number
           data: Json
+          identity_did?: never
           indexed?: boolean
           indexed_at?: string
           recommend_count?: number
-          sort_date?: string | null
+          sort_date?: never
           uri: string
         }
         Update: {
           bsky_like_count?: number
           data?: Json
+          identity_did?: never
           indexed?: boolean
           indexed_at?: string
           recommend_count?: number
-          sort_date?: string | null
+          sort_date?: never
           uri?: string
         }
         Relationships: []
@@ -1601,7 +1579,7 @@ export type Database = {
           {
             foreignKeyName: "publication_email_posts_leaflet_fkey"
             columns: ["leaflet"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "permission_tokens"
             referencedColumns: ["id"]
           },
@@ -1939,9 +1917,12 @@ export type Database = {
           created_at: string
           document: string | null
           id: number
+          leaflet_src: string | null
+          metadata: Json
           page_entity: string | null
           path: string | null
           publication: string
+          published_metadata: Json | null
           record: Json | null
           record_uri: string | null
           sort_order: string
@@ -1951,9 +1932,12 @@ export type Database = {
           created_at?: string
           document?: string | null
           id?: number
+          leaflet_src?: string | null
+          metadata?: Json
           page_entity?: string | null
           path?: string | null
           publication: string
+          published_metadata?: Json | null
           record?: Json | null
           record_uri?: string | null
           sort_order: string
@@ -1963,9 +1947,12 @@ export type Database = {
           created_at?: string
           document?: string | null
           id?: number
+          leaflet_src?: string | null
+          metadata?: Json
           page_entity?: string | null
           path?: string | null
           publication?: string
+          published_metadata?: Json | null
           record?: Json | null
           record_uri?: string | null
           sort_order?: string
@@ -1978,6 +1965,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "documents"
             referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "publication_pages_leaflet_src_fkey"
+            columns: ["leaflet_src"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "publication_pages_publication_fkey"
@@ -2248,6 +2242,24 @@ export type Database = {
           },
         ]
       }
+      replicache_clients: {
+        Row: {
+          client_group: string
+          client_id: string
+          last_mutation: number
+        }
+        Insert: {
+          client_group: string
+          client_id: string
+          last_mutation: number
+        }
+        Update: {
+          client_group?: string
+          client_id?: string
+          last_mutation?: number
+        }
+        Relationships: []
+      }
       reply_drafts: {
         Row: {
           block: string | null
@@ -2293,24 +2305,6 @@ export type Database = {
             referencedColumns: ["uri"]
           },
         ]
-      }
-      replicache_clients: {
-        Row: {
-          client_group: string
-          client_id: string
-          last_mutation: number
-        }
-        Insert: {
-          client_group: string
-          client_id: string
-          last_mutation: number
-        }
-        Update: {
-          client_group?: string
-          client_id?: string
-          last_mutation?: number
-        }
-        Relationships: []
       }
       site_standard_documents: {
         Row: {
@@ -2442,6 +2436,123 @@ export type Database = {
           },
         ]
       }
+      stripe_connected_accounts: {
+        Row: {
+          charges_enabled: boolean
+          created_at: string
+          details_submitted: boolean
+          identity_id: string
+          payouts_enabled: boolean
+          requirements: Json | null
+          stripe_account_id: string
+          updated_at: string
+        }
+        Insert: {
+          charges_enabled?: boolean
+          created_at?: string
+          details_submitted?: boolean
+          identity_id: string
+          payouts_enabled?: boolean
+          requirements?: Json | null
+          stripe_account_id: string
+          updated_at?: string
+        }
+        Update: {
+          charges_enabled?: boolean
+          created_at?: string
+          details_submitted?: boolean
+          identity_id?: string
+          payouts_enabled?: boolean
+          requirements?: Json | null
+          stripe_account_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connected_accounts_identity_id_fkey"
+            columns: ["identity_id"]
+            isOneToOne: true
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_connected_customers: {
+        Row: {
+          created_at: string
+          identity_id: string
+          stripe_account_id: string
+          stripe_customer_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          identity_id: string
+          stripe_account_id: string
+          stripe_customer_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          identity_id?: string
+          stripe_account_id?: string
+          stripe_customer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connected_customers_identity_id_fkey"
+            columns: ["identity_id"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_wallets: {
+        Row: {
+          card_brand: string | null
+          card_exp_month: number | null
+          card_exp_year: number | null
+          card_last4: string | null
+          created_at: string
+          default_payment_method_id: string | null
+          identity_id: string
+          stripe_customer_id: string
+          updated_at: string
+        }
+        Insert: {
+          card_brand?: string | null
+          card_exp_month?: number | null
+          card_exp_year?: number | null
+          card_last4?: string | null
+          created_at?: string
+          default_payment_method_id?: string | null
+          identity_id: string
+          stripe_customer_id: string
+          updated_at?: string
+        }
+        Update: {
+          card_brand?: string | null
+          card_exp_month?: number | null
+          card_exp_year?: number | null
+          card_last4?: string | null
+          created_at?: string
+          default_payment_method_id?: string | null
+          identity_id?: string
+          stripe_customer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_wallets_identity_id_fkey"
+            columns: ["identity_id"]
+            isOneToOne: true
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tag_counts: {
         Row: {
           document_count: number
@@ -2533,123 +2644,6 @@ export type Database = {
           },
         ]
       }
-      stripe_connected_accounts: {
-        Row: {
-          charges_enabled: boolean
-          created_at: string
-          details_submitted: boolean
-          identity_id: string
-          payouts_enabled: boolean
-          requirements: Json | null
-          stripe_account_id: string
-          updated_at: string
-        }
-        Insert: {
-          charges_enabled?: boolean
-          created_at?: string
-          details_submitted?: boolean
-          identity_id: string
-          payouts_enabled?: boolean
-          requirements?: Json | null
-          stripe_account_id: string
-          updated_at?: string
-        }
-        Update: {
-          charges_enabled?: boolean
-          created_at?: string
-          details_submitted?: boolean
-          identity_id?: string
-          payouts_enabled?: boolean
-          requirements?: Json | null
-          stripe_account_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "stripe_connected_accounts_identity_id_fkey"
-            columns: ["identity_id"]
-            isOneToOne: true
-            referencedRelation: "identities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      stripe_wallets: {
-        Row: {
-          card_brand: string | null
-          card_exp_month: number | null
-          card_exp_year: number | null
-          card_last4: string | null
-          created_at: string
-          default_payment_method_id: string | null
-          identity_id: string
-          stripe_customer_id: string
-          updated_at: string
-        }
-        Insert: {
-          card_brand?: string | null
-          card_exp_month?: number | null
-          card_exp_year?: number | null
-          card_last4?: string | null
-          created_at?: string
-          default_payment_method_id?: string | null
-          identity_id: string
-          stripe_customer_id: string
-          updated_at?: string
-        }
-        Update: {
-          card_brand?: string | null
-          card_exp_month?: number | null
-          card_exp_year?: number | null
-          card_last4?: string | null
-          created_at?: string
-          default_payment_method_id?: string | null
-          identity_id?: string
-          stripe_customer_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "stripe_wallets_identity_id_fkey"
-            columns: ["identity_id"]
-            isOneToOne: true
-            referencedRelation: "identities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      stripe_connected_customers: {
-        Row: {
-          created_at: string
-          identity_id: string
-          stripe_account_id: string
-          stripe_customer_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          identity_id: string
-          stripe_account_id: string
-          stripe_customer_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          identity_id?: string
-          stripe_account_id?: string
-          stripe_customer_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "stripe_connected_customers_identity_id_fkey"
-            columns: ["identity_id"]
-            isOneToOne: false
-            referencedRelation: "identities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
@@ -2657,6 +2651,13 @@ export type Database = {
     Functions: {
       create_identity_homepage: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      document_feed_publication: {
+        Args: {
+          doc_uri: string
+          doc_data: Json
+        }
         Returns: string
       }
       get_facts: {
@@ -2705,6 +2706,21 @@ export type Database = {
           updated_at: string
           version: number
           author_did: string | null
+        }[]
+      }
+      get_follows_feed_skeleton: {
+        Args: {
+          p_identity: string
+          p_cursor_timestamp?: string
+          p_cursor_uri?: string
+          p_limit?: number
+        }
+        Returns: {
+          uri: string
+          sort_date: string
+          post_ref: Json
+          bsky_post_ref: Json
+          published_at: string
         }[]
       }
       get_leaflet_page_data: {
@@ -2784,21 +2800,6 @@ export type Database = {
           published_at: string
         }[]
       }
-      get_follows_feed_skeleton: {
-        Args: {
-          p_identity: string
-          p_cursor_timestamp?: string
-          p_cursor_uri?: string
-          p_limit?: number
-        }
-        Returns: {
-          uri: string
-          sort_date: string
-          post_ref: Json
-          bsky_post_ref: Json
-          published_at: string
-        }[]
-      }
       get_tag_page_document_uris: {
         Args: {
           tag_query: string
@@ -2849,317 +2850,20 @@ export type Database = {
       rsvp_status: "GOING" | "NOT_GOING" | "MAYBE"
     }
     CompositeTypes: {
+      leaflet_page_result: {
+        permission_token: Json | null
+        permission_token_rights: Json | null
+        leaflets_in_publications: Json | null
+        leaflets_to_documents: Json | null
+        custom_domain_routes: Json | null
+        facts: Json | null
+      }
       pull_result: {
         client_groups: Json | null
         facts: Json | null
         publications: Json | null
         draft_contributors: Json | null
       }
-    }
-  }
-  storage: {
-    Tables: {
-      buckets: {
-        Row: {
-          allowed_mime_types: string[] | null
-          avif_autodetection: boolean | null
-          created_at: string | null
-          file_size_limit: number | null
-          id: string
-          name: string
-          owner: string | null
-          owner_id: string | null
-          public: boolean | null
-          updated_at: string | null
-        }
-        Insert: {
-          allowed_mime_types?: string[] | null
-          avif_autodetection?: boolean | null
-          created_at?: string | null
-          file_size_limit?: number | null
-          id: string
-          name: string
-          owner?: string | null
-          owner_id?: string | null
-          public?: boolean | null
-          updated_at?: string | null
-        }
-        Update: {
-          allowed_mime_types?: string[] | null
-          avif_autodetection?: boolean | null
-          created_at?: string | null
-          file_size_limit?: number | null
-          id?: string
-          name?: string
-          owner?: string | null
-          owner_id?: string | null
-          public?: boolean | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      migrations: {
-        Row: {
-          executed_at: string | null
-          hash: string
-          id: number
-          name: string
-        }
-        Insert: {
-          executed_at?: string | null
-          hash: string
-          id: number
-          name: string
-        }
-        Update: {
-          executed_at?: string | null
-          hash?: string
-          id?: number
-          name?: string
-        }
-        Relationships: []
-      }
-      objects: {
-        Row: {
-          bucket_id: string | null
-          created_at: string | null
-          id: string
-          last_accessed_at: string | null
-          metadata: Json | null
-          name: string | null
-          owner: string | null
-          owner_id: string | null
-          path_tokens: string[] | null
-          updated_at: string | null
-          version: string | null
-        }
-        Insert: {
-          bucket_id?: string | null
-          created_at?: string | null
-          id?: string
-          last_accessed_at?: string | null
-          metadata?: Json | null
-          name?: string | null
-          owner?: string | null
-          owner_id?: string | null
-          path_tokens?: string[] | null
-          updated_at?: string | null
-          version?: string | null
-        }
-        Update: {
-          bucket_id?: string | null
-          created_at?: string | null
-          id?: string
-          last_accessed_at?: string | null
-          metadata?: Json | null
-          name?: string | null
-          owner?: string | null
-          owner_id?: string | null
-          path_tokens?: string[] | null
-          updated_at?: string | null
-          version?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "objects_bucketId_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      s3_multipart_uploads: {
-        Row: {
-          bucket_id: string
-          created_at: string
-          id: string
-          in_progress_size: number
-          key: string
-          owner_id: string | null
-          upload_signature: string
-          version: string
-        }
-        Insert: {
-          bucket_id: string
-          created_at?: string
-          id: string
-          in_progress_size?: number
-          key: string
-          owner_id?: string | null
-          upload_signature: string
-          version: string
-        }
-        Update: {
-          bucket_id?: string
-          created_at?: string
-          id?: string
-          in_progress_size?: number
-          key?: string
-          owner_id?: string | null
-          upload_signature?: string
-          version?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "s3_multipart_uploads_bucket_id_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      s3_multipart_uploads_parts: {
-        Row: {
-          bucket_id: string
-          created_at: string
-          etag: string
-          id: string
-          key: string
-          owner_id: string | null
-          part_number: number
-          size: number
-          upload_id: string
-          version: string
-        }
-        Insert: {
-          bucket_id: string
-          created_at?: string
-          etag: string
-          id?: string
-          key: string
-          owner_id?: string | null
-          part_number: number
-          size?: number
-          upload_id: string
-          version: string
-        }
-        Update: {
-          bucket_id?: string
-          created_at?: string
-          etag?: string
-          id?: string
-          key?: string
-          owner_id?: string | null
-          part_number?: number
-          size?: number
-          upload_id?: string
-          version?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "s3_multipart_uploads_parts_bucket_id_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "s3_multipart_uploads_parts_upload_id_fkey"
-            columns: ["upload_id"]
-            isOneToOne: false
-            referencedRelation: "s3_multipart_uploads"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      can_insert_object: {
-        Args: {
-          bucketid: string
-          name: string
-          owner: string
-          metadata: Json
-        }
-        Returns: undefined
-      }
-      extension: {
-        Args: {
-          name: string
-        }
-        Returns: string
-      }
-      filename: {
-        Args: {
-          name: string
-        }
-        Returns: string
-      }
-      foldername: {
-        Args: {
-          name: string
-        }
-        Returns: string[]
-      }
-      get_size_by_bucket: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          size: number
-          bucket_id: string
-        }[]
-      }
-      list_multipart_uploads_with_delimiter: {
-        Args: {
-          bucket_id: string
-          prefix_param: string
-          delimiter_param: string
-          max_keys?: number
-          next_key_token?: string
-          next_upload_token?: string
-        }
-        Returns: {
-          key: string
-          id: string
-          created_at: string
-        }[]
-      }
-      list_objects_with_delimiter: {
-        Args: {
-          bucket_id: string
-          prefix_param: string
-          delimiter_param: string
-          max_keys?: number
-          start_after?: string
-          next_token?: string
-        }
-        Returns: {
-          name: string
-          id: string
-          metadata: Json
-          updated_at: string
-        }[]
-      }
-      search: {
-        Args: {
-          prefix: string
-          bucketname: string
-          limits?: number
-          levels?: number
-          offsets?: number
-          search?: string
-          sortcolumn?: string
-          sortorder?: string
-        }
-        Returns: {
-          name: string
-          id: string
-          updated_at: string
-          created_at: string
-          last_accessed_at: string
-          metadata: Json
-        }[]
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
     }
   }
 }
@@ -3245,3 +2949,4 @@ export type Enums<
   : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
     ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never
+

@@ -166,6 +166,7 @@ function PublishedPostItem(props: {
                           publications: publication,
                           documents: {
                             uri: doc.uri,
+                            identity_did: doc.uri.split("/")[2],
                             indexed_at: doc.indexed_at,
                             sort_date: doc.sort_date,
                             data: doc.data,
