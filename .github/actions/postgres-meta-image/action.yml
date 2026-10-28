@@ -1,0 +1,25 @@
+name: postgres-meta image
+description: Load the postgres-meta image `supabase gen types` runs, without pulling from public.ecr.aws.
+inputs:
+  tag:
+    # Must match the tag the supabase CLI in package-lock.json asks for.
+    default: v0.83.2
+runs:
+  using: composite
+  steps:
+    # Anonymous pulls from public.ecr.aws hit its data limit on shared runner
+    # IPs, so pull the same image from Docker Hub once and cache it.
+    - id: cache
+      uses: actions/cache@v4
+      with:
+        path: /tmp/postgres-meta.tar.zst
+        key: postgres-meta-${{ runner.os }}-${{ inputs.tag }}
+    - if: steps.cache.outputs.cache-hit == 'true'
+      run: zstd -dc /tmp/postgres-meta.tar.zst | docker load
+      shell: bash
+    - if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        docker pull supabase/postgres-meta:${{ inputs.tag }}
+        docker tag supabase/postgres-meta:${{ inputs.tag }} public.ecr.aws/supabase/postgres-meta:${{ inputs.tag }}
+        docker save public.ecr.aws/supabase/postgres-meta:${{ inputs.tag }} | zstd -T0 > /tmp/postgres-meta.tar.zst
+      shell: bash
