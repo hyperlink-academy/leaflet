@@ -11,6 +11,9 @@ on:
       - "src/replicache/**"
       - "supabase/migrations/**"
       - "supabase/config.toml"
+      - "supabase/database.types.ts"
+      - "drizzle/**"
+      - "scripts/generate-db-types.mjs"
       - "vitest.config.ts"
       - "package.json"
       - "package-lock.json"
@@ -30,3 +33,7 @@ jobs:
       - uses: ./.github/actions/run-tests
         with:
           command: npm run test:integration
+      # The stack run-tests started is a fresh migrate of supabase/migrations;
+      # its generated types must equal the committed ones.
+      - name: Generated DB types match migrations
+        run: node scripts/generate-db-types.mjs --check
