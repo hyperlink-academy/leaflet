@@ -161,8 +161,12 @@ if (check) {
 // version, so leaving them in makes output depend on which host generated it.
 async function catalogFacts() {
   const isLocal = /@(127\.0\.0\.1|localhost)[:/]/.test(dbUrl);
+  // node-postgres reads sslmode=require as verify-full, and Supabase's chain
+  // ends in its own CA; keep TLS but skip verification, as the CLI does.
+  const url = new URL(dbUrl);
+  url.searchParams.delete("sslmode");
   const c = new pg.Client({
-    connectionString: dbUrl,
+    connectionString: url.toString(),
     ssl: isLocal ? false : { rejectUnauthorized: false },
   });
   try {
