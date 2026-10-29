@@ -152,7 +152,11 @@ export default function RepliesHarness() {
     <div className="p-6 flex flex-col gap-8 bg-bg-leaflet min-h-screen">
       <Case title="Picker: has posts and publications">
         <ReplyPicker
-          candidates={candidates}
+          search={async (query) =>
+            candidates.filter((c) =>
+              c.title.toLowerCase().includes(query.toLowerCase()),
+            )
+          }
           publications={publications}
           onSubmit={() => {}}
           resolveLink={resolveLink}
@@ -161,7 +165,7 @@ export default function RepliesHarness() {
       </Case>
       <Case title="Picker: no publications">
         <ReplyPicker
-          candidates={[]}
+          search={async () => []}
           publications={[]}
           onSubmit={() => {}}
           resolveLink={resolveLink}
@@ -170,7 +174,7 @@ export default function RepliesHarness() {
       </Case>
       <Case title="Picker: still loading">
         <ReplyPicker
-          candidates={[]}
+          search={() => new Promise(() => {})}
           onSubmit={() => {}}
           resolveLink={resolveLink}
           onCreateDraft={noop}

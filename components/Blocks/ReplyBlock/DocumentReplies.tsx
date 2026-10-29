@@ -13,9 +13,10 @@ import { mainSiteAuthBase } from "src/utils/customDomain";
 import {
   createReplyDraft,
   getDocumentReplies,
-  getReplyCandidates,
+  getReplyPublications,
   rejectReply,
   resolveReplyLink,
+  searchReplyCandidates,
   setReplyVisible,
   submitReply,
   type ReplyError,
@@ -265,15 +266,15 @@ function ReplyPickerForViewer(props: {
   onSubmitted: () => void;
 }) {
   let { identity } = useIdentityData();
-  let { data, mutate } = useSWR(
-    ["reply_candidates", identity?.atp_did, props.documentUri],
-    () => getReplyCandidates(props.documentUri),
+  let { data: publications } = useSWR(
+    ["reply_publications", identity?.atp_did],
+    () => getReplyPublications(),
   );
   let [submitting, setSubmitting] = useState(false);
   let run = useActionToast<ReplyError>(replyErrorMessages);
   return (
     <ReplyPicker
-      publications={data?.publications}
+      publications={publications}
       onCreateDraft={async (publication_uri) => {
         let result = await run(() =>
           createReplyDraft({
@@ -285,9 +286,11 @@ function ReplyPickerForViewer(props: {
         if (!result) return;
         window.location.assign(`${mainSiteAuthBase()}/${result.value.leaflet}`);
       }}
-      candidates={(data?.candidates ?? [])
-        .filter((c) => c.uri !== props.documentUri)
-        .map(toReplyCandidate)}
+      search={async (query) =>
+        (
+          await searchReplyCandidates({ subject: props.documentUri, query })
+        ).map(toReplyCandidate)
+      }
       resolveLink={async (url) => {
         let result = await resolveReplyLink({
           subject: props.documentUri,
@@ -311,7 +314,6 @@ function ReplyPickerForViewer(props: {
         );
         setSubmitting(false);
         if (!ok) return;
-        mutate();
         props.onSubmitted();
       }}
     />

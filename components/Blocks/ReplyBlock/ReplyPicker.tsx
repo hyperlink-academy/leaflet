@@ -33,7 +33,7 @@ const VISIBLE_ROWS = 5;
 const ROW_HEIGHT_PX = 48;
 
 export function ReplyPicker(props: {
-  candidates: ReplyCandidate[];
+  search: (query: string) => Promise<ReplyCandidate[]>;
   publications?: ReplyPublication[];
   submitting?: boolean;
   onSubmit: (uri: string) => void;
@@ -45,10 +45,20 @@ export function ReplyPicker(props: {
   let [highlighted, setHighlighted] = useState<string | null>(null);
   let [choosingPublication, setChoosingPublication] = useState(false);
   let listId = useId();
-  let loading = props.publications === undefined;
   let trimmed = query.trim();
   let pastedUrl = isUrl(trimmed) ? trimmed : null;
-  let link = useResolvedLink(pastedUrl, props.resolveLink);
+  let resolved = useDebouncedResult(
+    pastedUrl,
+    props.resolveLink,
+    Err("Something went wrong."),
+  );
+  let link = resolved?.key === pastedUrl ? resolved.value : undefined;
+  // Keeps showing the previous query's matches while the next one loads.
+  let search = useDebouncedResult(pastedUrl ? null : trimmed, props.search, []);
+  let matches = search?.value ?? [];
+  let searching = search?.key !== trimmed;
+  let hasNoPosts = search?.key === "" && matches.length === 0;
+  let loading = props.publications === undefined;
 
   if (choosingPublication)
     return (
@@ -59,9 +69,6 @@ export function ReplyPicker(props: {
       />
     );
 
-  let matches = props.candidates.filter((c) =>
-    c.title.toLowerCase().includes(trimmed.toLowerCase()),
-  );
   let rows = pastedUrl ? (link?.ok ? [link.value] : []) : matches;
   let selectable = rows.filter((c) => !c.submitted);
   let active =
@@ -107,7 +114,7 @@ export function ReplyPicker(props: {
       >
         Write a reply post on Leaflet <GoToArrowLined />
       </ButtonSecondary>
-      {!loading && props.candidates.length === 0 ? null : (
+      {hasNoPosts ? null : (
         <>
           {" "}
           <hr />
@@ -152,7 +159,7 @@ export function ReplyPicker(props: {
                 : matches.length > 0
                   ? matches.map(row)
                   : message(
-                      loading ? <Spinner /> : "No posts match that title.",
+                      searching ? <Spinner /> : "No posts match that title.",
                     )}
             </div>
           </div>
@@ -178,31 +185,33 @@ function isUrl(text: string) {
   }
 }
 
-function useResolvedLink(
-  url: string | null,
-  resolve: (url: string) => Promise<Result<ReplyCandidate, string>>,
+// Returns the newest result with the key it answers, so callers can tell a
+// stale one. The empty key is the initial list, so it runs without the delay.
+function useDebouncedResult<T>(
+  key: string | null,
+  run: (key: string) => Promise<T>,
+  fallback: T,
 ) {
-  let [resolved, setResolved] = useState<{
-    url: string;
-    result: Result<ReplyCandidate, string>;
-  } | null>(null);
-  let resolveRef = useRef(resolve);
-  resolveRef.current = resolve;
+  let [result, setResult] = useState<{ key: string; value: T } | null>(null);
+  let latest = useRef({ run, fallback });
+  latest.current = { run, fallback };
   useEffect(() => {
-    if (!url) return;
+    if (key === null) return;
     let stale = false;
-    let handler = setTimeout(async () => {
-      let result = await resolveRef
-        .current(url)
-        .catch(() => Err("Something went wrong."));
-      if (!stale) setResolved({ url, result });
-    }, 300);
+    let handler = setTimeout(
+      async () => {
+        let { run, fallback } = latest.current;
+        let value = await run(key).catch(() => fallback);
+        if (!stale) setResult({ key, value });
+      },
+      key === "" ? 0 : 300,
+    );
     return () => {
       stale = true;
       clearTimeout(handler);
     };
-  }, [url]);
-  return resolved?.url === url ? resolved.result : undefined;
+  }, [key]);
+  return result;
 }
 
 function ReplyCandidateRow(props: {

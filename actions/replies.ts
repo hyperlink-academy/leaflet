@@ -48,49 +48,64 @@ export async function getDocumentReplies(
   return loadDocumentReplies(subject, viewerDid());
 }
 
-// The viewer's own recent documents, offered as things to reply with, plus
-// the Leaflet publications they could write a new one in.
-export async function getReplyCandidates(subject: string) {
+// The Leaflet publications the viewer could write a new reply post in.
+export async function getReplyPublications() {
   const identity = await getAuthIdentity();
-  if (!identity?.atp_did) return { candidates: [], publications: [] };
-  const [{ data: rows }, { data: publications }, { data: replies }] =
-    await Promise.all([
-      supabaseServerClient.rpc("get_profile_posts", {
-        p_did: identity.atp_did,
-        p_limit: 30,
-      }),
-      supabaseServerClient
-        .from("publications")
-        .select("uri, name, record")
-        .eq("identity_did", identity.atp_did),
-      supabaseServerClient
-        .from("document_replies")
-        .select("document")
-        .eq("subject", subject)
-        .eq("replier_did", identity.atp_did),
-    ]);
+  if (!identity?.atp_did) return [];
+  const { data: publications } = await supabaseServerClient
+    .from("publications")
+    .select("uri, name, record")
+    .eq("identity_did", identity.atp_did);
+  return deduplicateByUri(publications ?? []).filter(
+    isLeafletManagedPublication,
+  );
+}
+
+const candidateColumns =
+  "uri, data, documents_in_publications(publications(name, record))" as const;
+
+// The viewer's own documents whose titles match, newest first, offered as
+// things to reply with.
+export async function searchReplyCandidates(args: {
+  subject: string;
+  query: string;
+}) {
+  const identity = await getAuthIdentity();
+  if (!identity?.atp_did) return [];
+  const [{ data: rows }, { data: replies }] = await Promise.all([
+    supabaseServerClient
+      .from("documents")
+      .select(candidateColumns)
+      .eq("identity_did", identity.atp_did)
+      .ilike("data->>title", `%${args.query.trim()}%`)
+      .order("sort_date", { ascending: false })
+      .order("uri", { ascending: false })
+      .limit(30),
+    supabaseServerClient
+      .from("document_replies")
+      .select("document")
+      .eq("subject", args.subject)
+      .eq("replier_did", identity.atp_did),
+  ]);
   const submitted = new Set((replies ?? []).map((r) => r.document));
-  const candidates = deduplicateByUriOrdered(rows ?? []).flatMap((row) => {
+  // Filtered after deduping so a twin of the subject doesn't stand in for it.
+  return deduplicateByUriOrdered(rows ?? []).flatMap((row) => {
     const candidate = replyCandidate(row, submitted.has(row.uri));
-    return candidate?.title ? [candidate] : [];
+    return candidate?.title && row.uri !== args.subject ? [candidate] : [];
   });
-  return {
-    candidates,
-    publications: deduplicateByUri(publications ?? []).filter(
-      isLeafletManagedPublication,
-    ),
-  };
 }
 
 function replyCandidate(
   row: {
     uri: string;
     data: Json;
-    publication_record: Json | null;
-    publication_name: string | null;
+    documents_in_publications: {
+      publications: { name: string; record: Json | null } | null;
+    }[];
   },
   submitted: boolean,
 ) {
+  const publication = row.documents_in_publications[0]?.publications;
   const record = normalizeDocumentRecord(row.data, row.uri);
   if (!record) return null;
   return {
@@ -99,10 +114,10 @@ function replyCandidate(
     publishedAt: record.publishedAt ?? null,
     submitted,
     publicationName:
-      (row.publication_record
-        ? normalizePublicationRecord(row.publication_record)?.name
+      (publication?.record
+        ? normalizePublicationRecord(publication.record)?.name
         : null) ??
-      row.publication_name ??
+      publication?.name ??
       null,
   };
 }
@@ -125,9 +140,7 @@ export async function resolveReplyLink(args: {
   const [{ data: row }, { data: existing }] = await Promise.all([
     supabaseServerClient
       .from("documents")
-      .select(
-        "uri, data, documents_in_publications(publications(name, record))",
-      )
+      .select(candidateColumns)
       .eq("uri", document)
       .maybeSingle(),
     supabaseServerClient
@@ -137,18 +150,7 @@ export async function resolveReplyLink(args: {
       .eq("document", document)
       .maybeSingle(),
   ]);
-  const publication = row?.documents_in_publications[0]?.publications;
-  const candidate =
-    row &&
-    replyCandidate(
-      {
-        uri: row.uri,
-        data: row.data,
-        publication_record: publication?.record ?? null,
-        publication_name: publication?.name ?? null,
-      },
-      !!existing,
-    );
+  const candidate = row && replyCandidate(row, !!existing);
   if (!candidate) return Err({ type: "not_found" });
   return Ok({ ...candidate, title: candidate.title || "Untitled" });
 }
