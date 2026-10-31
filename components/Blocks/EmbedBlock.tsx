@@ -21,6 +21,7 @@ import {
   LinkPreviewMetadataResult,
 } from "app/api/link_previews/route";
 import { getAspectRatio } from "src/utils/aspectRatio";
+import { selectEmbedPlayer } from "src/utils/selectEmbedPlayer";
 import { useIframeChannel } from "src/hooks/useIframeChannel";
 import { scrollIntoView } from "src/utils/scrollIntoView";
 import { EmbedBlockData } from "src/partsPageChannel";
@@ -474,8 +475,10 @@ const BlockEmbedInput = (
             await finishAfterSubmit();
             return;
           }
-          if (data.success && data.data.links?.player?.[0]) {
-            let embed = data.data.links.player[0];
+          let embed = data.success
+            ? selectEmbedPlayer(data.data.links?.player)
+            : undefined;
+          if (embed) {
             embedUrl = embed.href;
             embedHeight = embed.media?.height || 300;
             embedAspectRatio = getAspectRatio(embed.media);

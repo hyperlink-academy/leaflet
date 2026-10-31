@@ -8,6 +8,7 @@ import type { ReplicacheMutators } from "src/replicache";
 import { AtpAgent } from "@atproto/api";
 import { v7 } from "uuid";
 import { getAspectRatio } from "src/utils/aspectRatio";
+import { selectEmbedPlayer } from "src/utils/selectEmbedPlayer";
 
 export async function assertStandardSitePostFacts(
   rep: Replicache<ReplicacheMutators>,
@@ -154,8 +155,8 @@ export async function addLinkBlock(
     return;
   }
 
-  if (data.data.links?.player?.[0]) {
-    let embed = data.data.links?.player?.[0];
+  let embed = selectEmbedPlayer(data.data.links?.player);
+  if (embed) {
     let facts: Parameters<typeof rep.mutate.assertFact>[0] = [
       {
         entity: entityID,
