@@ -12,6 +12,7 @@ import {
   Notification,
   pingIdentityToUpdateNotification,
 } from "src/notifications";
+import { trackUserEvent } from "src/activeUserAnalytics";
 
 type RecommendResult =
   | { success: true; uri: string }
@@ -84,6 +85,10 @@ export async function recommendAction(args: {
     } as unknown as Json,
   });
   console.log(res);
+  trackUserEvent(identity, "recommend", {
+    document: args.document,
+    record_uri: uri.toString(),
+  });
 
   // Notify the document owner
   let documentOwner = new AtUri(args.document).host;

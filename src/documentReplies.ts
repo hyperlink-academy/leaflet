@@ -369,7 +369,10 @@ export async function createReplyRecord(args: {
   block: string | undefined;
   document: string;
   agent: AtpBaseClient;
-}): Promise<Result<{ uri: string }, { type: CreateReplyError }>> {
+}): Promise<
+  // `created` is false when the document was already submitted as a reply.
+  Result<{ uri: string; created: boolean }, { type: CreateReplyError }>
+> {
   const { did, subject, document, agent } = args;
   const findExisting = () =>
     supabaseServerClient
@@ -386,7 +389,7 @@ export async function createReplyRecord(args: {
     findExisting(),
   ]);
   if (count !== 2) return Err({ type: "not_found" });
-  if (existing) return Ok({ uri: existing.uri });
+  if (existing) return Ok({ uri: existing.uri, created: false });
 
   const record: PubLeafletInteractionsReply.Record = {
     $type: "pub.leaflet.interactions.reply",
@@ -424,7 +427,9 @@ export async function createReplyRecord(args: {
       .deleteRecord({ repo: did, collection, rkey })
       .catch(() => {});
     const { data: winner } = await findExisting();
-    return winner ? Ok({ uri: winner.uri }) : Err({ type: "failed" });
+    return winner
+      ? Ok({ uri: winner.uri, created: false })
+      : Err({ type: "failed" });
   }
 
   await broadcastDocumentEvent(supabaseServerClient, "reply", subject);
@@ -438,5 +443,5 @@ export async function createReplyRecord(args: {
     await supabaseServerClient.from("notifications").insert(notification);
     await pingIdentityToUpdateNotification(subjectOwner);
   }
-  return Ok({ uri });
+  return Ok({ uri, created: true });
 }

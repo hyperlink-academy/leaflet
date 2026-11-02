@@ -128,7 +128,31 @@ const METRIC_GROUPS: { title: string; metrics: ActivityMetricDef[] }[] = [
         key: "comments",
         title: "Comments",
         unit: "comments",
-        trackedSince: "2026-10-01",
+        trackedSince: "2025-08-21",
+      },
+      {
+        key: "replies",
+        title: "Replies",
+        unit: "replies",
+        trackedSince: "2026-10-06",
+      },
+      {
+        key: "questions",
+        title: "Questions",
+        unit: "questions",
+        trackedSince: "2026-10-07",
+      },
+      {
+        key: "answers",
+        title: "Answers",
+        unit: "answers",
+        trackedSince: "2026-10-07",
+      },
+      {
+        key: "recommends",
+        title: "Recommends",
+        unit: "recommends",
+        trackedSince: "2026-01-28",
       },
       {
         key: "memberships_joined",
@@ -602,6 +626,8 @@ const HANDLED_PROPERTIES = new Set([
   "source_publication",
   "document",
   "record_uri",
+  "reply_document",
+  "question",
   "pro",
   "pro_source",
   "source",
@@ -669,6 +695,12 @@ const EventRow = (props: { row: ActiveUserEventRow; nested?: boolean }) => {
             )
           )}
           <SourceDetail properties={row.properties} />
+          {row.properties.reply_document && (
+            <AtUriLink uri={row.properties.reply_document} label="reply post" />
+          )}
+          {row.properties.question && (
+            <AtUriLink uri={row.properties.question} label="question" />
+          )}
           {row.properties.record_uri && (
             <AtUriLink uri={row.properties.record_uri} label="record" />
           )}

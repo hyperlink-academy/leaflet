@@ -26,6 +26,10 @@ export type UserEvent =
   | "schedule_post" // scheduled a post to publish later; props publication, publish_at, first_schedule ("false" for a reschedule)
   | "create_publication" // props publication
   | "comment" // commented on a published document; props document, record_uri, reply ("true" for a reply to another comment)
+  | "reply" // submitted a post as a reply to a published document; props from replyEventProperties
+  | "question" // asked a question on a published document; props document, record_uri
+  | "answer" // first answer to a question (re-publishing isn't tracked); props document, record_uri, question
+  | "recommend" // recommended a published document; props document, record_uri
   | "signup" // identity row created; props method (email | bluesky), plus signupSourceProperties
   | "create_document" // props kind (doc | canvas | template | duplicate | publication_draft), publication
   | "pro_upgrade" // Leaflet Pro checkout completed; props plan
@@ -41,6 +45,18 @@ export function subscriptionSourceProperties(
     source_placement: source?.placement ?? "",
     source_publication: source?.publication ?? "",
     source_url: source?.url ?? "",
+  };
+}
+
+export function replyEventProperties(reply: {
+  subject: string;
+  document: string;
+  uri: string;
+}) {
+  return {
+    document: reply.subject,
+    reply_document: reply.document,
+    record_uri: reply.uri,
   };
 }
 

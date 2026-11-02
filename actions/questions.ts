@@ -45,6 +45,7 @@ import { revalidateDocumentPaths } from "src/utils/revalidatePublication";
 import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
+import { trackUserEvent } from "src/activeUserAnalytics";
 
 async function notify(recipient: string, data: Notification["data"]) {
   const notification: Notification = { id: v7(), recipient, data };
@@ -158,6 +159,10 @@ export async function askQuestion(args: {
   }
 
   await broadcastDocumentEvent(supabaseServerClient, "question", args.subject);
+  trackUserEvent(identity, "question", {
+    document: args.subject,
+    record_uri: uri,
+  });
   const subjectOwner = new AtUri(args.subject).host;
   if (subjectOwner !== did)
     await notify(subjectOwner, {
@@ -313,12 +318,19 @@ export async function publishAnswer(args: {
     return Err({ type: "failed" });
   }
 
-  if (!existing && question.asker_did !== actor)
-    await notify(question.asker_did, {
-      type: "question_answered",
-      question_uri: questionUri,
-      document_uri: subject,
+  if (!existing) {
+    trackUserEvent(identity, "answer", {
+      document: subject,
+      record_uri: uri,
+      question: questionUri,
     });
+    if (question.asker_did !== actor)
+      await notify(question.asker_did, {
+        type: "question_answered",
+        question_uri: questionUri,
+        document_uri: subject,
+      });
+  }
   await broadcastDocumentEvent(supabaseServerClient, "answer", subject);
   // The post's page lists its answered questions.
   await revalidateDocumentPaths(subject, { neighbours: false });

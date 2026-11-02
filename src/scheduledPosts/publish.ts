@@ -12,6 +12,7 @@ export type PublishedScheduledPost = {
   url: string;
   firstPublish: boolean;
   blocks: number;
+  reply?: { uri: string; subject: string; document: string };
   ownerDid: string;
   record: SiteStandardDocument.Record;
 };
@@ -60,6 +61,7 @@ export async function publishScheduledPost(
     uri: result.uri,
     firstPublish: result.firstPublish,
     blocks: result.blocks,
+    reply: result.reply,
     url: `${base.replace(/\/+$/, "")}/${result.rkey}`,
     ownerDid: pub.identity_did,
     record: result.record,

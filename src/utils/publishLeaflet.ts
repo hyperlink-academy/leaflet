@@ -68,6 +68,8 @@ export type PublishResult =
       // False when this publish updated an already-published document.
       firstPublish: boolean;
       blocks: number;
+      // Set when this publish submitted the post as a reply to `subject`.
+      reply?: { uri: string; subject: string; document: string };
     }
   | { success: false; error: PublishError };
 
@@ -581,6 +583,9 @@ async function publish({
   // A draft started from another post's reply block submits itself as a
   // reply once it's published. Best-effort: the post is already live, and
   // the author can still submit it by hand from the reply block.
+  let createdReply:
+    | { uri: string; subject: string; document: string }
+    | undefined;
   if (replyDraft) {
     const reply = await createReplyRecord({
       did: credentialSession.did!,
@@ -592,12 +597,19 @@ async function publish({
       console.error("[publish] reply record failed", e);
       return null;
     });
-    if (reply?.ok)
+    if (reply?.ok) {
       await supabaseServerClient
         .from("reply_drafts")
         .delete()
         .eq("leaflet", leaflet_id);
-    else if (reply) console.error("[publish] reply record failed", reply.error);
+      if (reply.value.created)
+        createdReply = {
+          uri: reply.value.uri,
+          subject: replyDraft.subject,
+          document: result.uri,
+        };
+    } else if (reply)
+      console.error("[publish] reply record failed", reply.error);
   }
 
   // Create notifications for mentions (only on first publish)
@@ -657,6 +669,7 @@ async function publish({
     uri: result.uri,
     record: JSON.parse(JSON.stringify(record)),
     firstPublish: !existingDocUri,
+    reply: createdReply,
     blocks: pages.reduce((n, p) => n + p.blocks.length, 0),
   };
 }

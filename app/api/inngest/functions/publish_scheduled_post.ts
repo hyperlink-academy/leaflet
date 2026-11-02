@@ -7,7 +7,7 @@ import {
 } from "src/scheduledPosts/publish";
 import type { ScheduledPost } from "src/scheduledPosts/types";
 import type { RunStep } from "src/emailPosts/broadcast";
-import { recordUserEvent } from "src/activeUserAnalytics";
+import { recordUserEvent, replyEventProperties } from "src/activeUserAnalytics";
 
 async function markFailed(scheduledPostId: string, error: string) {
   await supabaseServerClient
@@ -94,6 +94,12 @@ export const publish_scheduled_post = inngest.createFunction(
         blocks: String(published.blocks),
         scheduled: "true",
       });
+      if (published.reply)
+        await recordUserEvent(
+          author,
+          "reply",
+          replyEventProperties(published.reply),
+        );
     });
 
     const bskyPost = post.bsky_post;

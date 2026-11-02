@@ -6,7 +6,7 @@ import {
   type PublishLeafletArgs,
   type PublishResult,
 } from "src/utils/publishLeaflet";
-import { trackUserEvent } from "src/activeUserAnalytics";
+import { replyEventProperties, trackUserEvent } from "src/activeUserAnalytics";
 
 // The rkey is server-chosen here: a caller-supplied one could target an
 // existing record in the publication owner's repo. Only trusted server-side
@@ -37,12 +37,15 @@ export async function publishToPublication(
     publishedAt,
     actorDid: identity.atp_did,
   });
-  if (result.success)
+  if (result.success) {
     trackUserEvent(identity, "publish", {
       publication: args.publication_uri ?? "",
       document: result.uri,
       first_publish: String(result.firstPublish),
       blocks: String(result.blocks),
     });
+    if (result.reply)
+      trackUserEvent(identity, "reply", replyEventProperties(result.reply));
+  }
   return result;
 }

@@ -38,6 +38,7 @@ import {
   pingIdentityToUpdateNotification,
 } from "src/notifications";
 import { v7 } from "uuid";
+import { replyEventProperties, trackUserEvent } from "src/activeUserAnalytics";
 
 const viewerDid = () =>
   getAuthIdentity().then((identity) => identity?.atp_did ?? null);
@@ -255,13 +256,24 @@ export async function submitReply(args: {
   if (!block) return Err({ type: "replies_closed" });
   if (existing) return Err({ type: "already_submitted" });
   if (!agent.ok) return Err(agent.error);
-  return createReplyRecord({
+  const reply = await createReplyRecord({
     did,
     subject: args.subject,
     block: block.key,
     document,
     agent: agent.value,
   });
+  if (reply.ok && reply.value.created)
+    trackUserEvent(
+      identity,
+      "reply",
+      replyEventProperties({
+        subject: args.subject,
+        document,
+        uri: reply.value.uri,
+      }),
+    );
+  return reply;
 }
 
 export async function withdrawReply(
