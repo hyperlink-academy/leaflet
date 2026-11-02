@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import { getAuthIdentity } from "src/auth";
-import { isAdminEmail } from "src/adminAllowlist";
+import { isAdminIdentity } from "src/adminAllowlist";
 import { tinybird } from "lib/tinybird";
 
 export type GetActiveUserStatsReturnType = Awaited<
@@ -17,7 +17,7 @@ export const get_active_user_stats = makeRoute({
   }),
   handler: async ({ granularity, from, to }) => {
     const identity = await getAuthIdentity();
-    if (!isAdminEmail(identity?.email)) {
+    if (!isAdminIdentity(identity?.id)) {
       return { error: "unauthorized" as const };
     }
 

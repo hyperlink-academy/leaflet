@@ -2,7 +2,7 @@ import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import { getAuthIdentity } from "src/auth";
-import { isAdminEmail } from "src/adminAllowlist";
+import { isAdminIdentity } from "src/adminAllowlist";
 import { ACTIVITY_METRICS, tinybird, type ActivityMetric } from "lib/tinybird";
 import { getProfiles } from "src/identity";
 import { getDocumentURL, getPublicationURL } from "src/utils/getPublicationURL";
@@ -49,7 +49,7 @@ export const get_active_user_events = makeRoute({
     { supabase }: Pick<Env, "supabase">,
   ) => {
     const identity = await getAuthIdentity();
-    if (!isAdminEmail(identity?.email)) {
+    if (!isAdminIdentity(identity?.id)) {
       return { error: "unauthorized" as const };
     }
 

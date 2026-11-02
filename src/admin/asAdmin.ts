@@ -1,6 +1,6 @@
 import { getAuthIdentity } from "src/auth";
 import { Ok, Err, type Result } from "src/result";
-import { isAdminEmail } from "src/adminAllowlist";
+import { isAdminIdentity } from "src/adminAllowlist";
 
 // Run an admin-only server action body. Errors are returned as messages
 // rather than thrown: Next redacts thrown server-action errors in production,
@@ -10,7 +10,7 @@ export async function asAdmin<T>(
   fn: () => Promise<T>,
 ): Promise<Result<T, string>> {
   let identity = await getAuthIdentity();
-  if (!identity || !isAdminEmail(identity.email))
+  if (!identity || !isAdminIdentity(identity.id))
     return Err("You're not allowed to do that.");
   try {
     return Ok(await fn());

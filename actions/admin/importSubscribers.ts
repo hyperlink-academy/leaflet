@@ -3,7 +3,7 @@
 import { getAuthIdentity } from "src/auth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Ok, Err, type Result } from "src/result";
-import { isAdminEmail } from "src/adminAllowlist";
+import { isAdminIdentity } from "src/adminAllowlist";
 import { getProfiles, idResolver } from "src/identity";
 import {
   importSubscribers,
@@ -42,7 +42,7 @@ export type ImportPreview = {
 
 async function getAdminIdentity() {
   let identity = await getAuthIdentity();
-  if (!identity || !isAdminEmail(identity.email)) return null;
+  if (!identity || !isAdminIdentity(identity.id)) return null;
   return identity;
 }
 

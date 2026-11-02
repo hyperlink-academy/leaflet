@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getIdentityData } from "actions/getIdentityData";
-import { isAdminEmail } from "src/adminAllowlist";
+import { isAdminIdentity } from "src/adminAllowlist";
 import { supabaseServerClient } from "supabase/serverClient";
 import { getProfiles } from "src/identity";
 import { KNOWN_ENTITLEMENT_KEYS } from "src/entitlements";
@@ -19,7 +19,7 @@ export default async function AdminPage() {
   let identity = await getIdentityData();
   // 404 rather than a login/denied screen so the route stays invisible to
   // non-admins.
-  if (!isAdminEmail(identity?.email)) notFound();
+  if (!isAdminIdentity(identity?.id)) notFound();
 
   let { data: grants } = await supabaseServerClient
     .from("user_entitlements")
