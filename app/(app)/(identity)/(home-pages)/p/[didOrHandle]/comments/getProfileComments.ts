@@ -4,6 +4,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { PubLeafletComment } from "lexicons/api";
 import { getProfiles, type Profile } from "src/identity";
+import { toDocumentPreviews } from "src/utils/documentPreview";
 
 export type Cursor = {
   indexed_at: string;
@@ -91,7 +92,7 @@ export async function getProfileComments(
 
   const comments: ProfileComment[] = rawComments.map((comment) => {
     const record = comment.record as PubLeafletComment.Record;
-    const doc = comment.documents;
+    const doc = toDocumentPreviews(comment.documents);
     const pub = doc?.documents_in_publications?.[0]?.publications;
 
     return {

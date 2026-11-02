@@ -134,7 +134,7 @@ export async function PublicationPageRenderer({
     standardSitePostData: standardSitePosts,
     standardSitePublicationData,
     pollData,
-    prerenderedCodeBlocks,
+    prerenderedBlocks,
   } = await collectAndFetchBlockResources({ agent, pages: resourcePages });
 
   // Per distinct tag-filter signature, ship what the blocks using it need.
@@ -296,7 +296,7 @@ export async function PublicationPageRenderer({
                   pageScroll
                   page={canvasPage}
                   did={did}
-                  prerenderedCodeBlocks={prerenderedCodeBlocks}
+                  prerenderedBlocks={prerenderedBlocks}
                   bskyPostData={JSON.parse(JSON.stringify(bskyPostData))}
                   standardSitePostData={JSON.parse(
                     JSON.stringify(standardSitePosts),
@@ -337,7 +337,7 @@ export async function PublicationPageRenderer({
                         JSON.stringify(standardSitePublicationData),
                       )}
                       pollData={pollData}
-                      prerenderedCodeBlocks={prerenderedCodeBlocks}
+                      prerenderedBlocks={prerenderedBlocks}
                       postsListData={postsListData}
                     />
                   </div>

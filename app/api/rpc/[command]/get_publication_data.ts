@@ -3,6 +3,7 @@ import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import { AtUri } from "@atproto/syntax";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
+import { toDocumentPreviews } from "src/utils/documentPreview";
 import { getAuthIdentity } from "src/auth";
 import { ids } from "lexicons/api/lexicons";
 import { LIVE_MEMBERSHIP_STATUSES } from "src/membership";
@@ -112,6 +113,7 @@ export const get_publication_data = makeRoute({
       };
     }
 
+    publication = toDocumentPreviews(publication);
     // Pre-normalize documents from documents_in_publications
     const documents = (publication?.documents_in_publications || [])
       .map((dip) => {

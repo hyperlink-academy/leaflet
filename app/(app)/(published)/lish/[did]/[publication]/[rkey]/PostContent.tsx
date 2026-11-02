@@ -121,7 +121,7 @@ export function PostContent({
   did,
   preview,
   className,
-  prerenderedCodeBlocks,
+  prerenderedBlocks,
   bskyPostData,
   standardSitePostData,
   pageId,
@@ -136,7 +136,7 @@ export function PostContent({
   did: string;
   preview?: boolean;
   className?: string;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
   // Server-fetched like standardSitePostData so the block is in the SSR HTML;
@@ -169,7 +169,7 @@ export function PostContent({
             nextBlock={blocks[index + 1]}
             index={[index]}
             preview={preview}
-            prerenderedCodeBlocks={prerenderedCodeBlocks}
+            prerenderedBlocks={prerenderedBlocks}
             pollData={pollData}
             footnoteIndexMap={footnoteIndexMap}
             postsListData={postsListData}
@@ -190,7 +190,7 @@ export let Block = ({
   preview,
   previousBlock,
   nextBlock,
-  prerenderedCodeBlocks,
+  prerenderedBlocks,
   bskyPostData,
   standardSitePostData,
   standardSitePublicationData,
@@ -214,7 +214,7 @@ export let Block = ({
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   previousBlock?: PubLeafletPagesLinearDocument.Block;
   nextBlock?: PubLeafletPagesLinearDocument.Block;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
   standardSitePublicationData?: StandardSitePublicationData[];
@@ -233,6 +233,10 @@ export let Block = ({
   let replyData = postResources?.replyData;
   let questionData = postResources?.questionData;
   let currentPublicationUri = document?.publication?.uri ?? null;
+  let prerendered = () =>
+    prerenderedBlocks?.get(
+      `${pageId && pageId !== pages[0]?.id ? pageId : ""}:${index.join(".")}`,
+    );
   let blockProps = {
     style: {
       scrollMarginTop: "4rem",
@@ -311,6 +315,7 @@ export let Block = ({
           standardSitePostData={standardSitePostData}
           isCanvas={isCanvas}
           pages={pages}
+          prerenderedBlocks={prerenderedBlocks}
           className={className}
           display={block.display}
         />
@@ -657,14 +662,12 @@ export let Block = ({
         />
       </div>
     ),
-    "pub.leaflet.blocks.math": (block) => {
-      return <StaticMathBlock block={block} />;
-    },
-    "pub.leaflet.blocks.code": (block) => {
-      let pageKey = pageId && pageId !== pages[0]?.id ? pageId : "";
-      let html = prerenderedCodeBlocks?.get(`${pageKey}:${index.join(".")}`);
-      return <PubCodeBlock block={block} prerenderedCode={html} />;
-    },
+    "pub.leaflet.blocks.math": (block) => (
+      <StaticMathBlock block={block} html={prerendered()} />
+    ),
+    "pub.leaflet.blocks.code": (block) => (
+      <PubCodeBlock block={block} prerenderedCode={prerendered()} />
+    ),
     "pub.leaflet.blocks.website": (block) => {
       return (
         <a

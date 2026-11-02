@@ -10,7 +10,7 @@ import {
   canvasContentHeight,
   canvasStackOrders,
 } from "src/utils/canvasBlockOrder";
-import { CanvasBackgroundPattern } from "components/Canvas";
+import { CanvasBackgroundPattern } from "components/CanvasBackgroundPattern";
 import { canvasBlockEdges } from "src/utils/blockSpacing";
 import { CONTENT_WIDTH } from "src/canvasZoom/math";
 import { visibleCanvasX } from "src/utils/embeddedCanvasSize";
@@ -20,7 +20,7 @@ import { PollData } from "./fetchPollData";
 
 type BlockDataProps = {
   did: string;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
   pollData: PollData[];

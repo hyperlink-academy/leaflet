@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
+import { toPreviewFacts } from "src/utils/homeLeaflets";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
 
@@ -11,13 +12,14 @@ export const getFactsForRoots = makeRoute({
   }),
   handler: async ({ roots }, { supabase }: Pick<Env, "supabase">) => {
     const { data } = await supabase.rpc("get_facts_for_roots", {
-      max_depth: 3,
       roots,
+      max_depth: 3,
     });
     const facts: { [root: string]: Fact<Attribute>[] } = {};
-    for (const f of data ?? []) {
+    for (const f of data ?? [])
       (facts[f.root_id] ??= []).push(f as unknown as Fact<Attribute>);
-    }
+    for (const root of roots)
+      facts[root] = toPreviewFacts(root, facts[root] ?? []);
     return { result: { facts } };
   },
 });

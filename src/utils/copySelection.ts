@@ -1,21 +1,8 @@
-import { getBlocksAsHTML } from "src/utils/getBlocksAsHTML";
-import { htmlToMarkdown } from "src/htmlMarkdownParsers";
-import { Replicache } from "replicache";
-import type { ReplicacheMutators } from "src/replicache";
-import { Block } from "components/Blocks/Block";
+import type { copyBlocks } from "src/utils/getBlocksAsHTML";
 
-export async function copySelection(
-  rep: Replicache<ReplicacheMutators>,
-  sortedSelection: Block[],
-) {
-  let html = await getBlocksAsHTML(rep, sortedSelection);
-  const data = [
-    new ClipboardItem({
-      ["text/html"]: new Blob([html.join("\n")], { type: "text/html" }),
-      "text/plain": new Blob([htmlToMarkdown(html.join("\n"))], {
-        type: "text/plain",
-      }),
-    }),
-  ];
-  await navigator.clipboard.write(data);
+// Loaded on the copy gesture: the conversion pulls katex and the markdown
+// pipeline, which no page load should pay for.
+export async function copySelection(...args: Parameters<typeof copyBlocks>) {
+  let { copyBlocks } = await import("src/utils/getBlocksAsHTML");
+  await copyBlocks(...args);
 }

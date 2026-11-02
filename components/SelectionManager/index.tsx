@@ -67,72 +67,24 @@ export function SelectionManager() {
           await toggleListForBlocks(sortedBlocks, rep);
         },
       },
-      {
+      ...(
+        [
+          [["1", "¡"], { style: "heading", level: 1 }],
+          [["2", "™"], { style: "heading", level: 2 }],
+          [["3", "£"], { style: "heading", level: 3 }],
+          [["0", "º"], { style: "text", size: "default" }],
+          [["+", "≠"], { style: "text", size: "large" }],
+          [["-", "–"], { style: "text", size: "small" }],
+        ] as const
+      ).map(([key, style]) => ({
         metaKey: true,
         altKey: true,
-        key: ["1", "¡"],
+        key: [...key],
         handler: async () => {
           let sortedBlocks = await getSelectedOrFocusedBlocks(rep);
-          await setTextBlockStyle(sortedBlocks, { style: "heading", level: 1 }, rep);
+          await setTextBlockStyle(sortedBlocks, style, rep);
         },
-      },
-      {
-        metaKey: true,
-        altKey: true,
-        key: ["2", "™"],
-        handler: async () => {
-          let sortedBlocks = await getSelectedOrFocusedBlocks(rep);
-          await setTextBlockStyle(sortedBlocks, { style: "heading", level: 2 }, rep);
-        },
-      },
-      {
-        metaKey: true,
-        altKey: true,
-        key: ["3", "£"],
-        handler: async () => {
-          let sortedBlocks = await getSelectedOrFocusedBlocks(rep);
-          await setTextBlockStyle(sortedBlocks, { style: "heading", level: 3 }, rep);
-        },
-      },
-      {
-        metaKey: true,
-        altKey: true,
-        key: ["0", "º"],
-        handler: async () => {
-          let sortedBlocks = await getSelectedOrFocusedBlocks(rep);
-          await setTextBlockStyle(
-            sortedBlocks,
-            { style: "text", size: "default" },
-            rep,
-          );
-        },
-      },
-      {
-        metaKey: true,
-        altKey: true,
-        key: ["+", "≠"],
-        handler: async () => {
-          let sortedBlocks = await getSelectedOrFocusedBlocks(rep);
-          await setTextBlockStyle(
-            sortedBlocks,
-            { style: "text", size: "large" },
-            rep,
-          );
-        },
-      },
-      {
-        metaKey: true,
-        altKey: true,
-        key: ["-", "–"],
-        handler: async () => {
-          let sortedBlocks = await getSelectedOrFocusedBlocks(rep);
-          await setTextBlockStyle(
-            sortedBlocks,
-            { style: "text", size: "small" },
-            rep,
-          );
-        },
-      },
+      })),
       {
         metaKey: true,
         shift: true,
@@ -186,67 +138,43 @@ export function SelectionManager() {
         },
       },
     ];
-    if (moreThanOneSelected)
-      shortcuts = shortcuts.concat([
+    if (moreThanOneSelected) {
+      // clipboard.write needs transient user activation, which fetching the
+      // copy chunk after the keypress can outlast.
+      void import("src/utils/getBlocksAsHTML");
+      let toggleMark =
+        (mark: MarkType, attrs?: () => Record<string, unknown>) => async () => {
+          let [sortedBlocks] = await getSortedSelectionBound();
+          toggleMarkInBlocks(
+            sortedBlocks
+              .filter((b) => b.type === "text")
+              .map((b) => b.entityID),
+            mark,
+            attrs?.(),
+          );
+        };
+      shortcuts.push(
         {
           metaKey: true,
           key: "u",
-          handler: async () => {
-            let [sortedBlocks] = await getSortedSelectionBound();
-            toggleMarkInBlocks(
-              sortedBlocks.filter((b) => b.type === "text").map((b) => b.entityID),
-              schema.marks.underline,
-            );
-          },
+          handler: toggleMark(schema.marks.underline),
         },
-        {
-          metaKey: true,
-          key: "i",
-          handler: async () => {
-            let [sortedBlocks] = await getSortedSelectionBound();
-            toggleMarkInBlocks(
-              sortedBlocks.filter((b) => b.type === "text").map((b) => b.entityID),
-              schema.marks.em,
-            );
-          },
-        },
-        {
-          metaKey: true,
-          key: "b",
-          handler: async () => {
-            let [sortedBlocks] = await getSortedSelectionBound();
-            toggleMarkInBlocks(
-              sortedBlocks.filter((b) => b.type === "text").map((b) => b.entityID),
-              schema.marks.strong,
-            );
-          },
-        },
+        { metaKey: true, key: "i", handler: toggleMark(schema.marks.em) },
+        { metaKey: true, key: "b", handler: toggleMark(schema.marks.strong) },
         {
           metaAndCtrl: true,
           key: "h",
-          handler: async () => {
-            let [sortedBlocks] = await getSortedSelectionBound();
-            toggleMarkInBlocks(
-              sortedBlocks.filter((b) => b.type === "text").map((b) => b.entityID),
-              schema.marks.highlight,
-              {
-                color: useUIState.getState().lastUsedHighlight,
-              },
-            );
-          },
+          handler: toggleMark(schema.marks.highlight, () => ({
+            color: useUIState.getState().lastUsedHighlight,
+          })),
         },
         {
           metaAndCtrl: true,
           key: "x",
-          handler: async () => {
-            let [sortedBlocks] = await getSortedSelectionBound();
-            toggleMarkInBlocks(
-              sortedBlocks.filter((b) => b.type === "text").map((b) => b.entityID),
-              schema.marks.strikethrough,
-            );
-          },
+          handler: toggleMark(schema.marks.strikethrough),
         },
-      ]);
+      );
+    }
     let removeListener = addShortcut(
       shortcuts.map((shortcut) => ({
         ...shortcut,
@@ -270,11 +198,14 @@ export function SelectionManager() {
                 parent: block.parent,
               })),
             );
-            useUIState.getState().closePage(selectedBlocks.map((b) => b.entityID));
+            useUIState
+              .getState()
+              .closePage(selectedBlocks.map((b) => b.entityID));
 
             let nextBlock =
               siblings?.[
-                siblings.findIndex((s) => s.entityID === firstBlock.entityID) - 1
+                siblings.findIndex((s) => s.entityID === firstBlock.entityID) -
+                  1
               ];
             if (nextBlock) {
               useUIState.getState().setSelectedBlock({

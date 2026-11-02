@@ -5,10 +5,9 @@ import { useState, useRef, useEffect } from "react";
 import { SpeedyLink } from "components/SpeedyLink";
 import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
-import {
-  EAGERLY_VISIBLE_CARDS,
-  useReportCardVisible,
-} from "./LeafletCardReplicache";
+import { useReportCardVisible } from "./LeafletCardReplicache";
+import { leaveHome } from "./HomeLeafletFactsProvider";
+import { EAGERLY_VISIBLE_CARDS } from "src/utils/homeLeaflets";
 
 export const LeafletListItem = (props: {
   archived?: boolean | null;
@@ -32,14 +31,10 @@ export const LeafletListItem = (props: {
     if (!previewRef.current) return;
     let observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsOnScreen(true);
-            visibilityReporter?.notifyVisible();
-          } else {
-            setIsOnScreen(false);
-          }
-        });
+        for (let { isIntersecting } of entries) {
+          setIsOnScreen(isIntersecting);
+          if (isIntersecting) visibilityReporter?.notifyVisible();
+        }
       },
       { threshold: 0.1, root: null },
     );
@@ -47,7 +42,13 @@ export const LeafletListItem = (props: {
     return () => observer.disconnect();
   }, [previewRef, visibilityReporter]);
 
-  const tokenId = pubStatus?.shareLink ?? "";
+  const link = (
+    <SpeedyLink
+      href={`/${pubStatus?.shareLink ?? ""}`}
+      onNavigate={leaveHome}
+      className={`absolute w-full h-full top-0 left-0 no-underline! hover:no-underline! text-primary`}
+    />
+  );
 
   if (props.display === "list")
     return (
@@ -63,10 +64,7 @@ export const LeafletListItem = (props: {
               : "rgba(var(--bg-page), var(--bg-page-alpha))",
           }}
         >
-          <SpeedyLink
-            href={`/${tokenId}`}
-            className={`absolute w-full h-full top-0 left-0 no-underline! hover:no-underline! text-primary`}
-          />
+          {link}
           {props.showPreview && <LeafletListPreview isVisible={isOnScreen} />}
           <LeafletInfo
             title={props.title}
@@ -98,10 +96,7 @@ export const LeafletListItem = (props: {
           : "rgba(var(--bg-page), var(--bg-page-alpha))",
       }}
     >
-      <SpeedyLink
-        href={`/${tokenId}`}
-        className={`absolute w-full h-full top-0 left-0 no-underline hover:no-underline! text-primary`}
-      />
+      {link}
       <div className="grow">
         <LeafletGridPreview isVisible={isOnScreen} />
       </div>

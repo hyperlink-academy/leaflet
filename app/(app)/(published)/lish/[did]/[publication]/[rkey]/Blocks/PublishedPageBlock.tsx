@@ -35,7 +35,7 @@ export function PublishedPageLinkBlock(props: {
   did: string;
   preview?: boolean;
   className?: string;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   standardSitePostData: StandardSitePostData[];
   isCanvas?: boolean;
@@ -163,7 +163,7 @@ function DocLinkBlock(props: {
   did: string;
   preview?: boolean;
   className?: string;
-  prerenderedCodeBlocks?: Map<string, string>;
+  prerenderedBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
 }) {
   let [title, description, thirdLine] = pageRecordTextBlocks(props.blocks, {
@@ -225,7 +225,12 @@ function DocLinkBlock(props: {
             />
           </div>
           {!props.preview && (
-            <PagePreview blocks={props.blocks} did={props.did} />
+            <PagePreview
+              blocks={props.blocks}
+              did={props.did}
+              pageId={props.pageId}
+              prerenderedBlocks={props.prerenderedBlocks}
+            />
           )}
         </div>
       </>
@@ -236,7 +241,17 @@ function DocLinkBlock(props: {
 function PagePreview(props: {
   did: string;
   blocks: PubLeafletPagesLinearDocument.Block[];
+  pageId: string;
+  prerenderedBlocks?: Map<string, string>;
 }) {
+  // The preview renders the page as a root page (no pageId), so its lookups
+  // use the root key prefix.
+  let prefix = `${props.pageId}:`;
+  let prerenderedBlocks = new Map(
+    [...(props.prerenderedBlocks ?? [])].flatMap(([k, v]) =>
+      k.startsWith(prefix) ? [[k.slice(prefix.length - 1), v] as const] : [],
+    ),
+  );
   let previewRef = useRef<HTMLDivElement | null>(null);
   let { rootEntity } = useReplicache();
   let pageWidth = `var(--page-width-unitless)`;
@@ -269,6 +284,7 @@ function PagePreview(props: {
           did={props.did}
           blocks={props.blocks}
           preview
+          prerenderedBlocks={prerenderedBlocks}
           bskyPostData={[]}
           standardSitePostData={[]}
         />

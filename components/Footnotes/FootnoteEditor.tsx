@@ -239,18 +239,6 @@ function EditableFootnote(props: {
       },
     }));
 
-    // Subscribe to external state changes (e.g. link toolbar). Selector form:
-    // a plain listener would fire on every editorStates write anywhere (every
-    // keystroke in every block) and force a redundant ProseMirror reconcile
-    // per mounted footnote editor.
-    let unsubscribe = useEditorStates.subscribe(
-      (s) => s.editorStates[props.footnoteEntityID],
-      (editorState) => {
-        if (editorState?.editor)
-          editorState.view?.updateState(editorState.editor);
-      },
-    );
-
     // Set focusedEntity on focus
     let handleFocus = () => {
       useUIState.setState({
@@ -268,7 +256,6 @@ function EditableFootnote(props: {
     }
 
     return () => {
-      unsubscribe();
       view.dom.removeEventListener("focus", handleFocus);
       view.destroy();
       useEditorStates.setState((s) => {

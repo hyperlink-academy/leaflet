@@ -14,6 +14,7 @@ export function SpeedyLink(props: {
   target?: string;
   eager?: boolean;
   onClick?: React.MouseEventHandler<HTMLAnchorElement>;
+  onNavigate?: () => void;
 }) {
   let [pointedAt, setPointedAt] = useState(false);
   let prefetch = props.eager || pointedAt;
@@ -22,6 +23,7 @@ export function SpeedyLink(props: {
       onMouseEnter={() => setPointedAt(true)}
       onPointerDown={() => setPointedAt(true)}
       onClick={props.onClick}
+      onNavigate={props.onNavigate}
       style={props.style}
       prefetch={prefetch}
       href={props.href}

@@ -6,6 +6,7 @@ import { getAuthIdentity } from "src/auth";
 import { Json } from "supabase/database.types";
 import { supabaseServerClient } from "supabase/serverClient";
 import { idResolver } from "src/identity";
+import { toDocumentPreviews } from "src/utils/documentPreview";
 import { Cursor } from "./getReaderFeed";
 import {
   normalizePublicationRecord,
@@ -135,7 +136,7 @@ async function hydratePublication<
   if (!normalizedRecord) return null;
   let id = await idResolver.did.resolve(pub.identity_did!);
   return {
-    ...pub,
+    ...toDocumentPreviews(pub),
     record: normalizedRecord,
     authorProfile: id?.alsoKnownAs?.[0]
       ? { handle: `@${id.alsoKnownAs[0].slice(5)}` }

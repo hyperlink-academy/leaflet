@@ -76,7 +76,7 @@ export async function loadPostPage({
     pollData,
     replyData,
     questionData,
-    prerenderedCodeBlocks,
+    prerenderedBlocks,
   } = await collectAndFetchBlockResources({
     agent,
     documentUri: document.uri,
@@ -111,6 +111,6 @@ export async function loadPostPage({
       replyData,
       questionData,
     },
-    prerenderedCodeBlocks,
+    prerenderedBlocks,
   };
 }

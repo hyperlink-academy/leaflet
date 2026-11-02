@@ -1,6 +1,7 @@
 "use client";
 
 import { Fact, useEntity, useReplicache } from "src/replicache";
+import dynamic from "next/dynamic";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import {
@@ -43,7 +44,6 @@ import { StandardSitePostBlock } from "./StandardSitePostBlock";
 import { StandardSitePublicationBlock } from "./StandardSitePublicationBlock";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
-import { MathBlock } from "./MathBlock";
 import { CodeBlock } from "./CodeBlock";
 import { HorizontalRule } from "./HorizontalRule";
 import { DrawingBlock } from "./DrawingBlock";
@@ -429,6 +429,9 @@ export const BaseBlock = (
     </>
   );
 };
+
+// katex is only worth loading for docs that contain math.
+const MathBlock = dynamic(() => import("./MathBlock").then((m) => m.MathBlock));
 
 const BlockTypeComponents: {
   [K in Fact<"block/type">["data"]["value"]]: React.ComponentType<

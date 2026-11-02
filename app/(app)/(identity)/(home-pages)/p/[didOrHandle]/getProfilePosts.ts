@@ -8,6 +8,7 @@ import {
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
+import { toDocumentPreviews } from "src/utils/documentPreview";
 import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
 import { idResolver } from "src/identity";
 import { AtUri } from "@atproto/api";
@@ -60,7 +61,7 @@ export async function getProfilePosts(
         new AtUri(row.uri).host,
       ),
       documents: {
-        data: normalizedData,
+        data: toDocumentPreviews(normalizedData),
         uri: row.uri,
         sort_date: row.sort_date,
         comments_on_documents: [{ count: Number(row.comments_count) }],

@@ -2,7 +2,10 @@
 import { useEffect, useRef, useState } from "react";
 import * as Y from "yjs";
 import { Awareness } from "y-protocols/awareness";
-import { relativePositionToAbsolutePosition, ySyncPluginKey } from "y-prosemirror";
+import {
+  relativePositionToAbsolutePosition,
+  ySyncPluginKey,
+} from "y-prosemirror";
 import { useEditorStates } from "src/state/useEditorState";
 import { cursorRelevanceFilter } from "./remoteCursorPlugin";
 import {
@@ -56,7 +59,10 @@ const cursorsEqual = (a: RemoteCursorData[], b: RemoteCursorData[]) =>
     );
   });
 
-export function RemoteCursors(props: { entityID: string; awareness: Awareness }) {
+export function RemoteCursors(props: {
+  entityID: string;
+  awareness: Awareness;
+}) {
   let anchorRef = useRef<HTMLDivElement | null>(null);
   let [cursors, setCursors] = useState<RemoteCursorData[]>([]);
 
@@ -68,9 +74,17 @@ export function RemoteCursors(props: { entityID: string; awareness: Awareness })
     const recompute = () => {
       raf = null;
       const anchor = anchorRef.current;
-      const view = useEditorStates.getState().editorStates[props.entityID]?.view;
+      const view =
+        useEditorStates.getState().editorStates[props.entityID]?.view;
+      // The awareness is shared page-wide; only carets pointing into this
+      // block's entity are drawn, and a block with none skips measuring.
+      const remote = [...props.awareness.getStates()].filter(
+        ([clientId, aw]) =>
+          clientId !== props.awareness.clientID &&
+          aw.cursor?.entityID === props.entityID,
+      );
       const next: RemoteCursorData[] = [];
-      if (anchor && view && (view as any).docView) {
+      if (remote.length && anchor && view && (view as any).docView) {
         if (view.dom !== observedDom) {
           if (observedDom) resizeObserver.unobserve(observedDom);
           observedDom = view.dom;
@@ -86,12 +100,7 @@ export function RemoteCursors(props: { entityID: string; awareness: Awareness })
           const clipRect = anchor
             .closest(".yjs-cursor-clip")
             ?.getBoundingClientRect();
-          props.awareness.getStates().forEach((aw, clientId) => {
-            if (clientId === props.awareness.clientID || aw.cursor == null)
-              return;
-            // The awareness is shared page-wide; only draw carets pointing
-            // into this block's entity.
-            if (aw.cursor.entityID !== props.entityID) return;
+          remote.forEach(([clientId, aw]) => {
             let head = relativePositionToAbsolutePosition(
               ystate.doc,
               ystate.type,
@@ -99,10 +108,7 @@ export function RemoteCursors(props: { entityID: string; awareness: Awareness })
               ystate.binding.mapping,
             );
             if (head === null) return;
-            head = Math.min(
-              head,
-              Math.max(view.state.doc.content.size - 1, 0),
-            );
+            head = Math.min(head, Math.max(view.state.doc.content.size - 1, 0));
             let coords;
             try {
               coords = view.coordsAtPos(head);
@@ -251,7 +257,9 @@ function RemoteCursor({ cursor }: { cursor: RemoteCursorData }) {
       <div className="yjs-cursor-goo">
         <div className="yjs-cursor-stub" />
         <div className="yjs-cursor-pill">
-          <span className="yjs-cursor-text yjs-cursor-sizer">{cursor.name}</span>
+          <span className="yjs-cursor-text yjs-cursor-sizer">
+            {cursor.name}
+          </span>
         </div>
       </div>
       <div className="yjs-cursor-line" />

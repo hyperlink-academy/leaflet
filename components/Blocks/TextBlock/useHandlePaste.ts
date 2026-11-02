@@ -16,7 +16,6 @@ import { focusBlock } from "src/utils/focusBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { v7 } from "uuid";
 import { Replicache } from "replicache";
-import { markdownToHtml } from "src/htmlMarkdownParsers";
 import { betterIsUrl } from "src/utils/isURL";
 import { TextSelection } from "prosemirror-state";
 import { UndoManager } from "src/undoManager";
@@ -169,43 +168,42 @@ export const useHandlePaste = (
         e.preventDefault();
         return true;
       }
-      // if there is no html, but there is text, convert the text to markdown
-      let xml = new DOMParser().parseFromString(textHTML, "text/html");
-      if ((!textHTML || !xml.children.length) && text) {
-        textHTML = markdownToHtml(text);
-      }
-      if (textHTML) {
-        let children = parsePasteHTMLToElements(textHTML);
-        let hasImage = false;
-        for (let item of e.clipboardData.items) {
-          if (item.type.includes("image")) hasImage = true;
-        }
-        if (
-          !(children.length === 1 && children[0].tagName === "IMG" && hasImage)
-        ) {
-          resolveCopiedFootnoteRefs(children, (footnoteEntityID) =>
-            rep.query(async (tx) => {
-              let [text] = await scanIndex(tx).eav(
-                footnoteEntityID,
-                "block/text",
-              );
-              return text ? renderFootnoteDefHTML(text.data.value) : null;
-            }),
-          ).then(() =>
-            bulkPaste({
-              children,
-              rep,
-              undoManager,
-              entity_set,
-              propsRef,
-              pasteParent: groupEntity ?? (listData ? listData.parent : parent),
-              position: pastePosition,
-              nextPosition: pasteNextPosition,
-              prepareParent,
-            }),
-          );
-        }
-      }
+      let hasImage = Array.from(e.clipboardData.items).some((item) =>
+        item.type.includes("image"),
+      );
+      // Plain text is pasted as markdown.
+      let html =
+        textHTML || !text
+          ? Promise.resolve(textHTML)
+          : import("src/htmlMarkdownParsers").then((m) =>
+              m.markdownToHtml(text),
+            );
+      html.then(async (html) => {
+        if (!html) return;
+        let children = parsePasteHTMLToElements(html);
+        if (children.length === 1 && children[0].tagName === "IMG" && hasImage)
+          return;
+        await resolveCopiedFootnoteRefs(children, (footnoteEntityID) =>
+          rep.query(async (tx) => {
+            let [text] = await scanIndex(tx).eav(
+              footnoteEntityID,
+              "block/text",
+            );
+            return text ? renderFootnoteDefHTML(text.data.value) : null;
+          }),
+        );
+        await bulkPaste({
+          children,
+          rep,
+          undoManager,
+          entity_set,
+          propsRef,
+          pasteParent: groupEntity ?? (listData ? listData.parent : parent),
+          position: pastePosition,
+          nextPosition: pasteNextPosition,
+          prepareParent,
+        });
+      });
 
       for (let item of e.clipboardData.items) {
         if (item?.type.includes("image")) {

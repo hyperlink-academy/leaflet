@@ -30,7 +30,7 @@ export function RenderYJSFragment({
 }) {
   if (!value)
     return <BlockWrapper wrapper={wrapper} attrs={attrs}></BlockWrapper>;
-  let doc = new Doc();
+  let doc = new Doc({ guid: "" });
   const update = base64.toByteArray(value);
   applyUpdate(doc, update);
   let [node] = doc.getXmlElement("prosemirror").toArray();

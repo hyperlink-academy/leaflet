@@ -25,7 +25,8 @@ export function UpdateLeafletTitle(props: { entityID: string }) {
   let hasWrite = permission_token?.permission_token_rights?.some(
     (r) => r.write,
   );
-  let lastSentTitleRef = useRef<string | null>(null);
+  // Seeded with the stored title so opening a leaflet doesn't push it back.
+  let lastSentTitleRef = useRef(permission_token?.title ?? null);
   useDebouncedEffect(
     () => {
       if (!rep || !hasWrite || !title) return;

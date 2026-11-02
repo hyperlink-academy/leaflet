@@ -32,7 +32,7 @@ export const docSchemaVersion = (doc: Y.Doc) =>
 // Versioning shipped with v1, so content with no recorded version is v0,
 // which every version-checking client can edit.
 export const updateSchemaVersion = (update: Uint8Array) => {
-  const doc = new Y.Doc();
+  const doc = new Y.Doc({ guid: "" });
   Y.applyUpdate(doc, update);
   const version = docSchemaVersion(doc);
   doc.destroy();

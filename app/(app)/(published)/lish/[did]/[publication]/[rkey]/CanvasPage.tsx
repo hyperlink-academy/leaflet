@@ -7,7 +7,7 @@ import {
 import { PostPageData } from "src/utils/getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { useMemo, type ComponentProps } from "react";
-import { PageWrapper } from "components/Pages/Page";
+import { PageWrapper } from "components/Pages/PageWrapper";
 import { CanvasZoomProvider } from "src/canvasZoom/CanvasZoomProvider";
 import { CanvasZoomLayer } from "src/canvasZoom/CanvasZoomLayer";
 import { CanvasOverlay } from "src/canvasZoom/CanvasPageScroll";
@@ -43,7 +43,7 @@ export function CanvasPage({
     profile,
     contributors,
     preferences,
-    prerenderedCodeBlocks,
+    prerenderedBlocks,
     bskyPostData,
     standardSitePostData,
     pollData,
@@ -95,7 +95,7 @@ export function CanvasPage({
             <CanvasContent
               page={page}
               did={did}
-              prerenderedCodeBlocks={prerenderedCodeBlocks}
+              prerenderedBlocks={prerenderedBlocks}
               bskyPostData={bskyPostData}
               standardSitePostData={standardSitePostData}
               pollData={pollData}
