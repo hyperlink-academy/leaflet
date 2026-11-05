@@ -426,6 +426,35 @@ export const mention_services = pgTable("mention_services", {
 	}
 });
 
+export const notification_digests = pgTable("notification_digests", {
+	identity: uuid("identity").notNull().references(() => identities.id, { onDelete: "cascade" } ),
+	period_end: timestamp("period_end", { withTimezone: true, mode: 'string' }).notNull(),
+	period_start: timestamp("period_start", { withTimezone: true, mode: 'string' }).notNull(),
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	sent_at: timestamp("sent_at", { withTimezone: true, mode: 'string' }),
+	status: text("status").default('pending').notNull(),
+},
+(table) => {
+	return {
+		notification_digests_pkey: primaryKey({ columns: [table.identity, table.publication, table.period_start, table.period_end], name: "notification_digests_pkey"}),
+		publication_idx: index("notification_digests_publication_idx").on(table.publication),
+	}
+});
+
+export const notification_preferences = pgTable("notification_preferences", {
+	channel: text("channel").default('email').notNull(),
+	digest_frequency: text("digest_frequency"),
+	enabled_types: text("enabled_types").default('{}').array().notNull(),
+	identity: uuid("identity").notNull().references(() => identities.id, { onDelete: "cascade" } ),
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+},
+(table) => {
+	return {
+		notification_preferences_pkey: primaryKey({ columns: [table.identity, table.publication, table.channel], name: "notification_preferences_pkey"}),
+		publication_idx: index("notification_preferences_publication_idx").on(table.publication),
+	}
+});
+
 export const notifications = pgTable("notifications", {
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	data: jsonb("data").notNull(),

@@ -1150,6 +1150,87 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_digests: {
+        Row: {
+          identity: string
+          period_end: string
+          period_start: string
+          publication: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          identity: string
+          period_end: string
+          period_start: string
+          publication: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          identity?: string
+          period_end?: string
+          period_start?: string
+          publication?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_digests_identity_fkey"
+            columns: ["identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_digests_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          channel: string
+          digest_frequency: string | null
+          enabled_types: string[]
+          identity: string
+          publication: string
+        }
+        Insert: {
+          channel?: string
+          digest_frequency?: string | null
+          enabled_types?: string[]
+          identity: string
+          publication: string
+        }
+        Update: {
+          channel?: string
+          digest_frequency?: string | null
+          enabled_types?: string[]
+          identity?: string
+          publication?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_identity_fkey"
+            columns: ["identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string

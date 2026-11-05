@@ -18,6 +18,7 @@ import { ThemeAndLayoutSettings } from "./ThemeAndLayoutSettings";
 import { ShareSettings } from "./ShareSettings";
 import { SubscribePageSettings } from "./SubscribePageSettings";
 import { NewsletterSettings } from "./NewsletterSettings";
+import { NotificationSettings } from "./NotificationSettings";
 import { ContributorSettings } from "./ContributorSettings";
 import { MonetizationSettings } from "./MonetizationSettings";
 import { useIsPro, useCanSeePayments } from "src/hooks/useEntitlement";
@@ -35,6 +36,7 @@ export type PubSettingsTab =
   | "general"
   | "monetization"
   | "contributors"
+  | "notifications"
   | "newsletter";
 
 // The tabs the current viewer can see; non-owners (contributors) get none and
@@ -59,6 +61,7 @@ export function usePubSettingsTabs(): {
       : []),
     { value: "contributors" as const, label: "Contributors" },
     { value: "newsletter" as const, label: "Newsletter" },
+    { value: "notifications" as const, label: "Notifications" },
   ];
 }
 
@@ -261,6 +264,14 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
     return (
       <SettingsPageLayout>
         {isPro ? <ContributorSettings /> : <UpgradeSection />}
+      </SettingsPageLayout>
+    );
+  }
+
+  if (props.tab === "notifications") {
+    return (
+      <SettingsPageLayout>
+        <NotificationSettings />
       </SettingsPageLayout>
     );
   }
