@@ -33,7 +33,7 @@ export async function getShareLink(
     let [existingToken] = await tx
       .select()
       .from(permission_tokens)
-      .rightJoin(
+      .innerJoin(
         permission_token_rights,
         eq(permission_token_rights.token, permission_tokens.id),
       )
