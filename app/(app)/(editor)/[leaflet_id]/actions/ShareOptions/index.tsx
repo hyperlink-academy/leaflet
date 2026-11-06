@@ -12,6 +12,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import {
   useLeafletDomains,
   useLeafletPublicationData,
+  useLeafletReadOnlyToken,
 } from "components/PageSWRDataProvider";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { getPublicationURL, getDocumentURL } from "src/utils/getPublicationURL";
@@ -23,24 +24,16 @@ type ShareMenuStates = "default" | "domain";
 
 export let useReadOnlyShareLink = () => {
   let { permission_token, rootEntity } = useReplicache();
-  let entity_set = useEntitySetContext();
-  let { data: publishLink } = useSWR(
-    "publishLink-" + permission_token.id,
-    async () => {
-      if (
-        !permission_token.permission_token_rights.find(
-          (s) => s.entity_set === entity_set.set && s.create_token,
-        )
-      )
-        return;
-      let shareLink = await getShareLink(
-        { id: permission_token.id, entity_set: entity_set.set },
-        rootEntity,
-      );
-      return shareLink?.id;
-    },
+  let { set, permissions } = useEntitySetContext();
+  let existing = useLeafletReadOnlyToken(set, rootEntity);
+  let { data: minted } = useSWR(
+    !existing && permissions.create_token
+      ? "publishLink-" + permission_token.id
+      : null,
+    () =>
+      getShareLink({ id: permission_token.id, entity_set: set }, rootEntity),
   );
-  return publishLink;
+  return existing ?? minted?.id;
 };
 
 export function ShareOptions() {

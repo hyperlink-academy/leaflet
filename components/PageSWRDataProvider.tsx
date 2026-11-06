@@ -127,6 +127,23 @@ export function useLeafletReplyDraft() {
   let { data } = useLeafletData();
   return data?.reply_drafts ?? null;
 }
+export function useLeafletReadOnlyToken(entitySet: string, rootEntity: string) {
+  let { data } = useLeafletData();
+  return data?.permission_token_rights
+    .find((r) => r.entity_set === entitySet)
+    ?.entity_sets?.permission_tokens.find(
+      (t) =>
+        t.root_entity === rootEntity &&
+        t.permission_token_rights.some(
+          (r) =>
+            r.entity_set === entitySet &&
+            r.read &&
+            !r.write &&
+            !r.create_token &&
+            !r.change_entity_set,
+        ),
+    )?.id;
+}
 export function useLeafletDomains() {
   let { data, mutate } = useLeafletData();
   return { data: data?.custom_domain_routes, mutate: mutate };
