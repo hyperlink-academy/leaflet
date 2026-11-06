@@ -514,7 +514,7 @@ export let Block = ({
         <div className={className} {...blockProps}>
           <InteractionBlockFrame
             anchor={interactionBlockAnchor("questions", block.key)}
-            className="questionsBlock block-border w-full p-2 sm:p-3"
+            className="questionsBlock light-container rounded-lg! block-border w-full p-2 sm:p-3"
           >
             {(targeted) => (
               <DocumentQuestions

@@ -1,14 +1,13 @@
 "use client";
 import React, { useState } from "react";
-import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
-import type {
-  DocumentQuestion,
-  QuestionState,
-} from "src/documentQuestions";
+import { ButtonSecondary } from "components/Buttons";
+import type { DocumentQuestion, QuestionState } from "src/documentQuestions";
 import { DEFAULT_QUESTIONS_BUTTON_TEXT } from "components/Blocks/QuestionsBlock/constants";
 import {
   AnswerEditorFrame,
   PublicQuestionNotice,
+  QuestionAction,
+  QuestionAnswer,
   QuestionComposer,
   QuestionComposerPreview,
   QuestionsButtonTextInput,
@@ -18,6 +17,12 @@ import {
   SignInToAsk,
 } from "components/Blocks/QuestionsBlock/QuestionsView";
 import { PublishedAnswer } from "components/Blocks/QuestionsBlock/PublishedAnswer";
+import { BlockImageSmall } from "components/Icons/BlockImageSmall";
+import {
+  BoldSmall,
+  ItalicSmall,
+  StrikethroughSmall,
+} from "components/Toolbar/TextToolbar";
 
 const VIEWER = "did:plc:viewer";
 const AUTHOR = "did:plc:author";
@@ -74,6 +79,7 @@ const question = (
           uri: `at://${AUTHOR}/pub.leaflet.interactions.answer/a${i}`,
           author: AUTHOR_PROFILE,
           content: answerContent(args.answer),
+          createdAt: `2026-10-0${Math.min((args.day ?? 1) + 1, 9)}T12:00:00.000Z`,
         }
       : null,
   };
@@ -115,41 +121,56 @@ const seed = (): DocumentQuestion[] => [
   }),
 ];
 
+const BLOCK_CLASS = "light-container rounded-lg! p-2 sm:p-3";
+
 function Case(props: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2" data-case={props.label}>
       <div className="text-sm font-bold text-tertiary">{props.label}</div>
-      <div className="block-border p-2 sm:p-3">{props.children}</div>
+      <div className={BLOCK_CLASS}>{props.children}</div>
     </div>
   );
 }
 
+// The published post labels answers; the editor doesn't.
 const renderPublished = (q: DocumentQuestion) =>
+  q.answer ? <PublishedAnswer answer={q.answer} labeled /> : null;
+const renderInEditor = (q: DocumentQuestion) =>
   q.answer ? <PublishedAnswer answer={q.answer} /> : null;
+
+// The real tools act on the block editor's focused block.
+const fakeTools = (
+  <div className="flex items-center gap-0.5 text-secondary">
+    <BlockImageSmall />
+    <BoldSmall />
+    <ItalicSmall />
+    <StrikethroughSmall />
+  </div>
+);
 
 // Stands in for the leaflet block editor, which needs replicache.
 function FakeAnswerEditor(props: {
   value: string;
   onChange: (v: string) => void;
-  published: boolean;
   onPublish: () => void;
-  onCancel: () => void;
+  onClear: () => void;
 }) {
   return (
-    <AnswerEditorFrame
-      published={props.published}
-      discardOnClose
-      onPublish={props.onPublish}
-      onCancel={props.onCancel}
-    >
-      <textarea
-        className="w-full px-3 py-1 bg-transparent outline-none resize-none"
-        rows={3}
-        placeholder="Write your answer with the full block editor…"
-        value={props.value}
-        onChange={(e) => props.onChange(e.currentTarget.value)}
-      />
-    </AnswerEditorFrame>
+    <QuestionAnswer author={AUTHOR_PROFILE}>
+      <AnswerEditorFrame
+        tools={fakeTools}
+        onPublish={props.onPublish}
+        onClear={props.onClear}
+      >
+        <textarea
+          className="w-full px-3 sm:px-4 bg-transparent outline-none resize-none"
+          rows={3}
+          placeholder="Write your answer with the full block editor…"
+          value={props.value}
+          onChange={(e) => props.onChange(e.currentTarget.value)}
+        />
+      </AnswerEditorFrame>
+    </QuestionAnswer>
   );
 }
 
@@ -166,7 +187,10 @@ function Playground() {
     setQuestions((qs) =>
       qs.map((q) =>
         q.uri === uri
-          ? { ...q, state: state === "pending" && q.answer ? "accepted" : state }
+          ? {
+              ...q,
+              state: state === "pending" && q.answer ? "accepted" : state,
+            }
           : q,
       ),
     );
@@ -186,6 +210,7 @@ function Playground() {
                 uri: `${q.uri}#answer`,
                 author: AUTHOR_PROFILE,
                 content: answerContent(text.split(/\n+/)),
+                createdAt: new Date().toISOString(),
               },
             }
           : q,
@@ -205,24 +230,21 @@ function Playground() {
             <FakeAnswerEditor
               value={drafts[q.uri]}
               onChange={(v) => setDrafts((d) => ({ ...d, [q.uri]: v }))}
-              published={!!q.answer}
               onPublish={() => publish(q.uri)}
-              onCancel={() =>
-                setDrafts(({ [q.uri]: _, ...rest }) => rest)
-              }
+              onClear={() => setDrafts(({ [q.uri]: _, ...rest }) => rest)}
             />
           ) : (
-            renderPublished(q)
+            renderInEditor(q)
           )
         }
         renderControl={(q) =>
           q.uri in drafts ? null : (
-            <ButtonPrimary
-              compact
+            <QuestionAction
+              primary
               onClick={() => setDrafts((d) => ({ ...d, [q.uri]: "" }))}
             >
               {q.answer ? "Write a new answer" : "Answer"}
-            </ButtonPrimary>
+            </QuestionAction>
           )
         }
       />
@@ -306,7 +328,7 @@ function Playground() {
           Reset
         </ButtonSecondary>
       </div>
-      <div className="block-border p-2 sm:p-3">{view}</div>
+      <div className={BLOCK_CLASS}>{view}</div>
       <div className="text-xs text-tertiary">
         {questions.length} questions · {pending} unanswered ·{" "}
         {Object.keys(drafts).length} being answered
@@ -331,17 +353,26 @@ export default function QuestionsTestPage() {
     day: 6,
     mine: true,
   });
+  let mineAnswered = question(51, {
+    text: "What's the first thing you'd cut from your own app?",
+    name: "You",
+    did: VIEWER,
+    handle: "you.bsky.social",
+    day: 4,
+    mine: true,
+    answer: ["Probably half the settings page."],
+  });
   let noop = () => {};
   // Mirrors the real control: drafts persist after publishing, all[3] has an
   // unpublished one.
   let answerControl = (q: DocumentQuestion) => (
-    <ButtonPrimary compact>
+    <QuestionAction primary>
       {q.uri === all[3].uri
         ? "Continue answer"
         : q.answer
           ? "Edit answer"
           : "Answer"}
-    </ButtonPrimary>
+    </QuestionAction>
   );
   return (
     <div className="mx-auto w-full max-w-[656px] p-4 flex flex-col gap-8 pb-[420px]">
@@ -366,21 +397,24 @@ export default function QuestionsTestPage() {
           header={<QuestionComposerPreview action={editableButton} />}
           renderAnswer={(q) =>
             q.uri === all[2].uri ? (
-              <AnswerEditorFrame
-                published={false}
-                discardOnClose
-                onPublish={noop}
-                onCancel={noop}
-              >
-                <div className="px-3 py-1 text-tertiary italic">
-                  The leaflet block editor mounts here.
-                </div>
-              </AnswerEditorFrame>
+              <QuestionAnswer author={AUTHOR_PROFILE}>
+                <AnswerEditorFrame
+                  tools={fakeTools}
+                  onPublish={noop}
+                  onClear={noop}
+                >
+                  <div className="px-3 sm:px-4 text-tertiary italic">
+                    The leaflet block editor mounts here.
+                  </div>
+                </AnswerEditorFrame>
+              </QuestionAnswer>
             ) : (
-              renderPublished(q)
+              renderInEditor(q)
             )
           }
-          renderControl={(q) => (q.uri === all[2].uri ? null : answerControl(q))}
+          renderControl={(q) =>
+            q.uri === all[2].uri ? null : answerControl(q)
+          }
         />
       </Case>
       <Case label="Published — reader, logged out">
@@ -403,9 +437,9 @@ export default function QuestionsTestPage() {
           }
         />
       </Case>
-      <Case label="Published — reader with a question awaiting an answer">
+      <Case label="Published — reader with their own questions, showing pending (mine first, unanswered last)">
         <QuestionsList
-          questions={[...answered, mine]}
+          questions={[...answered, all[2], mineAnswered, mine]}
           onWithdraw={noop}
           renderAnswer={renderPublished}
           action={
@@ -417,13 +451,43 @@ export default function QuestionsTestPage() {
           }
         />
       </Case>
+      <Case label="Published — long names truncate, actions and label don't (narrow block)">
+        <div className="max-w-[340px]">
+          <QuestionsList
+            questions={[
+              question(60, {
+                text: "Will there be a part two?",
+                name: "Someone With An Extremely Long Display Name",
+                handle: "someone-with-a-very-long-handle.example.com",
+                did: VIEWER,
+                mine: true,
+              }),
+              {
+                ...all[1],
+                answer: all[1].answer && {
+                  ...all[1].answer,
+                  author: {
+                    ...AUTHOR_PROFILE,
+                    displayName: "The Author Of This Very Long Post Title",
+                    handle: "the-author-of-this-post.bsky.social",
+                  },
+                },
+              },
+            ]}
+            onWithdraw={noop}
+            renderAnswer={renderPublished}
+          />
+        </div>
+      </Case>
       <Case label="Published — author (answers in the editor)">
         <QuestionsModeration
           questions={all}
           onSetState={noop}
           renderAnswer={renderPublished}
           renderControl={(q) =>
-            !q.answer && <ButtonSecondary compact>Answer in editor</ButtonSecondary>
+            !q.answer && (
+              <QuestionAction primary>Answer in editor</QuestionAction>
+            )
           }
         />
       </Case>

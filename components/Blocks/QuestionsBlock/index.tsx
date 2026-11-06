@@ -66,7 +66,7 @@ export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
   return (
     <BlockLayout
       isSelected={!!isSelected}
-      className="questionsBlock"
+      className={`questionsBlock light-container rounded-lg! ${isSelected ? "border-border!" : ""}`}
       extraOptions={
         !props.preview ? (
           <BlockSettings label="Questions" className="w-xs">

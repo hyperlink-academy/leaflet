@@ -87,8 +87,8 @@ export function RepliesHeader(props: {
   );
 }
 
-export function PendingRepliesHeader(props: {
-  pending: number;
+export function CollapsibleDivider(props: {
+  label: React.ReactNode;
   open: boolean;
   onToggle: () => void;
 }) {
@@ -100,7 +100,7 @@ export function PendingRepliesHeader(props: {
     >
       <hr className="grow border-border-light" />
       <span className="flex items-center gap-1 shrink-0 uppercase">
-        Approval Pending ({props.pending})
+        {props.label}
         <ArrowDownTiny className={props.open ? "" : "rotate-90"} />
       </span>
       <hr className="grow border-border-light" />

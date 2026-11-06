@@ -15,7 +15,7 @@ import { PublicationThemeWrapper } from "components/ThemeManager/PublicationThem
 import { mainSiteAuthBase } from "src/utils/customDomain";
 import type { DocumentReply, ReplyDraft } from "src/documentReplies";
 import {
-  PendingRepliesHeader,
+  CollapsibleDivider,
   RepliesDivider,
   RepliesHeader,
 } from "./RepliesHeader";
@@ -119,8 +119,8 @@ export function RepliesListWithModeration(props: {
       />
       {pending.length > 0 && (
         <div className="flex flex-col gap-2">
-          <PendingRepliesHeader
-            pending={pending.length}
+          <CollapsibleDivider
+            label={`Approval Pending (${pending.length})`}
             open={pendingOpen}
             onToggle={() => setPendingOpen(!pendingOpen)}
           />
@@ -210,10 +210,24 @@ function ReplyRow(props: {
         {props.children}
       </div>
       {props.control && (
-        <div className=" absolute right-2 -top-[10px] opaque-container z-10 shrink-0 flex items-center gap-2 text-tertiary place-items-end px-1.5">
+        <ActionsBox className="absolute right-2 -top-[10px] z-10 place-items-end">
           {props.control}
-        </div>
+        </ActionsBox>
       )}
+    </div>
+  );
+}
+
+// The small white box holding the actions on a reply or question
+export function ActionsBox(props: {
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`opaque-container shrink-0 flex items-center gap-2 text-tertiary px-1.5 ${props.className ?? ""}`}
+    >
+      {props.children}
     </div>
   );
 }

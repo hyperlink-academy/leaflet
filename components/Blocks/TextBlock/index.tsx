@@ -16,6 +16,7 @@ import { addBlockBelow, focusNewTextBlock } from "src/utils/addBlockBelow";
 import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { addBlueskyPostBlock, addLinkBlock } from "src/utils/addLinkBlock";
 import { BlockCommandBar } from "components/Blocks/BlockCommandBar";
+import { useInAnswer } from "./useInAnswer";
 import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { TooltipButton } from "components/Buttons";
@@ -364,6 +365,7 @@ const TextBlockOverlays = (
   let textContent = useEditorStates(
     (s) => s.editorStates[props.entityID]?.editor.doc.textContent,
   );
+  let inAnswer = useInAnswer(props.parent);
   if (textContent === undefined) return null;
   return (
     <>
@@ -392,12 +394,12 @@ const TextBlockOverlays = (
             or type &quot;/&quot; to add a block
           </div>
         </div>
-      ) : textContent.length === 0 && props.focused ? (
+      ) : textContent.length === 0 && props.focused && !inAnswer ? (
         // if not the only block on page but is the block is empty and selected, but NOT multiselected show add button
         <CommandOptions {...props} className={props.className} />
       ) : null}
 
-      {textContent.startsWith("/") && props.selected && (
+      {textContent.startsWith("/") && props.selected && !inAnswer && (
         <BlockCommandBar props={props} searchValue={textContent.slice(1)} />
       )}
     </>

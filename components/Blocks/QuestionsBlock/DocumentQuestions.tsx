@@ -4,7 +4,6 @@ import useSWR from "swr";
 import { AtUri } from "@atproto/syntax";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { usePathname } from "next/navigation";
-import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useIdentityData } from "components/IdentityProvider";
 import { useToaster } from "components/Toast";
 import { useActionToast } from "components/useActionToast";
@@ -22,9 +21,12 @@ import type {
   QuestionState,
 } from "src/documentQuestions";
 import type { QuestionsAudience } from "src/questionsAudience";
+import type { InteractionAuthor } from "src/interactionAuthor";
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 import { ComposerPlaceholder } from "components/FacetedTextComposer";
 import {
+  QuestionAction,
+  QuestionAnswer,
   QuestionComposer,
   QuestionComposerPreview,
   QuestionsList,
@@ -100,11 +102,10 @@ export function DocumentQuestions(props: {
     setChanged(true);
     mutate();
   });
-  // Questions whose inline answer editor is open (editor only), and whether
-  // opening it started the draft
-  let [editing, setEditing] = useState<Record<string, { fresh: boolean }>>({});
+  // Questions whose inline answer editor is open (editor only)
+  let [editing, setEditing] = useState<Set<string>>(new Set());
   let closeEditor = (uri: string) =>
-    setEditing(({ [uri]: _, ...rest }) => rest);
+    setEditing((e) => new Set([...e].filter((u) => u !== uri)));
   let run = useActionToast<QuestionError>(questionErrorMessages);
   let [busy, setBusy] = useState(false);
   let questions = (data?.questions ?? []).filter(
@@ -161,6 +162,14 @@ export function DocumentQuestions(props: {
     );
     if (!data) return preview;
     let isAuthor = data.isAuthor;
+    let answerer: InteractionAuthor | null = viewer
+      ? {
+          did: viewer,
+          handle: identity?.bsky_profiles?.handle ?? null,
+          displayName: identity?.bsky_profiles?.record.displayName ?? null,
+          avatar: identity?.bsky_profiles?.record.avatar ?? null,
+        }
+      : null;
     return (
       <QuestionsModeration
         questions={questions}
@@ -168,32 +177,32 @@ export function DocumentQuestions(props: {
         busy={busy}
         onSetState={isAuthor ? setState : undefined}
         renderAnswer={(q, showHandle) =>
-          editing[q.uri] ? (
-            <AnswerEditor
-              blockEntity={editor.blockEntity}
-              question={q.uri}
-              page={editor.page}
-              published={!!q.answer}
-              discardOnClose={editing[q.uri].fresh}
-              onPublished={async () => {
-                await mutate();
-                closeEditor(q.uri);
-              }}
-              onClose={() => closeEditor(q.uri)}
-            />
+          editing.has(q.uri) && answerer ? (
+            <QuestionAnswer author={answerer} showHandle={showHandle}>
+              <AnswerEditor
+                blockEntity={editor.blockEntity}
+                question={q.uri}
+                page={editor.page}
+                onPublished={async () => {
+                  await mutate();
+                  closeEditor(q.uri);
+                }}
+                onClose={() => closeEditor(q.uri)}
+              />
+            </QuestionAnswer>
           ) : (
-            publishedAnswer(q, showHandle)
+            q.answer && (
+              <PublishedAnswer answer={q.answer} showHandle={showHandle} />
+            )
           )
         }
         renderControl={(q) =>
           isAuthor &&
-          !editing[q.uri] && (
+          !editing.has(q.uri) && (
             <EditorAnswerControl
               question={q}
               blockEntity={editor.blockEntity}
-              onOpen={(fresh) =>
-                setEditing((e) => ({ ...e, [q.uri]: { fresh } }))
-              }
+              onOpen={() => setEditing((e) => new Set(e).add(q.uri))}
             />
           )
         }
@@ -249,9 +258,10 @@ export function DocumentQuestions(props: {
   );
 }
 
+// On the published post
 const publishedAnswer = (q: DocumentQuestion, showHandle?: boolean) =>
   q.answer ? (
-    <PublishedAnswer answer={q.answer} showHandle={showHandle} />
+    <PublishedAnswer answer={q.answer} showHandle={showHandle} labeled />
   ) : null;
 
 // The author on their published post: answers are written in the editor.
@@ -274,12 +284,12 @@ function PublishedAuthorView(props: {
       renderControl={(q) =>
         !q.answer &&
         editLink && (
-          <ButtonSecondary
-            compact
+          <QuestionAction
+            primary
             onClick={() => window.location.assign(editLink)}
           >
             Answer in editor
-          </ButtonSecondary>
+          </QuestionAction>
         )
       }
     />
@@ -290,16 +300,16 @@ function PublishedAuthorView(props: {
 function EditorAnswerControl(props: {
   question: DocumentQuestion;
   blockEntity: string;
-  onOpen: (fresh: boolean) => void;
+  onOpen: () => void;
 }) {
   let hasDraft = useHasAnswerDraft(props.blockEntity, props.question.uri);
   let start = useStartAnswer(props.blockEntity);
   return (
-    <ButtonPrimary
-      compact
+    <QuestionAction
+      primary
       onClick={async () => {
         if (!hasDraft) await start(props.question.uri);
-        props.onOpen(!hasDraft);
+        props.onOpen();
       }}
     >
       {hasDraft
@@ -309,6 +319,6 @@ function EditorAnswerControl(props: {
         : props.question.answer
           ? "Write a new answer"
           : "Answer"}
-    </ButtonPrimary>
+    </QuestionAction>
   );
 }

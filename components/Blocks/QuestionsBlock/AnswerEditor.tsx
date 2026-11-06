@@ -2,6 +2,13 @@
 import { useEffect, useState } from "react";
 import { v5, v7 } from "uuid";
 import { Blocks } from "components/Blocks";
+import { blockCommands } from "components/Blocks/BlockCommands";
+import { BlockImageSmall } from "components/Icons/BlockImageSmall";
+import { useBlocks } from "src/hooks/queries/useBlocks";
+import { useEditorStates } from "src/state/useEditorState";
+import { useUIState } from "src/useUIState";
+import { ToolbarButton } from "components/Toolbar";
+import { TextMarkButtons } from "components/Toolbar/TextToolbar";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useToaster } from "components/Toast";
 import { useActionToast } from "components/useActionToast";
@@ -52,10 +59,6 @@ export function AnswerEditor(props: {
   // The page the questions block is on: keyboard and focus handling resolve
   // the answer's blocks to it.
   page: string;
-  published: boolean;
-  // Closing drops the draft (one just started); otherwise it keeps its
-  // edits for next time.
-  discardOnClose: boolean;
   onPublished: () => Promise<void>;
   onClose: () => void;
 }) {
@@ -86,23 +89,78 @@ export function AnswerEditor(props: {
       setPublishing(false);
     }
   };
-  let cancel = async () => {
-    if (props.discardOnClose)
-      await rep?.mutate.discardQuestionAnswer({
-        blockEntity: props.blockEntity,
-        answerEntity,
-      });
+  let clear = async () => {
+    await rep?.mutate.discardQuestionAnswer({
+      blockEntity: props.blockEntity,
+      answerEntity,
+    });
     props.onClose();
   };
   return (
     <AnswerEditorFrame
-      published={props.published}
-      discardOnClose={props.discardOnClose}
+      tools={<AnswerTools answerEntity={answerEntity} />}
       publishing={publishing}
       onPublish={publish}
-      onCancel={cancel}
+      onClear={clear}
     >
       <Blocks entityID={answerEntity} group />
     </AnswerEditorFrame>
+  );
+}
+
+// The image and formatting buttons beside the answer's publish button, in
+// place of the block editor's "/" menu and empty-line buttons.
+function AnswerTools(props: { answerEntity: string }) {
+  let { rep, undoManager } = useReplicache();
+  let { set } = useEntitySetContext();
+  let blocks = useBlocks(props.answerEntity);
+  let focused = useUIState((s) =>
+    s.focusedEntity?.entityType === "block" &&
+    s.focusedEntity.parent === props.answerEntity
+      ? s.focusedEntity.entityID
+      : null,
+  );
+  // The block menu's Image command, on the line being edited (or the last
+  // one): an empty line becomes the image, otherwise it goes below.
+  let addImage = async () => {
+    if (!rep) return;
+    let roots = blocks.filter((b) => !b.listData || b.listData.depth === 1);
+    let i = roots.findIndex((b) => b.entityID === focused);
+    if (i === -1) i = roots.length - 1;
+    let target = roots[i];
+    let emptyLine =
+      target?.type === "text" &&
+      !target.listData &&
+      !useEditorStates.getState().editorStates[target.entityID]?.editor.doc
+        .textContent;
+    await blockCommands
+      .find((c) => c.name === "Image")
+      ?.onSelect(
+        rep,
+        {
+          parent: props.answerEntity,
+          entityID: emptyLine && target ? target.entityID : null,
+          position: target?.position ?? null,
+          nextPosition: roots[i + 1]?.position ?? null,
+          entity_set: set,
+        },
+        undoManager,
+      );
+  };
+  return (
+    <div className="flex items-center gap-0.5">
+      <ToolbarButton
+        tooltipContent={<div className="font-bold">Add an Image</div>}
+        onClick={addImage}
+      >
+        <BlockImageSmall />
+      </ToolbarButton>
+      {/* They act on the focused block, which has to be one of the answer's */}
+      <div
+        className={`flex items-center gap-0.5 ${focused ? "" : "opacity-50 pointer-events-none"}`}
+      >
+        <TextMarkButtons />
+      </div>
+    </div>
   );
 }

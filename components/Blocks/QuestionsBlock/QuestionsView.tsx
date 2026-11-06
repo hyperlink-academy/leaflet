@@ -1,10 +1,11 @@
 "use client";
-import React, { useState } from "react";
+import React, { Fragment, useState } from "react";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { Popover } from "components/Popover";
 import { Avatar } from "components/Avatar";
-import { CloseTiny } from "components/Icons/CloseTiny";
+import { Separator } from "components/Layout";
 import { InfoSmall } from "components/Icons/InfoSmall";
+import { ShareTiny } from "components/Icons/ShareTiny";
 import { LoginModal } from "components/LoginButton";
 import { BaseTextBlock } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
@@ -13,13 +14,18 @@ import {
   type FacetedText,
 } from "components/FacetedTextComposer";
 import type { DocumentQuestion, QuestionState } from "src/documentQuestions";
-import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
+import type { InteractionAuthor } from "src/interactionAuthor";
 import {
   authorDisplayName,
   hasSeveralAuthors,
   InteractionAuthorName,
 } from "../InteractionAuthorName";
-import { ReplyButtonTextInput } from "../ReplyBlock/RepliesHeader";
+import {
+  CollapsibleDivider,
+  RepliesDivider,
+  ReplyButtonTextInput,
+} from "../ReplyBlock/RepliesHeader";
+import { ActionsBox } from "../ReplyBlock/RepliesList";
 import { DEFAULT_QUESTIONS_BUTTON_TEXT } from "./constants";
 import {
   questionsAudienceNotice,
@@ -166,7 +172,7 @@ export function QuestionsDraft(props: {
         audience={props.audience}
         showPending={props.showPending}
       />
-      <div className="light-container text-sm italic text-tertiary text-center p-3 sm:p-4">
+      <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4">
         <div className="text-base font-bold">
           Questions open when you publish
         </div>
@@ -177,114 +183,174 @@ export function QuestionsDraft(props: {
   );
 }
 
-function QuestionBody(props: {
-  question: DocumentQuestion;
+// One step of a question's thread. When the thread continues (the question
+// has an answer under it), a line runs from this avatar down to the answer.
+function ThreadEntry(props: {
+  author: InteractionAuthor;
   showHandle?: boolean;
-  control?: React.ReactNode;
+  date?: string;
+  // At the far end of the name line, never truncated
+  trailing?: React.ReactNode;
+  continues?: boolean;
+  children: React.ReactNode;
 }) {
-  let { asker } = props.question;
   return (
     <div className="flex gap-2 min-w-0">
-      <Avatar
-        src={asker.avatar}
-        displayName={authorDisplayName(asker)}
-        size="small"
-      />
-      <div className="flex flex-col min-w-0 grow">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
-          <InteractionAuthorName author={asker} showHandle={props.showHandle} />
-          {props.question.createdAt && (
+      <div className="flex flex-col items-center shrink-0">
+        <Avatar
+          src={props.author.avatar}
+          displayName={authorDisplayName(props.author)}
+          size="medium"
+        />
+        {props.continues && (
+          <div className="w-[2px] grow bg-border-light mt-1" />
+        )}
+      </div>
+      <div
+        className={`flex flex-col min-w-0 grow ${props.continues ? "pb-3" : ""}`}
+      >
+        <div className="flex items-center gap-1.5 min-h-6 min-w-0 text-sm whitespace-nowrap">
+          <InteractionAuthorName
+            author={props.author}
+            showHandle={props.showHandle}
+          />
+          {props.date && (
             <span className="text-tertiary shrink-0">
+              ·{" "}
               <LocalizedDate
-                dateString={props.question.createdAt}
+                dateString={props.date}
                 omitYear
                 options={{ year: "2-digit", month: "short", day: "numeric" }}
               />
             </span>
           )}
-          {props.control && (
-            <span className="ml-auto shrink-0 flex items-center gap-2 text-tertiary">
-              {props.control}
-            </span>
+          {props.trailing && (
+            <div className="ml-auto pl-1 shrink-0 flex items-center gap-2">
+              {props.trailing}
+            </div>
           )}
         </div>
-        <pre
-          style={{ wordBreak: "break-word", fontFamily: "inherit" }}
-          className="whitespace-pre-wrap text-primary"
-        >
-          <BaseTextBlock
-            index={[]}
-            plaintext={props.question.plaintext}
-            facets={props.question.facets}
-            ugcLinks
-          />
-        </pre>
+        {props.children}
       </div>
     </div>
   );
 }
 
-// A question, whatever answers it under it (the published answer, or the
-// author's inline editor), and whatever acts on it beside the asker's name.
 export function QuestionRow(props: {
   question: DocumentQuestion;
   showHandle?: boolean;
   answer?: React.ReactNode;
-  control?: React.ReactNode;
+  actions?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-2 transparent-container p-2 sm:p-3">
-      <QuestionBody
-        question={props.question}
-        showHandle={props.showHandle}
-        control={props.control}
-      />
-      {props.answer && <div className="pl-8 sm:pl-9">{props.answer}</div>}
+    <div className="questionRow flex flex-col">
+      <div className="pl-2 pr-3">
+        <ThreadEntry
+          author={props.question.asker}
+          showHandle={props.showHandle}
+          date={props.question.createdAt}
+          trailing={props.actions}
+          continues={!!props.answer}
+        >
+          <pre
+            style={{ wordBreak: "break-word", fontFamily: "inherit" }}
+            className="whitespace-pre-wrap text-primary"
+          >
+            <BaseTextBlock
+              index={[]}
+              plaintext={props.question.plaintext}
+              facets={props.question.facets}
+              ugcLinks
+            />
+          </pre>
+        </ThreadEntry>
+      </div>
+      {props.answer}
     </div>
+  );
+}
+
+export function QuestionAnswer(props: {
+  author: InteractionAuthor;
+  showHandle?: boolean;
+  date?: string;
+  labeled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="questionAnswer opaque-container p-2 pr-3">
+      <ThreadEntry
+        author={props.author}
+        showHandle={props.showHandle}
+        date={props.date}
+        trailing={
+          props.labeled && (
+            <span className="rounded-md bg-accent-1 text-accent-2 px-1.5 text-xs leading-5 font-bold uppercase">
+              Answer
+            </span>
+          )
+        }
+      >
+        {props.children}
+      </ThreadEntry>
+    </div>
+  );
+}
+
+export function QuestionAction(
+  props: React.ButtonHTMLAttributes<HTMLButtonElement> & { primary?: boolean },
+) {
+  let { primary, className, ...rest } = props;
+  return (
+    <button
+      type="button"
+      className={`text-sm shrink-0 flex items-center gap-1 disabled:opacity-50 ${
+        primary
+          ? "font-bold text-accent-contrast"
+          : "text-tertiary hover:text-accent-contrast"
+      } ${className ?? ""}`}
+      {...rest}
+    />
   );
 }
 
 export function AnswerEditorFrame(props: {
   children: React.ReactNode;
-  // The question already has a published answer this would replace
-  published: boolean;
-  // Closing drops the draft
-  discardOnClose: boolean;
+  tools?: React.ReactNode;
   publishing?: boolean;
   onPublish: () => void;
-  onCancel: () => void;
+  onClear: () => void;
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <div className="answerEditor bg-bg-page border border-border rounded-md py-1">
-        {props.children}
-      </div>
-      <div className="flex justify-end gap-2">
+      {/* Blocks pad themselves for a page; pull them back to the name line */}
+      <div className="answerEditor -mx-3 sm:-mx-4">{props.children}</div>
+      <div className="flex items-center gap-2">
+        {props.tools}
         <ButtonTertiary
           compact
+          className="text-sm ml-auto"
           disabled={props.publishing}
-          onClick={props.onCancel}
+          onClick={props.onClear}
         >
-          {props.discardOnClose ? "Discard" : "Close"}
+          Clear
         </ButtonTertiary>
         <ButtonPrimary
           compact
+          className="text-sm"
           disabled={props.publishing}
           onClick={props.onPublish}
         >
-          {props.publishing
-            ? "Publishing…"
-            : props.published
-              ? "Update answer"
-              : "Publish answer"}
+          {props.publishing ? "Publishing…" : "Publish"}
+          <ShareTiny />
         </ButtonPrimary>
       </div>
     </div>
   );
 }
 
-// The reader's view: the questions shown on the post, plus their own still
-// waiting.
+// The reader's view: their own questions first, answered or not, then the
+// answered ones, then any still waiting on an answer.
 export function QuestionsList(props: {
   questions: DocumentQuestion[];
   // The composer or a sign-in button
@@ -293,41 +359,36 @@ export function QuestionsList(props: {
   onWithdraw?: (uri: string) => void;
 }) {
   let { onWithdraw } = props;
+  let others = props.questions.filter((q) => !q.mine);
+  let ordered = [
+    ...props.questions.filter((q) => q.mine),
+    ...others.filter((q) => q.answer),
+    ...others.filter((q) => !q.answer),
+  ];
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {props.action}
       <QuestionRows
-        questions={props.questions}
+        questions={ordered}
         showHandles={showHandlesFor(props.questions)}
         renderAnswer={props.renderAnswer}
-        renderControl={(question) =>
-          !question.answer && (
-            <>
-              <span className="italic">
-                {question.mine && question.state !== "accepted"
-                  ? "Awaiting the author"
-                  : "Awaiting an answer"}
-              </span>
-              {onWithdraw && question.mine && (
-                <button
-                  aria-label="Withdraw question"
-                  className="hover:text-accent-contrast"
-                  onClick={() => onWithdraw(question.uri)}
-                >
-                  <CloseTiny />
-                </button>
-              )}
-            </>
-          )
-        }
+        renderControls={(question) => [
+          onWithdraw && question.mine && !question.answer && (
+            <QuestionAction
+              aria-label="Withdraw question"
+              onClick={() => onWithdraw(question.uri)}
+            >
+              Withdraw
+            </QuestionAction>
+          ),
+        ]}
       />
     </div>
   );
 }
 
-// The author's view: pending questions first, each with controls to accept
-// or hide it, then the ones shown on the post, and the hidden ones behind a
-// toggle.
+// The author's view: pending questions first, under a header that collapses
+// them, then the ones shown on the post, and the hidden ones behind another.
 export function QuestionsModeration(props: {
   questions: DocumentQuestion[];
   // Above the lists: the editor's composer preview
@@ -337,13 +398,16 @@ export function QuestionsModeration(props: {
   // Unset for an editor who isn't the post's author
   onSetState?: (uri: string, state: QuestionState) => void;
   renderAnswer: RenderAnswer;
-  // Beside a question's moderation controls: "Answer", or a link to the
+  // After a question's moderation controls: "Answer", or a link to the
   // editor
   renderControl: (question: DocumentQuestion) => React.ReactNode;
 }) {
+  let [pendingOpen, setPendingOpen] = useState(true);
   let [showHidden, setShowHidden] = useState(false);
   let inState = (state: QuestionState) =>
     props.questions.filter((q) => q.state === state);
+  let pending = inState("pending");
+  let accepted = inState("accepted");
   let hidden = inState("hidden");
   if (showHidden && hidden.length === 0) setShowHidden(false);
   let showHandles = showHandlesFor(props.questions);
@@ -353,64 +417,61 @@ export function QuestionsModeration(props: {
     label: string,
   ) =>
     props.onSetState && (
-      <ButtonTertiary
-        compact
+      <QuestionAction
         disabled={props.busy}
         onClick={() => props.onSetState?.(q.uri, state)}
       >
         {label}
-      </ButtonTertiary>
+      </QuestionAction>
     );
   let rows = (
     questions: DocumentQuestion[],
-    controls: (q: DocumentQuestion) => React.ReactNode,
-    className?: string,
+    controls: (q: DocumentQuestion) => React.ReactNode[],
   ) => (
     <QuestionRows
       questions={questions}
-      className={className}
       showHandles={showHandles}
       renderAnswer={props.renderAnswer}
-      renderControl={(q) => (
-        <>
-          {controls(q)}
-          {props.renderControl(q)}
-        </>
-      )}
+      renderControls={(q) => [...controls(q), props.renderControl(q)]}
     />
   );
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {props.header}
       {props.questions.length === 0 && (
-        <div className="light-container text-sm italic text-tertiary text-center p-3">
+        <div className="opaque-container text-sm italic text-tertiary text-center p-3">
           No one has asked anything yet.
         </div>
       )}
-      {rows(
-        inState("pending"),
-        (q) => (
-          <>
-            {stateButton(q, "hidden", "Hide")}
-            {stateButton(q, "accepted", "Accept")}
-          </>
-        ),
-        "light-container p-2",
+      {pending.length > 0 && (
+        <div className="flex flex-col gap-4">
+          <CollapsibleDivider
+            label={`Pending (${pending.length})`}
+            open={pendingOpen}
+            onToggle={() => setPendingOpen(!pendingOpen)}
+          />
+          {pendingOpen &&
+            rows(pending, (q) => [
+              stateButton(q, "hidden", "Hide"),
+              stateButton(q, "accepted", "Accept"),
+            ])}
+        </div>
       )}
-      {rows(inState("accepted"), (q) => stateButton(q, "hidden", "Hide"))}
+      {accepted.length > 0 && (
+        <div className="flex flex-col gap-4">
+          <RepliesDivider label={`Questions (${accepted.length})`} />
+          {rows(accepted, (q) => [stateButton(q, "hidden", "Hide")])}
+        </div>
+      )}
       {hidden.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <ButtonTertiary
-            compact
-            className="w-fit"
-            aria-expanded={showHidden}
-            onClick={() => setShowHidden(!showHidden)}
-          >
-            {hidden.length} hidden
-            <ArrowDownTiny className={showHidden ? "rotate-180" : ""} />
-          </ButtonTertiary>
+        <div className="flex flex-col gap-4">
+          <CollapsibleDivider
+            label={`Hidden (${hidden.length})`}
+            open={showHidden}
+            onToggle={() => setShowHidden(!showHidden)}
+          />
           {showHidden &&
-            rows(hidden, (q) => stateButton(q, "pending", "Unhide"))}
+            rows(hidden, (q) => [stateButton(q, "pending", "Unhide")])}
         </div>
       )}
     </div>
@@ -432,25 +493,43 @@ type RenderAnswer = (
   showHandle?: boolean,
 ) => React.ReactNode;
 
+// Questions separated by rules, each one's controls boxed at the end of the
+// asker's name line.
 function QuestionRows(props: {
   questions: DocumentQuestion[];
-  className?: string;
   showHandles?: boolean;
   renderAnswer: RenderAnswer;
-  renderControl: (question: DocumentQuestion) => React.ReactNode;
+  renderControls: (question: DocumentQuestion) => React.ReactNode[];
 }) {
   if (props.questions.length === 0) return null;
   return (
-    <div className={`flex flex-col gap-2 ${props.className ?? ""}`}>
-      {props.questions.map((question) => (
-        <QuestionRow
-          key={question.uri}
-          question={question}
-          showHandle={props.showHandles}
-          answer={props.renderAnswer(question, props.showHandles)}
-          control={props.renderControl(question)}
-        />
-      ))}
+    <div className="flex flex-col gap-4">
+      {props.questions.map((question) => {
+        let controls = props.renderControls(question).filter(Boolean);
+        return (
+          <Fragment key={question.uri}>
+            <QuestionRow
+              key={question.uri}
+              question={question}
+              showHandle={props.showHandles}
+              answer={props.renderAnswer(question, props.showHandles)}
+              actions={
+                controls.length > 0 && (
+                  <ActionsBox>
+                    {controls.map((control, i) => (
+                      <Fragment key={i}>
+                        {i > 0 && <Separator classname="h-4!" />}
+                        {control}
+                      </Fragment>
+                    ))}
+                  </ActionsBox>
+                )
+              }
+            />
+            <hr className="last:hidden" />
+          </Fragment>
+        );
+      })}
     </div>
   );
 }

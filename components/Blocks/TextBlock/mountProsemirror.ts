@@ -31,6 +31,7 @@ import { useEditorCommentPopoverStore } from "components/EditorComments/EditorCo
 import { commentDraftPlugin } from "./commentDraftPlugin";
 import { stripCommentMarks } from "./stripCommentMarks";
 import { useCollabText } from "./useCollabText";
+import { useInAnswer } from "./useInAnswer";
 
 // The comment anchor under an event's target and its comment IDs; null when
 // there is none. Anchors can carry several IDs since overlapping comments
@@ -63,10 +64,11 @@ export function useMountProsemirror({
   let entity_set = useEntitySetContext();
   let alignment =
     useEntity(entityID, "block/text-alignment")?.data.value || "left";
-  let propsRef = useRef({ ...props, entity_set, alignment });
+  let inAnswer = useInAnswer(props.parent);
+  let propsRef = useRef({ ...props, entity_set, alignment, inAnswer });
   let handlePaste = useHandlePaste(entityID, propsRef);
 
-  propsRef.current = { ...props, entity_set, alignment };
+  propsRef.current = { ...props, entity_set, alignment, inAnswer };
   repRef.current = rep.rep;
 
   useLayoutEffect(() => {
