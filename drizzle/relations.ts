@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { atp_poll_records, atp_poll_votes, bsky_follows, bsky_posts, bsky_profiles, comment_tombstones, comments_on_documents, custom_domain_routes, custom_domains, document_mentions_in_bsky, document_question_answers, document_question_visibility, document_questions, document_replies, document_reply_rejections, document_reply_visibility, document_tags, document_version_blob_refs, document_versions, documents, documents_in_publications, email_auth_tokens, email_subscriptions_to_entity, entities, entity_sets, facts, identities, leaflet_contributors, leaflets_in_publications, leaflets_to_documents, notification_digests, notification_email_deliveries, notification_preferences, notifications, permission_token_on_homepage, permission_token_rights, permission_tokens, phone_rsvps_to_entity, poll_votes_on_entity, publication_contributors, publication_domains, publication_email_posts, publication_email_subscriber_events, publication_email_subscribers, publication_membership_settings, publication_membership_tiers, publication_memberships, publication_newsletter_settings, publication_pages, publication_post_sends, publication_recommendations, publication_scheduled_posts, publication_subscriptions, publications, recommends_on_documents, reply_drafts, site_standard_documents, site_standard_documents_in_publications, site_standard_publications, site_standard_subscriptions, stripe_connected_accounts, stripe_connected_customers, stripe_wallets, user_entitlements, user_subscriptions } from "./schema";
+import { atp_poll_records, atp_poll_votes, bsky_follows, bsky_posts, bsky_profiles, comment_tombstones, comments_on_documents, custom_domain_routes, custom_domains, document_mentions_in_bsky, document_question_answers, document_question_visibility, document_questions, document_replies, document_reply_rejections, document_reply_visibility, document_tags, document_version_blob_refs, document_versions, documents, documents_in_publications, email_auth_tokens, email_subscriptions_to_entity, entities, entity_sets, facts, identities, leaflet_contributors, leaflets_in_publications, leaflets_to_documents, notification_history, notification_preferences, notifications, permission_token_on_homepage, permission_token_rights, permission_tokens, phone_rsvps_to_entity, poll_votes_on_entity, publication_contributors, publication_domains, publication_email_posts, publication_email_subscriber_events, publication_email_subscribers, publication_membership_settings, publication_membership_tiers, publication_memberships, publication_newsletter_settings, publication_pages, publication_post_sends, publication_recommendations, publication_scheduled_posts, publication_subscriptions, publications, recommends_on_documents, reply_drafts, site_standard_documents, site_standard_documents_in_publications, site_standard_publications, site_standard_subscriptions, stripe_connected_accounts, stripe_connected_customers, stripe_wallets, user_entitlements, user_subscriptions } from "./schema";
 
 export const atp_poll_recordsRelations = relations(atp_poll_records, ({many}) => ({
 	atp_poll_votes: many(atp_poll_votes),
@@ -277,8 +277,7 @@ export const identitiesRelations = relations(identities, ({one, many}) => ({
 	document_versions: many(document_versions),
 	email_auth_tokens: many(email_auth_tokens),
 	leaflet_contributors: many(leaflet_contributors),
-	notification_digests: many(notification_digests),
-	notification_email_deliveries: many(notification_email_deliveries),
+	notification_histories: many(notification_history),
 	notification_preferences: many(notification_preferences),
 	notifications: many(notifications),
 	permission_token: one(permission_tokens, {
@@ -341,24 +340,13 @@ export const leaflets_to_documentsRelations = relations(leaflets_to_documents, (
 	}),
 }));
 
-export const notification_digestsRelations = relations(notification_digests, ({one}) => ({
+export const notification_historyRelations = relations(notification_history, ({one}) => ({
 	identity: one(identities, {
-		fields: [notification_digests.identity],
+		fields: [notification_history.identity],
 		references: [identities.id],
 	}),
 	publication: one(publications, {
-		fields: [notification_digests.publication],
-		references: [publications.uri],
-	}),
-}));
-
-export const notification_email_deliveriesRelations = relations(notification_email_deliveries, ({one}) => ({
-	identity: one(identities, {
-		fields: [notification_email_deliveries.identity],
-		references: [identities.id],
-	}),
-	publication: one(publications, {
-		fields: [notification_email_deliveries.publication],
+		fields: [notification_history.publication],
 		references: [publications.uri],
 	}),
 }));
@@ -619,8 +607,7 @@ export const publicationsRelations = relations(publications, ({one, many}) => ({
 		references: [identities.atp_did],
 	}),
 	leaflets_in_publications: many(leaflets_in_publications),
-	notification_digests: many(notification_digests),
-	notification_email_deliveries: many(notification_email_deliveries),
+	notification_histories: many(notification_history),
 	notification_preferences: many(notification_preferences),
 	permission_token: one(permission_tokens, {
 		fields: [publications.draft_leaflet],

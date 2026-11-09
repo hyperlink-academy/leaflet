@@ -1,17 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { NotificationPreference } from "src/notificationPreferences";
 
-const { getAuthIdentity, from, query, rpc } = vi.hoisted(() => {
-  const query: any = {};
-  for (const method of ["select", "eq"]) query[method] = vi.fn(() => query);
-  query.maybeSingle = vi.fn();
-  return {
-    getAuthIdentity: vi.fn(),
-    from: vi.fn(() => query),
-    query,
-    rpc: vi.fn(),
-  };
-});
+const { getAuthIdentity, from, query, rpc, queueDigestSchedule } = vi.hoisted(
+  () => {
+    const query: any = {};
+    for (const method of ["select", "eq"]) query[method] = vi.fn(() => query);
+    query.maybeSingle = vi.fn();
+    return {
+      getAuthIdentity: vi.fn(),
+      from: vi.fn(() => query),
+      query,
+      rpc: vi.fn(),
+      queueDigestSchedule: vi.fn(),
+    };
+  },
+);
+vi.mock("src/digests/schedule", () => ({ queueDigestSchedule }));
 vi.mock("src/auth", () => ({ getAuthIdentity }));
 vi.mock("supabase/serverClient", () => ({
   supabaseServerClient: { from, rpc },
@@ -29,6 +33,7 @@ beforeEach(() => {
   });
   query.maybeSingle.mockReset();
   rpc.mockResolvedValue({ error: null });
+  queueDigestSchedule.mockReset().mockResolvedValue(undefined);
 });
 const owner = () =>
   query.maybeSingle.mockResolvedValueOnce({
@@ -148,5 +153,37 @@ describe("notification preferences", () => {
         frequency: "weekly",
       }),
     ).toEqual({ ok: false, error: "database_error" });
+  });
+
+  it("starts the queue for active digest choices only", async () => {
+    owner();
+    await setNotificationPreference("pub", {
+      type: "digest",
+      frequency: "daily",
+    });
+    expect(queueDigestSchedule).toHaveBeenCalledWith("owner-id", "pub");
+    queueDigestSchedule.mockClear();
+    owner();
+    await setNotificationPreference("pub", {
+      type: "digest",
+      frequency: "off",
+    });
+    owner();
+    await setNotificationPreference("pub", {
+      type: "comments",
+      frequency: "instant",
+    });
+    expect(queueDigestSchedule).not.toHaveBeenCalled();
+  });
+
+  it("reports a queue failure so saving the same choice can retry scheduling", async () => {
+    owner();
+    queueDigestSchedule.mockRejectedValueOnce(new Error("Queue offline"));
+    expect(
+      await setNotificationPreference("pub", {
+        type: "digest",
+        frequency: "daily",
+      }),
+    ).toEqual({ ok: false, error: "schedule_error" });
   });
 });

@@ -21,6 +21,14 @@ vi.mock("supabase/pool", async () => {
 import { pool } from "supabase/pool";
 import { sendDigest } from "./send";
 import { loadDigestActivity } from "./activity";
+vi.mock("app/api/inngest/client", () => ({ inngest: { send: vi.fn() } }));
+import { inngest } from "app/api/inngest/client";
+import {
+  advanceDigestSchedule,
+  isCurrentDigestSchedule,
+  queueDigestSchedule,
+  type DigestSchedule,
+} from "./schedule";
 
 let identity: string;
 let reader: string;
@@ -39,6 +47,23 @@ const args = () => ({
   apiKey: "test-key",
 });
 const body = (index = 0) => JSON.parse(fetchMock.mock.calls[index][1].body);
+
+async function schedule(): Promise<DigestSchedule> {
+  await pool.query(
+    "SELECT set_notification_preference($1,$2,'digest','daily')",
+    [identity, publication],
+  );
+  const { rows } = await pool.query(
+    "UPDATE notification_preferences SET digest_next_at='2025-01-01Z' WHERE identity=$1 AND publication=$2 RETURNING digest_schedule_id",
+    [identity, publication],
+  );
+  return {
+    identity,
+    publication,
+    generation: rows[0].digest_schedule_id,
+    due: "2025-01-01T00:00:00.000Z",
+  };
+}
 
 beforeEach(async () => {
   vi.stubGlobal("fetch", fetchMock);
@@ -136,7 +161,7 @@ describe("test digest delivery", () => {
     expect(body().TextBody).toContain("Post questions: +1 since starting");
     expect(body().TextBody).toContain("Quotes: +1 since starting");
     const { rows } = await pool.query(
-      "SELECT status, sent_at FROM notification_digests WHERE identity=$1",
+      "SELECT status, sent_at FROM notification_history WHERE identity=$1",
       [identity],
     );
     expect(rows).toHaveLength(1);
@@ -221,5 +246,154 @@ describe("test digest delivery", () => {
     } finally {
       db.release();
     }
+  });
+});
+
+describe("scheduled digest delivery", () => {
+  it("ignores comment delivery state and other channels when finding the digest cutoff", async () => {
+    const current = await schedule();
+    await pool.query(
+      "INSERT INTO notification_history (identity, publication, channel, notification_type, delivery_key) VALUES ($1,$2,'email','comments','comment:pending')",
+      [identity, publication],
+    );
+    await pool.query(
+      "INSERT INTO notification_history (identity, publication, channel, notification_type, delivery_key, period_start, period_end, status, sent_at) VALUES ($1,$2,'push','digest','push:future','2020-01-01Z','2099-01-01Z','sent',now())",
+      [identity, publication],
+    );
+    expect(await sendDigest({ ...args(), schedule: current })).toEqual({
+      ok: true,
+      value: null,
+    });
+    expect(body().TextBody).toContain("Subscribers: +2 since starting");
+  });
+
+  it("keeps test history and automatic history separate", async () => {
+    const current = await schedule();
+    await sendDigest(args());
+    await sendDigest({ ...args(), schedule: current });
+    expect(body(1).Tag).toBe("publication-digest");
+    expect(body(1).TextBody).toContain("Subscribers: +2 since starting");
+    expect(body(1).TextBody).not.toContain("test digest");
+    const { rows } = await pool.query(
+      "SELECT mode FROM notification_history WHERE identity=$1 ORDER BY mode",
+      [identity],
+    );
+    expect(rows).toEqual([{ mode: "live" }, { mode: "test" }]);
+    expect(await isCurrentDigestSchedule(current)).toBe(true);
+  });
+
+  it("skips an empty period and records a checkpoint without sending", async () => {
+    const current = await schedule();
+    await sendDigest({ ...args(), schedule: current });
+    await sendDigest({
+      ...args(),
+      schedule: { ...current, due: "2025-01-02T00:00:00.000Z" },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const { rows } = await pool.query(
+      "SELECT status FROM notification_history WHERE identity=$1 ORDER BY period_end",
+      [identity],
+    );
+    expect(rows).toEqual([{ status: "sent" }, { status: "skipped" }]);
+  });
+
+  it("does not send the same automatic period twice", async () => {
+    const current = await schedule();
+    await sendDigest({ ...args(), schedule: current });
+    await sendDigest({ ...args(), schedule: current });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("cancels old jobs when turned off or changed to weekly", async () => {
+    const current = await schedule();
+    await pool.query(
+      "SELECT set_notification_preference($1,$2,'digest','off')",
+      [identity, publication],
+    );
+    expect(await isCurrentDigestSchedule(current)).toBe(false);
+    expect(await advanceDigestSchedule(current)).toBeNull();
+    await pool.query(
+      "SELECT set_notification_preference($1,$2,'digest','weekly')",
+      [identity, publication],
+    );
+    await sendDigest({ ...args(), schedule: current });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("advances once under concurrent retries without changing generation", async () => {
+    const current = await schedule();
+    const [first, second] = await Promise.all([
+      advanceDigestSchedule(current),
+      advanceDigestSchedule(current),
+    ]);
+    expect(first).toEqual(second);
+    expect(first?.generation).toBe(current.generation);
+    expect(first?.due).toMatch(/T00:00:00.000Z$/);
+    expect(await isCurrentDigestSchedule(first!)).toBe(true);
+    expect(await isCurrentDigestSchedule(current)).toBe(false);
+  });
+
+  it("preserves the schedule when saving the same choice or changing comments", async () => {
+    const current = await schedule();
+    await pool.query(
+      "SELECT set_notification_preference($1,$2,'digest','daily')",
+      [identity, publication],
+    );
+    await pool.query(
+      "SELECT set_notification_preference($1,$2,'comments','instant')",
+      [identity, publication],
+    );
+    expect(await isCurrentDigestSchedule(current)).toBe(true);
+  });
+
+  it("can retry the same automatic period after explicit provider rejection", async () => {
+    const current = await schedule();
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ErrorCode: 422 }), { status: 422 }),
+    );
+    expect(await sendDigest({ ...args(), schedule: current })).toEqual({
+      ok: false,
+      error: "email_send_failed",
+    });
+    expect(await sendDigest({ ...args(), schedule: current })).toEqual({
+      ok: true,
+      value: null,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const { rows } = await pool.query(
+      "SELECT status FROM notification_history WHERE identity=$1",
+      [identity],
+    );
+    expect(rows).toEqual([{ status: "sent" }]);
+  });
+
+  it("does not send before the due time", async () => {
+    const current = await schedule();
+    await sendDigest({
+      ...args(),
+      schedule: { ...current, due: "2099-01-01T00:00:00.000Z" },
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("queues the persisted next run, including when retrying a failed initial enqueue", async () => {
+    await pool.query(
+      "SELECT set_notification_preference($1,$2,'digest','daily')",
+      [identity, publication],
+    );
+    vi.mocked(inngest.send).mockRejectedValueOnce(new Error("Queue offline"));
+    await expect(queueDigestSchedule(identity, publication)).rejects.toThrow(
+      "Queue offline",
+    );
+    const { rows: first } = await pool.query(
+      "SELECT digest_next_at FROM notification_preferences WHERE identity=$1 AND publication=$2",
+      [identity, publication],
+    );
+    vi.mocked(inngest.send).mockResolvedValueOnce({ ids: [] });
+    await queueDigestSchedule(identity, publication);
+    const event = vi.mocked(inngest.send).mock.calls.at(-1)![0] as {
+      data: DigestSchedule;
+    };
+    expect(event.data.due).toBe(first[0].digest_next_at.toISOString());
   });
 });

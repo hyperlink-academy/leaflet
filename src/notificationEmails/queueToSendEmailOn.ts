@@ -3,7 +3,7 @@ import { inngest } from "app/api/inngest/client";
 import type { NotificationEmailRequest } from "./types";
 
 // Queue delivery outside the publishing request; repeated requests share an id.
-export async function queueToSendEmail(request: NotificationEmailRequest) {
+export async function queueToSendEmailOn(request: NotificationEmailRequest) {
   try {
     const hash = createHash("sha256")
       .update(`${request.type}:${request.subjectUri}`)

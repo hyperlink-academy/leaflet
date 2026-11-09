@@ -1150,89 +1150,62 @@ export type Database = {
         }
         Relationships: []
       }
-      notification_digests: {
+      notification_history: {
         Row: {
-          identity: string
-          period_end: string
-          period_start: string
-          publication: string
-          sent_at: string | null
-          status: string
-        }
-        Insert: {
-          identity: string
-          period_end: string
-          period_start: string
-          publication: string
-          sent_at?: string | null
-          status?: string
-        }
-        Update: {
-          identity?: string
-          period_end?: string
-          period_start?: string
-          publication?: string
-          sent_at?: string | null
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notification_digests_identity_fkey"
-            columns: ["identity"]
-            isOneToOne: false
-            referencedRelation: "identities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notification_digests_publication_fkey"
-            columns: ["publication"]
-            isOneToOne: false
-            referencedRelation: "publications"
-            referencedColumns: ["uri"]
-          },
-        ]
-      }
-      notification_email_deliveries: {
-        Row: {
+          channel: string
           created_at: string
+          delivery_key: string
           identity: string
+          mode: string
           notification_type: string
+          period_end: string | null
+          period_start: string | null
           provider_message_id: string | null
           publication: string
           sent_at: string | null
           status: string
-          subject_uri: string
+          subject_uri: string | null
         }
         Insert: {
+          channel: string
           created_at?: string
+          delivery_key: string
           identity: string
+          mode?: string
           notification_type: string
+          period_end?: string | null
+          period_start?: string | null
           provider_message_id?: string | null
           publication: string
           sent_at?: string | null
           status?: string
-          subject_uri: string
+          subject_uri?: string | null
         }
         Update: {
+          channel?: string
           created_at?: string
+          delivery_key?: string
           identity?: string
+          mode?: string
           notification_type?: string
+          period_end?: string | null
+          period_start?: string | null
           provider_message_id?: string | null
           publication?: string
           sent_at?: string | null
           status?: string
-          subject_uri?: string
+          subject_uri?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "notification_email_deliveries_identity_fkey"
+            foreignKeyName: "notification_history_identity_fkey"
             columns: ["identity"]
             isOneToOne: false
             referencedRelation: "identities"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "notification_email_deliveries_publication_fkey"
+            foreignKeyName: "notification_history_publication_fkey"
             columns: ["publication"]
             isOneToOne: false
             referencedRelation: "publications"
@@ -1245,6 +1218,8 @@ export type Database = {
           channel: string
           comments_enabled_at: string | null
           digest_frequency: string | null
+          digest_next_at: string | null
+          digest_schedule_id: string
           enabled_types: string[]
           identity: string
           publication: string
@@ -1253,6 +1228,8 @@ export type Database = {
           channel?: string
           comments_enabled_at?: string | null
           digest_frequency?: string | null
+          digest_next_at?: string | null
+          digest_schedule_id?: string
           enabled_types?: string[]
           identity: string
           publication: string
@@ -1261,6 +1238,8 @@ export type Database = {
           channel?: string
           comments_enabled_at?: string | null
           digest_frequency?: string | null
+          digest_next_at?: string | null
+          digest_schedule_id?: string
           enabled_types?: string[]
           identity?: string
           publication?: string

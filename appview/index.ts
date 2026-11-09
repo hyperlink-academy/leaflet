@@ -38,7 +38,7 @@ import { stripThemeWithoutType } from "src/utils/stripThemeWithoutType";
 import { pageHasMembersDelimiter } from "src/membership";
 import { MAIN_SITE_URL } from "src/utils/customDomain";
 import { tombstoneComment } from "src/comments/tombstoneComment";
-import { queueToSendEmail } from "src/notificationEmails/queueToSendEmail";
+import { queueToSendEmailOn } from "src/notificationEmails/queueToSendEmailOn";
 import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
@@ -64,7 +64,7 @@ const redisClient: Client | null = process.env.REDIS_URL
   : null;
 
 class RedisProfileCache {
-  constructor(private client: Client) {}
+  constructor(private client: Client) { }
   async clearEntry(did: string): Promise<void> {
     await this.client.del(`bsky-profile:${did}`);
   }
@@ -438,7 +438,7 @@ async function handleEvent(evt: Event) {
       if (!error)
         await broadcastDocumentEvent(supabase, "comment", record.value.subject);
       if (!error && evt.event === "create")
-        await queueToSendEmail({
+        await queueToSendEmailOn({
           type: "comments",
           subjectUri: evt.uri.toString(),
         });
@@ -927,10 +927,10 @@ async function handleEvent(evt: Event) {
             // publishToPublication wrote untouched.
             ...(!hasBlobPages && PubLeafletContent.isMain(record.value.content)
               ? {
-                  members_only: pageHasMembersDelimiter(
-                    record.value.content.pages?.[0],
-                  ),
-                }
+                members_only: pageHasMembersDelimiter(
+                  record.value.content.pages?.[0],
+                ),
+              }
               : {}),
           });
         await supabase

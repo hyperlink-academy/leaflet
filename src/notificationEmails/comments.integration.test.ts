@@ -125,7 +125,7 @@ describe("instant comment emails", () => {
       `http://127.0.0.1:3000/lish/${did}/pub/post?interactionDrawer=comments#commentsDrawer`,
     );
     const { rows } = await pool.query(
-      "SELECT status, provider_message_id FROM notification_email_deliveries WHERE identity=$1",
+      "SELECT status, provider_message_id FROM notification_history WHERE identity=$1",
       [identity],
     );
     expect(rows).toEqual([

@@ -47,7 +47,7 @@ describe("notification tables", () => {
 
   it("rejects duplicate digest claims for the same period", async () => {
     const sql =
-      "INSERT INTO notification_digests (identity, publication, period_start, period_end) VALUES ($1, $2, '2026-11-01Z', '2026-11-02Z')";
+      "INSERT INTO notification_history (identity, publication, channel, notification_type, delivery_key, period_start, period_end) VALUES ($1, $2, 'email', 'digest', 'digest:test:period', '2026-11-01Z', '2026-11-02Z')";
     await db.query(sql, [identity, publication]);
     await expect(db.query(sql, [identity, publication])).rejects.toMatchObject({
       code: "23505",
@@ -66,8 +66,28 @@ describe("notification tables", () => {
 
   it("has RLS enabled on both tables", async () => {
     const { rows } = await db.query(
-      "SELECT relrowsecurity FROM pg_class WHERE oid IN ('notification_preferences'::regclass, 'notification_digests'::regclass)",
+      "SELECT relrowsecurity FROM pg_class WHERE oid IN ('notification_preferences'::regclass, 'notification_history'::regclass)",
     );
     expect(rows).toEqual([{ relrowsecurity: true }, { relrowsecurity: true }]);
   });
+
+  it("keeps delivery keys independent across channels", async () => {
+    const sql =
+      "INSERT INTO notification_history (identity, publication, channel, notification_type, delivery_key) VALUES ($1,$2,$3,'comments','same-delivery')";
+    await db.query(sql, [identity, publication, "email"]);
+    await db.query(sql, [identity, publication, "push"]);
+    await expect(
+      db.query(sql, [identity, publication, "email"]),
+    ).rejects.toMatchObject({ code: "23505" });
+  });
+
+  it.each(["anon", "authenticated"])(
+    "denies history access for %s",
+    async (role) => {
+      await db.query(`SET LOCAL ROLE ${role}`);
+      await expect(
+        db.query("SELECT * FROM notification_history"),
+      ).rejects.toMatchObject({ code: "42501" });
+    },
+  );
 });

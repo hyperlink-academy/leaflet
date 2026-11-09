@@ -13,10 +13,13 @@ export function digestMessage(
   name: string,
   activity: DigestActivity,
   previousEnd: string | null,
+  test = true,
 ) {
   const subject = `Quick digest on ${name}`;
   const period = previousEnd
-    ? `since your last digest (${new Date(previousEnd).toUTCString()})`
+    ? test
+      ? `since your last digest (${new Date(previousEnd).toUTCString()})`
+      : `since ${new Date(previousEnd).toUTCString()}`
     : "since starting";
   const text = [
     subject,
@@ -26,7 +29,10 @@ export function digestMessage(
         `${label}: +${activity[key as keyof DigestActivity]} ${period}`,
     ),
     "",
-    "Likes are Leaflet recommendations. This test digest was requested by you.",
+    "Likes are Leaflet recommendations.",
+    test
+      ? "This test digest was requested by you."
+      : "You opted into email digests in your publication’s notification settings.",
   ].join("\n");
   return { subject, text };
 }

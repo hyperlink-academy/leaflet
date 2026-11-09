@@ -3,6 +3,7 @@ import { AtUri } from "@atproto/syntax";
 import { z } from "zod";
 import type { Json } from "supabase/database.types";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
+import { commentDeliveryKey } from "src/notificationHistory";
 
 type Recipient = {
   identity: string;
@@ -57,15 +58,20 @@ export async function sendCommentEmails(commentUri: string) {
 
   let sent = 0;
   for (const recipient of recipients) {
-    const params = [recipient.identity, recipient.publication, commentUri];
+    const params = [
+      recipient.identity,
+      recipient.publication,
+      commentDeliveryKey(commentUri),
+    ];
+    // Claim before sending so duplicate action/indexer events cannot email twice.
     const { rows: claimed } = await pool.query(
-      `INSERT INTO notification_email_deliveries (identity, publication, notification_type, subject_uri)
-       VALUES ($1, $2, 'comments', $3)
-       ON CONFLICT (identity, publication, notification_type, subject_uri)
-       DO UPDATE SET status = 'sending'
-       WHERE notification_email_deliveries.status = 'failed'
+      `INSERT INTO notification_history (identity, publication, channel, notification_type, delivery_key, subject_uri)
+       VALUES ($1, $2, 'email', 'comments', $3, $4)
+       ON CONFLICT (identity, publication, channel, delivery_key)
+       DO UPDATE SET status = 'pending'
+       WHERE notification_history.status = 'failed'
        RETURNING identity`,
-      params,
+      [...params, commentUri],
     );
     if (!claimed.length) continue;
     const title =
@@ -113,13 +119,13 @@ export async function sendCommentEmails(commentUri: string) {
         throw new Error("Postmark rejected comment email");
       }
       await pool.query(
-        "UPDATE notification_email_deliveries SET status = 'sent', sent_at = now(), provider_message_id = $4 WHERE identity = $1 AND publication = $2 AND notification_type = 'comments' AND subject_uri = $3",
+        "UPDATE notification_history SET status='sent', sent_at=now(), provider_message_id=$4 WHERE identity=$1 AND publication=$2 AND channel='email' AND delivery_key=$3",
         [...params, result.MessageID ?? null],
       );
       sent++;
     } catch (error) {
       await pool.query(
-        "UPDATE notification_email_deliveries SET status = $4 WHERE identity = $1 AND publication = $2 AND notification_type = 'comments' AND subject_uri = $3 AND status = 'sending'",
+        "UPDATE notification_history SET status=$4 WHERE identity=$1 AND publication=$2 AND channel='email' AND delivery_key=$3 AND status='pending'",
         [...params, rejection ? "failed" : "uncertain"],
       );
       // Retry explicit rejections only; a lost response may already have sent.

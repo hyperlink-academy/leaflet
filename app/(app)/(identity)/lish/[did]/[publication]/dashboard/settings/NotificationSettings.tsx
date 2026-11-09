@@ -14,15 +14,14 @@ import { useIdentityData } from "components/IdentityProvider";
 import { isDevMode } from "src/utils/isDevMode";
 import { sendTestDigest } from "actions/publications/sendTestDigest";
 import { CommentNotificationSetting } from "./CommentNotificationSetting";
-
-const labels = { off: "Off", daily: "Daily", weekly: "Weekly" };
+import { digestLabels as labels } from "src/digests/frequencies";
 
 export function NotificationSettings() {
   const { data: publicationData } = usePublicationData();
   const { identity } = useIdentityData();
   const publication = publicationData?.publication?.uri;
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [sendingTest, setSendingTest] = useState(false);
   const [testStatus, setTestStatus] = useState("");
   const [testError, setTestError] = useState(false);
@@ -88,7 +87,7 @@ export function NotificationSettings() {
                     onValueChange={async (value) => {
                       if (!publication || saving || !(value in labels)) return;
                       setSaving(true);
-                      setSaveError(false);
+                      setSaveError("");
                       try {
                         const frequency = value as keyof typeof labels;
                         const result = await setNotificationPreference(
@@ -103,8 +102,13 @@ export function NotificationSettings() {
                               : current,
                           { revalidate: false },
                         );
-                      } catch {
-                        setSaveError(true);
+                      } catch (error) {
+                        setSaveError(
+                          error instanceof Error &&
+                            error.message === "schedule_error"
+                            ? "Your preference was saved, but delivery couldn’t be scheduled. Please try again."
+                            : "Couldn’t save your preference. Please try again.",
+                        );
                       } finally {
                         setSaving(false);
                       }
@@ -173,13 +177,11 @@ export function NotificationSettings() {
           </button>
         </p>
       )}
-      {saveError && (
-        <p role="alert">Couldn’t save your preference. Please try again.</p>
-      )}
+      {saveError && <p role="alert">{saveError}</p>}
       {testStatus && <p role={testError ? "alert" : "status"}>{testStatus}</p>}
       <p className="text-sm text-tertiary">
-        Scheduled digests will only be sent when there is new activity. Daily
-        and weekly delivery is coming soon.
+        Digests are only sent when there is new activity.<br />
+        Daily digests are scheduled for midnight UTC; weekly digests for Sunday’s end.
       </p>
     </SettingsSection>
   );
