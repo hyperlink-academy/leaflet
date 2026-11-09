@@ -12,6 +12,7 @@ export function PublishedAnswer(props: {
   answer: NonNullable<DocumentQuestion["answer"]>;
   showHandle?: boolean;
   labeled?: boolean;
+  actions?: React.ReactNode;
 }) {
   let resources = useOptionalPostResources();
   return (
@@ -20,6 +21,7 @@ export function PublishedAnswer(props: {
       showHandle={props.showHandle}
       date={props.answer.createdAt}
       labeled={props.labeled}
+      actions={props.actions}
     >
       <PostContent
         className="px-0! pt-0! [&>*:last-child]:mb-0!"

@@ -270,23 +270,31 @@ function PublishedAuthorView(props: {
     props.documentUri,
     new AtUri(props.documentUri).host,
   );
+  let toEditor = (label: string, primary: boolean) =>
+    editLink && (
+      <QuestionAction
+        primary={primary}
+        onClick={() => window.location.assign(editLink)}
+      >
+        {label}
+      </QuestionAction>
+    );
   return (
     <QuestionsModeration
       questions={props.questions}
       busy={props.busy}
       onSetState={props.onSetState}
-      renderAnswer={publishedAnswer}
-      renderControl={(q) =>
-        !q.answer &&
-        editLink && (
-          <QuestionAction
-            primary
-            onClick={() => window.location.assign(editLink)}
-          >
-            Answer in editor
-          </QuestionAction>
+      renderAnswer={(q, showHandle) =>
+        q.answer && (
+          <PublishedAnswer
+            answer={q.answer}
+            showHandle={showHandle}
+            labeled
+            actions={toEditor("Edit answer in editor", false)}
+          />
         )
       }
+      renderControl={(q) => !q.answer && toEditor("Answer in editor", true)}
     />
   );
 }
@@ -316,6 +324,25 @@ function EditorQuestions(props: {
   let isOpen = (q: DocumentQuestion) =>
     props.isAuthor &&
     (opened.has(q.uri) || (q.state === "pending" && drafts.includes(q.uri)));
+  // Under the question when it's unanswered, under its answer otherwise
+  let answerControl = (q: DocumentQuestion) => {
+    if (!props.isAuthor || isOpen(q)) return null;
+    return (
+      <QuestionAction
+        primary
+        onClick={async () => {
+          await startAnswer(q.uri);
+          setOpened((o) => new Set(o).add(q.uri));
+        }}
+      >
+        {!q.answer
+          ? "Answer"
+          : drafts.includes(q.uri)
+            ? "Edit answer"
+            : "Write a new answer"}
+      </QuestionAction>
+    );
+  };
   return (
     <QuestionsModeration
       questions={props.questions}
@@ -338,29 +365,15 @@ function EditorQuestions(props: {
           </QuestionAnswer>
         ) : (
           q.answer && (
-            <PublishedAnswer answer={q.answer} showHandle={showHandle} />
+            <PublishedAnswer
+              answer={q.answer}
+              showHandle={showHandle}
+              actions={answerControl(q)}
+            />
           )
         )
       }
-      renderControl={(q) => {
-        if (!props.isAuthor || isOpen(q)) return null;
-        let hasDraft = drafts.includes(q.uri);
-        return (
-          <QuestionAction
-            primary
-            onClick={async () => {
-              await startAnswer(q.uri);
-              setOpened((o) => new Set(o).add(q.uri));
-            }}
-          >
-            {!q.answer
-              ? "Answer"
-              : hasDraft
-                ? "Edit answer"
-                : "Write a new answer"}
-          </QuestionAction>
-        );
-      }}
+      renderControl={(q) => !q.answer && answerControl(q)}
     />
   );
 }

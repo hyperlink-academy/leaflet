@@ -130,8 +130,8 @@ function Case(props: { label: string; children: React.ReactNode }) {
 // The published post labels answers; the editor doesn't.
 const renderPublished = (q: DocumentQuestion) =>
   q.answer ? <PublishedAnswer answer={q.answer} labeled /> : null;
-const renderInEditor = (q: DocumentQuestion) =>
-  q.answer ? <PublishedAnswer answer={q.answer} /> : null;
+const renderInEditor = (q: DocumentQuestion, actions?: React.ReactNode) =>
+  q.answer ? <PublishedAnswer answer={q.answer} actions={actions} /> : null;
 
 // Stands in for the leaflet block editor, which needs replicache.
 function FakeLimitedLeafletEditor(props: {
@@ -212,6 +212,15 @@ function Playground() {
   };
 
   let view: React.ReactNode;
+  let answerControl = (q: DocumentQuestion) =>
+    q.uri in drafts ? null : (
+      <QuestionAction
+        primary
+        onClick={() => setDrafts((d) => ({ ...d, [q.uri]: "" }))}
+      >
+        {q.answer ? "Write a new answer" : "Answer"}
+      </QuestionAction>
+    );
   if (viewer === "author") {
     view = (
       <QuestionsModeration
@@ -226,19 +235,10 @@ function Playground() {
               onClear={() => setDrafts(({ [q.uri]: _, ...rest }) => rest)}
             />
           ) : (
-            renderInEditor(q)
+            renderInEditor(q, answerControl(q))
           )
         }
-        renderControl={(q) =>
-          q.uri in drafts ? null : (
-            <QuestionAction
-              primary
-              onClick={() => setDrafts((d) => ({ ...d, [q.uri]: "" }))}
-            >
-              {q.answer ? "Write a new answer" : "Answer"}
-            </QuestionAction>
-          )
-        }
+        renderControl={(q) => !q.answer && answerControl(q)}
       />
     );
   } else {
@@ -400,10 +400,10 @@ export default function QuestionsTestPage() {
                 </LimitedLeafletComposer>
               </QuestionAnswer>
             ) : (
-              renderInEditor(q)
+              renderInEditor(q, answerControl(q))
             )
           }
-          renderControl={(q) => (isOpen(q) ? null : answerControl(q))}
+          renderControl={(q) => !q.answer && !isOpen(q) && answerControl(q)}
         />
       </Case>
       <Case label="Published — reader, logged out">

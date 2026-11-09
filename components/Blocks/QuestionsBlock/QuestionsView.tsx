@@ -27,7 +27,6 @@ import {
   RepliesDivider,
   ReplyButtonTextInput,
 } from "../ReplyBlock/RepliesHeader";
-import { ActionsBox } from "../ReplyBlock/RepliesList";
 import { DEFAULT_QUESTIONS_BUTTON_TEXT } from "./constants";
 import {
   questionsAudienceNotice,
@@ -208,8 +207,8 @@ function ThreadEntry(props: {
   author: InteractionAuthor;
   showHandle?: boolean;
   date?: string;
-  // At the far end of the name line, never truncated
-  trailing?: React.ReactNode;
+  // Under the entry's content
+  actions?: React.ReactNode;
   continues?: boolean;
   children: React.ReactNode;
 }) {
@@ -243,13 +242,11 @@ function ThreadEntry(props: {
               />
             </span>
           )}
-          {props.trailing && (
-            <div className="ml-auto pl-1 shrink-0 flex items-center gap-2">
-              {props.trailing}
-            </div>
-          )}
         </div>
         {props.children}
+        {props.actions && (
+          <div className="mt-1 flex items-center gap-2">{props.actions}</div>
+        )}
       </div>
     </div>
   );
@@ -270,7 +267,7 @@ export function QuestionRow(props: {
           author={props.question.asker}
           showHandle={props.showHandle}
           date={props.question.createdAt}
-          trailing={props.actions}
+          actions={props.actions}
           continues={!!props.answer}
         >
           {props.editor ?? (
@@ -298,21 +295,22 @@ export function QuestionAnswer(props: {
   showHandle?: boolean;
   date?: string;
   labeled?: boolean;
+  // Under the answer: the author's "Edit answer"
+  actions?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <div className="questionAnswer opaque-container p-2 pr-3">
+    <div className="questionAnswer relative opaque-container rounded-lg! border-accent-contrast! p-2 pr-3">
+      {props.labeled && (
+        <span className="absolute -top-2.5 right-3 rounded-md bg-accent-1 text-accent-2 px-1.5 text-xs leading-5 font-bold uppercase">
+          Answer
+        </span>
+      )}
       <ThreadEntry
         author={props.author}
         showHandle={props.showHandle}
         date={props.date}
-        trailing={
-          props.labeled && (
-            <span className="rounded-md bg-accent-1 text-accent-2 px-1.5 text-xs leading-5 font-bold uppercase">
-              Answer
-            </span>
-          )
-        }
+        actions={props.actions}
       >
         {props.children}
       </ThreadEntry>
@@ -425,10 +423,10 @@ function QuestionEditor(props: {
       }}
       actions={
         <>
-          <ButtonTertiary compact onClick={props.onCancel}>
+          <ButtonTertiary compact className="text-sm" onClick={props.onCancel}>
             Cancel
           </ButtonTertiary>
-          <ComposerSubmit>Update</ComposerSubmit>
+          <ComposerSubmit className="text-sm">Update</ComposerSubmit>
         </>
       }
     />
@@ -446,7 +444,7 @@ export function QuestionsModeration(props: {
   // Unset for an editor who isn't the post's author
   onSetState?: (uri: string, state: QuestionState) => void;
   renderAnswer: RenderAnswer;
-  // After a question's moderation controls: "Answer", or a link to the
+  // Before a question's moderation controls: "Answer", or a link to the
   // editor
   renderControl: (question: DocumentQuestion) => React.ReactNode;
 }) {
@@ -480,7 +478,7 @@ export function QuestionsModeration(props: {
       questions={questions}
       showHandles={showHandles}
       renderAnswer={props.renderAnswer}
-      renderControls={(q) => [...controls(q), props.renderControl(q)]}
+      renderControls={(q) => [props.renderControl(q), ...controls(q)]}
     />
   );
   return (
@@ -492,18 +490,22 @@ export function QuestionsModeration(props: {
         </div>
       )}
       {pending.length > 0 && (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3 ">
           <CollapsibleDivider
             label={`Pending (${pending.length})`}
             open={pendingOpen}
             onToggle={() => setPendingOpen(!pendingOpen)}
           />
-          {pendingOpen &&
-            rows(pending, (q) => [stateButton(q, "hidden", "Remove")])}
+          {pendingOpen && (
+            <>
+              {rows(pending, (q) => [stateButton(q, "hidden", "Remove")])}{" "}
+              <div className="spacer h-2" />
+            </>
+          )}
         </div>
       )}
       {accepted.length > 0 && (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           <RepliesDivider label={`Questions (${accepted.length})`} />
           {rows(accepted, (q) => [stateButton(q, "hidden", "Remove")])}
         </div>
@@ -538,8 +540,7 @@ type RenderAnswer = (
   showHandle?: boolean,
 ) => React.ReactNode;
 
-// Questions separated by rules, each one's controls boxed at the end of the
-// asker's name line.
+// Questions separated by rules, each one's controls in a row under it.
 function QuestionRows(props: {
   questions: DocumentQuestion[];
   showHandles?: boolean;
@@ -549,9 +550,9 @@ function QuestionRows(props: {
 }) {
   if (props.questions.length === 0) return null;
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       {props.questions.map((question) => {
-        let controls = props.renderControls(question).filter(Boolean);
+        let actions = props.renderControls(question).filter(Boolean);
         return (
           <Fragment key={question.uri}>
             <QuestionRow
@@ -561,16 +562,13 @@ function QuestionRows(props: {
               answer={props.renderAnswer(question, props.showHandles)}
               editor={props.renderEditor?.(question) || undefined}
               actions={
-                controls.length > 0 && (
-                  <ActionsBox>
-                    {controls.map((control, i) => (
-                      <Fragment key={i}>
-                        {i > 0 && <Separator classname="h-4!" />}
-                        {control}
-                      </Fragment>
-                    ))}
-                  </ActionsBox>
-                )
+                actions.length > 0 &&
+                actions.map((control, i) => (
+                  <Fragment key={i}>
+                    {i > 0 && <Separator classname="h-4!" />}
+                    {control}
+                  </Fragment>
+                ))
               }
             />
             <hr className="last:hidden" />
