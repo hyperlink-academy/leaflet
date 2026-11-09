@@ -31,6 +31,7 @@ import {
   questionsAudienceNotice,
   type QuestionsAudience,
 } from "src/questionsAudience";
+import { SettingsTiny } from "components/Icons/SettingsTiny";
 
 export function QuestionsButtonTextInput(props: {
   value: string;
@@ -184,11 +185,10 @@ export function QuestionsDraft(props: {
         showPending={props.showPending}
       />
       <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4">
-        <div className="text-base font-bold">
-          Questions open when you publish
-        </div>
-        Readers can ask you public questions. Accept one to show it, or answer
-        it right here and the answer appears under it.
+        <div className="text-base font-bold">Question and Answers</div>
+        Here, logged in readers can post public questions that you can answer!
+        To change who can ask a question and when questions become public,
+        select <SettingsTiny /> in the upper right of this block.
       </div>
     </div>
   );
@@ -364,7 +364,7 @@ export function QuestionsList(props: {
 }
 
 // The author's view: pending questions first, under a header that collapses
-// them, then the ones shown on the post, and the hidden ones behind another.
+// them, then the ones shown on the post, and the removed ones behind another.
 export function QuestionsModeration(props: {
   questions: DocumentQuestion[];
   // Above the lists: the editor's composer preview
@@ -427,27 +427,24 @@ export function QuestionsModeration(props: {
             onToggle={() => setPendingOpen(!pendingOpen)}
           />
           {pendingOpen &&
-            rows(pending, (q) => [
-              stateButton(q, "hidden", "Hide"),
-              stateButton(q, "accepted", "Accept"),
-            ])}
+            rows(pending, (q) => [stateButton(q, "hidden", "Remove")])}
         </div>
       )}
       {accepted.length > 0 && (
         <div className="flex flex-col gap-4">
           <RepliesDivider label={`Questions (${accepted.length})`} />
-          {rows(accepted, (q) => [stateButton(q, "hidden", "Hide")])}
+          {rows(accepted, (q) => [stateButton(q, "hidden", "Remove")])}
         </div>
       )}
       {hidden.length > 0 && (
         <div className="flex flex-col gap-4">
           <CollapsibleDivider
-            label={`Hidden (${hidden.length})`}
+            label={`Removed (${hidden.length})`}
             open={showHidden}
             onToggle={() => setShowHidden(!showHidden)}
           />
           {showHidden &&
-            rows(hidden, (q) => [stateButton(q, "pending", "Unhide")])}
+            rows(hidden, (q) => [stateButton(q, "pending", "Restore")])}
         </div>
       )}
     </div>

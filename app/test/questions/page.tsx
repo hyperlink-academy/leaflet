@@ -347,15 +347,11 @@ export default function QuestionsTestPage() {
     answer: ["Probably half the settings page."],
   });
   let noop = () => {};
-  // Mirrors the real control: drafts persist after publishing, all[3] has an
-  // unpublished one.
+  // all[2] is pending with a draft, so its draft is open.
+  let isOpen = (q: DocumentQuestion) => q.uri === all[2].uri;
   let answerControl = (q: DocumentQuestion) => (
     <QuestionAction primary>
-      {q.uri === all[3].uri
-        ? "Continue answer"
-        : q.answer
-          ? "Edit answer"
-          : "Answer"}
+      {q.answer ? "Edit answer" : "Answer"}
     </QuestionAction>
   );
   return (
@@ -380,7 +376,7 @@ export default function QuestionsTestPage() {
           onSetState={noop}
           header={<QuestionComposerPreview action={editableButton} />}
           renderAnswer={(q) =>
-            q.uri === all[2].uri ? (
+            isOpen(q) ? (
               <QuestionAnswer author={AUTHOR_PROFILE}>
                 <LimitedLeafletComposer
                   editor={null}
@@ -396,9 +392,7 @@ export default function QuestionsTestPage() {
               renderInEditor(q)
             )
           }
-          renderControl={(q) =>
-            q.uri === all[2].uri ? null : answerControl(q)
-          }
+          renderControl={(q) => (isOpen(q) ? null : answerControl(q))}
         />
       </Case>
       <Case label="Published — reader, logged out">

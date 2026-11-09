@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { v5, v7 } from "uuid";
 import { Blocks } from "components/Blocks";
 import { useEditorStates } from "src/state/useEditorState";
@@ -8,7 +8,10 @@ import type { ComposerEditor } from "components/Composer";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useToaster } from "components/Toast";
 import { useActionToast } from "components/useActionToast";
-import { useEntity, useReplicache } from "src/replicache";
+import { useReplicache, type Fact } from "src/replicache";
+import type { Attribute } from "src/replicache/attributes";
+import { useSubscribe } from "src/replicache/useSubscribe";
+import { scanIndex, scanIndexLocal } from "src/replicache/utils";
 import { registerBlockGroup } from "src/utils/blockGroups";
 import { flushPendingTextWrites } from "components/Blocks/TextBlock/useCollabText";
 import { IsLimitedContext } from "components/Blocks/TextBlock/useIsLimited";
@@ -21,10 +24,40 @@ export function answerEntityFor(blockEntity: string, question: string) {
   return v5(question, blockEntity);
 }
 
-export function useHasAnswerDraft(blockEntity: string, question: string) {
-  return !!useEntity(answerEntityFor(blockEntity, question), "answer/question");
+// The questions the block has answer drafts for
+export function useAnswerDrafts(blockEntity: string): string[] {
+  let { rep, initialFacts } = useReplicache();
+  let fallback = useMemo(
+    () => answerDrafts(initialFacts, blockEntity),
+    [initialFacts, blockEntity],
+  );
+  let drafts = useSubscribe(
+    rep,
+    async (tx) => {
+      if (!(await tx.get("initialized"))) return null;
+      let scan = scanIndex(tx);
+      let refs = await scan.eav(blockEntity, "questions/answer");
+      let facts: Fact<Attribute>[] = [...refs];
+      for (let ref of refs)
+        facts.push(...(await scan.eav(ref.data.value, "answer/question")));
+      return answerDrafts(facts, blockEntity);
+    },
+    { default: null, dependencies: [blockEntity] },
+  );
+  return drafts ?? fallback;
 }
 
+function answerDrafts(facts: Fact<Attribute>[], blockEntity: string) {
+  let scan = scanIndexLocal(facts);
+  return scan
+    .eav(blockEntity, "questions/answer")
+    .flatMap((ref) =>
+      scan.eav(ref.data.value, "answer/question").map((q) => q.data.value),
+    );
+}
+
+// Starts a draft for the question, unless it has one (createQuestionAnswer
+// keeps an existing one).
 export function useStartAnswer(blockEntity: string) {
   let { rep } = useReplicache();
   let { set } = useEntitySetContext();
@@ -57,7 +90,7 @@ export function LimitedLeafletEditor(props: {
   // The page the questions block is on: keyboard and focus handling resolve
   // the answer's blocks to it.
   page: string;
-  onPublished: () => Promise<void>;
+  onPublished: () => Promise<unknown>;
   onClose: () => void;
 }) {
   let { rep, permission_token } = useReplicache();

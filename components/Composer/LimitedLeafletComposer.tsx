@@ -23,7 +23,7 @@ export function LimitedLeafletComposer(props: {
             Clear
           </ButtonTertiary>
           <ComposerSubmit className="text-sm">
-            Publish <ShareTiny />
+            Answer <ShareTiny />
           </ComposerSubmit>
         </>
       }

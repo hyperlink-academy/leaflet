@@ -37,7 +37,7 @@ import { PublishedAnswer } from "./PublishedAnswer";
 import type { FacetedText } from "components/Composer/facetedText";
 import {
   LimitedLeafletEditor,
-  useHasAnswerDraft,
+  useAnswerDrafts,
   useStartAnswer,
 } from "./LimitedLeafletEditor";
 
@@ -111,10 +111,6 @@ export function DocumentQuestions(props: {
     setChanged(true);
     mutate();
   });
-  // Questions whose inline answer editor is open (editor only)
-  let [editing, setEditing] = useState<Set<string>>(new Set());
-  let closeEditor = (uri: string) =>
-    setEditing((e) => new Set([...e].filter((u) => u !== uri)));
   let run = useActionToast<QuestionError>(questionErrorMessages);
   let [busy, setBusy] = useState(false);
   let questions = (data?.questions ?? []).filter(
@@ -170,43 +166,17 @@ export function DocumentQuestions(props: {
       />
     );
     if (!data) return preview;
-    let isAuthor = data.isAuthor;
     return (
-      <QuestionsModeration
+      <EditorQuestions
         questions={questions}
         header={preview}
         busy={busy}
-        onSetState={isAuthor ? setState : undefined}
-        renderAnswer={(q, showHandle) =>
-          editing.has(q.uri) && viewerAuthor ? (
-            <QuestionAnswer author={viewerAuthor} showHandle={showHandle}>
-              <LimitedLeafletEditor
-                blockEntity={editor.blockEntity}
-                question={q.uri}
-                page={editor.page}
-                onPublished={async () => {
-                  await mutate();
-                  closeEditor(q.uri);
-                }}
-                onClose={() => closeEditor(q.uri)}
-              />
-            </QuestionAnswer>
-          ) : (
-            q.answer && (
-              <PublishedAnswer answer={q.answer} showHandle={showHandle} />
-            )
-          )
-        }
-        renderControl={(q) =>
-          isAuthor &&
-          !editing.has(q.uri) && (
-            <EditorAnswerControl
-              question={q}
-              blockEntity={editor.blockEntity}
-              onOpen={() => setEditing((e) => new Set(e).add(q.uri))}
-            />
-          )
-        }
+        isAuthor={data.isAuthor}
+        onSetState={setState}
+        blockEntity={editor.blockEntity}
+        page={editor.page}
+        author={viewerAuthor}
+        onPublished={() => mutate()}
       />
     );
   }
@@ -298,29 +268,76 @@ function PublishedAuthorView(props: {
   );
 }
 
-// Opens the inline editor, starting a draft when the question has none.
-function EditorAnswerControl(props: {
-  question: DocumentQuestion;
+// The author answers in place, editing a question's draft under it. A
+// pending question has no published answer, so its draft is always open;
+// any other's opens on request, to revise its answer.
+function EditorQuestions(props: {
+  questions: DocumentQuestion[];
+  header: React.ReactNode;
+  busy: boolean;
+  // Editors who aren't the post's author see the questions, but can't act
+  // on them.
+  isAuthor: boolean;
+  onSetState: (uri: string, state: QuestionState) => void;
   blockEntity: string;
-  onOpen: () => void;
+  page: string;
+  author: InteractionAuthor | null;
+  onPublished: () => Promise<unknown>;
 }) {
-  let hasDraft = useHasAnswerDraft(props.blockEntity, props.question.uri);
-  let start = useStartAnswer(props.blockEntity);
+  let drafts = useAnswerDrafts(props.blockEntity);
+  let startAnswer = useStartAnswer(props.blockEntity);
+  let [opened, setOpened] = useState<Set<string>>(new Set());
+  let close = (uri: string) =>
+    setOpened((o) => new Set([...o].filter((u) => u !== uri)));
+  let { author } = props;
+  let isOpen = (q: DocumentQuestion) =>
+    props.isAuthor &&
+    (opened.has(q.uri) || (q.state === "pending" && drafts.includes(q.uri)));
   return (
-    <QuestionAction
-      primary
-      onClick={async () => {
-        if (!hasDraft) await start(props.question.uri);
-        props.onOpen();
+    <QuestionsModeration
+      questions={props.questions}
+      header={props.header}
+      busy={props.busy}
+      onSetState={props.isAuthor ? props.onSetState : undefined}
+      renderAnswer={(q, showHandle) =>
+        isOpen(q) && author ? (
+          <QuestionAnswer author={author} showHandle={showHandle}>
+            <LimitedLeafletEditor
+              blockEntity={props.blockEntity}
+              question={q.uri}
+              page={props.page}
+              onPublished={async () => {
+                await props.onPublished();
+                close(q.uri);
+              }}
+              onClose={() => close(q.uri)}
+            />
+          </QuestionAnswer>
+        ) : (
+          q.answer && (
+            <PublishedAnswer answer={q.answer} showHandle={showHandle} />
+          )
+        )
+      }
+      renderControl={(q) => {
+        if (!props.isAuthor || isOpen(q)) return null;
+        let hasDraft = drafts.includes(q.uri);
+        return (
+          <QuestionAction
+            primary
+            onClick={async () => {
+              await startAnswer(q.uri);
+              setOpened((o) => new Set(o).add(q.uri));
+            }}
+          >
+            {!q.answer
+              ? "Answer"
+              : hasDraft
+                ? "Edit answer"
+                : "Write a new answer"}
+          </QuestionAction>
+        );
       }}
-    >
-      {hasDraft
-        ? props.question.answer
-          ? "Edit answer"
-          : "Continue answer"
-        : props.question.answer
-          ? "Write a new answer"
-          : "Answer"}
-    </QuestionAction>
+    />
   );
 }

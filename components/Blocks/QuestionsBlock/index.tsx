@@ -100,7 +100,7 @@ export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
               <hr className="border-border-light my-1" />
               <ToggleWithLabel
                 label="Show pending questions"
-                helpText="Readers see questions before you accept or answer them. Hidden ones never show."
+                helpText="Readers see questions before you answer them. Removed ones never show."
                 toggle={showPending}
                 onToggle={() =>
                   rep?.mutate.assertFact({
