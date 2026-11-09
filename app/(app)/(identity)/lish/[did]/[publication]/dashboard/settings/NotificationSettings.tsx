@@ -12,6 +12,7 @@ import { SettingsSection } from "components/SettingsLayout";
 import { usePublicationData } from "../PublicationSWRProvider";
 import { useIdentityData } from "components/IdentityProvider";
 import { isDevMode } from "src/utils/isDevMode";
+import { sendTestDigest } from "actions/publications/sendTestDigest";
 
 const labels = { off: "Off", daily: "Daily", weekly: "Weekly" };
 
@@ -21,6 +22,9 @@ export function NotificationSettings() {
   const publication = publicationData?.publication?.uri;
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
+  const [testStatus, setTestStatus] = useState("");
+  const [testError, setTestError] = useState(false);
   const { data, error, isLoading, mutate } = useSWR(
     publication && identity
       ? ["notification-preference", identity.id, publication]
@@ -112,8 +116,33 @@ export function NotificationSettings() {
                 </Menu>
                 {isDevMode(identity) && (
                   <ButtonSecondary
-                    disabled
-                    title="Available once digest delivery is connected."
+                    type="button"
+                    disabled={sendingTest || !publication}
+                    aria-busy={sendingTest}
+                    onClick={async () => {
+                      if (!publication || sendingTest) return;
+                      setSendingTest(true);
+                      setTestError(false);
+                      setTestStatus("");
+                      try {
+                        const result = await sendTestDigest(publication);
+                        if (result.ok) {
+                          setTestStatus(
+                            `Test digest sent to ${identity?.email}.`,
+                          );
+                        } else {
+                          setTestError(true);
+                          setTestStatus(testErrors[result.error]);
+                        }
+                      } catch {
+                        setTestError(true);
+                        setTestStatus(
+                          "Couldn’t confirm delivery. Check your inbox before trying again.",
+                        );
+                      } finally {
+                        setSendingTest(false);
+                      }
+                    }}
                   >
                     Send test
                   </ButtonSecondary>
@@ -134,10 +163,28 @@ export function NotificationSettings() {
       {saveError && (
         <p role="alert">Couldn’t save your preference. Please try again.</p>
       )}
+      {testStatus && <p role={testError ? "alert" : "status"}>{testStatus}</p>}
       <p className="text-sm text-tertiary">
-        Digest delivery is not available yet. These settings save your
-        preference for when it becomes available.
+        Scheduled digests will only be sent when there is new activity. Daily
+        and weekly delivery is coming soon.
       </p>
     </SettingsSection>
   );
 }
+
+const testErrors = {
+  unauthorized:
+    "Test digests are only available to approved publication owners.",
+  email_required:
+    "Connect an email address in your account settings to receive a test digest.",
+  email_not_configured:
+    "Email delivery isn’t configured on this server. Set POSTMARK_API_KEY to send a test digest.",
+  database_error: "Couldn’t prepare the digest. Please try again.",
+  already_sending: "A test digest is already being prepared.",
+  delivery_pending:
+    "A previous digest is still pending. Check your inbox and delivery status before sending again.",
+  delivery_uncertain:
+    "Couldn’t confirm delivery. Check your inbox and delivery status before sending again.",
+  email_send_failed:
+    "The email provider rejected the digest. Check the email configuration before trying again.",
+};
