@@ -1192,9 +1192,58 @@ export type Database = {
           },
         ]
       }
+      notification_email_deliveries: {
+        Row: {
+          created_at: string
+          identity: string
+          notification_type: string
+          provider_message_id: string | null
+          publication: string
+          sent_at: string | null
+          status: string
+          subject_uri: string
+        }
+        Insert: {
+          created_at?: string
+          identity: string
+          notification_type: string
+          provider_message_id?: string | null
+          publication: string
+          sent_at?: string | null
+          status?: string
+          subject_uri: string
+        }
+        Update: {
+          created_at?: string
+          identity?: string
+          notification_type?: string
+          provider_message_id?: string | null
+          publication?: string
+          sent_at?: string | null
+          status?: string
+          subject_uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_email_deliveries_identity_fkey"
+            columns: ["identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_email_deliveries_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           channel: string
+          comments_enabled_at: string | null
           digest_frequency: string | null
           enabled_types: string[]
           identity: string
@@ -1202,6 +1251,7 @@ export type Database = {
         }
         Insert: {
           channel?: string
+          comments_enabled_at?: string | null
           digest_frequency?: string | null
           enabled_types?: string[]
           identity: string
@@ -1209,6 +1259,7 @@ export type Database = {
         }
         Update: {
           channel?: string
+          comments_enabled_at?: string | null
           digest_frequency?: string | null
           enabled_types?: string[]
           identity?: string
@@ -2925,6 +2976,15 @@ export type Database = {
           name: string
           document_count: number
         }[]
+      }
+      set_notification_preference: {
+        Args: {
+          p_identity: string
+          p_publication: string
+          p_type: string
+          p_frequency: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

@@ -3,7 +3,7 @@
 import useSWR from "swr";
 import { useState } from "react";
 import {
-  getNotificationPreference,
+  getNotificationPreferences,
   setNotificationPreference,
 } from "actions/publications/notificationSettings";
 import { ButtonSecondary } from "components/Buttons";
@@ -13,6 +13,7 @@ import { usePublicationData } from "../PublicationSWRProvider";
 import { useIdentityData } from "components/IdentityProvider";
 import { isDevMode } from "src/utils/isDevMode";
 import { sendTestDigest } from "actions/publications/sendTestDigest";
+import { CommentNotificationSetting } from "./CommentNotificationSetting";
 
 const labels = { off: "Off", daily: "Daily", weekly: "Weekly" };
 
@@ -27,10 +28,10 @@ export function NotificationSettings() {
   const [testError, setTestError] = useState(false);
   const { data, error, isLoading, mutate } = useSWR(
     publication && identity
-      ? ["notification-preference", identity.id, publication]
+      ? ["notification-preferences", identity.id, publication]
       : null,
     async ([, , uri]) => {
-      const result = await getNotificationPreference(uri);
+      const result = await getNotificationPreferences(uri);
       if (!result.ok) throw new Error(result.error);
       return result.value;
     },
@@ -75,7 +76,7 @@ export function NotificationSettings() {
                         {isLoading
                           ? "Loading…"
                           : data
-                            ? labels[data]
+                            ? labels[data.digest]
                             : "Unavailable"}
                       </span>
                       <span aria-hidden="true">▾</span>
@@ -83,7 +84,7 @@ export function NotificationSettings() {
                   }
                 >
                   <RadioMenuGroup
-                    value={data || "off"}
+                    value={data?.digest || "off"}
                     onValueChange={async (value) => {
                       if (!publication || saving || !(value in labels)) return;
                       setSaving(true);
@@ -92,10 +93,16 @@ export function NotificationSettings() {
                         const frequency = value as keyof typeof labels;
                         const result = await setNotificationPreference(
                           publication,
-                          frequency,
+                          { type: "digest", frequency },
                         );
                         if (!result.ok) throw new Error(result.error);
-                        await mutate(frequency, { revalidate: false });
+                        await mutate(
+                          (current) =>
+                            current
+                              ? { ...current, digest: frequency }
+                              : current,
+                          { revalidate: false },
+                        );
                       } catch {
                         setSaveError(true);
                       } finally {
@@ -107,7 +114,7 @@ export function NotificationSettings() {
                       <RadioMenuItem
                         key={value}
                         value={value}
-                        selected={data === value}
+                        selected={data?.digest === value}
                       >
                         {label}
                       </RadioMenuItem>
@@ -150,6 +157,12 @@ export function NotificationSettings() {
               </div>
             </td>
           </tr>
+          {publication && identity && (
+            <CommentNotificationSetting
+              identity={identity.id}
+              publication={publication}
+            />
+          )}
         </tbody>
       </table>
       {error && (

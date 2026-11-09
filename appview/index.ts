@@ -38,6 +38,7 @@ import { stripThemeWithoutType } from "src/utils/stripThemeWithoutType";
 import { pageHasMembersDelimiter } from "src/membership";
 import { MAIN_SITE_URL } from "src/utils/customDomain";
 import { tombstoneComment } from "src/comments/tombstoneComment";
+import { queueToSendEmail } from "src/notificationEmails/queueToSendEmail";
 import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
@@ -436,6 +437,11 @@ async function handleEvent(evt: Event) {
       });
       if (!error)
         await broadcastDocumentEvent(supabase, "comment", record.value.subject);
+      if (!error && evt.event === "create")
+        await queueToSendEmail({
+          type: "comments",
+          subjectUri: evt.uri.toString(),
+        });
       // Comment counts are server-rendered into post pages and listings.
       if (await isInLeafletPublication(record.value.subject))
         await notifyRevalidate({

@@ -1,6 +1,10 @@
 "use server";
 
-import { z } from "zod";
+import {
+  notificationPreferenceSchema,
+  type NotificationPreference,
+  type NotificationPreferences,
+} from "src/notificationPreferences";
 import { getAuthIdentity } from "src/auth";
 import { Err, Ok } from "src/result";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -17,7 +21,8 @@ async function authorize(publication: string) {
   return identity;
 }
 
-export async function getNotificationPreference(publication: string) {
+// Load all email choices together; existing publications remain opted out.
+export async function getNotificationPreferences(publication: string) {
   const identity = await authorize(publication);
   if (!identity) return Err("unauthorized" as const);
   const { data, error } = await supabaseServerClient
@@ -31,30 +36,30 @@ export async function getNotificationPreference(publication: string) {
   const frequency = data?.enabled_types.includes("digest")
     ? data.digest_frequency
     : null;
-  return Ok<"off" | "daily" | "weekly">(
-    frequency === "daily" || frequency === "weekly" ? frequency : "off",
-  );
+  return Ok<NotificationPreferences>({
+    digest: frequency === "daily" || frequency === "weekly" ? frequency : "off",
+    comments: data?.enabled_types.includes("comments") ? "instant" : "off",
+  });
 }
 
+// Validate and save one choice atomically, preserving other notification types.
 export async function setNotificationPreference(
   publication: string,
-  frequency: "off" | "daily" | "weekly",
+  preference: NotificationPreference,
 ) {
-  if (!z.enum(["off", "daily", "weekly"]).safeParse(frequency).success)
-    return Err("invalid_frequency" as const);
+  const parsed = notificationPreferenceSchema.safeParse(preference);
+  if (!parsed.success) return Err("invalid_frequency" as const);
   const identity = await authorize(publication);
   if (!identity) return Err("unauthorized" as const);
-  const { error } = await supabaseServerClient
-    .from("notification_preferences")
-    .upsert(
-      {
-        identity: identity.id,
-        publication,
-        channel: "email",
-        enabled_types: frequency === "off" ? [] : ["digest"],
-        digest_frequency: frequency === "off" ? null : frequency,
-      },
-      { onConflict: "identity,publication,channel" },
-    );
+  const { type, frequency } = parsed.data;
+  const { error } = await supabaseServerClient.rpc(
+    "set_notification_preference",
+    {
+      p_identity: identity.id,
+      p_publication: publication,
+      p_type: type,
+      p_frequency: frequency,
+    },
+  );
   return error ? Err("database_error" as const) : Ok(null);
 }

@@ -1,9 +1,13 @@
 import { Inngest, eventType, staticSchema } from "inngest";
+import type { NotificationEmailRequest } from "src/notificationEmails/types";
 
 // Event type definitions. In v4, the client no longer has centralized
 // schemas — each event is its own EventType, usable both as a trigger and
 // as an argument to inngest.send() via event.create().
 export const events = {
+  notificationEmailRequested: eventType("notifications/email.requested", {
+    schema: staticSchema<NotificationEmailRequest>(),
+  }),
   feedsIndexFollows: eventType("feeds/index-follows", {
     schema: staticSchema<{ did: string }>(),
   }),

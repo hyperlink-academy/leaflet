@@ -441,8 +441,26 @@ export const notification_digests = pgTable("notification_digests", {
 	}
 });
 
+export const notification_email_deliveries = pgTable("notification_email_deliveries", {
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	identity: uuid("identity").notNull().references(() => identities.id, { onDelete: "cascade" } ),
+	notification_type: text("notification_type").notNull(),
+	provider_message_id: text("provider_message_id"),
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	sent_at: timestamp("sent_at", { withTimezone: true, mode: 'string' }),
+	status: text("status").default('sending').notNull(),
+	subject_uri: text("subject_uri").notNull(),
+},
+(table) => {
+	return {
+		notification_email_deliveries_pkey: primaryKey({ columns: [table.identity, table.publication, table.notification_type, table.subject_uri], name: "notification_email_deliveries_pkey"}),
+		publication_idx: index("notification_email_deliveries_publication_idx").on(table.publication),
+	}
+});
+
 export const notification_preferences = pgTable("notification_preferences", {
 	channel: text("channel").default('email').notNull(),
+	comments_enabled_at: timestamp("comments_enabled_at", { withTimezone: true, mode: 'string' }),
 	digest_frequency: text("digest_frequency"),
 	enabled_types: text("enabled_types").default('{}').array().notNull(),
 	identity: uuid("identity").notNull().references(() => identities.id, { onDelete: "cascade" } ),
