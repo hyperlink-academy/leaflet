@@ -10,6 +10,7 @@ import { useActionToast } from "components/useActionToast";
 import { usePostEditLink } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/usePostEditLink";
 import {
   askQuestion,
+  editQuestion,
   getDocumentQuestions,
   setQuestionState,
   withdrawQuestion,
@@ -47,6 +48,7 @@ const questionErrorMessages: Partial<Record<QuestionError["type"], string>> = {
   questions_closed: "This post isn't taking questions.",
   not_follows: "Only people the author follows can ask here.",
   not_follower: "Only the author's followers can ask here.",
+  answered: "This question has been answered, so it can't be edited.",
 };
 
 // Questions on a published document, for whoever is looking: the document's
@@ -145,6 +147,26 @@ export function DocumentQuestions(props: {
     if (typeof window === "undefined") return;
     return new URL(pathname, window.location.origin).toString();
   }, [pathname]);
+  let edit = async (uri: string, text: FacetedText) => {
+    if (!(await run(() => editQuestion({ uri, ...text })))) return false;
+    await mutate(
+      (current) =>
+        current && {
+          ...current,
+          questions: current.questions.map((q) =>
+            q.uri === uri
+              ? {
+                  ...q,
+                  plaintext: text.plaintext,
+                  facets: text.facets.length > 0 ? text.facets : undefined,
+                }
+              : q,
+          ),
+        },
+      { revalidate: false },
+    );
+    return true;
+  };
   let withdraw = async (uri: string) => {
     if (await run(() => withdrawQuestion(uri)))
       await mutate(
@@ -208,6 +230,7 @@ export function DocumentQuestions(props: {
     <QuestionsList
       questions={questions}
       onWithdraw={withdraw}
+      onEdit={edit}
       renderAnswer={publishedAnswer}
       action={
         identityPending ? (

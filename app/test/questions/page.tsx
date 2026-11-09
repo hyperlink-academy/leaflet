@@ -17,6 +17,7 @@ import {
 } from "components/Blocks/QuestionsBlock/QuestionsView";
 import { LimitedLeafletComposer } from "components/Composer/LimitedLeafletComposer";
 import { PublishedAnswer } from "components/Blocks/QuestionsBlock/PublishedAnswer";
+import type { FacetedText } from "components/Composer/facetedText";
 
 const VIEWER = "did:plc:viewer";
 const AUTHOR = "did:plc:author";
@@ -181,6 +182,13 @@ function Playground() {
   let pending = questions.filter((q) => !q.answer).length;
   let withdraw = (uri: string) =>
     setQuestions((qs) => qs.filter((q) => q.uri !== uri));
+  let edit = async (uri: string, text: FacetedText) => {
+    await new Promise((r) => setTimeout(r, 400));
+    setQuestions((qs) =>
+      qs.map((q) => (q.uri === uri ? { ...q, ...text } : q)),
+    );
+    return true;
+  };
   let publish = (uri: string) => {
     let text = drafts[uri]?.trim();
     if (!text) return alert("Write an answer first.");
@@ -244,6 +252,7 @@ function Playground() {
       <QuestionsList
         questions={shown}
         onWithdraw={withdraw}
+        onEdit={edit}
         renderAnswer={renderPublished}
         action={
           viewer === "reader" ? (
@@ -421,6 +430,7 @@ export default function QuestionsTestPage() {
         <QuestionsList
           questions={[...answered, all[2], mineAnswered, mine]}
           onWithdraw={noop}
+          onEdit={async () => true}
           renderAnswer={renderPublished}
           action={
             <QuestionComposer

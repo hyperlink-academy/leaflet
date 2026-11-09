@@ -5,13 +5,14 @@ import { Avatar } from "components/Avatar";
 import { Separator } from "components/Layout";
 import { InfoSmall } from "components/Icons/InfoSmall";
 import { LoginModal } from "components/LoginButton";
-import { ButtonPrimary } from "components/Buttons";
+import { ButtonTertiary } from "components/Buttons";
 import { BaseTextBlock } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
 import { ComposerSubmit } from "components/Composer";
 import { TextComposer } from "components/Composer/TextComposer";
 import {
   docToFacetedText,
+  facetedTextToDoc,
   type FacetedText,
 } from "components/Composer/facetedText";
 import type { DocumentQuestion, QuestionState } from "src/documentQuestions";
@@ -259,6 +260,8 @@ export function QuestionRow(props: {
   showHandle?: boolean;
   answer?: React.ReactNode;
   actions?: React.ReactNode;
+  // Replaces the question's text while the asker edits it
+  editor?: React.ReactNode;
 }) {
   return (
     <div className="questionRow flex flex-col">
@@ -270,17 +273,19 @@ export function QuestionRow(props: {
           trailing={props.actions}
           continues={!!props.answer}
         >
-          <pre
-            style={{ wordBreak: "break-word", fontFamily: "inherit" }}
-            className="whitespace-pre-wrap text-primary"
-          >
-            <BaseTextBlock
-              index={[]}
-              plaintext={props.question.plaintext}
-              facets={props.question.facets}
-              ugcLinks
-            />
-          </pre>
+          {props.editor ?? (
+            <pre
+              style={{ wordBreak: "break-word", fontFamily: "inherit" }}
+              className="whitespace-pre-wrap text-primary"
+            >
+              <BaseTextBlock
+                index={[]}
+                plaintext={props.question.plaintext}
+                facets={props.question.facets}
+                ugcLinks
+              />
+            </pre>
+          )}
         </ThreadEntry>
       </div>
       {props.answer}
@@ -340,8 +345,12 @@ export function QuestionsList(props: {
   action?: React.ReactNode;
   renderAnswer: RenderAnswer;
   onWithdraw?: (uri: string) => void;
+  // Resolves true once the edit is saved
+  onEdit?: (uri: string, text: FacetedText) => Promise<boolean>;
 }) {
-  let { onWithdraw } = props;
+  let { onWithdraw, onEdit } = props;
+  // The viewer's question being edited
+  let [editing, setEditing] = useState<string | null>(null);
   let others = props.questions.filter((q) => !q.mine);
   let ordered = [
     ...props.questions.filter((q) => q.mine),
@@ -355,18 +364,74 @@ export function QuestionsList(props: {
         questions={ordered}
         showHandles={showHandlesFor(props.questions)}
         renderAnswer={props.renderAnswer}
-        renderControls={(question) => [
-          onWithdraw && question.mine && !question.answer && (
-            <QuestionAction
-              aria-label="Withdraw question"
-              onClick={() => onWithdraw(question.uri)}
-            >
-              Withdraw
-            </QuestionAction>
-          ),
-        ]}
+        renderEditor={(question) =>
+          onEdit &&
+          editing === question.uri && (
+            <QuestionEditor
+              question={question}
+              onCancel={() => setEditing(null)}
+              onSubmit={async (text) => {
+                if (await onEdit(question.uri, text)) setEditing(null);
+              }}
+            />
+          )
+        }
+        renderControls={(question) =>
+          question.mine && !question.answer && editing !== question.uri
+            ? [
+                onEdit && (
+                  <QuestionAction
+                    aria-label="Edit question"
+                    onClick={() => setEditing(question.uri)}
+                  >
+                    Edit
+                  </QuestionAction>
+                ),
+                onWithdraw && (
+                  <QuestionAction
+                    aria-label="Withdraw question"
+                    onClick={() => onWithdraw(question.uri)}
+                  >
+                    Withdraw
+                  </QuestionAction>
+                ),
+              ]
+            : []
+        }
       />
     </div>
+  );
+}
+
+// The asker's question, rewritten in place
+function QuestionEditor(props: {
+  question: DocumentQuestion;
+  onCancel: () => void;
+  onSubmit: (text: FacetedText) => Promise<void>;
+}) {
+  let [initialDoc] = useState(() =>
+    facetedTextToDoc(props.question.plaintext, props.question.facets ?? []),
+  );
+  return (
+    <TextComposer
+      className="pt-1"
+      mentions
+      autoFocus
+      initialDoc={initialDoc}
+      onCancel={props.onCancel}
+      onSubmit={async (doc) => {
+        await props.onSubmit(docToFacetedText(doc));
+        return false;
+      }}
+      actions={
+        <>
+          <ButtonTertiary compact onClick={props.onCancel}>
+            Cancel
+          </ButtonTertiary>
+          <ComposerSubmit>Update</ComposerSubmit>
+        </>
+      }
+    />
   );
 }
 
@@ -479,6 +544,7 @@ function QuestionRows(props: {
   questions: DocumentQuestion[];
   showHandles?: boolean;
   renderAnswer: RenderAnswer;
+  renderEditor?: (question: DocumentQuestion) => React.ReactNode;
   renderControls: (question: DocumentQuestion) => React.ReactNode[];
 }) {
   if (props.questions.length === 0) return null;
@@ -493,6 +559,7 @@ function QuestionRows(props: {
               question={question}
               showHandle={props.showHandles}
               answer={props.renderAnswer(question, props.showHandles)}
+              editor={props.renderEditor?.(question) || undefined}
               actions={
                 controls.length > 0 && (
                   <ActionsBox>

@@ -69,6 +69,7 @@ export type QuestionError =
         | "not_follows"
         | "not_follower"
         | "not_owner"
+        | "answered"
         | "failed";
     }
   | OAuthSessionError;
@@ -171,6 +172,78 @@ export async function askQuestion(args: {
       document_uri: args.subject,
     });
   return Ok({ uri });
+}
+
+// Rewrites the viewer's own question, while it's unanswered: an answer
+// references the exact version of the question it answers.
+export async function editQuestion(args: {
+  uri: string;
+  plaintext: string;
+  facets: PubLeafletRichtextFacet.Main[];
+}): Promise<Result<null, QuestionError>> {
+  const identity = await getAuthIdentity();
+  if (!identity?.atp_did) return Err(notAuthenticated);
+  let uri: AtUri;
+  try {
+    uri = new AtUri(args.uri);
+  } catch {
+    return Err({ type: "not_owner" });
+  }
+  if (
+    uri.host !== identity.atp_did ||
+    uri.collection !== ids.PubLeafletInteractionsQuestion
+  )
+    return Err({ type: "not_owner" });
+  if (!args.plaintext.trim()) return Err({ type: "empty" });
+
+  const { data: row } = await supabaseServerClient
+    .from("document_questions")
+    .select("subject, cid, record, document_question_answers(uri)")
+    .eq("uri", args.uri)
+    .maybeSingle();
+  if (!row) return Err({ type: "not_found" });
+  if (row.document_question_answers) return Err({ type: "answered" });
+
+  const previous =
+    row.record as unknown as PubLeafletInteractionsQuestion.Record;
+  const record: PubLeafletInteractionsQuestion.Record = {
+    ...previous,
+    plaintext: args.plaintext,
+    facets: args.facets.length > 0 ? args.facets : undefined,
+  };
+  if (!PubLeafletInteractionsQuestion.validateRecord(record).success)
+    return Err({ type: "failed" });
+
+  const agent = await agentFor(identity.atp_did);
+  if (!agent.ok) return Err(agent.error);
+  let cid: string;
+  try {
+    const put = await agent.value.com.atproto.repo.putRecord({
+      repo: uri.host,
+      collection: uri.collection,
+      rkey: uri.rkey,
+      record,
+      // Fails if the record changed since it was read, e.g. edited elsewhere
+      swapRecord: row.cid,
+      validate: false,
+    });
+    cid = put.data.cid;
+  } catch (e) {
+    console.error("[questions] question putRecord failed", e);
+    return Err({ type: "failed" });
+  }
+  const { error } = await supabaseServerClient
+    .from("document_questions")
+    .update({ cid, record: record as unknown as Json })
+    .eq("uri", args.uri);
+  if (error) {
+    console.error("[questions] question row update failed", error);
+    return Err({ type: "failed" });
+  }
+  await broadcastDocumentEvent(supabaseServerClient, "question", row.subject);
+  // A shown question was server-rendered into the post's pages.
+  await revalidateDocumentPaths(row.subject, { neighbours: false });
+  return Ok(null);
 }
 
 export async function withdrawQuestion(
