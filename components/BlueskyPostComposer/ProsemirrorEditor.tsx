@@ -9,7 +9,7 @@ import { keymap } from "prosemirror-keymap";
 import { history, undo, redo } from "prosemirror-history";
 import { inputRules, InputRule } from "prosemirror-inputrules";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
-import { IOSBS } from "components/FacetedTextComposer";
+import { IOSBS } from "components/Composer/TextComposer";
 import { Mention, MentionAutocomplete } from "components/Mention";
 import {
   loadDraftDoc,

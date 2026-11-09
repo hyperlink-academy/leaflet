@@ -16,7 +16,7 @@ import { addBlockBelow, focusNewTextBlock } from "src/utils/addBlockBelow";
 import { useIsBlockSelected, useUIState } from "src/useUIState";
 import { addBlueskyPostBlock, addLinkBlock } from "src/utils/addLinkBlock";
 import { BlockCommandBar } from "components/Blocks/BlockCommandBar";
-import { useInAnswer } from "./useInAnswer";
+import { useIsLimited } from "./useIsLimited";
 import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { TooltipButton } from "components/Buttons";
@@ -365,7 +365,7 @@ const TextBlockOverlays = (
   let textContent = useEditorStates(
     (s) => s.editorStates[props.entityID]?.editor.doc.textContent,
   );
-  let inAnswer = useInAnswer(props.parent);
+  let isLimited = useIsLimited();
   if (textContent === undefined) return null;
   return (
     <>
@@ -394,12 +394,12 @@ const TextBlockOverlays = (
             or type &quot;/&quot; to add a block
           </div>
         </div>
-      ) : textContent.length === 0 && props.focused && !inAnswer ? (
+      ) : textContent.length === 0 && props.focused ? (
         // if not the only block on page but is the block is empty and selected, but NOT multiselected show add button
         <CommandOptions {...props} className={props.className} />
       ) : null}
 
-      {textContent.startsWith("/") && props.selected && !inAnswer && (
+      {textContent.startsWith("/") && props.selected && !isLimited && (
         <BlockCommandBar props={props} searchValue={textContent.slice(1)} />
       )}
     </>
@@ -482,7 +482,7 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
 
   return (
     <div
-      className={`absolute top-0 right-0 w-fit flex gap-[6px] items-center font-bold  rounded-md  text-sm text-border ${props.pageType === "canvas" && "mr-[6px]"}`}
+      className={`newLineActions absolute  top-0 right-0 w-fit flex gap-[6px] items-center font-bold  rounded-md  text-sm text-border ${props.pageType === "canvas" && "mr-[6px]"}`}
     >
       <TooltipButton
         className={props.className}

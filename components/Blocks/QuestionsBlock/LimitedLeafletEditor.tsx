@@ -2,21 +2,18 @@
 import { useEffect, useState } from "react";
 import { v5, v7 } from "uuid";
 import { Blocks } from "components/Blocks";
-import { blockCommands } from "components/Blocks/BlockCommands";
-import { BlockImageSmall } from "components/Icons/BlockImageSmall";
-import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
-import { ToolbarButton } from "components/Toolbar";
-import { TextMarkButtons } from "components/Toolbar/TextToolbar";
+import type { ComposerEditor } from "components/Composer";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useToaster } from "components/Toast";
 import { useActionToast } from "components/useActionToast";
 import { useEntity, useReplicache } from "src/replicache";
 import { registerBlockGroup } from "src/utils/blockGroups";
 import { flushPendingTextWrites } from "components/Blocks/TextBlock/useCollabText";
+import { IsLimitedContext } from "components/Blocks/TextBlock/useIsLimited";
 import { publishAnswer, type QuestionError } from "actions/questions";
-import { AnswerEditorFrame } from "./QuestionsView";
+import { LimitedLeafletComposer } from "components/Composer/LimitedLeafletComposer";
 
 // A question's answer entity is named after it, so nothing has to be looked
 // up to find the draft (or know there isn't one).
@@ -51,9 +48,10 @@ const publishErrorMessages: Partial<Record<QuestionError["type"], string>> = {
 };
 
 // The author's answer, edited in place under the question with the leaflet's
-// own block editor. The entity stays after publishing so the answer can be
-// edited again.
-export function AnswerEditor(props: {
+// own block editor, limited (see useIsLimited) and in the composer's chrome.
+// Drafts live in the leaflet, so they sync across devices and editors. The
+// entity stays after publishing so the answer can be edited again.
+export function LimitedLeafletEditor(props: {
   blockEntity: string;
   question: string;
   // The page the questions block is on: keyboard and focus handling resolve
@@ -96,71 +94,36 @@ export function AnswerEditor(props: {
     });
     props.onClose();
   };
+  let editor = useFocusedEditorIn(answerEntity);
   return (
-    <AnswerEditorFrame
-      tools={<AnswerTools answerEntity={answerEntity} />}
+    <LimitedLeafletComposer
+      editor={editor}
       publishing={publishing}
       onPublish={publish}
       onClear={clear}
     >
-      <Blocks entityID={answerEntity} group />
-    </AnswerEditorFrame>
+      {/* Blocks pad themselves for a page; pull them back to the name line.
+          Answers don't get the add-block buttons on empty lines either. */}
+      <div className="-mx-3 sm:-mx-4 [&_.newLineActions]:hidden">
+        <IsLimitedContext.Provider value={true}>
+          <Blocks entityID={answerEntity} group />
+        </IsLimitedContext.Provider>
+      </div>
+    </LimitedLeafletComposer>
   );
 }
 
-// The image and formatting buttons beside the answer's publish button, in
-// place of the block editor's "/" menu and empty-line buttons.
-function AnswerTools(props: { answerEntity: string }) {
-  let { rep, undoManager } = useReplicache();
-  let { set } = useEntitySetContext();
-  let blocks = useBlocks(props.answerEntity);
+// The editor of the answer's block being typed in, for the composer's
+// formatting buttons
+function useFocusedEditorIn(answerEntity: string): ComposerEditor | null {
   let focused = useUIState((s) =>
     s.focusedEntity?.entityType === "block" &&
-    s.focusedEntity.parent === props.answerEntity
+    s.focusedEntity.parent === answerEntity
       ? s.focusedEntity.entityID
       : null,
   );
-  // The block menu's Image command, on the line being edited (or the last
-  // one): an empty line becomes the image, otherwise it goes below.
-  let addImage = async () => {
-    if (!rep) return;
-    let roots = blocks.filter((b) => !b.listData || b.listData.depth === 1);
-    let i = roots.findIndex((b) => b.entityID === focused);
-    if (i === -1) i = roots.length - 1;
-    let target = roots[i];
-    let emptyLine =
-      target?.type === "text" &&
-      !target.listData &&
-      !useEditorStates.getState().editorStates[target.entityID]?.editor.doc
-        .textContent;
-    await blockCommands
-      .find((c) => c.name === "Image")
-      ?.onSelect(
-        rep,
-        {
-          parent: props.answerEntity,
-          entityID: emptyLine && target ? target.entityID : null,
-          position: target?.position ?? null,
-          nextPosition: roots[i + 1]?.position ?? null,
-          entity_set: set,
-        },
-        undoManager,
-      );
-  };
-  return (
-    <div className="flex items-center gap-0.5">
-      <ToolbarButton
-        tooltipContent={<div className="font-bold">Add an Image</div>}
-        onClick={addImage}
-      >
-        <BlockImageSmall />
-      </ToolbarButton>
-      {/* They act on the focused block, which has to be one of the answer's */}
-      <div
-        className={`flex items-center gap-0.5 ${focused ? "" : "opacity-50 pointer-events-none"}`}
-      >
-        <TextMarkButtons />
-      </div>
-    </div>
+  let editor = useEditorStates((s) =>
+    focused ? s.editorStates[focused] : undefined,
   );
+  return editor ? { state: editor.editor, view: editor.view } : null;
 }

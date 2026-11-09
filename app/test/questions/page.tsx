@@ -4,7 +4,6 @@ import { ButtonSecondary } from "components/Buttons";
 import type { DocumentQuestion, QuestionState } from "src/documentQuestions";
 import { DEFAULT_QUESTIONS_BUTTON_TEXT } from "components/Blocks/QuestionsBlock/constants";
 import {
-  AnswerEditorFrame,
   PublicQuestionNotice,
   QuestionAction,
   QuestionAnswer,
@@ -16,13 +15,8 @@ import {
   QuestionsModeration,
   SignInToAsk,
 } from "components/Blocks/QuestionsBlock/QuestionsView";
+import { LimitedLeafletComposer } from "components/Composer/LimitedLeafletComposer";
 import { PublishedAnswer } from "components/Blocks/QuestionsBlock/PublishedAnswer";
-import { BlockImageSmall } from "components/Icons/BlockImageSmall";
-import {
-  BoldSmall,
-  ItalicSmall,
-  StrikethroughSmall,
-} from "components/Toolbar/TextToolbar";
 
 const VIEWER = "did:plc:viewer";
 const AUTHOR = "did:plc:author";
@@ -138,18 +132,8 @@ const renderPublished = (q: DocumentQuestion) =>
 const renderInEditor = (q: DocumentQuestion) =>
   q.answer ? <PublishedAnswer answer={q.answer} /> : null;
 
-// The real tools act on the block editor's focused block.
-const fakeTools = (
-  <div className="flex items-center gap-0.5 text-secondary">
-    <BlockImageSmall />
-    <BoldSmall />
-    <ItalicSmall />
-    <StrikethroughSmall />
-  </div>
-);
-
 // Stands in for the leaflet block editor, which needs replicache.
-function FakeAnswerEditor(props: {
+function FakeLimitedLeafletEditor(props: {
   value: string;
   onChange: (v: string) => void;
   onPublish: () => void;
@@ -157,19 +141,19 @@ function FakeAnswerEditor(props: {
 }) {
   return (
     <QuestionAnswer author={AUTHOR_PROFILE}>
-      <AnswerEditorFrame
-        tools={fakeTools}
+      <LimitedLeafletComposer
+        editor={null}
         onPublish={props.onPublish}
         onClear={props.onClear}
       >
         <textarea
-          className="w-full px-3 sm:px-4 bg-transparent outline-none resize-none"
+          className="w-full bg-transparent outline-none resize-none"
           rows={3}
           placeholder="Write your answer with the full block editor…"
           value={props.value}
           onChange={(e) => props.onChange(e.currentTarget.value)}
         />
-      </AnswerEditorFrame>
+      </LimitedLeafletComposer>
     </QuestionAnswer>
   );
 }
@@ -227,7 +211,7 @@ function Playground() {
         onSetState={setState}
         renderAnswer={(q) =>
           q.uri in drafts ? (
-            <FakeAnswerEditor
+            <FakeLimitedLeafletEditor
               value={drafts[q.uri]}
               onChange={(v) => setDrafts((d) => ({ ...d, [q.uri]: v }))}
               onPublish={() => publish(q.uri)}
@@ -398,15 +382,15 @@ export default function QuestionsTestPage() {
           renderAnswer={(q) =>
             q.uri === all[2].uri ? (
               <QuestionAnswer author={AUTHOR_PROFILE}>
-                <AnswerEditorFrame
-                  tools={fakeTools}
+                <LimitedLeafletComposer
+                  editor={null}
                   onPublish={noop}
                   onClear={noop}
                 >
-                  <div className="px-3 sm:px-4 text-tertiary italic">
+                  <div className="text-tertiary italic">
                     The leaflet block editor mounts here.
                   </div>
-                </AnswerEditorFrame>
+                </LimitedLeafletComposer>
               </QuestionAnswer>
             ) : (
               renderInEditor(q)

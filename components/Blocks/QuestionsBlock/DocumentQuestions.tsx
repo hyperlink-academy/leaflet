@@ -23,7 +23,7 @@ import type {
 import type { QuestionsAudience } from "src/questionsAudience";
 import type { InteractionAuthor } from "src/interactionAuthor";
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
-import { ComposerPlaceholder } from "components/FacetedTextComposer";
+import { ComposerPlaceholder } from "components/Composer";
 import {
   QuestionAction,
   QuestionAnswer,
@@ -34,12 +34,12 @@ import {
   SignInToAsk,
 } from "./QuestionsView";
 import { PublishedAnswer } from "./PublishedAnswer";
-import type { FacetedText } from "components/FacetedTextComposer";
+import type { FacetedText } from "components/Composer/facetedText";
 import {
-  AnswerEditor,
+  LimitedLeafletEditor,
   useHasAnswerDraft,
   useStartAnswer,
-} from "./AnswerEditor";
+} from "./LimitedLeafletEditor";
 
 const questionErrorMessages: Partial<Record<QuestionError["type"], string>> = {
   not_found: "We couldn't find that post.",
@@ -81,6 +81,15 @@ export function DocumentQuestions(props: {
 }) {
   let { identity, identityPending } = useIdentityData();
   let viewer = identity?.atp_did ?? null;
+  // Shown beside the composer, and on the answer the viewer is writing
+  let viewerAuthor: InteractionAuthor | null = viewer
+    ? {
+        did: viewer,
+        handle: identity?.bsky_profiles?.handle ?? null,
+        displayName: identity?.bsky_profiles?.record.displayName ?? null,
+        avatar: identity?.bsky_profiles?.record.avatar ?? null,
+      }
+    : null;
   // An anonymous reader of a cached page has nothing to add to the public
   // list it was rendered with, until something happens to it.
   let [changed, setChanged] = useState(false);
@@ -162,14 +171,6 @@ export function DocumentQuestions(props: {
     );
     if (!data) return preview;
     let isAuthor = data.isAuthor;
-    let answerer: InteractionAuthor | null = viewer
-      ? {
-          did: viewer,
-          handle: identity?.bsky_profiles?.handle ?? null,
-          displayName: identity?.bsky_profiles?.record.displayName ?? null,
-          avatar: identity?.bsky_profiles?.record.avatar ?? null,
-        }
-      : null;
     return (
       <QuestionsModeration
         questions={questions}
@@ -177,9 +178,9 @@ export function DocumentQuestions(props: {
         busy={busy}
         onSetState={isAuthor ? setState : undefined}
         renderAnswer={(q, showHandle) =>
-          editing.has(q.uri) && answerer ? (
-            <QuestionAnswer author={answerer} showHandle={showHandle}>
-              <AnswerEditor
+          editing.has(q.uri) && viewerAuthor ? (
+            <QuestionAnswer author={viewerAuthor} showHandle={showHandle}>
+              <LimitedLeafletEditor
                 blockEntity={editor.blockEntity}
                 question={q.uri}
                 page={editor.page}
@@ -243,6 +244,7 @@ export function DocumentQuestions(props: {
           <ComposerPlaceholder className="min-h-20!" />
         ) : viewer ? (
           <QuestionComposer
+            asker={viewerAuthor}
             draftKey={`question:${props.documentUri}${props.block ? `:${props.block}` : ""}`}
             submitLabel={props.buttonText}
             audience={props.audience}

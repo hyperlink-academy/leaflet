@@ -32,14 +32,14 @@ type PropsRef = RefObject<
   BlockProps & {
     entity_set: { set: string };
     alignment: Fact<"block/text-alignment">["data"]["value"];
-    inAnswer: boolean;
+    isLimited: boolean;
   }
 >;
 
 // A line starting with "/" opens the block menu, which takes the arrow and
-// Enter keys itself. Answers have no block menu.
+// Enter keys itself. A LimitedLeafletEditor has no block menu.
 const blockMenuOpen = (state: EditorState, propsRef: PropsRef) =>
-  !propsRef.current.inAnswer && state.doc.textContent.startsWith("/");
+  !propsRef.current.isLimited && state.doc.textContent.startsWith("/");
 export const TextBlockKeymap = (
   propsRef: PropsRef,
   repRef: RefObject<Replicache<ReplicacheMutators> | null>,

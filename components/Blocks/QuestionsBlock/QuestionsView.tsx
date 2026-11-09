@@ -1,18 +1,18 @@
 "use client";
 import React, { Fragment, useState } from "react";
-import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { Popover } from "components/Popover";
 import { Avatar } from "components/Avatar";
 import { Separator } from "components/Layout";
 import { InfoSmall } from "components/Icons/InfoSmall";
-import { ShareTiny } from "components/Icons/ShareTiny";
 import { LoginModal } from "components/LoginButton";
 import { BaseTextBlock } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
+import { ComposerSubmit } from "components/Composer";
+import { TextComposer } from "components/Composer/TextComposer";
 import {
-  FacetedTextComposer,
+  docToFacetedText,
   type FacetedText,
-} from "components/FacetedTextComposer";
+} from "components/Composer/facetedText";
 import type { DocumentQuestion, QuestionState } from "src/documentQuestions";
 import type { InteractionAuthor } from "src/interactionAuthor";
 import {
@@ -68,11 +68,10 @@ export function PublicQuestionNotice(props: {
         </button>
       }
     >
-      Questions are public. Yours is posted to your account, where anyone can
-      see it,{" "}
+      Your question
       {props.showPending
-        ? "and appears here unless the author hides it."
-        : "and appears here once the author accepts or answers it."}
+        ? " will appear here unless the author hides it."
+        : " will appear here once the author answers it."}
       {restriction && <div className="pt-2">{restriction}</div>}
     </Popover>
   );
@@ -86,6 +85,8 @@ function AudienceNotice(props: { audience?: QuestionsAudience }) {
 }
 
 export function QuestionComposer(props: {
+  // Beside the button, as on comments
+  asker?: InteractionAuthor | null;
   draftKey: string | null;
   submitLabel?: string;
   autoFocus?: boolean;
@@ -94,19 +95,29 @@ export function QuestionComposer(props: {
   onSubmit: (text: FacetedText) => Promise<boolean>;
 }) {
   return (
-    <FacetedTextComposer
+    <TextComposer
       draftKey={props.draftKey}
+      mentions
       autoFocus={props.autoFocus}
       inputClassName="min-h-20!"
-      submitLabel={props.submitLabel || DEFAULT_QUESTIONS_BUTTON_TEXT}
-      onSubmit={props.onSubmit}
-      trailing={
+      onSubmit={(doc) => props.onSubmit(docToFacetedText(doc))}
+      actions={
         <>
           <AudienceNotice audience={props.audience} />
           <PublicQuestionNotice
             audience={props.audience}
             showPending={props.showPending}
           />
+          {props.asker && (
+            <Avatar
+              src={props.asker.avatar}
+              displayName={authorDisplayName(props.asker)}
+              size="small"
+            />
+          )}
+          <ComposerSubmit>
+            {props.submitLabel || DEFAULT_QUESTIONS_BUTTON_TEXT}
+          </ComposerSubmit>
         </>
       }
     />
@@ -121,7 +132,7 @@ export function QuestionComposerPreview(props: {
 }) {
   return (
     <div className="flex flex-col grow">
-      <div className="commentInput border input-with-border min-h-20 px-2 py-[6px] text-tertiary italic">
+      <div className="composerInput border input-with-border min-h-20 px-2 py-[6px] text-tertiary italic">
         Readers write their question here…
       </div>
       <div className="flex justify-end items-center gap-2 pt-1">
@@ -311,41 +322,6 @@ export function QuestionAction(
       } ${className ?? ""}`}
       {...rest}
     />
-  );
-}
-
-export function AnswerEditorFrame(props: {
-  children: React.ReactNode;
-  tools?: React.ReactNode;
-  publishing?: boolean;
-  onPublish: () => void;
-  onClear: () => void;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      {/* Blocks pad themselves for a page; pull them back to the name line */}
-      <div className="answerEditor -mx-3 sm:-mx-4">{props.children}</div>
-      <div className="flex items-center gap-2">
-        {props.tools}
-        <ButtonTertiary
-          compact
-          className="text-sm ml-auto"
-          disabled={props.publishing}
-          onClick={props.onClear}
-        >
-          Clear
-        </ButtonTertiary>
-        <ButtonPrimary
-          compact
-          className="text-sm"
-          disabled={props.publishing}
-          onClick={props.onPublish}
-        >
-          {props.publishing ? "Publishing…" : "Publish"}
-          <ShareTiny />
-        </ButtonPrimary>
-      </div>
-    </div>
   );
 }
 
