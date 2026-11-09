@@ -5,6 +5,7 @@ import { Avatar } from "components/Avatar";
 import { Separator } from "components/Layout";
 import { InfoSmall } from "components/Icons/InfoSmall";
 import { LoginModal } from "components/LoginButton";
+import { ButtonPrimary } from "components/Buttons";
 import { BaseTextBlock } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
 import { ComposerSubmit } from "components/Composer";
@@ -149,25 +150,31 @@ export function QuestionComposerPreview(props: {
 }
 
 // Readers without an Atmosphere account sign in (or link one) before they
-// can ask; the same box the comments drawer shows.
+// can ask.
 export function SignInToAsk(props: {
   // Signed in, but without an Atmosphere account
   linkAccount?: boolean;
   redirectRoute?: string;
+  // Stands in for the button that opens the login modal
   trigger?: React.ReactNode;
 }) {
   return (
-    <div className="w-full accent-container text-tertiary text-center italic p-3">
-      <span className="text-accent-contrast font-bold">
+    <div className="w-full accent-container flex text-center justify-center gap-2 sm:p-4 p-3 text-tertiary italic text-sm ">
+      <div>
         {props.trigger ?? (
           <LoginModal
+            asChild
             noEmailLogin
-            trigger={props.linkAccount ? "Link" : "Log in"}
             redirectRoute={props.redirectRoute}
+            trigger={
+              <button className="shrink-0 text-accent-contrast font-bold">
+                {props.linkAccount ? "Link " : "Log in"}
+              </button>
+            }
           />
-        )}
-      </span>{" "}
-      {props.linkAccount ? "" : "with "}an Atmosphere account to ask a question
+        )}{" "}
+        {!props.linkAccount && "with"} an Atmosphere account to ask a question!
+      </div>
     </div>
   );
 }

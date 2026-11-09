@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { ButtonSecondary } from "components/Buttons";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import type { DocumentQuestion, QuestionState } from "src/documentQuestions";
 import { DEFAULT_QUESTIONS_BUTTON_TEXT } from "components/Blocks/QuestionsBlock/constants";
 import {
@@ -270,7 +270,9 @@ function Playground() {
           ) : (
             <SignInToAsk
               trigger={
-                <button onClick={() => setViewer("reader")}>Log in</button>
+                <ButtonPrimary compact onClick={() => setViewer("reader")}>
+                  Log in
+                </ButtonPrimary>
               }
             />
           )
