@@ -183,7 +183,7 @@ describe("test digest delivery", () => {
     expect(body(1).TextBody).toContain("Subscribers: +2 since starting");
   });
 
-  it("keeps ambiguous deliveries pending and blocks a duplicate send", async () => {
+  it("blocks a duplicate send after an ambiguous delivery", async () => {
     fetchMock.mockRejectedValueOnce(new Error("Connection lost"));
     expect(await sendDigest(args())).toEqual({
       ok: false,
