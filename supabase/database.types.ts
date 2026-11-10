@@ -2917,6 +2917,12 @@ export type Database = {
           uri: string
         }[]
       }
+      has_comment_email_recipients: {
+        Args: {
+          p_comment_uri: string
+        }
+        Returns: boolean
+      }
       log_subscriber_events: {
         Args: {
           p_events: Json

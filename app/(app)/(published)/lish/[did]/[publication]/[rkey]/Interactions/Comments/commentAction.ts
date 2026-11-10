@@ -21,7 +21,7 @@ import {
 import { tombstoneComment } from "src/comments/tombstoneComment";
 import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
 import { trackUserEvent } from "src/activeUserAnalytics";
-import { queueToSendEmailOn } from "src/notificationEmails/queueToSendEmailOn";
+import { enqueueEmailNotification } from "src/notificationEmails/enqueueEmailNotification";
 
 type PublishCommentResult =
   | { success: true; record: Json; profile: any; uri: string }
@@ -98,7 +98,10 @@ export async function publishComment(args: {
     .select();
   await broadcastDocumentEvent(supabaseServerClient, "comment", args.document);
   if (!error)
-    await queueToSendEmailOn({ type: "comments", subjectUri: uri.toString() });
+    await enqueueEmailNotification(
+      { type: "comments", subjectUri: uri.toString() },
+      supabaseServerClient,
+    );
   trackUserEvent(identity, "comment", {
     document: args.document,
     record_uri: uri.toString(),

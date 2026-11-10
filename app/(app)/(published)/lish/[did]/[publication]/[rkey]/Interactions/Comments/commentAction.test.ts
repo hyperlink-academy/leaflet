@@ -32,8 +32,8 @@ vi.mock("src/documentEvents/broadcast", () => ({
   broadcastDocumentEvent: vi.fn(),
 }));
 vi.mock("src/activeUserAnalytics", () => ({ trackUserEvent: vi.fn() }));
-vi.mock("src/notificationEmails/queueToSendEmailOn", () => ({
-  queueToSendEmailOn: queue,
+vi.mock("src/notificationEmails/enqueueEmailNotification", () => ({
+  enqueueEmailNotification: queue,
 }));
 import { publishComment } from "./commentAction";
 
@@ -71,6 +71,7 @@ describe("publishComment profile metadata", () => {
     expect(insert).toHaveBeenCalled();
     expect(queue).toHaveBeenCalledWith(
       expect.objectContaining({ type: "comments" }),
+      expect.anything(),
     );
   });
 

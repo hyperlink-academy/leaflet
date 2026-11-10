@@ -89,6 +89,22 @@ CREATE INDEX notification_history_publication_idx ON public.notification_history
 CREATE INDEX notification_history_digest_period_idx ON public.notification_history
   (identity, publication, channel, notification_type, mode, period_end DESC);
 
+-- Coarse opt-in check run before queueing a comment email, so comments nobody
+-- asked to be emailed about never reach the queue. The sender rechecks recipients.
+CREATE FUNCTION public.has_comment_email_recipients(p_comment_uri text)
+RETURNS boolean LANGUAGE sql STABLE SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM comments_on_documents c
+    JOIN documents_in_publications dip ON dip.document = c.document
+    JOIN notification_preferences pref
+      ON pref.publication = dip.publication AND pref.channel = 'email'
+    WHERE c.uri = p_comment_uri AND 'comments' = ANY(pref.enabled_types)
+  );
+$$;
+REVOKE ALL ON FUNCTION public.has_comment_email_recipients(text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.has_comment_email_recipients(text) TO service_role;
+
 -- Leaflet authenticates with its own cookies; only authorized server actions
 -- use the service role. Browser Supabase roles have no direct access.
 ALTER TABLE public.notification_preferences ENABLE ROW LEVEL SECURITY;

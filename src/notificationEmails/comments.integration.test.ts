@@ -223,3 +223,29 @@ describe("instant comment emails", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("has_comment_email_recipients", () => {
+  const anyRecipients = async (uri = comment) =>
+    (
+      await pool.query("SELECT has_comment_email_recipients($1) AS wanted", [
+        uri,
+      ])
+    ).rows[0].wanted;
+
+  it("is false until the publication has opted into comment emails", async () => {
+    expect(await anyRecipients()).toBe(false);
+    await set("comments", "instant");
+    expect(await anyRecipients()).toBe(true);
+    await set("comments", "off");
+    expect(await anyRecipients()).toBe(false);
+  });
+
+  it("ignores a digest-only opt-in and unknown comments", async () => {
+    await set("digest", "daily");
+    expect(await anyRecipients()).toBe(false);
+    await set("comments", "instant");
+    expect(
+      await anyRecipients("at://did:plc:nobody/pub.leaflet.comment/x"),
+    ).toBe(false);
+  });
+});

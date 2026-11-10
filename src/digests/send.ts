@@ -77,22 +77,24 @@ async function claimDigestPeriod(
       );
       if (!rows.length) return Ok(null);
     }
-    const { rows: pending } = await db.query(
-      "SELECT 1 FROM notification_history WHERE identity=$1 AND publication=$2 AND channel='email' AND notification_type='digest' AND mode=$3 AND status IN ('pending', 'uncertain') LIMIT 1",
+    const base =
+      "FROM notification_history WHERE identity=$1 AND publication=$2 AND channel='email' AND notification_type='digest' AND mode=$3";
+    const { rows: history } = await db.query<{
+      pending: boolean;
+      previous_end: Date | null;
+      now: Date;
+    }>(
+      `SELECT
+         EXISTS (SELECT 1 ${base} AND status IN ('pending', 'uncertain')) AS pending,
+         (SELECT period_end ${base} AND status IN ('sent', 'skipped') ORDER BY period_end DESC LIMIT 1) AS previous_end,
+         clock_timestamp() AS now`,
       [args.identity, args.publication, mode],
     );
-    if (pending.length) return Err("delivery_pending" as const);
-    const { rows: previous } = await db.query<{ period_end: Date }>(
-      "SELECT period_end FROM notification_history WHERE identity=$1 AND publication=$2 AND channel='email' AND notification_type='digest' AND mode=$3 AND status IN ('sent', 'skipped') ORDER BY period_end DESC LIMIT 1",
-      [args.identity, args.publication, mode],
-    );
-    const previousEnd = previous[0]?.period_end.toISOString() ?? null;
-    const { rows: clock } = await db.query<{ now: Date }>(
-      "SELECT clock_timestamp() AS now",
-    );
+    if (history[0].pending) return Err("delivery_pending" as const);
+    const previousEnd = history[0].previous_end?.toISOString() ?? null;
     const period = {
       start: previousEnd ?? new Date(0).toISOString(),
-      end: args.schedule?.due ?? clock[0].now.toISOString(),
+      end: args.schedule?.due ?? history[0].now.toISOString(),
     };
     if (period.start >= period.end) return Ok(null);
     const activity = await loadDigestActivity(
