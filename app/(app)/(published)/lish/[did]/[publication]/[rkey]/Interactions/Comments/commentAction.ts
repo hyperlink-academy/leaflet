@@ -68,11 +68,16 @@ export async function publishComment(args: {
   };
   let rkey = TID.nextStr();
   let uri = AtUri.make(credentialSession.did!, "pub.leaflet.comment", rkey);
-  let [profile, result] = await Promise.all([
-    agent.app.bsky.actor.profile.get({
-      repo: credentialSession.did!,
-      rkey: "self",
-    }),
+  let [profile] = await Promise.all([
+    // Profile metadata is optional; it must not fail an otherwise published comment.
+    agent.app.bsky.actor.profile
+      .get({ repo: credentialSession.did!, rkey: "self" })
+      .then((profile) => lexToJson(profile.value))
+      .catch((error) => {
+        if (error?.error !== "RecordNotFound")
+          console.warn("[comments] profile lookup failed", error);
+        return null;
+      }),
     agent.pub.leaflet.comment.create(
       { rkey, repo: credentialSession.did! },
       record,
@@ -140,7 +145,7 @@ export async function publishComment(args: {
   return {
     success: true,
     record: data?.[0].record as Json,
-    profile: lexToJson(profile.value),
+    profile,
     uri: uri.toString(),
   };
 }
