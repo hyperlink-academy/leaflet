@@ -157,7 +157,7 @@ export function RepliesListWithModeration(props: {
 
       {visible.length > 0 && (
         <div className="flex flex-col gap-2">
-          <RepliesDivider label={`Replies (${visible.length})`} />
+          <hr />
           {visible.map((reply) => (
             <ReplyRow
               key={reply.uri}

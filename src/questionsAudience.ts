@@ -16,20 +16,22 @@ export const QUESTIONS_AUDIENCE_LABELS: Record<
   QuestionsAudience,
   { label: string; description: string }
 > = {
-  anyone: { label: "Anyone", description: "Any Atmosphere account can ask." },
+  anyone: { label: "Anyone", description: "Any Atmosphere account." },
   follows: {
     label: "People you follow",
-    description: "Only accounts you follow on Bluesky can ask.",
+    description: "Only accounts you follow on Bluesky.",
   },
   followers: {
     label: "Your followers",
-    description: "Only accounts following you on Bluesky can ask.",
+    description: "Only accounts following you on Bluesky.",
   },
 };
 
 // Shown to readers under the composer
 export function questionsAudienceNotice(audience: QuestionsAudience) {
-  if (audience === "follows") return "Only people the author follows can ask.";
-  if (audience === "followers") return "Only the author's followers can ask.";
+  if (audience === "follows")
+    return "Only people the author follows can submit questions.";
+  if (audience === "followers")
+    return "Only the author's followers can submit questions.";
   return null;
 }

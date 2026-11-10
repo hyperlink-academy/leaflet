@@ -1,14 +1,12 @@
 "use client";
 import React, { Fragment, useState } from "react";
-import { Popover } from "components/Popover";
 import { Avatar } from "components/Avatar";
 import { Separator } from "components/Layout";
-import { InfoSmall } from "components/Icons/InfoSmall";
 import { LoginModal } from "components/LoginButton";
-import { ButtonTertiary } from "components/Buttons";
+import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { BaseTextBlock } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
-import { ComposerSubmit } from "components/Composer";
+import { ComposerChrome, ComposerSubmit } from "components/Composer";
 import { TextComposer } from "components/Composer/TextComposer";
 import {
   docToFacetedText,
@@ -24,11 +22,11 @@ import {
 } from "../InteractionAuthorName";
 import {
   CollapsibleDivider,
-  RepliesDivider,
   ReplyButtonTextInput,
 } from "../ReplyBlock/RepliesHeader";
 import { DEFAULT_QUESTIONS_BUTTON_TEXT } from "./constants";
 import {
+  QUESTIONS_AUDIENCE_LABELS,
   questionsAudienceNotice,
   type QuestionsAudience,
 } from "src/questionsAudience";
@@ -43,47 +41,77 @@ export function QuestionsButtonTextInput(props: {
       {...props}
       label="Ask button text"
       placeholder={DEFAULT_QUESTIONS_BUTTON_TEXT}
+      colors="bg-border-light border-border-light text-tertiary placeholder:text-tertiary focus:outline-border hover:outline-border"
     />
   );
 }
 
-export function PublicQuestionNotice(props: {
-  defaultOpen?: boolean;
-  audience?: QuestionsAudience;
-  showPending?: boolean;
-}) {
-  let restriction = questionsAudienceNotice(props.audience ?? "anyone");
+export function DisabledAskButton(props: { text?: string }) {
   return (
-    <Popover
-      asChild
-      side="top"
-      align="end"
-      defaultOpen={props.defaultOpen}
-      className="max-w-64 text-sm text-secondary"
-      trigger={
-        <button
-          type="button"
-          aria-label="About public questions"
-          className="text-tertiary hover:text-accent-contrast"
-        >
-          <InfoSmall />
-        </button>
-      }
-    >
-      Your question
-      {props.showPending
-        ? " will appear here unless the author hides it."
-        : " will appear here once the author answers it."}
-      {restriction && <div className="pt-2">{restriction}</div>}
-    </Popover>
+    <ButtonPrimary compact disabled>
+      {props.text || DEFAULT_QUESTIONS_BUTTON_TEXT}
+    </ButtonPrimary>
   );
 }
 
-// The restriction readers see beside the composer, if there is one
-function AudienceNotice(props: { audience?: QuestionsAudience }) {
-  let restriction = questionsAudienceNotice(props.audience ?? "anyone");
-  if (!restriction) return null;
-  return <span className="text-sm text-tertiary italic">{restriction}</span>;
+export type QuestionHelpProps = {
+  audience?: QuestionsAudience;
+  showPending?: boolean;
+};
+
+// Who may ask, and when a question shows
+function questionHelpLines(props: QuestionHelpProps) {
+  return [
+    questionsAudienceNotice(props.audience ?? "anyone"),
+    !props.showPending && "Questions show once the author answers them.",
+  ].filter((line): line is string => !!line);
+}
+
+function QuestionHelp(props: QuestionHelpProps) {
+  if (props.audience === "anyone" && props.showPending) return null;
+  return (
+    <div className="text-sm text-center italic text-tertiary">
+      {questionsAudienceNotice(props.audience ?? "anyone")}
+      {!props.showPending && " Questions show once the author answers them."}
+      <hr className="mt-3" />
+    </div>
+  );
+}
+
+// Nothing to list yet; carries the help text in its place
+export function QuestionsEmpty(props: QuestionHelpProps) {
+  return (
+    <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4 leading-snug flex flex-col gap-2">
+      <div className="font-bold">No questions yet…</div>
+      {questionHelpLines(props).map((line) => (
+        <div key={line}>{line}</div>
+      ))}
+    </div>
+  );
+}
+
+// The editor's empty state: what readers will be able to do, and where to
+// change it
+export function QuestionsEditorNotice(props: QuestionHelpProps) {
+  return (
+    <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4 leading-snug flex flex-col gap-2">
+      <div className="text-base font-bold">No questions yet…</div>
+      <div>
+        {QUESTIONS_AUDIENCE_LABELS[props.audience ?? "anyone"].label} can submit
+        questions. You can answer them from here.
+      </div>
+      <div>
+        {props.showPending
+          ? "Questions will be visible to readers as soon as they're submitted. You can remove any question at any time."
+          : "Questions will only be visible to readers once you answer them."}
+      </div>
+      <hr />
+      <div>
+        To adjust this, click <SettingsTiny className="inline-flex scale-90" />{" "}
+        in the upper right of this block.
+      </div>
+    </div>
+  );
 }
 
 export function QuestionComposer(props: {
@@ -92,8 +120,6 @@ export function QuestionComposer(props: {
   draftKey: string | null;
   submitLabel?: string;
   autoFocus?: boolean;
-  audience?: QuestionsAudience;
-  showPending?: boolean;
   onSubmit: (text: FacetedText) => Promise<boolean>;
 }) {
   return (
@@ -105,11 +131,6 @@ export function QuestionComposer(props: {
       onSubmit={(doc) => props.onSubmit(docToFacetedText(doc))}
       actions={
         <>
-          <AudienceNotice audience={props.audience} />
-          <PublicQuestionNotice
-            audience={props.audience}
-            showPending={props.showPending}
-          />
           {props.asker && (
             <Avatar
               src={props.asker.avatar}
@@ -126,36 +147,22 @@ export function QuestionComposer(props: {
   );
 }
 
-// The editor shows readers' input without taking questions.
-export function QuestionComposerPreview(props: {
-  action: React.ReactNode;
-  audience?: QuestionsAudience;
-  showPending?: boolean;
-}) {
+// What readers ask with, shown to the author without taking questions
+export function QuestionComposerPreview(props: { action: React.ReactNode }) {
   return (
-    <div className="flex flex-col grow">
-      <div className="composerInput border input-with-border min-h-20 px-2 py-[6px] text-tertiary italic">
-        Readers write their question here…
-      </div>
-      <div className="flex justify-end items-center gap-2 pt-1">
-        <AudienceNotice audience={props.audience} />
-        <PublicQuestionNotice
-          audience={props.audience}
-          showPending={props.showPending}
-        />
-        {props.action}
-      </div>
-    </div>
+    <ComposerChrome
+      editor={null}
+      inputClassName="min-h-20! bg-transparent! text-tertiary! hover:border-border! italic"
+      actions={props.action}
+    >
+      Readers will be able to ask a question here…
+    </ComposerChrome>
   );
 }
 
-// Readers without an Atmosphere account sign in (or link one) before they
-// can ask.
-export function SignInToAsk(props: {
-  // Signed in, but without an Atmosphere account
+export function LoggedOutQuestionComposer(props: {
   linkAccount?: boolean;
   redirectRoute?: string;
-  // Stands in for the button that opens the login modal
   trigger?: React.ReactNode;
 }) {
   return (
@@ -179,24 +186,18 @@ export function SignInToAsk(props: {
   );
 }
 
-export function QuestionsDraft(props: {
-  action: React.ReactNode;
-  audience?: QuestionsAudience;
-  showPending?: boolean;
-}) {
+// The editor's block before the post is published, or before anyone asks
+export function QuestionEditorEmpty(
+  props: QuestionHelpProps & { action: React.ReactNode },
+) {
   return (
-    <div className="flex flex-col gap-3">
-      <QuestionComposerPreview
-        action={props.action}
+    <div className="flex flex-col gap-4">
+      <QuestionComposerPreview action={props.action} />
+      <hr />
+      <QuestionsEditorNotice
         audience={props.audience}
         showPending={props.showPending}
       />
-      <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4">
-        <div className="text-base font-bold">Question and Answers</div>
-        Here, logged in readers can post public questions that you can answer!
-        To change who can ask a question and when questions become public,
-        select <SettingsTiny /> in the upper right of this block.
-      </div>
     </div>
   );
 }
@@ -273,7 +274,7 @@ export function QuestionRow(props: {
           {props.editor ?? (
             <pre
               style={{ wordBreak: "break-word", fontFamily: "inherit" }}
-              className="whitespace-pre-wrap text-primary"
+              className="whitespace-pre-wrap text-primary leading-snug"
             >
               <BaseTextBlock
                 index={[]}
@@ -294,14 +295,17 @@ export function QuestionAnswer(props: {
   author: InteractionAuthor;
   showHandle?: boolean;
   date?: string;
-  labeled?: boolean;
   // Under the answer: the author's "Edit answer"
   actions?: React.ReactNode;
+  // Holds the author's answer composer rather than a published answer
+  composing?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div className="questionAnswer relative opaque-container rounded-lg! border-accent-contrast! p-2 pr-3">
-      {props.labeled && (
+    <div
+      className={`questionAnswer relative opaque-container rounded-lg! p-2 pr-3 ${props.composing ? "border-border-light!" : "border-accent-contrast!"}`}
+    >
+      {!props.composing && (
         <span className="absolute -top-2.5 right-3 rounded-md bg-accent-1 text-accent-2 px-1.5 text-xs leading-5 font-bold uppercase">
           Answer
         </span>
@@ -337,15 +341,17 @@ export function QuestionAction(
 
 // The reader's view: their own questions first, answered or not, then the
 // answered ones, then any still waiting on an answer.
-export function QuestionsList(props: {
-  questions: DocumentQuestion[];
-  // The composer or a sign-in button
-  action?: React.ReactNode;
-  renderAnswer: RenderAnswer;
-  onWithdraw?: (uri: string) => void;
-  // Resolves true once the edit is saved
-  onEdit?: (uri: string, text: FacetedText) => Promise<boolean>;
-}) {
+export function QuestionsList(
+  props: QuestionHelpProps & {
+    questions: DocumentQuestion[];
+    // The composer or a sign-in button
+    action?: React.ReactNode;
+    renderAnswer: RenderAnswer;
+    onWithdraw?: (uri: string) => void;
+    // Resolves true once the edit is saved
+    onEdit?: (uri: string, text: FacetedText) => Promise<boolean>;
+  },
+) {
   let { onWithdraw, onEdit } = props;
   // The viewer's question being edited
   let [editing, setEditing] = useState<string | null>(null);
@@ -357,7 +363,23 @@ export function QuestionsList(props: {
   ];
   return (
     <div className="flex flex-col gap-4">
-      {props.action}
+      {props.action && (
+        <>
+          {props.action}
+          <hr />
+        </>
+      )}
+      {ordered.length === 0 ? (
+        <QuestionsEmpty
+          audience={props.audience}
+          showPending={props.showPending}
+        />
+      ) : (
+        <QuestionHelp
+          audience={props.audience}
+          showPending={props.showPending}
+        />
+      )}
       <QuestionRows
         questions={ordered}
         showHandles={showHandlesFor(props.questions)}
@@ -433,28 +455,24 @@ function QuestionEditor(props: {
   );
 }
 
-// The author's view: pending questions first, under a header that collapses
-// them, then the ones shown on the post, and the removed ones behind another.
+// The author's view: unanswered questions first, then answered ones, and the
+// removed ones behind a collapsible header.
 export function QuestionsModeration(props: {
   questions: DocumentQuestion[];
-  // Above the lists: the editor's composer preview
   header?: React.ReactNode;
-  // A state change is being published
+  empty: React.ReactNode;
   busy?: boolean;
-  // Unset for an editor who isn't the post's author
   onSetState?: (uri: string, state: QuestionState) => void;
   renderAnswer: RenderAnswer;
-  // Before a question's moderation controls: "Answer", or a link to the
-  // editor
   renderControl: (question: DocumentQuestion) => React.ReactNode;
 }) {
-  let [pendingOpen, setPendingOpen] = useState(true);
   let [showHidden, setShowHidden] = useState(false);
-  let inState = (state: QuestionState) =>
-    props.questions.filter((q) => q.state === state);
-  let pending = inState("pending");
-  let accepted = inState("accepted");
-  let hidden = inState("hidden");
+  let shown = props.questions.filter((q) => q.state !== "hidden");
+  let ordered = [
+    ...shown.filter((q) => !q.answer),
+    ...shown.filter((q) => q.answer),
+  ];
+  let hidden = props.questions.filter((q) => q.state === "hidden");
   if (showHidden && hidden.length === 0) setShowHidden(false);
   let showHandles = showHandlesFor(props.questions);
   let stateButton = (
@@ -484,32 +502,10 @@ export function QuestionsModeration(props: {
   return (
     <div className="flex flex-col gap-4">
       {props.header}
-      {props.questions.length === 0 && (
-        <div className="opaque-container text-sm italic text-tertiary text-center p-3">
-          No one has asked anything yet.
-        </div>
-      )}
-      {pending.length > 0 && (
-        <div className="flex flex-col gap-3 ">
-          <CollapsibleDivider
-            label={`Pending (${pending.length})`}
-            open={pendingOpen}
-            onToggle={() => setPendingOpen(!pendingOpen)}
-          />
-          {pendingOpen && (
-            <>
-              {rows(pending, (q) => [stateButton(q, "hidden", "Remove")])}{" "}
-              <div className="spacer h-2" />
-            </>
-          )}
-        </div>
-      )}
-      {accepted.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <RepliesDivider label={`Questions (${accepted.length})`} />
-          {rows(accepted, (q) => [stateButton(q, "hidden", "Remove")])}
-        </div>
-      )}
+      <hr />
+      {ordered.length === 0
+        ? props.empty
+        : rows(ordered, (q) => [stateButton(q, "hidden", "Remove")])}
       {hidden.length > 0 && (
         <div className="flex flex-col gap-4">
           <CollapsibleDivider
@@ -550,7 +546,7 @@ function QuestionRows(props: {
 }) {
   if (props.questions.length === 0) return null;
   return (
-    <div className="flex flex-col gap-6">
+    <div className="questionList flex flex-col gap-6 pb-3">
       {props.questions.map((question) => {
         let actions = props.renderControls(question).filter(Boolean);
         return (

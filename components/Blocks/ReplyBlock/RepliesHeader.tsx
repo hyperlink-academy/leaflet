@@ -33,11 +33,13 @@ export function ReplyButtonTextInput(props: {
   onCommit: (text: string) => void;
   label?: string;
   placeholder?: string;
+  // Background, border, text and outline colors; a primary button's by default
+  colors?: string;
 }) {
   return (
     <Input
       aria-label={props.label ?? "Reply button text"}
-      className="max-w-full min-w-24 px-2 py-0.5 rounded-md bg-accent-1 border border-accent-1 text-accent-2 font-bold text-center placeholder:text-accent-2 placeholder:opacity-60 outline-2 outline-transparent outline-offset-1 focus:outline-accent-1 hover:outline-accent-1 [field-sizing:content]"
+      className={`max-w-full min-w-24 px-2 py-0.5 rounded-md border font-bold text-center placeholder:opacity-60 outline-2 outline-transparent outline-offset-1 [field-sizing:content] ${props.colors ?? "bg-accent-1 border-accent-1 text-accent-2 placeholder:text-accent-2 focus:outline-accent-1 hover:outline-accent-1"}`}
       placeholder={props.placeholder ?? DEFAULT_REPLY_BUTTON_TEXT}
       maxLength={50}
       {...useCommittedText(props.value, props.onCommit)}

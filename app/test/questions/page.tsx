@@ -4,16 +4,18 @@ import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import type { DocumentQuestion, QuestionState } from "src/documentQuestions";
 import { DEFAULT_QUESTIONS_BUTTON_TEXT } from "components/Blocks/QuestionsBlock/constants";
 import {
-  PublicQuestionNotice,
+  DisabledAskButton,
   QuestionAction,
   QuestionAnswer,
   QuestionComposer,
   QuestionComposerPreview,
   QuestionsButtonTextInput,
-  QuestionsDraft,
+  QuestionEditorEmpty,
+  QuestionsEditorNotice,
+  QuestionsEmpty,
   QuestionsList,
   QuestionsModeration,
-  SignInToAsk,
+  LoggedOutQuestionComposer,
 } from "components/Blocks/QuestionsBlock/QuestionsView";
 import { LimitedLeafletComposer } from "components/Composer/LimitedLeafletComposer";
 import { PublishedAnswer } from "components/Blocks/QuestionsBlock/PublishedAnswer";
@@ -129,7 +131,7 @@ function Case(props: { label: string; children: React.ReactNode }) {
 
 // The published post labels answers; the editor doesn't.
 const renderPublished = (q: DocumentQuestion) =>
-  q.answer ? <PublishedAnswer answer={q.answer} labeled /> : null;
+  q.answer ? <PublishedAnswer answer={q.answer} /> : null;
 const renderInEditor = (q: DocumentQuestion, actions?: React.ReactNode) =>
   q.answer ? <PublishedAnswer answer={q.answer} actions={actions} /> : null;
 
@@ -141,7 +143,7 @@ function FakeLimitedLeafletEditor(props: {
   onClear: () => void;
 }) {
   return (
-    <QuestionAnswer author={AUTHOR_PROFILE}>
+    <QuestionAnswer author={AUTHOR_PROFILE} composing>
       <LimitedLeafletComposer
         editor={null}
         onPublish={props.onPublish}
@@ -225,6 +227,7 @@ function Playground() {
     view = (
       <QuestionsModeration
         questions={questions}
+        empty={<QuestionsEditorNotice showPending={showPending} />}
         onSetState={setState}
         renderAnswer={(q) =>
           q.uri in drafts ? (
@@ -251,6 +254,7 @@ function Playground() {
     view = (
       <QuestionsList
         questions={shown}
+        showPending={showPending}
         onWithdraw={withdraw}
         onEdit={edit}
         renderAnswer={renderPublished}
@@ -258,7 +262,6 @@ function Playground() {
           viewer === "reader" ? (
             <QuestionComposer
               draftKey={null}
-              showPending={showPending}
               onSubmit={async (text) => {
                 await new Promise((r) => setTimeout(r, 400));
                 setQuestions((qs) => [
@@ -277,7 +280,7 @@ function Playground() {
               }}
             />
           ) : (
-            <SignInToAsk
+            <LoggedOutQuestionComposer
               trigger={
                 <ButtonPrimary compact onClick={() => setViewer("reader")}>
                   Log in
@@ -358,6 +361,9 @@ export default function QuestionsTestPage() {
     answer: ["Probably half the settings page."],
   });
   let noop = () => {};
+  let publishedPreview = (
+    <QuestionComposerPreview action={<DisabledAskButton text={buttonText} />} />
+  );
   // all[2] is pending with a draft, so its draft is open.
   let isOpen = (q: DocumentQuestion) => q.uri === all[2].uri;
   let answerControl = (q: DocumentQuestion) => (
@@ -379,16 +385,17 @@ export default function QuestionsTestPage() {
         <Playground />
       </Case>
       <Case label="Editor — draft (button text editable in place)">
-        <QuestionsDraft action={editableButton} />
+        <QuestionEditorEmpty action={editableButton} />
       </Case>
       <Case label="Editor — published, one answer being written inline">
         <QuestionsModeration
           questions={all}
           onSetState={noop}
           header={<QuestionComposerPreview action={editableButton} />}
+          empty={<QuestionsEditorNotice />}
           renderAnswer={(q) =>
             isOpen(q) ? (
-              <QuestionAnswer author={AUTHOR_PROFILE}>
+              <QuestionAnswer author={AUTHOR_PROFILE} composing>
                 <LimitedLeafletComposer
                   editor={null}
                   onPublish={noop}
@@ -410,10 +417,10 @@ export default function QuestionsTestPage() {
         <QuestionsList
           questions={answered}
           renderAnswer={renderPublished}
-          action={<SignInToAsk />}
+          action={<LoggedOutQuestionComposer />}
         />
       </Case>
-      <Case label="Published — reader, logged in (comment composer + public notice)">
+      <Case label="Published — reader, logged in (composer + help text)">
         <QuestionsList
           questions={answered}
           renderAnswer={renderPublished}
@@ -473,6 +480,8 @@ export default function QuestionsTestPage() {
         <QuestionsModeration
           questions={all}
           onSetState={noop}
+          header={publishedPreview}
+          empty={<QuestionsEmpty />}
           renderAnswer={renderPublished}
           renderControl={(q) =>
             !q.answer && (
@@ -481,18 +490,68 @@ export default function QuestionsTestPage() {
           }
         />
       </Case>
+      <Case label="Help text — only people the author follows, pending questions shown">
+        <QuestionsList
+          questions={answered}
+          audience="follows"
+          showPending
+          renderAnswer={renderPublished}
+          action={
+            <QuestionComposer
+              draftKey={null}
+              submitLabel={label}
+              onSubmit={async () => true}
+            />
+          }
+        />
+      </Case>
+      <Case label="Reader not in the audience (no composer)">
+        <QuestionsList
+          questions={answered}
+          audience="follows"
+          renderAnswer={renderPublished}
+        />
+      </Case>
+      <h2 className="text-xl font-bold pt-4">Empty states</h2>
+      <Case label="Editor — only removed questions">
+        <QuestionsModeration
+          questions={all.filter((q) => q.state === "hidden")}
+          onSetState={noop}
+          header={<QuestionComposerPreview action={editableButton} />}
+          empty={<QuestionsEditorNotice />}
+          renderAnswer={renderInEditor}
+          renderControl={() => null}
+        />
+      </Case>
       <Case label="Published — author, nothing asked yet">
         <QuestionsModeration
           questions={[]}
           onSetState={noop}
+          header={publishedPreview}
+          empty={<QuestionsEmpty />}
           renderAnswer={renderPublished}
           renderControl={() => null}
         />
       </Case>
-      <Case label="Public-question notice (open)">
-        <div className="flex justify-end items-end min-h-32">
-          <PublicQuestionNotice defaultOpen />
-        </div>
+      <Case label="Published — reader, logged out, nothing answered yet">
+        <QuestionsList
+          questions={[]}
+          renderAnswer={renderPublished}
+          action={<LoggedOutQuestionComposer />}
+        />
+      </Case>
+      <Case label="Published — reader, logged in, nothing answered yet">
+        <QuestionsList
+          questions={[]}
+          renderAnswer={renderPublished}
+          action={
+            <QuestionComposer
+              draftKey={null}
+              submitLabel={label}
+              onSubmit={async () => true}
+            />
+          }
+        />
       </Case>
     </div>
   );

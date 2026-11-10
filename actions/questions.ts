@@ -22,7 +22,10 @@ import {
   pingIdentityToUpdateNotification,
 } from "src/notifications";
 import { resolveInteractionBlock } from "src/utils/documentHasBlock";
-import { questionsAudience } from "src/questionsAudience";
+import {
+  questionsAudience,
+  type QuestionsAudience,
+} from "src/questionsAudience";
 import {
   canAskQuestion,
   mirrorQuestionVisibility,
@@ -58,6 +61,22 @@ export async function getDocumentQuestions(
 ): Promise<DocumentQuestions> {
   const identity = await getAuthIdentity();
   return loadDocumentQuestions(subject, identity?.atp_did ?? null);
+}
+
+// Whether the signed-in viewer is in `audience` for `subject`, so readers who
+// can't ask aren't offered the composer. askQuestion checks again.
+export async function getCanAskQuestion(
+  subject: string,
+  audience: QuestionsAudience,
+): Promise<boolean> {
+  const identity = await getAuthIdentity();
+  if (!identity?.atp_did) return false;
+  try {
+    return await canAskQuestion(subject, identity.atp_did, audience);
+  } catch (e) {
+    console.error("[questions] follow check failed", e);
+    return true;
+  }
 }
 
 export type QuestionError =

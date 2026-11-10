@@ -455,11 +455,17 @@ const backspace =
           }),
         );
         if (next) focusBlock(next, { type: "start" });
-        else
+        else {
+          // An answer sits inside its questions block: any block left
+          // selected here (that one, from the click into the answer) would be
+          // deleted by the next Backspace.
+          if (propsRef.current.isLimited)
+            useUIState.setState({ selectedBlocks: [] });
           useUIState.getState().setFocusedBlock({
             entityType: "page",
             entityID: pageOfParent(propsRef.current.parent),
           });
+        }
       }
       return finish(true);
     }

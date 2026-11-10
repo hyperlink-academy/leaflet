@@ -3,7 +3,6 @@ import {
   useEditorBlockData,
   useLeafletPublicationData,
 } from "components/PageSWRDataProvider";
-import { ButtonPrimary } from "components/Buttons";
 import { useEntity, useReplicache } from "src/replicache";
 import { useIsBlockSelected } from "src/useUIState";
 import { publishedBlockKey } from "src/utils/interactionBlockAnchor";
@@ -11,11 +10,13 @@ import { ToggleWithLabel } from "components/Toggle";
 import { ids } from "lexicons/api/lexicons";
 import { pageOfParent } from "src/utils/blockGroups";
 import { BlockProps, BlockLayout } from "../Block";
-import { DEFAULT_QUESTIONS_BUTTON_TEXT } from "./constants";
 import { DocumentQuestions } from "./DocumentQuestions";
-import { QuestionsButtonTextInput, QuestionsDraft } from "./QuestionsView";
+import {
+  DisabledAskButton,
+  QuestionsButtonTextInput,
+  QuestionEditorEmpty,
+} from "./QuestionsView";
 import { BlockSettings } from "../SettingsTriggerButton";
-import { Radio } from "components/Checkbox";
 import {
   QUESTIONS_AUDIENCES,
   QUESTIONS_AUDIENCE_LABELS,
@@ -58,9 +59,7 @@ export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
         }
       />
     ) : (
-      <ButtonPrimary disabled>
-        {buttonText || DEFAULT_QUESTIONS_BUTTON_TEXT}
-      </ButtonPrimary>
+      <DisabledAskButton text={buttonText} />
     );
 
   return (
@@ -69,34 +68,44 @@ export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
       className={`questionsBlock light-container rounded-lg! ${isSelected ? "border-border!" : ""}`}
       extraOptions={
         !props.preview ? (
-          <BlockSettings label="Questions" className="w-xs">
-            <div className="flex flex-col gap-2 p-2">
-              <div className="text-sm font-bold text-secondary">
-                Who can ask
-              </div>
-              {QUESTIONS_AUDIENCES.map((option) => (
-                <Radio
-                  key={option}
-                  name={`questions-audience-${props.entityID}`}
-                  id={`questions-audience-${props.entityID}-${option}`}
-                  value={option}
-                  checked={audience === option}
-                  onChange={() =>
-                    rep?.mutate.assertFact({
-                      entity: props.entityID,
-                      attribute: "questions/audience",
-                      data: { type: "string", value: option },
-                    })
-                  }
-                >
-                  <div className="flex flex-col leading-snug">
-                    <span>{QUESTIONS_AUDIENCE_LABELS[option].label}</span>
-                    <span className="text-sm font-normal text-tertiary">
+          <BlockSettings label="Questions" className="max-w-sm">
+            <div className="flex flex-col gap-2 ">
+              <div className="font-bold ">Who can submit questions</div>
+              {QUESTIONS_AUDIENCES.map((option) => {
+                let selected = audience === option;
+                let id = `questions-audience-${props.entityID}-${option}`;
+                return (
+                  <label
+                    key={option}
+                    htmlFor={id}
+                    className={`${selected ? "accent-container border border-accent-contrast outline-offset-1 outline-2 outline-accent-contrast" : "transparent-container"} flex flex-col leading-snug px-2 py-1.5 cursor-pointer`}
+                  >
+                    <input
+                      type="radio"
+                      name={`questions-audience-${props.entityID}`}
+                      id={id}
+                      value={option}
+                      checked={selected}
+                      onChange={() =>
+                        rep?.mutate.assertFact({
+                          entity: props.entityID,
+                          attribute: "questions/audience",
+                          data: { type: "string", value: option },
+                        })
+                      }
+                      className="sr-only"
+                    />
+                    <span
+                      className={`font-bold ${selected ? "text-accent-contrast" : "text-secondary"}`}
+                    >
+                      {QUESTIONS_AUDIENCE_LABELS[option].label}
+                    </span>
+                    <span className="text-sm text-tertiary">
                       {QUESTIONS_AUDIENCE_LABELS[option].description}
                     </span>
-                  </div>
-                </Radio>
-              ))}
+                  </label>
+                );
+              })}
               <hr className="border-border-light my-1" />
               <ToggleWithLabel
                 label="Show pending questions"
@@ -129,7 +138,7 @@ export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
           }}
         />
       ) : (
-        <QuestionsDraft
+        <QuestionEditorEmpty
           action={button}
           audience={audience}
           showPending={showPending}

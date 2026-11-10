@@ -11,6 +11,7 @@ import { usePostEditLink } from "app/(app)/(published)/lish/[did]/[publication]/
 import {
   askQuestion,
   editQuestion,
+  getCanAskQuestion,
   getDocumentQuestions,
   setQuestionState,
   withdrawQuestion,
@@ -26,13 +27,17 @@ import type { InteractionAuthor } from "src/interactionAuthor";
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 import { ComposerPlaceholder } from "components/Composer";
 import {
+  DisabledAskButton,
   QuestionAction,
   QuestionAnswer,
   QuestionComposer,
   QuestionComposerPreview,
+  QuestionEditorEmpty,
+  QuestionsEditorNotice,
+  QuestionsEmpty,
   QuestionsList,
   QuestionsModeration,
-  SignInToAsk,
+  LoggedOutQuestionComposer,
 } from "./QuestionsView";
 import { PublishedAnswer } from "./PublishedAnswer";
 import type { FacetedText } from "components/Composer/facetedText";
@@ -46,8 +51,8 @@ const questionErrorMessages: Partial<Record<QuestionError["type"], string>> = {
   not_found: "We couldn't find that post.",
   empty: "Write a question first.",
   questions_closed: "This post isn't taking questions.",
-  not_follows: "Only people the author follows can ask here.",
-  not_follower: "Only the author's followers can ask here.",
+  not_follows: "Only people the author follows can submit a question.",
+  not_follower: "Only the author's followers can submit a question.",
   answered: "This question has been answered, so it can't be edited.",
 };
 
@@ -108,6 +113,13 @@ export function DocumentQuestions(props: {
           questions: props.initialQuestions,
         }),
     },
+  );
+  let audience = props.audience ?? "anyone";
+  let { data: canAsk } = useSWR(
+    viewer && audience !== "anyone" && !props.editor
+      ? ["can_ask_question", props.documentUri, viewer, audience]
+      : null,
+    () => getCanAskQuestion(props.documentUri, audience),
   );
   useDocumentEvents(props.documentUri, ["question", "answer"], () => {
     setChanged(true);
@@ -178,20 +190,15 @@ export function DocumentQuestions(props: {
         { revalidate: false },
       );
   };
+  let help = { audience: props.audience, showPending: props.showPending };
   if (props.editor) {
     let editor = props.editor;
-    let preview = (
-      <QuestionComposerPreview
-        action={editor.action}
-        audience={props.audience}
-        showPending={props.showPending}
-      />
-    );
-    if (!data) return preview;
+    if (!data) return <QuestionEditorEmpty action={editor.action} {...help} />;
     return (
       <EditorQuestions
         questions={questions}
-        header={preview}
+        header={<QuestionComposerPreview action={editor.action} />}
+        empty={<QuestionsEditorNotice {...help} />}
         busy={busy}
         isAuthor={data.isAuthor}
         onSetState={setState}
@@ -209,6 +216,12 @@ export function DocumentQuestions(props: {
         questions={questions}
         busy={busy}
         onSetState={setState}
+        empty={<QuestionsEmpty {...help} />}
+        header={
+          <QuestionComposerPreview
+            action={<DisabledAskButton text={props.buttonText} />}
+          />
+        }
       />
     );
   if (!data) return null;
@@ -228,25 +241,30 @@ export function DocumentQuestions(props: {
   };
   return (
     <QuestionsList
+      {...help}
       questions={questions}
       onWithdraw={withdraw}
       onEdit={edit}
       renderAnswer={publishedAnswer}
       action={
-        identityPending ? (
+        identityPending ||
+        (viewer && audience !== "anyone" && canAsk === undefined) ? (
           <ComposerPlaceholder className="min-h-20!" />
         ) : viewer ? (
-          <QuestionComposer
-            asker={viewerAuthor}
-            draftKey={`question:${props.documentUri}${props.block ? `:${props.block}` : ""}`}
-            submitLabel={props.buttonText}
-            audience={props.audience}
-            showPending={props.showPending}
-            autoFocus={props.autoFocus}
-            onSubmit={ask}
-          />
+          canAsk !== false && (
+            <QuestionComposer
+              asker={viewerAuthor}
+              draftKey={`question:${props.documentUri}${props.block ? `:${props.block}` : ""}`}
+              submitLabel={props.buttonText}
+              autoFocus={props.autoFocus}
+              onSubmit={ask}
+            />
+          )
         ) : (
-          <SignInToAsk linkAccount={!!identity} redirectRoute={redirectRoute} />
+          <LoggedOutQuestionComposer
+            linkAccount={!!identity}
+            redirectRoute={redirectRoute}
+          />
         )
       }
     />
@@ -256,24 +274,24 @@ export function DocumentQuestions(props: {
 // On the published post
 const publishedAnswer = (q: DocumentQuestion, showHandle?: boolean) =>
   q.answer ? (
-    <PublishedAnswer answer={q.answer} showHandle={showHandle} labeled />
+    <PublishedAnswer answer={q.answer} showHandle={showHandle} />
   ) : null;
-
-// The author on their published post: answers are written in the editor.
 function PublishedAuthorView(props: {
   documentUri: string;
   questions: DocumentQuestion[];
   busy: boolean;
   onSetState: (uri: string, state: QuestionState) => void;
+  header: React.ReactNode;
+  empty: React.ReactNode;
 }) {
   let editLink = usePostEditLink(
     props.documentUri,
     new AtUri(props.documentUri).host,
   );
-  let toEditor = (label: string, primary: boolean) =>
+  let toEditor = (label: string) =>
     editLink && (
       <QuestionAction
-        primary={primary}
+        primary
         onClick={() => window.location.assign(editLink)}
       >
         {label}
@@ -282,6 +300,8 @@ function PublishedAuthorView(props: {
   return (
     <QuestionsModeration
       questions={props.questions}
+      header={props.header}
+      empty={props.empty}
       busy={props.busy}
       onSetState={props.onSetState}
       renderAnswer={(q, showHandle) =>
@@ -289,12 +309,11 @@ function PublishedAuthorView(props: {
           <PublishedAnswer
             answer={q.answer}
             showHandle={showHandle}
-            labeled
-            actions={toEditor("Edit answer in editor", false)}
+            actions={toEditor("Edit answer in editor")}
           />
         )
       }
-      renderControl={(q) => !q.answer && toEditor("Answer in editor", true)}
+      renderControl={(q) => !q.answer && toEditor("Answer in editor")}
     />
   );
 }
@@ -305,9 +324,8 @@ function PublishedAuthorView(props: {
 function EditorQuestions(props: {
   questions: DocumentQuestion[];
   header: React.ReactNode;
+  empty: React.ReactNode;
   busy: boolean;
-  // Editors who aren't the post's author see the questions, but can't act
-  // on them.
   isAuthor: boolean;
   onSetState: (uri: string, state: QuestionState) => void;
   blockEntity: string;
@@ -339,7 +357,7 @@ function EditorQuestions(props: {
           ? "Answer"
           : drafts.includes(q.uri)
             ? "Edit answer"
-            : "Write a new answer"}
+            : "Answer"}
       </QuestionAction>
     );
   };
@@ -347,11 +365,12 @@ function EditorQuestions(props: {
     <QuestionsModeration
       questions={props.questions}
       header={props.header}
+      empty={props.empty}
       busy={props.busy}
       onSetState={props.isAuthor ? props.onSetState : undefined}
       renderAnswer={(q, showHandle) =>
         isOpen(q) && author ? (
-          <QuestionAnswer author={author} showHandle={showHandle}>
+          <QuestionAnswer author={author} showHandle={showHandle} composing>
             <LimitedLeafletEditor
               blockEntity={props.blockEntity}
               question={q.uri}
