@@ -302,7 +302,11 @@ export function useMountProsemirror({
         let isRemoteChange = !!tr.getMeta(ySyncPluginKey)?.isChangeOrigin;
 
         // Diff for removed/added footnote nodes
-        if (docHasChanges && !isRemoteChange) {
+        if (
+          docHasChanges &&
+          !isRemoteChange &&
+          !tr.getMeta("annotationsMoved")
+        ) {
           let oldFootnotes = new Set<string>();
           let newFootnotes = new Set<string>();
           oldEditorState.doc.descendants((n) => {

@@ -2,6 +2,7 @@ import { BlockProps } from "../Block";
 import { isBlockGroup, pageOfParent } from "src/utils/blockGroups";
 import { focusBlock } from "src/utils/focusBlock";
 import { EditorView } from "prosemirror-view";
+import { Fragment } from "prosemirror-model";
 import { generateKeyBetween } from "fractional-indexing";
 import { baseKeymap, setBlockType, toggleMark } from "prosemirror-commands";
 import { formattingKeymap } from "src/utils/prosemirror/formattingKeymap";
@@ -187,6 +188,19 @@ const skipFootnote = (
       ),
     );
   return true;
+};
+
+// Footnotes and comments are owned by a fact on their block, so text carried
+// into another block has to take those facts along (moveBlockAnnotations).
+const annotationIDsIn = (content: Fragment) => {
+  let ids: string[] = [];
+  content.descendants((n) => {
+    if (n.type === schema.nodes.footnote) ids.push(n.attrs.footnoteEntityID);
+    for (let m of n.marks)
+      if (m.type === schema.marks.comment)
+        ids.push(...((m.attrs.commentID as string) || "").split(" "));
+  });
+  return ids;
 };
 
 const clearStoredMarks = (
@@ -512,6 +526,15 @@ const backspace =
       parent: propsRef.current.parent,
     };
 
+    let mergedAnnotations = annotationIDsIn(state.doc.content);
+    if (mergedAnnotations.length > 0)
+      mutate(
+        repRef.current?.mutate.moveBlockAnnotations({
+          entityIDs: mergedAnnotations,
+          fromBlock: propsRef.current.entityID,
+          toBlock: mergedBlock.entityID,
+        }),
+      );
     mutate(
       repRef.current?.mutate.removeBlock({
         blockEntity: propsRef.current.entityID,
@@ -717,7 +740,15 @@ const enter =
     let newContent = tr.doc.slice(state.selection.anchor);
     tr.delete(state.selection.anchor, state.doc.content.size);
     tr.setMeta("externalUndoGroup", true);
+    // Stops the editor's orphan diff from deleting the annotations that are
+    // leaving with the text.
+    tr.setMeta("annotationsMoved", true);
     dispatch?.(tr);
+    // A comment whose anchor straddles the caret stays with this block.
+    let kept = annotationIDsIn(tr.doc.content);
+    let movedAnnotations = annotationIDsIn(newContent.content).filter(
+      (id) => !kept.includes(id),
+    );
 
     let newEntityID = v7();
     let parent = propsRef.current.parent;
@@ -840,6 +871,12 @@ const enter =
         // section; unfold so the freshly created block stays visible.
         unfoldBlocks(repRef.current, [propsRef.current.entityID]);
       }
+      if (movedAnnotations.length > 0)
+        await repRef.current?.mutate.moveBlockAnnotations({
+          entityIDs: movedAnnotations,
+          fromBlock: propsRef.current.entityID,
+          toBlock: newEntityID,
+        });
       // if you are are the beginning of a heading, move the heading level to the new block
       if (blockType === "heading") {
         await repRef.current?.mutate.assertFact({
