@@ -15,6 +15,8 @@ export type Shortcut = {
 };
 export function addShortcut(shortcuts: Shortcut | Shortcut[]) {
   let listener = (e: KeyboardEvent) => {
+    // Chrome on Wayland reports modified Space as key "Unidentified".
+    let key = e.key === "Unidentified" && e.code === "Space" ? " " : e.key;
     for (let shortcut of [shortcuts].flat()) {
       if (shortcut.skipIfDefaultPrevented && e.defaultPrevented) continue;
       if (e.shiftKey !== !!shortcut.shift) continue;
@@ -23,7 +25,7 @@ export function addShortcut(shortcuts: Shortcut | Shortcut[]) {
         if (!(e.metaKey && e.ctrlKey)) continue;
       } else if (!!shortcut.metaKey !== (isMac() ? e.metaKey : e.ctrlKey))
         continue;
-      if (![shortcut.key].flat().includes(e.key)) continue;
+      if (![shortcut.key].flat().includes(key)) continue;
       e.preventDefault();
       return shortcut.handler();
     }

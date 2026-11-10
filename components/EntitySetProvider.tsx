@@ -4,7 +4,7 @@ import { useReplicache } from "src/replicache";
 
 const EntitySetContext = createContext({
   set: "",
-  permissions: { read: false, write: false },
+  permissions: { read: false, write: false, create_token: false },
 });
 export const useEntitySetContext = () => useContext(EntitySetContext);
 
@@ -19,7 +19,7 @@ export function EntitySetProvider(props: {
         set: props.set,
         permissions: permission_token.permission_token_rights.find(
           (r) => r.entity_set === props.set,
-        ) || { read: false, write: false },
+        ) || { read: false, write: false, create_token: false },
       }}
     >
       {props.children}
