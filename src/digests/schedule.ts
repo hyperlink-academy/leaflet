@@ -1,102 +1,83 @@
 import { pool } from "supabase/pool";
-import { inngest } from "app/api/inngest/client";
-import { isDigestFrequency, nextDigestAt } from "./frequencies";
+import {
+  digestFrequencyValues,
+  isDigestFrequency,
+  nextDigestAt,
+  type DigestFrequency,
+} from "./frequencies";
 
 export type DigestSchedule = {
   identity: string;
   publication: string;
-  generation: string;
   due: string;
 };
-type ScheduleRow = {
-  digest_schedule_id: string;
-  digest_next_at: Date | null;
-  digest_frequency: string | null;
-  enabled_types: string[];
-};
+export type DueDigest = DigestSchedule & { frequency: DigestFrequency };
 
 export function digestScheduleEvent(schedule: DigestSchedule) {
   return {
-    id: `digest:${schedule.generation}:${schedule.due}`,
+    // Same period, same id: Inngest drops the duplicate if a run is repeated.
+    id: `digest:${schedule.identity}:${schedule.publication}:${schedule.due}`,
     name: "notifications/digest.scheduled" as const,
     data: schedule,
   };
 }
 
-// Initialize a saved opt-in, or advance one generation without racing a save.
-async function updateSchedule(
-  identity: string,
-  publication: string,
-  previous?: DigestSchedule,
-) {
-  const db = await pool.connect();
-  try {
-    await db.query("BEGIN");
-    const { rows } = await db.query<ScheduleRow>(
-      "SELECT digest_schedule_id, digest_next_at, digest_frequency, enabled_types FROM notification_preferences WHERE identity=$1 AND publication=$2 AND channel='email' FOR UPDATE",
-      [identity, publication],
+// Opt-ins start counting from their next calendar boundary. One UPDATE per
+// frequency, guarded on NULL, so concurrent runs cannot overwrite each other.
+export async function initializeDigestSchedules() {
+  const now = new Date().toISOString();
+  let initialized = 0;
+  for (const frequency of digestFrequencyValues) {
+    const { rowCount } = await pool.query(
+      "UPDATE notification_preferences SET digest_next_at=$1 WHERE channel='email' AND 'digest'=ANY(enabled_types) AND digest_frequency=$2 AND digest_next_at IS NULL",
+      [nextDigestAt(frequency, now), frequency],
     );
-    const row = rows[0];
-    let result: DigestSchedule | null = null;
-    if (
-      row?.enabled_types.includes("digest") &&
-      isDigestFrequency(row.digest_frequency) &&
-      (!previous || row.digest_schedule_id === previous.generation)
-    ) {
-      let due: string | undefined = row.digest_next_at?.toISOString();
-      if (!due || (previous && due === previous.due)) {
-        const { rows: clock } = await db.query<{ now: Date }>(
-          "SELECT clock_timestamp() AS now",
-        );
-        const after =
-          previous && previous.due > clock[0].now.toISOString()
-            ? previous.due
-            : clock[0].now.toISOString();
-        due = nextDigestAt(row.digest_frequency, after);
-        await db.query(
-          "UPDATE notification_preferences SET digest_next_at=$3 WHERE identity=$1 AND publication=$2 AND channel='email'",
-          [identity, publication, due],
-        );
-      }
-      if (due && (!previous || due > previous.due))
-        result = {
-          identity,
-          publication,
-          generation: row.digest_schedule_id,
-          due,
-        };
-    }
-    await db.query("COMMIT");
-    return result;
-  } catch (error) {
-    await db.query("ROLLBACK");
-    throw error;
-  } finally {
-    db.release();
+    initialized += rowCount ?? 0;
   }
+  return initialized;
 }
 
-export async function queueDigestSchedule(
-  identity: string,
-  publication: string,
-) {
-  const schedule = await updateSchedule(identity, publication);
-  if (schedule) await inngest.send(digestScheduleEvent(schedule));
+export async function findDueDigests(limit: number): Promise<DueDigest[]> {
+  const { rows } = await pool.query<{
+    identity: string;
+    publication: string;
+    due: Date;
+    digest_frequency: string | null;
+  }>(
+    "SELECT identity, publication, digest_next_at AS due, digest_frequency FROM notification_preferences WHERE channel='email' AND 'digest'=ANY(enabled_types) AND digest_next_at <= now() ORDER BY digest_next_at LIMIT $1",
+    [limit],
+  );
+  return rows.flatMap((row) =>
+    isDigestFrequency(row.digest_frequency)
+      ? [
+          {
+            identity: row.identity,
+            publication: row.publication,
+            due: row.due.toISOString(),
+            frequency: row.digest_frequency,
+          },
+        ]
+      : [],
+  );
 }
 
-export function advanceDigestSchedule(schedule: DigestSchedule) {
-  return updateSchedule(schedule.identity, schedule.publication, schedule);
-}
-
-export async function isCurrentDigestSchedule(schedule: DigestSchedule) {
-  const { rows } = await pool.query(
-    "SELECT 1 FROM notification_preferences WHERE identity=$1 AND publication=$2 AND channel='email' AND digest_schedule_id=$3 AND digest_next_at=$4 AND 'digest'=ANY(enabled_types)",
+// Skips any periods that were missed while the cron was down: the next run is
+// the first boundary after now, not after the old due time. Guarded on the old
+// due time so a frequency change that reset the schedule is not overwritten.
+export async function advanceDigestSchedules(due: DueDigest[]) {
+  if (!due.length) return;
+  const now = new Date().toISOString();
+  await pool.query(
+    `UPDATE notification_preferences p SET digest_next_at = v.next_at
+     FROM unnest($1::uuid[], $2::text[], $3::timestamptz[], $4::timestamptz[])
+       AS v(identity, publication, due, next_at)
+     WHERE p.identity = v.identity AND p.publication = v.publication
+       AND p.channel = 'email' AND p.digest_next_at = v.due`,
     [
-      schedule.identity,
-      schedule.publication,
-      schedule.generation,
-      schedule.due,
+      due.map((d) => d.identity),
+      due.map((d) => d.publication),
+      due.map((d) => d.due),
+      due.map((d) => nextDigestAt(d.frequency, d.due > now ? d.due : now)),
     ],
   );
-  return rows.length > 0;
 }

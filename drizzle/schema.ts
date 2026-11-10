@@ -454,7 +454,6 @@ export const notification_preferences = pgTable("notification_preferences", {
 	comments_enabled_at: timestamp("comments_enabled_at", { withTimezone: true, mode: 'string' }),
 	digest_frequency: text("digest_frequency"),
 	digest_next_at: timestamp("digest_next_at", { withTimezone: true, mode: 'string' }),
-	digest_schedule_id: uuid("digest_schedule_id").defaultRandom().notNull(),
 	enabled_types: text("enabled_types").default('{}').array().notNull(),
 	identity: uuid("identity").notNull().references(() => identities.id, { onDelete: "cascade" } ),
 	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),

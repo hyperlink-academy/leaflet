@@ -40,13 +40,8 @@ export async function sendDigest(args: {
     }
     if (args.schedule) {
       const { rows } = await db.query(
-        "SELECT 1 FROM notification_preferences WHERE identity=$1 AND publication=$2 AND channel='email' AND digest_schedule_id=$3 AND 'digest'=ANY(enabled_types) AND $4::timestamptz <= clock_timestamp() FOR UPDATE",
-        [
-          args.identity,
-          args.publication,
-          args.schedule.generation,
-          args.schedule.due,
-        ],
+        "SELECT 1 FROM notification_preferences WHERE identity=$1 AND publication=$2 AND channel='email' AND 'digest'=ANY(enabled_types) AND $3::timestamptz <= clock_timestamp() FOR UPDATE",
+        [args.identity, args.publication, args.schedule.due],
       );
       if (!rows.length) {
         await db.query("ROLLBACK");

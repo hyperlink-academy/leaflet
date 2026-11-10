@@ -1219,7 +1219,6 @@ export type Database = {
           comments_enabled_at: string | null
           digest_frequency: string | null
           digest_next_at: string | null
-          digest_schedule_id: string
           enabled_types: string[]
           identity: string
           publication: string
@@ -1229,7 +1228,6 @@ export type Database = {
           comments_enabled_at?: string | null
           digest_frequency?: string | null
           digest_next_at?: string | null
-          digest_schedule_id?: string
           enabled_types?: string[]
           identity: string
           publication: string
@@ -1239,7 +1237,6 @@ export type Database = {
           comments_enabled_at?: string | null
           digest_frequency?: string | null
           digest_next_at?: string | null
-          digest_schedule_id?: string
           enabled_types?: string[]
           identity?: string
           publication?: string

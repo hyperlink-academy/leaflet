@@ -102,12 +102,9 @@ export function NotificationSettings() {
                               : current,
                           { revalidate: false },
                         );
-                      } catch (error) {
+                      } catch {
                         setSaveError(
-                          error instanceof Error &&
-                            error.message === "schedule_error"
-                            ? "Your preference was saved, but delivery couldn’t be scheduled. Please try again."
-                            : "Couldn’t save your preference. Please try again.",
+                          "Couldn’t save your preference. Please try again.",
                         );
                       } finally {
                         setSaving(false);
@@ -180,8 +177,7 @@ export function NotificationSettings() {
       {saveError && <p role="alert">{saveError}</p>}
       {testStatus && <p role={testError ? "alert" : "status"}>{testStatus}</p>}
       <p className="text-sm text-tertiary">
-        Digests are only sent when there is new activity.<br />
-        Daily digests are scheduled for midnight UTC; weekly digests for Sunday’s end.
+        Digests are only sent when there is new activity.
       </p>
     </SettingsSection>
   );

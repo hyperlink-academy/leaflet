@@ -21,12 +21,10 @@ vi.mock("supabase/pool", async () => {
 import { pool } from "supabase/pool";
 import { sendDigest } from "./send";
 import { loadDigestActivity } from "./activity";
-vi.mock("app/api/inngest/client", () => ({ inngest: { send: vi.fn() } }));
-import { inngest } from "app/api/inngest/client";
 import {
-  advanceDigestSchedule,
-  isCurrentDigestSchedule,
-  queueDigestSchedule,
+  advanceDigestSchedules,
+  findDueDigests,
+  initializeDigestSchedules,
   type DigestSchedule,
 } from "./schedule";
 
@@ -53,16 +51,11 @@ async function schedule(): Promise<DigestSchedule> {
     "SELECT set_notification_preference($1,$2,'digest','daily')",
     [identity, publication],
   );
-  const { rows } = await pool.query(
-    "UPDATE notification_preferences SET digest_next_at='2025-01-01Z' WHERE identity=$1 AND publication=$2 RETURNING digest_schedule_id",
+  await pool.query(
+    "UPDATE notification_preferences SET digest_next_at='2025-01-01Z' WHERE identity=$1 AND publication=$2",
     [identity, publication],
   );
-  return {
-    identity,
-    publication,
-    generation: rows[0].digest_schedule_id,
-    due: "2025-01-01T00:00:00.000Z",
-  };
+  return { identity, publication, due: "2025-01-01T00:00:00.000Z" };
 }
 
 beforeEach(async () => {
@@ -279,7 +272,6 @@ describe("scheduled digest delivery", () => {
       [identity],
     );
     expect(rows).toEqual([{ mode: "live" }, { mode: "test" }]);
-    expect(await isCurrentDigestSchedule(current)).toBe(true);
   });
 
   it("skips an empty period and records a checkpoint without sending", async () => {
@@ -304,46 +296,108 @@ describe("scheduled digest delivery", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("cancels old jobs when turned off or changed to weekly", async () => {
+  it("does not send a queued digest after the writer turns it off", async () => {
     const current = await schedule();
     await pool.query(
       "SELECT set_notification_preference($1,$2,'digest','off')",
-      [identity, publication],
-    );
-    expect(await isCurrentDigestSchedule(current)).toBe(false);
-    expect(await advanceDigestSchedule(current)).toBeNull();
-    await pool.query(
-      "SELECT set_notification_preference($1,$2,'digest','weekly')",
       [identity, publication],
     );
     await sendDigest({ ...args(), schedule: current });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("advances once under concurrent retries without changing generation", async () => {
-    const current = await schedule();
-    const [first, second] = await Promise.all([
-      advanceDigestSchedule(current),
-      advanceDigestSchedule(current),
-    ]);
-    expect(first).toEqual(second);
-    expect(first?.generation).toBe(current.generation);
-    expect(first?.due).toMatch(/T00:00:00.000Z$/);
-    expect(await isCurrentDigestSchedule(first!)).toBe(true);
-    expect(await isCurrentDigestSchedule(current)).toBe(false);
-  });
-
-  it("preserves the schedule when saving the same choice or changing comments", async () => {
-    const current = await schedule();
-    await pool.query(
-      "SELECT set_notification_preference($1,$2,'digest','daily')",
-      [identity, publication],
-    );
+  it("restarts the schedule when the frequency changes, and keeps it when only comments change", async () => {
+    await schedule();
     await pool.query(
       "SELECT set_notification_preference($1,$2,'comments','instant')",
       [identity, publication],
     );
-    expect(await isCurrentDigestSchedule(current)).toBe(true);
+    await pool.query(
+      "SELECT set_notification_preference($1,$2,'digest','daily')",
+      [identity, publication],
+    );
+    const nextAt = async () =>
+      (
+        await pool.query(
+          "SELECT digest_next_at FROM notification_preferences WHERE identity=$1 AND publication=$2",
+          [identity, publication],
+        )
+      ).rows[0].digest_next_at;
+    expect(await nextAt()).not.toBeNull();
+    await pool.query(
+      "SELECT set_notification_preference($1,$2,'digest','weekly')",
+      [identity, publication],
+    );
+    expect(await nextAt()).toBeNull();
+  });
+
+  it("starts a new opt-in at its next boundary and leaves a running schedule alone", async () => {
+    await pool.query(
+      "SELECT set_notification_preference($1,$2,'digest','daily')",
+      [identity, publication],
+    );
+    await initializeDigestSchedules();
+    const { rows } = await pool.query(
+      "SELECT digest_next_at FROM notification_preferences WHERE identity=$1 AND publication=$2",
+      [identity, publication],
+    );
+    expect(rows[0].digest_next_at.toISOString()).toMatch(/T00:00:00.000Z$/);
+    expect(rows[0].digest_next_at.getTime()).toBeGreaterThan(Date.now());
+    await initializeDigestSchedules();
+    const { rows: again } = await pool.query(
+      "SELECT digest_next_at FROM notification_preferences WHERE identity=$1 AND publication=$2",
+      [identity, publication],
+    );
+    expect(again[0].digest_next_at).toEqual(rows[0].digest_next_at);
+  });
+
+  it("finds a due digest only while the writer is opted in", async () => {
+    const current = await schedule();
+    const due = (await findDueDigests(10_000)).filter(
+      (d) => d.identity === identity,
+    );
+    expect(due).toEqual([{ ...current, frequency: "daily" }]);
+    await pool.query(
+      "SELECT set_notification_preference($1,$2,'digest','off')",
+      [identity, publication],
+    );
+    expect(
+      (await findDueDigests(10_000)).filter((d) => d.identity === identity),
+    ).toEqual([]);
+  });
+
+  it("advances to the next boundary after now, once, even when run twice", async () => {
+    await schedule();
+    const [due] = (await findDueDigests(10_000)).filter(
+      (d) => d.identity === identity,
+    );
+    await Promise.all([
+      advanceDigestSchedules([due]),
+      advanceDigestSchedules([due]),
+    ]);
+    const { rows } = await pool.query(
+      "SELECT digest_next_at FROM notification_preferences WHERE identity=$1 AND publication=$2",
+      [identity, publication],
+    );
+    expect(rows[0].digest_next_at.toISOString()).toMatch(/T00:00:00.000Z$/);
+    expect(rows[0].digest_next_at.getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it("does not overwrite a schedule that was reset after the due digests were found", async () => {
+    await schedule();
+    const [due] = (await findDueDigests(10_000)).filter(
+      (d) => d.identity === identity,
+    );
+    await pool.query(
+      "SELECT set_notification_preference($1,$2,'digest','weekly')",
+      [identity, publication],
+    );
+    await advanceDigestSchedules([due]);
+    const { rows } = await pool.query(
+      "SELECT digest_next_at FROM notification_preferences WHERE identity=$1 AND publication=$2",
+      [identity, publication],
+    );
+    expect(rows[0].digest_next_at).toBeNull();
   });
 
   it("can retry the same automatic period after explicit provider rejection", async () => {
@@ -374,26 +428,5 @@ describe("scheduled digest delivery", () => {
       schedule: { ...current, due: "2099-01-01T00:00:00.000Z" },
     });
     expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it("queues the persisted next run, including when retrying a failed initial enqueue", async () => {
-    await pool.query(
-      "SELECT set_notification_preference($1,$2,'digest','daily')",
-      [identity, publication],
-    );
-    vi.mocked(inngest.send).mockRejectedValueOnce(new Error("Queue offline"));
-    await expect(queueDigestSchedule(identity, publication)).rejects.toThrow(
-      "Queue offline",
-    );
-    const { rows: first } = await pool.query(
-      "SELECT digest_next_at FROM notification_preferences WHERE identity=$1 AND publication=$2",
-      [identity, publication],
-    );
-    vi.mocked(inngest.send).mockResolvedValueOnce({ ids: [] });
-    await queueDigestSchedule(identity, publication);
-    const event = vi.mocked(inngest.send).mock.calls.at(-1)![0] as {
-      data: DigestSchedule;
-    };
-    expect(event.data.due).toBe(first[0].digest_next_at.toISOString());
   });
 });

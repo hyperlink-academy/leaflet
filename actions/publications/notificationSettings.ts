@@ -8,7 +8,6 @@ import {
 import { getAuthIdentity } from "src/auth";
 import { Err, Ok } from "src/result";
 import { supabaseServerClient } from "supabase/serverClient";
-import { queueDigestSchedule } from "src/digests/schedule";
 import { isDigestFrequency } from "src/digests/frequencies";
 
 async function authorize(publication: string) {
@@ -64,12 +63,5 @@ export async function setNotificationPreference(
     },
   );
   if (error) return Err("database_error" as const);
-  if (type === "digest" && frequency !== "off") {
-    try {
-      await queueDigestSchedule(identity.id, publication);
-    } catch {
-      return Err("schedule_error" as const);
-    }
-  }
   return Ok(null);
 }
