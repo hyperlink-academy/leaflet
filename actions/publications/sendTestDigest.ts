@@ -8,6 +8,7 @@ import { Err } from "src/result";
 import { isPostmarkConfigured } from "src/notificationEmails/postmark";
 import { canUseEmailNotifications } from "src/entitlements";
 
+// This is for devs. Only certain people are allowed to see the button and send email digests to test things work
 export async function sendTestDigest(publication: string) {
   const identity = await getAuthIdentity();
   if (

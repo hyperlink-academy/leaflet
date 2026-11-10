@@ -24,7 +24,7 @@ async function authorize(publication: string) {
   return identity;
 }
 
-// Load all email choices together; existing publications remain opted out.
+// Load all email choices together; default to off.
 export async function getNotificationPreferences(publication: string) {
   const identity = await authorize(publication);
   if (!identity) return Err("unauthorized" as const);

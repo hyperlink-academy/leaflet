@@ -7,21 +7,19 @@ import {
   setNotificationPreference,
 } from "actions/publications/notificationSettings";
 import { ButtonSecondary } from "components/Buttons";
-import { Menu, RadioMenuGroup, RadioMenuItem } from "components/Menu";
 import { SettingsSection } from "components/SettingsLayout";
 import { usePublicationData } from "../PublicationSWRProvider";
 import { useIdentityData } from "components/IdentityProvider";
 import { isDevMode } from "src/utils/isDevMode";
 import { sendTestDigest } from "actions/publications/sendTestDigest";
-import { CommentNotificationSetting } from "./CommentNotificationSetting";
+import { NotificationSettingRow } from "./NotificationSettingRow";
+import type { NotificationPreference } from "src/notificationPreferences";
 import { digestLabels as labels } from "src/digests/frequencies";
 
 export function NotificationSettings() {
   const { data: publicationData } = usePublicationData();
   const { identity } = useIdentityData();
   const publication = publicationData?.publication?.uri;
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState("");
   const [sendingTest, setSendingTest] = useState(false);
   const [testStatus, setTestStatus] = useState("");
   const [testError, setTestError] = useState(false);
@@ -35,6 +33,19 @@ export function NotificationSettings() {
       return result.value;
     },
   );
+
+  async function savePreference(preference: NotificationPreference) {
+    if (!publication) throw new Error("Publication unavailable");
+    const result = await setNotificationPreference(publication, preference);
+    if (!result.ok) throw new Error(result.error);
+    await mutate(
+      (current) =>
+        current
+          ? { ...current, [preference.type]: preference.frequency }
+          : current,
+      { revalidate: false },
+    );
+  }
 
   return (
     <SettingsSection title="Notifications">
@@ -55,115 +66,58 @@ export function NotificationSettings() {
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <th scope="row" className="py-3 pr-4 font-normal">
-              Email
-            </th>
-            <td className="py-3 pr-4">Email digest</td>
-            <td className="py-3">
-              <div className="flex items-center gap-2">
-                <Menu
-                  asChild
-                  trigger={
-                    <ButtonSecondary
-                      className="w-32! justify-between!"
-                      disabled={!data || isLoading || saving || !!error}
-                      aria-label="Email digest frequency"
-                      aria-busy={saving}
-                    >
-                      <span>
-                        {isLoading
-                          ? "Loading…"
-                          : data
-                            ? labels[data.digest]
-                            : "Unavailable"}
-                      </span>
-                      <span aria-hidden="true">▾</span>
-                    </ButtonSecondary>
+          <NotificationSettingRow
+            label="Email digest"
+            value={data?.digest}
+            options={labels}
+            isLoading={isLoading}
+            disabled={!!error}
+            onChange={(frequency) =>
+              savePreference({ type: "digest", frequency })
+            }
+          >
+            {isDevMode(identity) && (
+              <ButtonSecondary
+                type="button"
+                disabled={sendingTest || !publication}
+                aria-busy={sendingTest}
+                onClick={async () => {
+                  if (!publication || sendingTest) return;
+                  setSendingTest(true);
+                  setTestError(false);
+                  setTestStatus("");
+                  try {
+                    const result = await sendTestDigest(publication);
+                    if (result.ok) {
+                      setTestStatus(`Test digest sent to ${identity?.email}.`);
+                    } else {
+                      setTestError(true);
+                      setTestStatus(testErrors[result.error]);
+                    }
+                  } catch {
+                    setTestError(true);
+                    setTestStatus(
+                      "Couldn’t confirm delivery. Check your inbox before trying again.",
+                    );
+                  } finally {
+                    setSendingTest(false);
                   }
-                >
-                  <RadioMenuGroup
-                    value={data?.digest || "off"}
-                    onValueChange={async (value) => {
-                      if (!publication || saving || !(value in labels)) return;
-                      setSaving(true);
-                      setSaveError("");
-                      try {
-                        const frequency = value as keyof typeof labels;
-                        const result = await setNotificationPreference(
-                          publication,
-                          { type: "digest", frequency },
-                        );
-                        if (!result.ok) throw new Error(result.error);
-                        await mutate(
-                          (current) =>
-                            current
-                              ? { ...current, digest: frequency }
-                              : current,
-                          { revalidate: false },
-                        );
-                      } catch {
-                        setSaveError(
-                          "Couldn’t save your preference. Please try again.",
-                        );
-                      } finally {
-                        setSaving(false);
-                      }
-                    }}
-                  >
-                    {Object.entries(labels).map(([value, label]) => (
-                      <RadioMenuItem
-                        key={value}
-                        value={value}
-                        selected={data?.digest === value}
-                      >
-                        {label}
-                      </RadioMenuItem>
-                    ))}
-                  </RadioMenuGroup>
-                </Menu>
-                {isDevMode(identity) && (
-                  <ButtonSecondary
-                    type="button"
-                    disabled={sendingTest || !publication}
-                    aria-busy={sendingTest}
-                    onClick={async () => {
-                      if (!publication || sendingTest) return;
-                      setSendingTest(true);
-                      setTestError(false);
-                      setTestStatus("");
-                      try {
-                        const result = await sendTestDigest(publication);
-                        if (result.ok) {
-                          setTestStatus(
-                            `Test digest sent to ${identity?.email}.`,
-                          );
-                        } else {
-                          setTestError(true);
-                          setTestStatus(testErrors[result.error]);
-                        }
-                      } catch {
-                        setTestError(true);
-                        setTestStatus(
-                          "Couldn’t confirm delivery. Check your inbox before trying again.",
-                        );
-                      } finally {
-                        setSendingTest(false);
-                      }
-                    }}
-                  >
-                    Send test
-                  </ButtonSecondary>
-                )}
-              </div>
-            </td>
-          </tr>
-          {publication && identity && (
-            <CommentNotificationSetting
-              identity={identity.id}
-              publication={publication}
-            />
-          )}
+                }}
+              >
+                Send test
+              </ButtonSecondary>
+            )}
+          </NotificationSettingRow>
+          <NotificationSettingRow
+            label="Comments"
+            value={data?.comments}
+            options={{ off: "Off", instant: "Instant" }}
+            isLoading={isLoading}
+            disabled={!!error}
+            onChange={(frequency) =>
+              savePreference({ type: "comments", frequency })
+            }
+          />
         </tbody>
       </table>
       {error && (
@@ -174,7 +128,6 @@ export function NotificationSettings() {
           </button>
         </p>
       )}
-      {saveError && <p role="alert">{saveError}</p>}
       {testStatus && <p role={testError ? "alert" : "status"}>{testStatus}</p>}
       <p className="text-sm text-tertiary">
         Digests are only sent when there is new activity.

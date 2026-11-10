@@ -172,12 +172,16 @@ describe("test digest delivery", () => {
     expect(await sendDigest(args())).toEqual({ ok: true, value: null });
     expect(body().To).toBe("owner@example.com");
     expect(body().Subject).toBe("Quick digest on My publication");
-    expect(body().TextBody).toContain("Subscribers: +2 since starting");
-    expect(body().TextBody).toContain("Likes: +1 since starting");
-    expect(body().TextBody).toContain("Comments: +1 since starting");
-    expect(body().TextBody).toContain("Mentions: +2 since starting");
-    expect(body().TextBody).toContain("Post questions: +1 since starting");
-    expect(body().TextBody).toContain("Quotes: +1 since starting");
+    expect(body().HtmlBody).toContain(
+      "https://leaflet.pub/email-assets/leaflet.png",
+    );
+    expect(body().HtmlBody).toContain('aria-label="New publication activity"');
+    expect(body().TextBody).toContain("Subscribers: +2");
+    expect(body().TextBody).toContain("Likes: +1");
+    expect(body().TextBody).toContain("Comments: +1");
+    expect(body().TextBody).toContain("Mentions: +2");
+    expect(body().TextBody).toContain("Post questions: +1");
+    expect(body().TextBody).toContain("Quotes: +1");
     const { rows } = await pool.query(
       "SELECT status, sent_at FROM notification_history WHERE identity=$1",
       [identity],
@@ -190,10 +194,8 @@ describe("test digest delivery", () => {
   it("uses the previous successful digest and permits zero-activity manual tests", async () => {
     await sendDigest(args());
     expect(await sendDigest(args())).toEqual({ ok: true, value: null });
-    expect(body(1).TextBody).toContain(
-      "Subscribers: +0 since your last digest",
-    );
-    expect(body(1).TextBody).toContain("Comments: +0 since your last digest");
+    expect(body(1).TextBody).toContain("Subscribers: +0");
+    expect(body(1).TextBody).toContain("Comments: +0");
   });
 
   it("does not advance the successful cutoff on provider rejection", async () => {
@@ -205,7 +207,7 @@ describe("test digest delivery", () => {
       error: "email_send_failed",
     });
     expect(await sendDigest(args())).toEqual({ ok: true, value: null });
-    expect(body(1).TextBody).toContain("Subscribers: +2 since starting");
+    expect(body(1).TextBody).toContain("Subscribers: +2");
   });
 
   it("blocks a duplicate send after an ambiguous delivery", async () => {
@@ -308,7 +310,7 @@ describe("scheduled digest delivery", () => {
       ok: true,
       value: null,
     });
-    expect(body().TextBody).toContain("Subscribers: +2 since starting");
+    expect(body().TextBody).toContain("Subscribers: +2");
   });
 
   it("keeps test history and automatic history separate", async () => {
@@ -316,7 +318,7 @@ describe("scheduled digest delivery", () => {
     await sendDigest(args());
     await sendDigest({ ...args(), schedule: current });
     expect(body(1).Tag).toBe("publication-digest");
-    expect(body(1).TextBody).toContain("Subscribers: +2 since starting");
+    expect(body(1).TextBody).toContain("Subscribers: +2");
     expect(body(1).TextBody).not.toContain("test digest");
     const { rows } = await pool.query(
       "SELECT mode FROM notification_history WHERE identity=$1 ORDER BY mode",

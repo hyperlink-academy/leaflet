@@ -5,6 +5,7 @@ export type PostmarkEmail = {
   to: string;
   subject: string;
   text: string;
+  html?: string;
   tag: string;
 };
 
@@ -43,6 +44,7 @@ export async function sendPostmarkEmail(
         To: email.to,
         Subject: email.subject,
         TextBody: email.text,
+        ...(email.html && { HtmlBody: email.html }),
         Tag: email.tag,
       }),
     });

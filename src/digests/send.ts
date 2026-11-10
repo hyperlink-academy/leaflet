@@ -27,7 +27,7 @@ type DigestArgs = {
 };
 type DigestMode = "live" | "test";
 type ClaimedDigest = {
-  message: ReturnType<typeof digestMessage>;
+  message: Awaited<ReturnType<typeof digestMessage>>;
   ref: DeliveryRef;
   mode: DigestMode;
 };
@@ -116,6 +116,13 @@ async function claimDigestPeriod(
       publication: args.publication,
       deliveryKey: digestDeliveryKey(mode, period.start, period.end),
     };
+    // Render before claiming delivery so a template failure remains safe to retry.
+    const message = await digestMessage(
+      publications[0].name,
+      activity,
+      previousEnd,
+      mode === "test",
+    );
     const claimed = await claimDelivery(db, {
       ...ref,
       notificationType: "digest",
@@ -127,12 +134,7 @@ async function claimDigestPeriod(
     committed = true;
     if (empty || !claimed) return Ok(null);
     return Ok({
-      message: digestMessage(
-        publications[0].name,
-        activity,
-        previousEnd,
-        mode === "test",
-      ),
+      message,
       ref,
       mode,
     });
@@ -155,6 +157,7 @@ async function deliverDigest(
       to: args.email,
       subject: message.subject,
       text: message.text,
+      html: message.html,
       tag: mode === "test" ? "publication-digest-test" : "publication-digest",
     },
     args.apiKey,
