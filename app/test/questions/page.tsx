@@ -14,6 +14,7 @@ import {
   QuestionsEditorNotice,
   QuestionsEmpty,
   QuestionsList,
+  QuestionsRestricted,
   QuestionsModeration,
   LoggedOutQuestionComposer,
 } from "components/Blocks/QuestionsBlock/QuestionsView";
@@ -22,6 +23,13 @@ import { PublishedAnswer } from "components/Blocks/QuestionsBlock/PublishedAnswe
 import type { FacetedText } from "components/Composer/facetedText";
 
 const VIEWER = "did:plc:viewer";
+// Not a real publication: subscribing from its modal fails.
+const TEST_PUBLICATION = {
+  publicationUri: "at://did:plc:author/site.standard.publication/test",
+  publicationName: "The Author's Notes",
+  publicationDescription: "Essays on building small software.",
+  newsletterMode: false,
+};
 const AUTHOR = "did:plc:author";
 const AUTHOR_PROFILE = {
   did: AUTHOR,
@@ -418,6 +426,37 @@ export default function QuestionsTestPage() {
           questions={answered}
           renderAnswer={renderPublished}
           action={<LoggedOutQuestionComposer />}
+        />
+      </Case>
+      <Case label="Published — reader who isn't a subscriber (Subscribe opens the subscribe modal)">
+        <QuestionsList
+          questions={answered}
+          renderAnswer={renderPublished}
+          action={
+            <QuestionsRestricted
+              audience="subscribers"
+              author={AUTHOR_PROFILE}
+              publication={TEST_PUBLICATION}
+            />
+          }
+        />
+      </Case>
+      <Case label="Published — reader the author doesn't follow">
+        <QuestionsList
+          questions={answered}
+          renderAnswer={renderPublished}
+          action={
+            <QuestionsRestricted audience="follows" author={AUTHOR_PROFILE} />
+          }
+        />
+      </Case>
+      <Case label="Published — reader who doesn't follow the author">
+        <QuestionsList
+          questions={[]}
+          renderAnswer={renderPublished}
+          action={
+            <QuestionsRestricted audience="followers" author={AUTHOR_PROFILE} />
+          }
         />
       </Case>
       <Case label="Published — reader, logged in (composer + help text)">

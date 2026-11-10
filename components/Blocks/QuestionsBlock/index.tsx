@@ -71,7 +71,13 @@ export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
           <BlockSettings label="Questions" className="max-w-sm">
             <div className="flex flex-col gap-2 ">
               <div className="font-bold ">Who can submit questions</div>
-              {QUESTIONS_AUDIENCES.map((option) => {
+              {QUESTIONS_AUDIENCES.filter(
+                // Only a post in a publication has subscribers
+                (option) =>
+                  option !== "subscribers" ||
+                  !!data?.publications ||
+                  audience === option,
+              ).map((option) => {
                 let selected = audience === option;
                 let id = `questions-audience-${props.entityID}-${option}`;
                 return (

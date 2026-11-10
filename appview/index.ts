@@ -653,6 +653,7 @@ async function handleEvent(evt: Event) {
       try {
         if (
           !(await canAskQuestion(
+            supabase,
             record.value.subject,
             evt.did,
             questionsAudience(block.audience),

@@ -524,6 +524,20 @@ export let Block = ({
                 buttonText={block.buttonText}
                 audience={questionsAudience(block.audience)}
                 showPending={!!block.showPending}
+                publication={
+                  document.publication
+                    ? {
+                        publicationUri: document.publication.uri,
+                        publicationUrl: document.normalizedPublication?.url,
+                        publicationName:
+                          document.normalizedPublication?.name ??
+                          document.publication.name,
+                        publicationDescription:
+                          document.normalizedPublication?.description,
+                        newsletterMode: document.publication.newsletterMode,
+                      }
+                    : undefined
+                }
                 autoFocus={targeted}
               />
             )}

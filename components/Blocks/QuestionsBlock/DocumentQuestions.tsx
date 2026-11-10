@@ -25,6 +25,7 @@ import type {
 import type { QuestionsAudience } from "src/questionsAudience";
 import type { InteractionAuthor } from "src/interactionAuthor";
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
+import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
 import { ComposerPlaceholder } from "components/Composer";
 import {
   DisabledAskButton,
@@ -37,7 +38,9 @@ import {
   QuestionsEmpty,
   QuestionsList,
   QuestionsModeration,
+  QuestionsRestricted,
   LoggedOutQuestionComposer,
+  type QuestionsPublication,
 } from "./QuestionsView";
 import { PublishedAnswer } from "./PublishedAnswer";
 import type { FacetedText } from "components/Composer/facetedText";
@@ -53,6 +56,7 @@ const questionErrorMessages: Partial<Record<QuestionError["type"], string>> = {
   questions_closed: "This post isn't taking questions.",
   not_follows: "Only people the author follows can submit a question.",
   not_follower: "Only the author's followers can submit a question.",
+  not_subscriber: "Only subscribers can submit a question.",
   answered: "This question has been answered, so it can't be edited.",
 };
 
@@ -74,6 +78,8 @@ export function DocumentQuestions(props: {
   initialQuestions?: DocumentQuestion[];
   buttonText?: string;
   audience?: QuestionsAudience;
+
+  publication?: QuestionsPublication;
   editor?: {
     // The questions block entity, whose answer drafts hang off it
     blockEntity: string;
@@ -115,12 +121,24 @@ export function DocumentQuestions(props: {
     },
   );
   let audience = props.audience ?? "anyone";
-  let { data: canAsk } = useSWR(
-    viewer && audience !== "anyone" && !props.editor
+  // Whether the viewer may ask, so readers who can't are told why instead of
+  // offered the composer. Their subscriptions come with their identity, so
+  // subscribing from the block lets them ask straight away; the follow graph
+  // is checked on the server. askQuestion checks either way.
+  let { subscribed } = useViewerSubscription(props.publication?.publicationUri);
+  let followAudience = audience === "follows" || audience === "followers";
+  let { data: followCheck } = useSWR(
+    viewer && followAudience && !props.editor
       ? ["can_ask_question", props.documentUri, viewer, audience]
       : null,
     () => getCanAskQuestion(props.documentUri, audience),
   );
+  let canAsk =
+    audience === "anyone"
+      ? true
+      : audience === "subscribers"
+        ? subscribed
+        : followCheck?.canAsk;
   useDocumentEvents(props.documentUri, ["question", "answer"], () => {
     setChanged(true);
     mutate();
@@ -239,19 +257,27 @@ export function DocumentQuestions(props: {
     toaster({ content: "Question sent.", type: "success" });
     return true;
   };
+  let restricted = !!viewer && canAsk === false;
   return (
     <QuestionsList
       {...help}
+      // The restriction is already in place of the composer
+      audience={restricted ? "anyone" : audience}
       questions={questions}
       onWithdraw={withdraw}
       onEdit={edit}
       renderAnswer={publishedAnswer}
       action={
-        identityPending ||
-        (viewer && audience !== "anyone" && canAsk === undefined) ? (
+        identityPending || (viewer && canAsk === undefined) ? (
           <ComposerPlaceholder className="min-h-20!" />
         ) : viewer ? (
-          canAsk !== false && (
+          restricted && audience !== "anyone" ? (
+            <QuestionsRestricted
+              audience={audience}
+              author={followCheck?.author ?? null}
+              publication={props.publication}
+            />
+          ) : (
             <QuestionComposer
               asker={viewerAuthor}
               draftKey={`question:${props.documentUri}${props.block ? `:${props.block}` : ""}`}
@@ -290,10 +316,7 @@ function PublishedAuthorView(props: {
   );
   let toEditor = (label: string) =>
     editLink && (
-      <QuestionAction
-        primary
-        onClick={() => window.location.assign(editLink)}
-      >
+      <QuestionAction primary onClick={() => window.location.assign(editLink)}>
         {label}
       </QuestionAction>
     );

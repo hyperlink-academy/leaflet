@@ -3,6 +3,8 @@ import React, { Fragment, useState } from "react";
 import { Avatar } from "components/Avatar";
 import { Separator } from "components/Layout";
 import { LoginModal } from "components/LoginButton";
+import { Modal } from "components/Modal";
+import { SubscribePanel } from "components/Subscribe/SubscribeButton";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { BaseTextBlock } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
@@ -182,6 +184,54 @@ export function LoggedOutQuestionComposer(props: {
         )}{" "}
         {!props.linkAccount && "with"} an Atmosphere account to ask a question!
       </div>
+    </div>
+  );
+}
+
+export type QuestionsPublication = {
+  publicationUri: string;
+  publicationUrl?: string;
+  publicationName: string;
+  publicationDescription?: string;
+  newsletterMode: boolean;
+};
+
+export function QuestionsRestricted(props: {
+  audience: Exclude<QuestionsAudience, "anyone">;
+  author: InteractionAuthor | null;
+  publication?: QuestionsPublication;
+  subscribeTrigger?: React.ReactNode;
+}) {
+  let author = props.author ? authorDisplayName(props.author) : "the author";
+  return (
+    <div className="opaque-container text-sm italic text-tertiary text-center sm:p-4 p-3">
+      {props.audience === "subscribers" ? (
+        <>
+          Subscribers can submit a question.{" "}
+          {props.subscribeTrigger ??
+            (props.publication && (
+              <Modal
+                asChild
+                trigger={
+                  <button className="text-accent-contrast font-bold not-italic">
+                    Subscribe!
+                  </button>
+                }
+              >
+                <div className="w-md max-w-full">
+                  <SubscribePanel
+                    {...props.publication}
+                    source={{ placement: "questions_block" }}
+                  />
+                </div>
+              </Modal>
+            ))}
+        </>
+      ) : props.audience === "follows" ? (
+        `People ${author} follows can submit a question.`
+      ) : (
+        `People who follow ${author} can submit a question.`
+      )}
     </div>
   );
 }

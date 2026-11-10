@@ -1,5 +1,10 @@
 // Who a questions block takes questions from; see pub.leaflet.blocks.questions.
-export const QUESTIONS_AUDIENCES = ["anyone", "follows", "followers"] as const;
+export const QUESTIONS_AUDIENCES = [
+  "anyone",
+  "subscribers",
+  "follows",
+  "followers",
+] as const;
 export type QuestionsAudience = (typeof QUESTIONS_AUDIENCES)[number];
 
 export function isQuestionsAudience(
@@ -17,6 +22,10 @@ export const QUESTIONS_AUDIENCE_LABELS: Record<
   { label: string; description: string }
 > = {
   anyone: { label: "Anyone", description: "Any Atmosphere account." },
+  subscribers: {
+    label: "Subscribers",
+    description: "Only readers subscribed to your publication.",
+  },
   follows: {
     label: "People you follow",
     description: "Only accounts you follow on Bluesky.",
@@ -29,6 +38,8 @@ export const QUESTIONS_AUDIENCE_LABELS: Record<
 
 // Shown to readers under the composer
 export function questionsAudienceNotice(audience: QuestionsAudience) {
+  if (audience === "subscribers")
+    return "Only subscribers can submit questions.";
   if (audience === "follows")
     return "Only people the author follows can submit questions.";
   if (audience === "followers")

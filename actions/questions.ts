@@ -40,6 +40,11 @@ import {
   type QuestionState,
 } from "src/documentQuestions";
 import { scanIndexLocal } from "src/replicache/utils";
+import { getProfiles } from "src/identity";
+import {
+  interactionAuthor,
+  type InteractionAuthor,
+} from "src/interactionAuthor";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { processBlocksToPages } from "src/utils/factsToPagesRecord";
@@ -63,20 +68,32 @@ export async function getDocumentQuestions(
   return loadDocumentQuestions(subject, identity?.atp_did ?? null);
 }
 
-// Whether the signed-in viewer is in `audience` for `subject`, so readers who
-// can't ask aren't offered the composer. askQuestion checks again.
+// Whether the signed-in viewer is in `audience` for `subject`, with the post's
+// author, whom the explanation for a reader who isn't names. The client
+// asks this for the follow audiences, which only the server can check.
+// askQuestion checks again.
 export async function getCanAskQuestion(
   subject: string,
   audience: QuestionsAudience,
-): Promise<boolean> {
+): Promise<{ canAsk: boolean; author: InteractionAuthor | null }> {
   const identity = await getAuthIdentity();
-  if (!identity?.atp_did) return false;
+  if (!identity?.atp_did) return { canAsk: false, author: null };
+  let canAsk: boolean;
   try {
-    return await canAskQuestion(subject, identity.atp_did, audience);
+    canAsk = await canAskQuestion(
+      supabaseServerClient,
+      subject,
+      identity.atp_did,
+      audience,
+    );
   } catch (e) {
-    console.error("[questions] follow check failed", e);
-    return true;
+    console.error("[questions] audience check failed", e);
+    return { canAsk: true, author: null };
   }
+  if (canAsk) return { canAsk, author: null };
+  const authorDid = new AtUri(subject).host;
+  const profiles = await getProfiles([authorDid]);
+  return { canAsk, author: interactionAuthor(authorDid, profiles) };
 }
 
 export type QuestionError =
@@ -87,6 +104,7 @@ export type QuestionError =
         | "questions_closed"
         | "not_follows"
         | "not_follower"
+        | "not_subscriber"
         | "not_owner"
         | "answered"
         | "failed";
@@ -125,12 +143,19 @@ export async function askQuestion(args: {
   if (!questionsBlock) return Err({ type: "questions_closed" });
   const audience = questionsAudience(questionsBlock.audience);
   try {
-    if (!(await canAskQuestion(args.subject, did, audience)))
+    if (
+      !(await canAskQuestion(supabaseServerClient, args.subject, did, audience))
+    )
       return Err({
-        type: audience === "follows" ? "not_follows" : "not_follower",
+        type:
+          audience === "subscribers"
+            ? "not_subscriber"
+            : audience === "follows"
+              ? "not_follows"
+              : "not_follower",
       });
   } catch (e) {
-    console.error("[questions] follow check failed", e);
+    console.error("[questions] audience check failed", e);
     return Err({ type: "failed" });
   }
 
