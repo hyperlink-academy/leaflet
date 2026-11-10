@@ -15,6 +15,7 @@ import {
   isPostmarkConfigured,
   sendPostmarkEmail,
 } from "src/notificationEmails/postmark";
+import { emailNotificationsEnabled } from "src/notificationEmails/entitlement";
 
 type DigestArgs = {
   identity: string;
@@ -70,6 +71,8 @@ async function claimDigestPeriod(
       [args.publication, args.ownerDid],
     );
     if (!publications[0]) return Err("unauthorized" as const);
+    if (!(await emailNotificationsEnabled(args.identity, db)))
+      return Err("unauthorized" as const);
     if (args.schedule) {
       const { rows } = await db.query(
         "SELECT 1 FROM notification_preferences WHERE identity=$1 AND publication=$2 AND channel='email' AND 'digest'=ANY(enabled_types) AND $3::timestamptz <= clock_timestamp() FOR UPDATE",

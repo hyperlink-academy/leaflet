@@ -1,4 +1,5 @@
 import { pool } from "supabase/pool";
+import { EMAIL_NOTIFICATION_ENTITLEMENT_KEY } from "src/entitlements";
 import {
   digestFrequencyValues,
   isDigestFrequency,
@@ -29,8 +30,12 @@ export async function initializeDigestSchedules() {
   let initialized = 0;
   for (const frequency of digestFrequencyValues) {
     const { rowCount } = await pool.query(
-      "UPDATE notification_preferences SET digest_next_at=$1 WHERE channel='email' AND 'digest'=ANY(enabled_types) AND digest_frequency=$2 AND digest_next_at IS NULL",
-      [nextDigestAt(frequency, now), frequency],
+      "UPDATE notification_preferences p SET digest_next_at=$1 WHERE channel='email' AND 'digest'=ANY(enabled_types) AND digest_frequency=$2 AND digest_next_at IS NULL AND EXISTS (SELECT 1 FROM user_entitlements e WHERE e.identity_id=p.identity AND e.entitlement_key=$3 AND (e.expires_at IS NULL OR e.expires_at > now()))",
+      [
+        nextDigestAt(frequency, now),
+        frequency,
+        EMAIL_NOTIFICATION_ENTITLEMENT_KEY,
+      ],
     );
     initialized += rowCount ?? 0;
   }
@@ -44,8 +49,8 @@ export async function findDueDigests(limit: number): Promise<DueDigest[]> {
     due: Date;
     digest_frequency: string | null;
   }>(
-    "SELECT identity, publication, digest_next_at AS due, digest_frequency FROM notification_preferences WHERE channel='email' AND 'digest'=ANY(enabled_types) AND digest_next_at <= now() ORDER BY digest_next_at LIMIT $1",
-    [limit],
+    "SELECT p.identity, p.publication, p.digest_next_at AS due, p.digest_frequency FROM notification_preferences p JOIN user_entitlements e ON e.identity_id=p.identity AND e.entitlement_key=$2 WHERE channel='email' AND 'digest'=ANY(enabled_types) AND digest_next_at <= now() AND (e.expires_at IS NULL OR e.expires_at > now()) ORDER BY digest_next_at LIMIT $1",
+    [limit, EMAIL_NOTIFICATION_ENTITLEMENT_KEY],
   );
   return rows.flatMap((row) =>
     isDigestFrequency(row.digest_frequency)

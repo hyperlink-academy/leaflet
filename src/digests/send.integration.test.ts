@@ -20,6 +20,7 @@ vi.mock("supabase/pool", async () => {
 });
 import { pool } from "supabase/pool";
 import { sendDigest } from "./send";
+import { sendScheduledDigest } from "./sendScheduled";
 import { loadDigestActivity } from "./activity";
 import {
   advanceDigestSchedules,
@@ -76,6 +77,10 @@ beforeEach(async () => {
   await pool.query(
     "INSERT INTO identities (id, atp_did) VALUES ($1,$2), ($3,$4)",
     [identity, did, reader, readerDid],
+  );
+  await pool.query(
+    "INSERT INTO user_entitlements (identity_id, entitlement_key) VALUES ($1, 'email_notification_enabled')",
+    [identity],
   );
   for (const [pub, doc] of [
     [publication, document],
@@ -143,6 +148,26 @@ afterEach(async () => {
 afterAll(() => pool.end());
 
 describe("test digest delivery", () => {
+  it.each(["revoked", "expired"])(
+    "blocks email delivery when the feature flag is %s",
+    async (state) => {
+      if (state === "revoked")
+        await pool.query(
+          "DELETE FROM user_entitlements WHERE identity_id=$1 AND entitlement_key='email_notification_enabled'",
+          [identity],
+        );
+      else
+        await pool.query(
+          "UPDATE user_entitlements SET expires_at=now()-interval '1 second' WHERE identity_id=$1",
+          [identity],
+        );
+      expect(await sendDigest(args())).toEqual({
+        ok: false,
+        error: "unauthorized",
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
   it("sends all six counts, deduplicates subscribers, and scopes activity to one publication", async () => {
     expect(await sendDigest(args())).toEqual({ ok: true, value: null });
     expect(body().To).toBe("owner@example.com");
@@ -243,6 +268,32 @@ describe("test digest delivery", () => {
 });
 
 describe("scheduled digest delivery", () => {
+  it.each(["revoked", "expired"])(
+    "skips queued digests and discovery when the flag is %s",
+    async (state) => {
+      const current = await schedule();
+      if (state === "revoked")
+        await pool.query(
+          "DELETE FROM user_entitlements WHERE identity_id=$1 AND entitlement_key='email_notification_enabled'",
+          [identity],
+        );
+      else
+        await pool.query(
+          "UPDATE user_entitlements SET expires_at=now()-interval '1 second' WHERE identity_id=$1",
+          [identity],
+        );
+      expect(
+        (await findDueDigests(10_000)).filter(
+          (row) => row.identity === identity,
+        ),
+      ).toEqual([]);
+      expect(await sendScheduledDigest(current)).toEqual({
+        skipped: "feature_disabled",
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
+
   it("ignores comment delivery state and other channels when finding the digest cutoff", async () => {
     const current = await schedule();
     await pool.query(

@@ -6,10 +6,15 @@ import { EMAIL_REGEX } from "src/utils/confirmationEmail";
 import { sendDigest } from "src/digests/send";
 import { Err } from "src/result";
 import { isPostmarkConfigured } from "src/notificationEmails/postmark";
+import { canUseEmailNotifications } from "src/entitlements";
 
 export async function sendTestDigest(publication: string) {
   const identity = await getAuthIdentity();
-  if (!identity?.atp_did || !isDevMode(identity))
+  if (
+    !identity?.atp_did ||
+    !isDevMode(identity) ||
+    !canUseEmailNotifications(identity.entitlements)
+  )
     return Err("unauthorized" as const);
   if (!identity.email || !EMAIL_REGEX.test(identity.email))
     return Err("email_required" as const);

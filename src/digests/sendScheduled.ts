@@ -1,8 +1,11 @@
 import { pool } from "supabase/pool";
 import type { DigestSchedule } from "./schedule";
 import { sendDigest } from "./send";
+import { emailNotificationsEnabled } from "src/notificationEmails/entitlement";
 
 export async function sendScheduledDigest(schedule: DigestSchedule) {
+  if (!(await emailNotificationsEnabled(schedule.identity)))
+    return { skipped: "feature_disabled" };
   const { rows } = await pool.query<{ atp_did: string; email: string | null }>(
     "SELECT atp_did, email FROM identities WHERE id=$1",
     [schedule.identity],

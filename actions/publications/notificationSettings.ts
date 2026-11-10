@@ -9,10 +9,12 @@ import { getAuthIdentity } from "src/auth";
 import { Err, Ok } from "src/result";
 import { supabaseServerClient } from "supabase/serverClient";
 import { isDigestFrequency } from "src/digests/frequencies";
+import { canUseEmailNotifications } from "src/entitlements";
 
 async function authorize(publication: string) {
   const identity = await getAuthIdentity();
-  if (!identity?.atp_did) return null;
+  if (!identity?.atp_did || !canUseEmailNotifications(identity.entitlements))
+    return null;
   const { data, error } = await supabaseServerClient
     .from("publications")
     .select("identity_did")

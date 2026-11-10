@@ -18,12 +18,26 @@ beforeEach(() => {
   getAuthIdentity.mockResolvedValue({
     id: "jinny",
     atp_did: "did:plc:nb7a7tldqk7jbnij6jvdj5eg",
+    entitlements: { email_notification_enabled: {} },
     email: "jinny@example.com",
   });
   sendDigest.mockResolvedValue({ ok: true, value: null });
 });
 
 describe("sendTestDigest", () => {
+  it("requires the email notification flag even for dev-mode users", async () => {
+    getAuthIdentity.mockResolvedValue({
+      id: "jinny",
+      atp_did: "did:plc:nb7a7tldqk7jbnij6jvdj5eg",
+      email: "jinny@example.com",
+      entitlements: {},
+    });
+    expect(await sendTestDigest("pub")).toEqual({
+      ok: false,
+      error: "unauthorized",
+    });
+    expect(sendDigest).not.toHaveBeenCalled();
+  });
   it("denies unapproved identities even when the action is invoked directly", async () => {
     getAuthIdentity.mockResolvedValue({
       id: "other",
@@ -40,6 +54,7 @@ describe("sendTestDigest", () => {
     getAuthIdentity.mockResolvedValue({
       id: "jinny",
       atp_did: "did:plc:nb7a7tldqk7jbnij6jvdj5eg",
+      entitlements: { email_notification_enabled: {} },
       email: null,
     });
     expect(await sendTestDigest("pub")).toEqual({

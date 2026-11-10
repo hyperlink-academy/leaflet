@@ -31,6 +31,7 @@ import {
 } from "src/utils/mergePreferences";
 import { DeletePublication } from "./DeletePublicationSection";
 import { UpgradeContent } from "app/(app)/(published)/lish/[did]/[publication]/UpgradeModal";
+import { canUseEmailNotifications } from "src/entitlements";
 
 export type PubSettingsTab =
   | "general"
@@ -61,7 +62,9 @@ export function usePubSettingsTabs(): {
       : []),
     { value: "contributors" as const, label: "Contributors" },
     { value: "newsletter" as const, label: "Newsletter" },
-    { value: "notifications" as const, label: "Notifications" },
+    ...(canUseEmailNotifications(identity?.entitlements)
+      ? [{ value: "notifications" as const, label: "Notifications" }]
+      : []),
   ];
 }
 
@@ -269,6 +272,7 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
   }
 
   if (props.tab === "notifications") {
+    if (!canUseEmailNotifications(identity?.entitlements)) return null;
     return (
       <SettingsPageLayout>
         <NotificationSettings />

@@ -68,6 +68,10 @@ beforeEach(async () => {
     [identity, did, `${identity}@example.com`, reader, readerDid],
   );
   await pool.query(
+    "INSERT INTO user_entitlements (identity_id, entitlement_key) VALUES ($1, 'email_notification_enabled')",
+    [identity],
+  );
+  await pool.query(
     "INSERT INTO publications (uri, name, identity_did) VALUES ($1,'Test publication',$2)",
     [publication, did],
   );
@@ -107,6 +111,24 @@ afterEach(async () => {
 afterAll(() => pool.end());
 
 describe("instant comment emails", () => {
+  it.each(["revoked", "expired"])(
+    "does not deliver queued comments when the feature flag is %s",
+    async (state) => {
+      await set("comments", "instant");
+      if (state === "revoked")
+        await pool.query(
+          "DELETE FROM user_entitlements WHERE identity_id=$1 AND entitlement_key='email_notification_enabled'",
+          [identity],
+        );
+      else
+        await pool.query(
+          "UPDATE user_entitlements SET expires_at=now()-interval '1 second' WHERE identity_id=$1",
+          [identity],
+        );
+      expect(await sendCommentEmails(comment)).toEqual({ sent: 0 });
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
   it("defaults off for existing publications", async () => {
     expect(await sendCommentEmails(comment)).toEqual({ sent: 0 });
     expect(fetchMock).not.toHaveBeenCalled();

@@ -26,6 +26,7 @@ beforeEach(() => {
   getAuthIdentity.mockResolvedValue({
     id: "owner-id",
     atp_did: "did:plc:owner",
+    entitlements: { email_notification_enabled: {} },
   });
   query.maybeSingle.mockReset();
   rpc.mockResolvedValue({ error: null });
@@ -37,6 +38,25 @@ const owner = () =>
   });
 
 describe("notification preferences", () => {
+  it("denies reading and changing preferences without the feature flag", async () => {
+    getAuthIdentity.mockResolvedValue({
+      id: "owner-id",
+      atp_did: "did:plc:owner",
+      entitlements: {},
+    });
+    expect(await getNotificationPreferences("pub")).toEqual({
+      ok: false,
+      error: "unauthorized",
+    });
+    expect(
+      await setNotificationPreference("pub", {
+        type: "comments",
+        frequency: "instant",
+      }),
+    ).toEqual({ ok: false, error: "unauthorized" });
+    expect(from).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
   it("returns all missing preferences as off without creating opt-ins", async () => {
     owner();
     query.maybeSingle.mockResolvedValueOnce({ data: null, error: null });

@@ -10,6 +10,7 @@ import {
   markUncertain,
 } from "src/notificationHistory";
 import { isPostmarkConfigured, sendPostmarkEmail } from "./postmark";
+import { EMAIL_NOTIFICATION_ENTITLEMENT_KEY } from "src/entitlements";
 
 type Recipient = {
   identity: string;
@@ -51,11 +52,13 @@ export async function sendCommentEmails(commentUri: string) {
      JOIN documents_in_publications dip ON dip.document = d.uri
      JOIN publications p ON p.uri = dip.publication
      JOIN identities i ON i.atp_did = p.identity_did
+     JOIN user_entitlements e ON e.identity_id=i.id AND e.entitlement_key=$3
      JOIN notification_preferences pref ON pref.identity = i.id AND pref.publication = p.uri AND pref.channel = 'email'
      WHERE c.uri = $1 AND 'comments' = ANY(pref.enabled_types)
        AND pref.comments_enabled_at <= c.indexed_at
+       AND (e.expires_at IS NULL OR e.expires_at > now())
        AND i.email IS NOT NULL AND i.atp_did <> $2`,
-    [commentUri, authorDid],
+    [commentUri, authorDid, EMAIL_NOTIFICATION_ENTITLEMENT_KEY],
   );
   if (!recipients.length) return { sent: 0 };
   const key = process.env.POSTMARK_API_KEY;
