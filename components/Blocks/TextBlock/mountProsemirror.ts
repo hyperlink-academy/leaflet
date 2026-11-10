@@ -31,6 +31,7 @@ import { useEditorCommentPopoverStore } from "components/EditorComments/EditorCo
 import { commentDraftPlugin } from "./commentDraftPlugin";
 import { stripCommentMarks } from "./stripCommentMarks";
 import { useCollabText } from "./useCollabText";
+import { cutWithFootnotes } from "./cutWithFootnotes";
 
 // The comment anchor under an event's target and its comment IDs; null when
 // there is none. Anchors can carry several IDs since overlapping comments
@@ -104,6 +105,7 @@ export function useMountProsemirror({
         transformCopied: stripCommentMarks,
         transformPasted: stripCommentMarks,
         handleDOMEvents: {
+          cut: (view, event) => cutWithFootnotes(view, event, repRef.current),
           // cmd/ctrl+click opens links in a new tab. Handled on the native
           // click event rather than in handleClickOn: popup blockers trust
           // window.open from a click handler, and ProseMirror cancels its
