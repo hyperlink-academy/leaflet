@@ -1,9 +1,10 @@
 import type { ReadTransaction, Replicache } from "replicache";
+import { v7 } from "uuid";
 import type { Fact, ReplicacheMutators } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { scanIndex } from "src/replicache/utils";
+import type { FactInput } from "src/replicache/mutations";
 import { flushPendingTextWrites } from "components/Blocks/TextBlock/useCollabText";
-import { answerRestoreOps } from "./answerRestoreOps";
 
 type AnyFact = Fact<Attribute>;
 type Rep = Replicache<ReplicacheMutators>;
@@ -80,24 +81,42 @@ export async function revertAnswerToPublished(
   permission_set: string,
 ) {
   await flushPendingTextWrites();
-  let state = await rep.query(async (tx) => {
-    let [saved] = await scanIndex(tx).eav(answerEntity, "answer/published");
-    if (!saved) return null;
-    return {
-      snapshot: saved.data.value,
-      current: await answerDraftFacts(tx, answerEntity),
-    };
-  });
-  if (!state) return false;
+  let [saved] = await rep.query((tx) =>
+    scanIndex(tx).eav(answerEntity, "answer/published"),
+  );
+  if (!saved) return false;
   let snapshot: AnyFact[];
   try {
-    snapshot = JSON.parse(state.snapshot);
+    snapshot = JSON.parse(saved.data.value);
   } catch {
     return false;
   }
+  // A yjs doc only ever merges, so the published text can't be written back
+  // over a block's current text. The blocks are rebuilt as new entities
+  // instead, where there is nothing to merge with.
+  let entities = new Map<string, string>();
+  for (let fact of snapshot)
+    if (fact.entity !== answerEntity && !entities.has(fact.entity))
+      entities.set(fact.entity, v7());
+  let facts = snapshot.map((fact) => {
+    let data = fact.data as { type: string; value: string };
+    let target =
+      fact.attribute !== "block/card" && REFERENCE_TYPES.has(data.type)
+        ? entities.get(data.value)
+        : undefined;
+    return {
+      id: v7(),
+      entity: entities.get(fact.entity) ?? fact.entity,
+      attribute: fact.attribute,
+      data: target ? { ...data, value: target } : data,
+    } as FactInput;
+  });
   await rep.mutate.restoreQuestionAnswer({
+    answerEntity,
     permission_set,
-    ...answerRestoreOps(state.current, snapshot, answerEntity),
+    entities: [...entities.values()],
+    facts,
+    ignoreUndo: true,
   });
   return true;
 }

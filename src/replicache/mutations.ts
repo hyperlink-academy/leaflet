@@ -1017,21 +1017,17 @@ const discardQuestionAnswer: Mutation<{
   await removeAnswer(args.answerEntity, ctx);
 };
 
+// Replaces the answer's blocks with `facts`, which sit on `entities`.
 const restoreQuestionAnswer: Mutation<{
+  answerEntity: string;
   permission_set: string;
-  createEntities: string[];
-  removeBlocks: string[];
-  retract: string[];
-  assert: FactInput[];
+  entities: string[];
+  facts: FactInput[];
 }> = async (args, ctx) => {
-  for (let entityID of args.createEntities)
+  await removeDescendants(args.answerEntity, ctx);
+  for (let entityID of args.entities)
     await ctx.createEntity({ entityID, permission_set: args.permission_set });
-  await removeBlock(
-    args.removeBlocks.map((blockEntity) => ({ blockEntity })),
-    ctx,
-  );
-  for (let id of args.retract) await ctx.retractFact(id);
-  for (let fact of args.assert) await ctx.assertFact(fact);
+  for (let fact of args.facts) await ctx.assertFact(fact);
 };
 
 const archiveDraft: Mutation<{
