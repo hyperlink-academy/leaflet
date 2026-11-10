@@ -448,6 +448,11 @@ export function QuestionsList(
                     Withdraw
                   </QuestionAction>
                 ),
+                !props.showPending && question.state === "pending" && (
+                  <span className="text-sm italic text-tertiary">
+                    Visible to others once answered
+                  </span>
+                ),
               ]
             : []
         }

@@ -441,6 +441,12 @@ const QuestionsBlockAttributes = {
     type: "string",
     cardinality: "one",
   },
+  // JSON of the answer's block facts as last published, which discarding an
+  // edit restores
+  "answer/published": {
+    type: "string",
+    cardinality: "one",
+  },
 } as const;
 
 const ReplyBlockAttributes = {

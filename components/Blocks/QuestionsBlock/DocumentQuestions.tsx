@@ -122,7 +122,7 @@ export function DocumentQuestions(props: {
   let audience = props.audience ?? "anyone";
   let { subscribed } = useViewerSubscription(props.publication?.publicationUri);
   let followAudience = audience === "follows" || audience === "followers";
-  let { data: followCheck } = useSWR(
+  let { data: followCheck, error: followCheckError } = useSWR(
     viewer && followAudience && !props.editor
       ? ["can_ask_question", props.documentUri, viewer, audience]
       : null,
@@ -133,7 +133,10 @@ export function DocumentQuestions(props: {
       ? true
       : audience === "subscribers"
         ? subscribed
-        : followCheck?.canAsk;
+        : // askQuestion checks again, so a failed lookup lets them try.
+          followCheckError
+          ? true
+          : followCheck?.canAsk;
   useDocumentEvents(props.documentUri, ["question", "answer"], () => {
     setChanged(true);
     mutate();
@@ -361,7 +364,7 @@ function EditorQuestions(props: {
       <QuestionAction
         primary
         onClick={async () => {
-          await startAnswer(q.uri);
+          await startAnswer(q.uri, !!q.answer);
           setOpened((o) => new Set(o).add(q.uri));
         }}
       >
@@ -369,7 +372,7 @@ function EditorQuestions(props: {
           ? "Answer"
           : drafts.includes(q.uri)
             ? "Edit answer"
-            : "Answer"}
+            : "Write a new answer"}
       </QuestionAction>
     );
   };
@@ -387,6 +390,7 @@ function EditorQuestions(props: {
               blockEntity={props.blockEntity}
               question={q.uri}
               page={props.page}
+              published={!!q.answer}
               onPublished={async () => {
                 await props.onPublished();
                 close(q.uri);

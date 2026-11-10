@@ -88,8 +88,13 @@ export async function getCanAskQuestion(
   }
   if (canAsk) return { canAsk, author: null };
   const authorDid = new AtUri(subject).host;
-  const profiles = await getProfiles([authorDid]);
-  return { canAsk, author: interactionAuthor(authorDid, profiles) };
+  try {
+    const profiles = await getProfiles([authorDid]);
+    return { canAsk, author: interactionAuthor(authorDid, profiles) };
+  } catch (e) {
+    console.error("[questions] author profile lookup failed", e);
+    return { canAsk, author: null };
+  }
 }
 
 export type QuestionError =

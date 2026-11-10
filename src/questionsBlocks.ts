@@ -47,14 +47,15 @@ async function isPublicationSubscriber(
   subject: string,
   did: string,
 ) {
-  const { data: inPublication } = await supabase
+  const { data: inPublication, error: publicationError } = await supabase
     .from("documents_in_publications")
     .select("publication")
     .eq("document", subject)
     .limit(1);
+  if (publicationError) throw publicationError;
   const publication = inPublication?.[0]?.publication;
   if (!publication) return false;
-  const { data: identities } = await supabase
+  const { data: identities, error } = await supabase
     .from("identities")
     .select(
       `publication_subscriptions(publication),
@@ -65,6 +66,7 @@ async function isPublicationSubscriber(
     .eq("publication_subscriptions.publication", publication)
     .eq("publication_email_subscribers.publication", publication)
     .eq("publication_memberships.publication", publication);
+  if (error) throw error;
   return (identities ?? []).some(
     (identity) =>
       deriveSubscriptionState(publication, {

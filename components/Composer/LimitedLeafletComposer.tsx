@@ -8,7 +8,8 @@ export function LimitedLeafletComposer(props: {
   editor: ComposerEditor | null;
   publishing?: boolean;
   onPublish: () => void;
-  onClear: () => void;
+  discardLabel: string;
+  onDiscard: () => void;
   children: React.ReactNode;
 }) {
   return (
@@ -19,8 +20,13 @@ export function LimitedLeafletComposer(props: {
       submitting={props.publishing}
       actions={
         <>
-          <ButtonTertiary compact className="text-sm" onClick={props.onClear}>
-            Clear
+          <ButtonTertiary
+            compact
+            className="text-sm"
+            disabled={props.publishing}
+            onClick={props.onDiscard}
+          >
+            {props.discardLabel}
           </ButtonTertiary>
           <ComposerSubmit className="text-sm">
             Answer <ShareTiny />

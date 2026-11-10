@@ -17,6 +17,10 @@ import { flushPendingTextWrites } from "components/Blocks/TextBlock/useCollabTex
 import { IsLimitedContext } from "components/Blocks/TextBlock/useIsLimited";
 import { publishAnswer, type QuestionError } from "actions/questions";
 import { LimitedLeafletComposer } from "components/Composer/LimitedLeafletComposer";
+import {
+  revertAnswerToPublished,
+  snapshotPublishedAnswer,
+} from "./answerSnapshot";
 
 // A question's answer entity is named after it, so nothing has to be looked
 // up to find the draft (or know there isn't one).
@@ -58,16 +62,21 @@ function answerDrafts(facts: Fact<Attribute>[], blockEntity: string) {
 export function useStartAnswer(blockEntity: string) {
   let { rep } = useReplicache();
   let { set } = useEntitySetContext();
-  return (question: string) =>
-    rep?.mutate.createQuestionAnswer({
+  return async (question: string, published: boolean) => {
+    if (!rep) return;
+    let answerEntity = answerEntityFor(blockEntity, question);
+    await rep.mutate.createQuestionAnswer({
       blockEntity,
-      answerEntity: answerEntityFor(blockEntity, question),
+      answerEntity,
       answerFactID: v5(`ref:${question}`, blockEntity),
       question,
       permission_set: set,
       firstBlockEntity: v7(),
       firstBlockFactID: v7(),
     });
+    if (published)
+      await snapshotPublishedAnswer(rep, answerEntity, { ifMissing: true });
+  };
 }
 
 const publishErrorMessages: Partial<Record<QuestionError["type"], string>> = {
@@ -86,10 +95,13 @@ export function LimitedLeafletEditor(props: {
   // The page the questions block is on: keyboard and focus handling resolve
   // the answer's blocks to it.
   page: string;
+  // The question already has a published answer, which discarding goes back to
+  published: boolean;
   onPublished: () => Promise<unknown>;
   onClose: () => void;
 }) {
   let { rep, permission_token } = useReplicache();
+  let { set } = useEntitySetContext();
   let toaster = useToaster();
   let run = useActionToast<QuestionError>(publishErrorMessages);
   let [publishing, setPublishing] = useState(false);
@@ -110,17 +122,21 @@ export function LimitedLeafletEditor(props: {
     try {
       if (published) {
         toaster({ content: "Answer published", type: "success" });
+        if (rep) await snapshotPublishedAnswer(rep, answerEntity);
         await props.onPublished();
       }
     } finally {
       setPublishing(false);
     }
   };
-  let clear = async () => {
-    await rep?.mutate.discardQuestionAnswer({
-      blockEntity: props.blockEntity,
-      answerEntity,
-    });
+  let discard = async () => {
+    if (!rep) return;
+    if (props.published) await revertAnswerToPublished(rep, answerEntity, set);
+    else
+      await rep.mutate.discardQuestionAnswer({
+        blockEntity: props.blockEntity,
+        answerEntity,
+      });
     props.onClose();
   };
   let editor = useFocusedEditorIn(answerEntity);
@@ -129,7 +145,8 @@ export function LimitedLeafletEditor(props: {
       editor={editor}
       publishing={publishing}
       onPublish={publish}
-      onClear={clear}
+      discardLabel={props.published ? "Discard changes" : "Discard draft"}
+      onDiscard={discard}
     >
       <div className="-mx-3 sm:-mx-4 [&_.newLineActions]:hidden">
         <IsLimitedContext.Provider value={true}>

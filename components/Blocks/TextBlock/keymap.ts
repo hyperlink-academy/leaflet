@@ -446,6 +446,9 @@ const backspace =
         state.doc.textContent.length === 0
       ) {
         let next = propsRef.current.nextBlock;
+        // A limited editor keeps its last line, so focus never falls through
+        // to the page around it.
+        if (!next && propsRef.current.isLimited) return finish(true);
         mutate(
           repRef.current?.mutate.removeBlock({
             blockEntity: propsRef.current.entityID,
@@ -453,14 +456,11 @@ const backspace =
           }),
         );
         if (next) focusBlock(next, { type: "start" });
-        else {
-          if (propsRef.current.isLimited)
-            useUIState.setState({ selectedBlocks: [] });
+        else
           useUIState.getState().setFocusedBlock({
             entityType: "page",
             entityID: pageOfParent(propsRef.current.parent),
           });
-        }
       }
       return finish(true);
     }
