@@ -24,7 +24,6 @@ export function answerEntityFor(blockEntity: string, question: string) {
   return v5(question, blockEntity);
 }
 
-// The questions the block has answer drafts for
 export function useAnswerDrafts(blockEntity: string): string[] {
   let { rep, initialFacts } = useReplicache();
   let fallback = useMemo(
@@ -56,8 +55,6 @@ function answerDrafts(facts: Fact<Attribute>[], blockEntity: string) {
     );
 }
 
-// Starts a draft for the question, unless it has one (createQuestionAnswer
-// keeps an existing one).
 export function useStartAnswer(blockEntity: string) {
   let { rep } = useReplicache();
   let { set } = useEntitySetContext();
@@ -81,9 +78,8 @@ const publishErrorMessages: Partial<Record<QuestionError["type"], string>> = {
 };
 
 // The author's answer, edited in place under the question with the leaflet's
-// own block editor, limited (see useIsLimited) and in the composer's chrome.
-// Drafts live in the leaflet, so they sync across devices and editors. The
-// entity stays after publishing so the answer can be edited again.
+// own block editor. The entity stays after publishing so the answer can be
+// edited again.
 export function LimitedLeafletEditor(props: {
   blockEntity: string;
   question: string;
@@ -135,8 +131,6 @@ export function LimitedLeafletEditor(props: {
       onPublish={publish}
       onClear={clear}
     >
-      {/* Blocks pad themselves for a page; pull them back to the name line.
-          Answers don't get the add-block buttons on empty lines either. */}
       <div className="-mx-3 sm:-mx-4 [&_.newLineActions]:hidden">
         <IsLimitedContext.Provider value={true}>
           <Blocks entityID={answerEntity} group />
@@ -146,8 +140,6 @@ export function LimitedLeafletEditor(props: {
   );
 }
 
-// The editor of the answer's block being typed in, for the composer's
-// formatting buttons
 function useFocusedEditorIn(answerEntity: string): ComposerEditor | null {
   let focused = useUIState((s) =>
     s.focusedEntity?.entityType === "block" &&

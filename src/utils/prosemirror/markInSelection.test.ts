@@ -6,7 +6,6 @@ import { isMarkActive, toggleMarkInSelection } from "./markInSelection";
 
 const strong = s.marks.strong;
 
-// "one two" with "two" bold, the selection over [from, to)
 function editor(from: number, to = from) {
   let doc = s.nodes.doc.create(null, [
     s.nodes.paragraph.create(null, [

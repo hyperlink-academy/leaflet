@@ -94,7 +94,6 @@ export function DocumentQuestions(props: {
 }) {
   let { identity, identityPending } = useIdentityData();
   let viewer = identity?.atp_did ?? null;
-  // Shown beside the composer, and on the answer the viewer is writing
   let viewerAuthor: InteractionAuthor | null = viewer
     ? {
         did: viewer,
@@ -121,10 +120,6 @@ export function DocumentQuestions(props: {
     },
   );
   let audience = props.audience ?? "anyone";
-  // Whether the viewer may ask, so readers who can't are told why instead of
-  // offered the composer. Their subscriptions come with their identity, so
-  // subscribing from the block lets them ask straight away; the follow graph
-  // is checked on the server. askQuestion checks either way.
   let { subscribed } = useViewerSubscription(props.publication?.publicationUri);
   let followAudience = audience === "follows" || audience === "followers";
   let { data: followCheck } = useSWR(
@@ -261,7 +256,6 @@ export function DocumentQuestions(props: {
   return (
     <QuestionsList
       {...help}
-      // The restriction is already in place of the composer
       audience={restricted ? "anyone" : audience}
       questions={questions}
       onWithdraw={withdraw}
@@ -297,7 +291,6 @@ export function DocumentQuestions(props: {
   );
 }
 
-// On the published post
 const publishedAnswer = (q: DocumentQuestion, showHandle?: boolean) =>
   q.answer ? (
     <PublishedAnswer answer={q.answer} showHandle={showHandle} />
@@ -341,9 +334,6 @@ function PublishedAuthorView(props: {
   );
 }
 
-// The author answers in place, editing a question's draft under it. A
-// pending question has no published answer, so its draft is always open;
-// any other's opens on request, to revise its answer.
 function EditorQuestions(props: {
   questions: DocumentQuestion[];
   header: React.ReactNode;
@@ -365,7 +355,6 @@ function EditorQuestions(props: {
   let isOpen = (q: DocumentQuestion) =>
     props.isAuthor &&
     (opened.has(q.uri) || (q.state === "pending" && drafts.includes(q.uri)));
-  // Under the question when it's unanswered, under its answer otherwise
   let answerControl = (q: DocumentQuestion) => {
     if (!props.isAuthor || isOpen(q)) return null;
     return (

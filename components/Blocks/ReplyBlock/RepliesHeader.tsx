@@ -33,7 +33,6 @@ export function ReplyButtonTextInput(props: {
   onCommit: (text: string) => void;
   label?: string;
   placeholder?: string;
-  // Background, border, text and outline colors; a primary button's by default
   colors?: string;
 }) {
   return (

@@ -19,9 +19,6 @@ export const questionsBlocksOf = (document: NormalizedDocument | null) =>
     ids.PubLeafletBlocksQuestions,
   );
 
-// Whether `asker` may ask the author of `subject` under the block's audience:
-// subscribed to the post's publication, or related to the author on the
-// Bluesky follow graph. Checked when the question is asked.
 export async function canAskQuestion(
   supabase: SupabaseClient<Database>,
   subject: string,
@@ -45,9 +42,6 @@ export async function canAskQuestion(
   return audience === "follows" ? !!rel.following : !!rel.followedBy;
 }
 
-// Subscribed to the post's publication by the same rule as the reader's own
-// subscription state, from the same rows the identity payload carries. A
-// post outside a publication has no subscribers.
 async function isPublicationSubscriber(
   supabase: SupabaseClient<Database>,
   subject: string,

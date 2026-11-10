@@ -36,8 +36,6 @@ type PropsRef = RefObject<
   }
 >;
 
-// A line starting with "/" opens the block menu, which takes the arrow and
-// Enter keys itself. A LimitedLeafletEditor has no block menu.
 const blockMenuOpen = (state: EditorState, propsRef: PropsRef) =>
   !propsRef.current.isLimited && state.doc.textContent.startsWith("/");
 export const TextBlockKeymap = (
@@ -456,9 +454,6 @@ const backspace =
         );
         if (next) focusBlock(next, { type: "start" });
         else {
-          // An answer sits inside its questions block: any block left
-          // selected here (that one, from the click into the answer) would be
-          // deleted by the next Backspace.
           if (propsRef.current.isLimited)
             useUIState.setState({ selectedBlocks: [] });
           useUIState.getState().setFocusedBlock({

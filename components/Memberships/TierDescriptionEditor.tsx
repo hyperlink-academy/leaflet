@@ -30,7 +30,6 @@ export function TierDescriptionEditor(props: {
   placeholder?: string;
   onChange: (value: string | null) => void;
 }) {
-  // Read once: the editor is uncontrolled after mount
   let [initialDoc] = useState(() => initialDocFromValue(props.initialValue));
   return (
     <div className="input-with-border flex flex-col gap-px leading-tight py-1! px-[6px]!">

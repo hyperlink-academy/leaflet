@@ -72,7 +72,6 @@ export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
             <div className="flex flex-col gap-2 ">
               <div className="font-bold ">Who can submit questions</div>
               {QUESTIONS_AUDIENCES.filter(
-                // Only a post in a publication has subscribers
                 (option) =>
                   option !== "subscribers" ||
                   !!data?.publications ||

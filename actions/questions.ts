@@ -68,10 +68,6 @@ export async function getDocumentQuestions(
   return loadDocumentQuestions(subject, identity?.atp_did ?? null);
 }
 
-// Whether the signed-in viewer is in `audience` for `subject`, with the post's
-// author, whom the explanation for a reader who isn't names. The client
-// asks this for the follow audiences, which only the server can check.
-// askQuestion checks again.
 export async function getCanAskQuestion(
   subject: string,
   audience: QuestionsAudience,
@@ -218,8 +214,6 @@ export async function askQuestion(args: {
   return Ok({ uri });
 }
 
-// Rewrites the viewer's own question, while it's unanswered: an answer
-// references the exact version of the question it answers.
 export async function editQuestion(args: {
   uri: string;
   plaintext: string;
@@ -267,7 +261,6 @@ export async function editQuestion(args: {
       collection: uri.collection,
       rkey: uri.rkey,
       record,
-      // Fails if the record changed since it was read, e.g. edited elsewhere
       swapRecord: row.cid,
       validate: false,
     });

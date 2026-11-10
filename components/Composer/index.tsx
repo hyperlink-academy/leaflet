@@ -12,23 +12,15 @@ import {
   toggleMarkInSelection,
 } from "src/utils/prosemirror/markInSelection";
 
-// The ProseMirror editor the formatting buttons act on
 export type ComposerEditor = { state: EditorState; view: EditorView };
 
-// What every composer looks like: the input in its box, formatting buttons
-// under it, and the composer's actions opposite them. What goes in the box is
-// the caller's: a TextComposer, or a LimitedLeafletEditor's blocks.
 export function ComposerChrome(props: {
-  // Unset (nothing to format yet) disables the formatting buttons
   editor: ComposerEditor | null;
-  // No box around the input, for a composer inside a container of its own
   bare?: boolean;
-  // What a ComposerSubmit among the actions does
   onSubmit?: () => void;
   submitting?: boolean;
   // Rendered above the input
   above?: React.ReactNode;
-  // Opposite the formatting buttons
   actions?: React.ReactNode;
   className?: string;
   inputClassName?: string;
@@ -87,8 +79,6 @@ function MarkButton(props: {
   label: string;
   icon: React.ReactNode;
 }) {
-  // Looked up per editor: a LimitedLeafletEditor's blocks and a TextComposer
-  // use different schemas, each with its own mark types.
   let type = props.editor?.state.schema.marks[props.mark];
   let active =
     !!props.editor && !!type && isMarkActive(props.editor.state, type);
@@ -98,7 +88,6 @@ function MarkButton(props: {
       aria-label={props.label}
       disabled={!type}
       className={`composerMarkButton rounded-md p-1 enabled:hover:bg-border-light disabled:opacity-50 ${active ? "bg-border-light text-primary" : "text-border"}`}
-      // mousedown, so the editor keeps its selection
       onMouseDown={(e) => {
         e.preventDefault();
         if (props.editor && type)
@@ -115,7 +104,6 @@ const ComposerSubmitContext = createContext<{
   submit: () => void;
 } | null>(null);
 
-// Sends the composer it's in, through the composer's onSubmit
 export function ComposerSubmit(props: {
   className?: string;
   children: React.ReactNode;

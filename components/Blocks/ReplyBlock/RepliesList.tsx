@@ -218,11 +218,7 @@ function ReplyRow(props: {
   );
 }
 
-// The small white box holding the actions on a reply or question
-function ActionsBox(props: {
-  className?: string;
-  children: React.ReactNode;
-}) {
+function ActionsBox(props: { className?: string; children: React.ReactNode }) {
   return (
     <div
       className={`opaque-container shrink-0 flex items-center gap-2 text-tertiary px-1.5 ${props.className ?? ""}`}

@@ -61,7 +61,6 @@ export type QuestionHelpProps = {
   showPending?: boolean;
 };
 
-// Who may ask, and when a question shows
 function questionHelpLines(props: QuestionHelpProps) {
   return [
     questionsAudienceNotice(props.audience ?? "anyone"),
@@ -80,7 +79,6 @@ function QuestionHelp(props: QuestionHelpProps) {
   );
 }
 
-// Nothing to list yet; carries the help text in its place
 export function QuestionsEmpty(props: QuestionHelpProps) {
   return (
     <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4 leading-snug flex flex-col gap-2">
@@ -92,8 +90,6 @@ export function QuestionsEmpty(props: QuestionHelpProps) {
   );
 }
 
-// The editor's empty state: what readers will be able to do, and where to
-// change it
 export function QuestionsEditorNotice(props: QuestionHelpProps) {
   return (
     <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4 leading-snug flex flex-col gap-2">
@@ -117,7 +113,6 @@ export function QuestionsEditorNotice(props: QuestionHelpProps) {
 }
 
 export function QuestionComposer(props: {
-  // Beside the button, as on comments
   asker?: InteractionAuthor | null;
   draftKey: string | null;
   submitLabel?: string;
@@ -149,7 +144,6 @@ export function QuestionComposer(props: {
   );
 }
 
-// What readers ask with, shown to the author without taking questions
 export function QuestionComposerPreview(props: { action: React.ReactNode }) {
   return (
     <ComposerChrome
@@ -236,7 +230,6 @@ export function QuestionsRestricted(props: {
   );
 }
 
-// The editor's block before the post is published, or before anyone asks
 export function QuestionEditorEmpty(
   props: QuestionHelpProps & { action: React.ReactNode },
 ) {
@@ -252,13 +245,10 @@ export function QuestionEditorEmpty(
   );
 }
 
-// One step of a question's thread. When the thread continues (the question
-// has an answer under it), a line runs from this avatar down to the answer.
 function ThreadEntry(props: {
   author: InteractionAuthor;
   showHandle?: boolean;
   date?: string;
-  // Under the entry's content
   actions?: React.ReactNode;
   continues?: boolean;
   children: React.ReactNode;
@@ -308,7 +298,6 @@ export function QuestionRow(props: {
   showHandle?: boolean;
   answer?: React.ReactNode;
   actions?: React.ReactNode;
-  // Replaces the question's text while the asker edits it
   editor?: React.ReactNode;
 }) {
   return (
@@ -345,9 +334,7 @@ export function QuestionAnswer(props: {
   author: InteractionAuthor;
   showHandle?: boolean;
   date?: string;
-  // Under the answer: the author's "Edit answer"
   actions?: React.ReactNode;
-  // Holds the author's answer composer rather than a published answer
   composing?: boolean;
   children: React.ReactNode;
 }) {
@@ -389,8 +376,6 @@ export function QuestionAction(
   );
 }
 
-// The reader's view: their own questions first, answered or not, then the
-// answered ones, then any still waiting on an answer.
 export function QuestionsList(
   props: QuestionHelpProps & {
     questions: DocumentQuestion[];
@@ -398,12 +383,10 @@ export function QuestionsList(
     action?: React.ReactNode;
     renderAnswer: RenderAnswer;
     onWithdraw?: (uri: string) => void;
-    // Resolves true once the edit is saved
     onEdit?: (uri: string, text: FacetedText) => Promise<boolean>;
   },
 ) {
   let { onWithdraw, onEdit } = props;
-  // The viewer's question being edited
   let [editing, setEditing] = useState<string | null>(null);
   let others = props.questions.filter((q) => !q.mine);
   let ordered = [
@@ -473,7 +456,6 @@ export function QuestionsList(
   );
 }
 
-// The asker's question, rewritten in place
 function QuestionEditor(props: {
   question: DocumentQuestion;
   onCancel: () => void;
@@ -505,8 +487,6 @@ function QuestionEditor(props: {
   );
 }
 
-// The author's view: unanswered questions first, then answered ones, and the
-// removed ones behind a collapsible header.
 export function QuestionsModeration(props: {
   questions: DocumentQuestion[];
   header?: React.ReactNode;
@@ -586,7 +566,6 @@ type RenderAnswer = (
   showHandle?: boolean,
 ) => React.ReactNode;
 
-// Questions separated by rules, each one's controls in a row under it.
 function QuestionRows(props: {
   questions: DocumentQuestion[];
   showHandles?: boolean;

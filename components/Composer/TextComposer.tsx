@@ -59,40 +59,28 @@ const addMentionToEditor = (
   view.focus();
 };
 
-// A short rich-text input in the ComposerChrome: paragraphs with bold,
-// italic, strikethrough and links, and optionally @-mentions. Comments,
-// questions and tier descriptions use it; each turns the document into what
-// it stores (see facetedText.ts).
 export function TextComposer(props: {
-  // Persists the in-progress text under this key across reloads; null or
-  // unset persists nothing.
   draftKey?: string | null;
   // Seeds the editor instead of the persisted draft (editing a record).
   initialDoc?: Node;
   placeholder?: string;
-  // @ opens a picker of people, publications and posts
   mentions?: boolean;
   autoFocus?: boolean;
-  // No box around the input, for a composer inside a container of its own
   bare?: boolean;
   onChange?: (doc: Node) => void;
-  // Sends the text, on Cmd-Enter or a ComposerSubmit among the actions.
   // Resolves true to clear the input once the text is sent.
   onSubmit?: (doc: Node) => Promise<boolean>;
-  // On Escape
   onCancel?: () => void;
   // Intercepts pasted plain text; returns true when handled.
   onPasteText?: (text: string) => boolean | void;
   // Rendered above the input
   above?: React.ReactNode;
-  // Opposite the formatting buttons
   actions?: React.ReactNode;
   className?: string;
   inputClassName?: string;
 }) {
   let mountRef = useRef<HTMLPreElement | null>(null);
   let view = useRef<null | EditorView>(null);
-  // Mirrors `view` for rendering: the formatting buttons need it once mounted
   let [mountedView, setMountedView] = useState<EditorView | null>(null);
   let [submitting, setSubmitting] = useState(false);
   let onCancelRef = useRef(props.onCancel);
