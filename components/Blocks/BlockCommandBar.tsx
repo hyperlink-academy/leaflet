@@ -10,7 +10,6 @@ import {
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { Combobox, ComboboxResult } from "components/Combobox";
 import { useIdentityData } from "components/IdentityProvider";
-import { hasEntitlement } from "src/entitlements";
 
 type Props = {
   parent: string;
@@ -83,10 +82,7 @@ export const BlockCommandBar = ({
         props.parent === firstPage &&
         !hasMembersDelimiter);
 
-    const allowedForAccount =
-      (!command.atprotoOnly || !!identity?.atp_did) &&
-      (!command.entitlement ||
-        hasEntitlement(identity?.entitlements, command.entitlement));
+    const allowedForAccount = !command.atprotoOnly || !!identity?.atp_did;
     const allowedInPublication =
       !command.publicationOnly || !!pub?.publications;
     const hiddenOnPubPage =
