@@ -87,7 +87,7 @@ export type AnalyticsEventsRow = InferRow<typeof analyticsEvents>;
 /**
  * Retired 2026-09-10: subscribe/unsubscribe are user_events now, and the
  * app-origin rows here were backfilled into it
- * (scripts/backfill-user-events-subscriptions.mts). Nothing writes or reads
+ * (scripts/local/backfill-user-events-subscriptions.mts). Nothing writes or reads
  * this datasource; the definition stays so a deploy keeps the raw history.
  */
 export const subscriptionEvents = defineDatasource("subscription_events", {

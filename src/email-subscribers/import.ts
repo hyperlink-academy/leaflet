@@ -3,7 +3,7 @@ import type { Database } from "supabase/database.types";
 import type { CsvImportProvenance, SubscriberMetadata } from "./metadata";
 
 // Core logic for bulk-importing a CSV of email addresses as subscribers to a
-// publication, shared by the CLI script (scripts/import-email-subscribers.ts)
+// publication, shared by the CLI script (scripts/local/import-email-subscribers.ts)
 // and the admin UI (actions/admin/importSubscribers.ts).
 //
 // Rows are upserted into `publication_email_subscribers` keyed on
