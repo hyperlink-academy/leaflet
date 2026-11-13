@@ -158,6 +158,14 @@ export async function createPublication({
     .select()
     .single();
 
+  // Queues it for the admin spam review at /admin/publications.
+  await supabaseServerClient
+    .from("publication_reviews")
+    .upsert(
+      { publication: result.uri },
+      { onConflict: "publication", ignoreDuplicates: true },
+    );
+
   // Every publication gets a draft leaflet holding its draft pages, nav, and
   // theme; seed it with a home page now so the pages editor is ready to go.
   await createPublicationDraftLeaflet({

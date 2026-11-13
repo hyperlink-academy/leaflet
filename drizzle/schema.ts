@@ -750,6 +750,19 @@ export const publication_recommendations = pgTable("publication_recommendations"
 	}
 });
 
+export const publication_reviews = pgTable("publication_reviews", {
+	publication: text("publication").primaryKey().notNull().references(() => publications.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	queued_at: timestamp("queued_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	reviewed_at: timestamp("reviewed_at", { withTimezone: true, mode: 'string' }),
+	reviewed_by: uuid("reviewed_by").references(() => identities.id, { onDelete: "set null" } ),
+	spam: boolean("spam").default(false).notNull(),
+},
+(table) => {
+	return {
+		pending_idx: index("publication_reviews_pending_idx").on(table.queued_at),
+	}
+});
+
 export const publication_scheduled_posts = pgTable("publication_scheduled_posts", {
 	bsky_post: jsonb("bsky_post"),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),

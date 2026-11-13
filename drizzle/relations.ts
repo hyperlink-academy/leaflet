@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { atp_poll_records, atp_poll_votes, bsky_follows, bsky_posts, bsky_profiles, comment_tombstones, comments_on_documents, custom_domain_routes, custom_domains, document_mentions_in_bsky, document_question_answers, document_question_visibility, document_questions, document_replies, document_reply_rejections, document_reply_visibility, document_tags, document_version_blob_refs, document_versions, documents, documents_in_publications, email_auth_tokens, email_subscriptions_to_entity, entities, entity_sets, facts, identities, leaflet_contributors, leaflets_in_publications, leaflets_to_documents, notifications, permission_token_on_homepage, permission_token_rights, permission_tokens, phone_rsvps_to_entity, poll_votes_on_entity, publication_contributors, publication_domains, publication_email_posts, publication_email_subscriber_events, publication_email_subscribers, publication_membership_settings, publication_membership_tiers, publication_memberships, publication_newsletter_settings, publication_pages, publication_post_sends, publication_recommendations, publication_scheduled_posts, publication_subscriptions, publications, recommends_on_documents, reply_drafts, site_standard_documents, site_standard_documents_in_publications, site_standard_publications, site_standard_subscriptions, stripe_connected_accounts, stripe_connected_customers, stripe_wallets, user_entitlements, user_subscriptions } from "./schema";
+import { atp_poll_records, atp_poll_votes, bsky_follows, bsky_posts, bsky_profiles, comment_tombstones, comments_on_documents, custom_domain_routes, custom_domains, document_mentions_in_bsky, document_question_answers, document_question_visibility, document_questions, document_replies, document_reply_rejections, document_reply_visibility, document_tags, document_version_blob_refs, document_versions, documents, documents_in_publications, email_auth_tokens, email_subscriptions_to_entity, entities, entity_sets, facts, identities, leaflet_contributors, leaflets_in_publications, leaflets_to_documents, notifications, permission_token_on_homepage, permission_token_rights, permission_tokens, phone_rsvps_to_entity, poll_votes_on_entity, publication_contributors, publication_domains, publication_email_posts, publication_email_subscriber_events, publication_email_subscribers, publication_membership_settings, publication_membership_tiers, publication_memberships, publication_newsletter_settings, publication_pages, publication_post_sends, publication_recommendations, publication_reviews, publication_scheduled_posts, publication_subscriptions, publications, recommends_on_documents, reply_drafts, site_standard_documents, site_standard_documents_in_publications, site_standard_publications, site_standard_subscriptions, stripe_connected_accounts, stripe_connected_customers, stripe_wallets, user_entitlements, user_subscriptions } from "./schema";
 
 export const atp_poll_recordsRelations = relations(atp_poll_records, ({many}) => ({
 	atp_poll_votes: many(atp_poll_votes),
@@ -550,6 +550,17 @@ export const publication_post_sendsRelations = relations(publication_post_sends,
 export const publication_recommendationsRelations = relations(publication_recommendations, ({one}) => ({
 	publication: one(publications, {
 		fields: [publication_recommendations.publication],
+		references: [publications.uri],
+	}),
+}));
+
+export const publication_reviewsRelations = relations(publication_reviews, ({one}) => ({
+	identity: one(identities, {
+		fields: [publication_reviews.reviewed_by],
+		references: [identities.id],
+	}),
+	publication: one(publications, {
+		fields: [publication_reviews.publication],
 		references: [publications.uri],
 	}),
 }));

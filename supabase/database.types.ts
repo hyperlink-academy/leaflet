@@ -2059,6 +2059,45 @@ export type Database = {
           },
         ]
       }
+      publication_reviews: {
+        Row: {
+          publication: string
+          queued_at: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          spam: boolean
+        }
+        Insert: {
+          publication: string
+          queued_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          spam?: boolean
+        }
+        Update: {
+          publication?: string
+          queued_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          spam?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_reviews_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: true
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "publication_reviews_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       publication_scheduled_posts: {
         Row: {
           bsky_post: Json | null
