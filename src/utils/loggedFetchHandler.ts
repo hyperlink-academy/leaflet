@@ -1,5 +1,6 @@
 import type { FetchHandler } from "@atproto/xrpc";
 import type { OAuthSession } from "@atproto/oauth-client-node";
+import { bodyBytes } from "src/utils/primeDpopNonce";
 
 // Rate limiting, DPoP nonce churn, and the PDS's own request correlation ids.
 const HEADERS_TO_LOG =
@@ -20,14 +21,7 @@ export function loggedFetchHandler(
       ...context,
       repo: session.did,
       path: url,
-      bodyBytes:
-        typeof body === "string"
-          ? Buffer.byteLength(body)
-          : body instanceof Blob
-            ? body.size
-            : body instanceof Uint8Array
-              ? body.byteLength
-              : undefined,
+      bodyBytes: bodyBytes(body),
       durationMs: Date.now() - started,
     });
     let res: Response;
@@ -36,6 +30,12 @@ export function loggedFetchHandler(
     } catch (e) {
       console.error("[pds] request threw", {
         ...details(),
+        // No response to read the host from, and it's the one field that
+        // tells one PDS implementation's behaviour apart from another's.
+        pds: await session
+          .getTokenInfo(false)
+          .then((t) => t.aud)
+          .catch(() => undefined),
         error: e instanceof Error ? `${e.name}: ${e.message}` : String(e),
       });
       throw e;

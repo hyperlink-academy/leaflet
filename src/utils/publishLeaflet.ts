@@ -24,6 +24,7 @@ import { pageBlocksInOrder } from "src/utils/pageBlocksInOrder";
 import {
   extractThemeFromFacts,
   makePublishUploadHooks,
+  PublishImageError,
 } from "src/utils/publishHelpers";
 import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
 import { makeGatedImageStore } from "src/utils/gatedDocumentImages";
@@ -150,6 +151,11 @@ async function publishLogged(
       durationMs: Date.now() - started,
       error: e instanceof Error ? `${e.name}: ${e.message}` : String(e),
     });
+    if (e instanceof PublishImageError)
+      return {
+        success: false,
+        error: { type: "publish_failed", message: e.message },
+      };
     if (e instanceof XRPCError)
       return {
         success: false,

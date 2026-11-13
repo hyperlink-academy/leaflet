@@ -16,6 +16,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import Client from "ioredis";
 import Redlock from "redlock";
 import { Result, Ok, Err } from "./result";
+import { primeNonceBeforeLargeUploads } from "./utils/primeDpopNonce";
 
 // Flattens the library's nested error chain (TokenRefreshError → cause
 // OAuthResponseError → PDS payload) into one loggable object. The PDS's
@@ -213,7 +214,7 @@ function dedupedRestore(did: string): Promise<OAuthSession> {
 
   const promise = (async () => {
     const oauthClient = await createOauthClient();
-    return oauthClient.restore(did);
+    return primeNonceBeforeLargeUploads(await oauthClient.restore(did));
   })();
   inFlightRestores.set(did, promise);
 

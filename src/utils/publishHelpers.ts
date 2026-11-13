@@ -17,6 +17,25 @@ import {
 } from "components/ThemeManager/colorToLexicons";
 import type { ProcessBlocksToPagesHooks } from "src/utils/factsToPagesRecord";
 import type { GatedImageStore } from "src/utils/gatedDocumentImages";
+import { ResponseType, XRPCError } from "@atproto/xrpc";
+
+// An image the PDS wouldn't take. The message is written for the author.
+export class PublishImageError extends Error {
+  constructor(bytes: number, cause: unknown) {
+    const size = `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+    // Status Unknown is a transport failure: the PDS said nothing worth
+    // quoting.
+    const reason =
+      cause instanceof XRPCError && cause.status !== ResponseType.Unknown
+        ? ` (${cause.status} ${cause.error}: ${cause.message})`
+        : "";
+    super(
+      `Your PDS didn't accept one of this post's images (${size})${reason}. Please try again, or swap it for a smaller file!`,
+      { cause },
+    );
+    this.name = "PublishImageError";
+  }
+}
 
 export function makePublishUploadHooks(
   agent: AtpBaseClient,
@@ -33,6 +52,7 @@ export function makePublishUploadHooks(
   },
 ): ProcessBlocksToPagesHooks {
   const uploadLock = new Lock();
+  let failure: PublishImageError | undefined;
   return {
     uploadImage: async (src: string, { membersOnly }: { membersOnly: boolean }) => {
       if (opts?.gatedImages && membersOnly) {
@@ -45,17 +65,27 @@ export function makePublishUploadHooks(
           size: 0,
         } as unknown as BlobRef;
       }
-      const data = await fetch(src);
-      if (data.status !== 200) {
-        console.error("[publish] image fetch failed", src, data.status);
-        return;
-      }
-      const binary = await data.blob();
+      // Blocks are converted concurrently, so the fetch sits inside the lock
+      // too: one image's bytes in memory at a time, however many the post has.
       return uploadLock.withLock(async () => {
-        const blob = await agent.com.atproto.repo.uploadBlob(binary, {
-          headers: { "Content-Type": binary.type },
-        });
-        return blob.data.blob;
+        // The publish is already lost, and each upload still queued would
+        // otherwise run to completion after the author has their answer.
+        if (failure) throw failure;
+        const data = await fetch(src);
+        if (data.status !== 200) {
+          console.error("[publish] image fetch failed", src, data.status);
+          return;
+        }
+        const binary = await data.blob();
+        try {
+          const blob = await agent.com.atproto.repo.uploadBlob(binary, {
+            headers: { "Content-Type": binary.type },
+          });
+          return blob.data.blob;
+        } catch (e) {
+          failure = new PublishImageError(binary.size, e);
+          throw failure;
+        }
       });
     },
     uploadPoll: async (
