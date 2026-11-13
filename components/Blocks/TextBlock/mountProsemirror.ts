@@ -31,6 +31,7 @@ import { useEditorCommentPopoverStore } from "components/EditorComments/EditorCo
 import { commentDraftPlugin } from "./commentDraftPlugin";
 import { stripCommentMarks } from "./stripCommentMarks";
 import { useCollabText } from "./useCollabText";
+import { useIsLimited } from "./useIsLimited";
 import { cutWithFootnotes } from "./cutWithFootnotes";
 
 // The comment anchor under an event's target and its comment IDs; null when
@@ -64,10 +65,11 @@ export function useMountProsemirror({
   let entity_set = useEntitySetContext();
   let alignment =
     useEntity(entityID, "block/text-alignment")?.data.value || "left";
-  let propsRef = useRef({ ...props, entity_set, alignment });
+  let isLimited = useIsLimited();
+  let propsRef = useRef({ ...props, entity_set, alignment, isLimited });
   let handlePaste = useHandlePaste(entityID, propsRef);
 
-  propsRef.current = { ...props, entity_set, alignment };
+  propsRef.current = { ...props, entity_set, alignment, isLimited };
   repRef.current = rep.rep;
 
   useLayoutEffect(() => {

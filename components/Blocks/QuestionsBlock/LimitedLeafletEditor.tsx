@@ -1,0 +1,177 @@
+"use client";
+import { useEffect, useMemo, useState } from "react";
+import { v5, v7 } from "uuid";
+import { Blocks } from "components/Blocks";
+import { useEditorStates } from "src/state/useEditorState";
+import { useUIState } from "src/useUIState";
+import type { ComposerEditor } from "components/Composer";
+import { useEntitySetContext } from "components/EntitySetProvider";
+import { useToaster } from "components/Toast";
+import { useActionToast } from "components/useActionToast";
+import { useReplicache, type Fact } from "src/replicache";
+import type { Attribute } from "src/replicache/attributes";
+import { useSubscribe } from "src/replicache/useSubscribe";
+import { scanIndex, scanIndexLocal } from "src/replicache/utils";
+import { registerBlockGroup } from "src/utils/blockGroups";
+import { flushPendingTextWrites } from "components/Blocks/TextBlock/useCollabText";
+import { IsLimitedContext } from "components/Blocks/TextBlock/useIsLimited";
+import { publishAnswer, type QuestionError } from "actions/questions";
+import { LimitedLeafletComposer } from "components/Composer/LimitedLeafletComposer";
+import {
+  revertAnswerToPublished,
+  snapshotPublishedAnswer,
+} from "./answerSnapshot";
+
+// A question's answer entity is named after it, so nothing has to be looked
+// up to find the draft (or know there isn't one).
+function answerEntityFor(blockEntity: string, question: string) {
+  return v5(question, blockEntity);
+}
+
+export function useAnswerDrafts(blockEntity: string): string[] {
+  let { rep, initialFacts } = useReplicache();
+  let fallback = useMemo(
+    () => answerDrafts(initialFacts, blockEntity),
+    [initialFacts, blockEntity],
+  );
+  let drafts = useSubscribe(
+    rep,
+    async (tx) => {
+      if (!(await tx.get("initialized"))) return null;
+      let scan = scanIndex(tx);
+      let refs = await scan.eav(blockEntity, "questions/answer");
+      let facts: Fact<Attribute>[] = [...refs];
+      for (let ref of refs)
+        facts.push(...(await scan.eav(ref.data.value, "answer/question")));
+      return answerDrafts(facts, blockEntity);
+    },
+    { default: null, dependencies: [blockEntity] },
+  );
+  return drafts ?? fallback;
+}
+
+function answerDrafts(facts: Fact<Attribute>[], blockEntity: string) {
+  let scan = scanIndexLocal(facts);
+  return scan
+    .eav(blockEntity, "questions/answer")
+    .flatMap((ref) =>
+      scan.eav(ref.data.value, "answer/question").map((q) => q.data.value),
+    );
+}
+
+export function useStartAnswer(blockEntity: string) {
+  let { rep } = useReplicache();
+  let { set } = useEntitySetContext();
+  return async (question: string, published: boolean) => {
+    if (!rep) return;
+    let answerEntity = answerEntityFor(blockEntity, question);
+    await rep.mutate.createQuestionAnswer({
+      blockEntity,
+      answerEntity,
+      answerFactID: v5(`ref:${question}`, blockEntity),
+      question,
+      permission_set: set,
+      firstBlockEntity: v7(),
+      firstBlockFactID: v7(),
+    });
+    if (published)
+      await snapshotPublishedAnswer(rep, answerEntity, { ifMissing: true });
+  };
+}
+
+const publishErrorMessages: Partial<Record<QuestionError["type"], string>> = {
+  empty: "Write an answer first.",
+  not_owner: "Only the post's author can publish answers.",
+  not_found: "This question is no longer on the post.",
+  failed: "We couldn't publish this answer. Please try again!",
+};
+
+// The author's answer, edited in place under the question with the leaflet's
+// own block editor. The entity stays after publishing so the answer can be
+// edited again.
+export function LimitedLeafletEditor(props: {
+  blockEntity: string;
+  question: string;
+  // The page the questions block is on: keyboard and focus handling resolve
+  // the answer's blocks to it.
+  page: string;
+  // The question already has a published answer, which discarding goes back to
+  published: boolean;
+  onPublished: () => Promise<unknown>;
+  onClose: () => void;
+}) {
+  let { rep, permission_token } = useReplicache();
+  let { set } = useEntitySetContext();
+  let toaster = useToaster();
+  let run = useActionToast<QuestionError>(publishErrorMessages);
+  let [publishing, setPublishing] = useState(false);
+  let answerEntity = answerEntityFor(props.blockEntity, props.question);
+  useEffect(
+    () => registerBlockGroup(answerEntity, props.page),
+    [answerEntity, props.page],
+  );
+  let publish = async () => {
+    setPublishing(true);
+    let published = await run(async () => {
+      // Text persists on a debounce and the server reads the facts, so get
+      // everything pushed first.
+      await flushPendingTextWrites();
+      await rep?.push();
+      return publishAnswer({ leaflet_id: permission_token.id, answerEntity });
+    });
+    try {
+      if (published) {
+        toaster({ content: "Answer published", type: "success" });
+        if (rep) await snapshotPublishedAnswer(rep, answerEntity);
+        await props.onPublished();
+      }
+    } finally {
+      setPublishing(false);
+    }
+  };
+  let discard = async () => {
+    if (!rep) return;
+    if (props.published) await revertAnswerToPublished(rep, answerEntity, set);
+    else
+      await rep.mutate.discardQuestionAnswer({
+        blockEntity: props.blockEntity,
+        answerEntity,
+      });
+    props.onClose();
+  };
+  let editor = useFocusedEditorIn(answerEntity);
+  let blocks = useMemo(
+    () => (
+      <div className="-mx-3 sm:-mx-4">
+        <IsLimitedContext.Provider value={true}>
+          <Blocks entityID={answerEntity} group />
+        </IsLimitedContext.Provider>
+      </div>
+    ),
+    [answerEntity],
+  );
+  return (
+    <LimitedLeafletComposer
+      editor={editor}
+      publishing={publishing}
+      onPublish={publish}
+      discardLabel={props.published ? "Discard changes" : "Discard draft"}
+      onDiscard={discard}
+    >
+      {blocks}
+    </LimitedLeafletComposer>
+  );
+}
+
+function useFocusedEditorIn(answerEntity: string): ComposerEditor | null {
+  let focused = useUIState((s) =>
+    s.focusedEntity?.entityType === "block" &&
+    s.focusedEntity.parent === answerEntity
+      ? s.focusedEntity.entityID
+      : null,
+  );
+  let editor = useEditorStates((s) =>
+    focused ? s.editorStates[focused] : undefined,
+  );
+  return editor ? { state: editor.editor, view: editor.view } : null;
+}

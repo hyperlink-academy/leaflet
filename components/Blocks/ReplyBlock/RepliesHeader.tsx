@@ -33,11 +33,16 @@ export function ReplyButtonTextInput(props: {
   onCommit: (text: string) => void;
   label?: string;
   placeholder?: string;
+  variant?: "accent" | "muted";
 }) {
   return (
     <Input
       aria-label={props.label ?? "Reply button text"}
-      className="max-w-full min-w-24 px-2 py-0.5 rounded-md bg-accent-1 border border-accent-1 text-accent-2 font-bold text-center placeholder:text-accent-2 placeholder:opacity-60 outline-2 outline-transparent outline-offset-1 focus:outline-accent-1 hover:outline-accent-1 [field-sizing:content]"
+      className={`max-w-full min-w-24 px-2 py-0.5 rounded-md border font-bold text-center placeholder:opacity-60 outline-2 outline-transparent outline-offset-1 [field-sizing:content] ${
+        props.variant === "muted"
+          ? "bg-border-light border-border-light text-tertiary placeholder:text-tertiary focus:outline-border hover:outline-border"
+          : "bg-accent-1 border-accent-1 text-accent-2 placeholder:text-accent-2 focus:outline-accent-1 hover:outline-accent-1"
+      }`}
       placeholder={props.placeholder ?? DEFAULT_REPLY_BUTTON_TEXT}
       maxLength={50}
       {...useCommittedText(props.value, props.onCommit)}
@@ -87,8 +92,8 @@ export function RepliesHeader(props: {
   );
 }
 
-export function PendingRepliesHeader(props: {
-  pending: number;
+export function CollapsibleDivider(props: {
+  label: React.ReactNode;
   open: boolean;
   onToggle: () => void;
 }) {
@@ -100,7 +105,7 @@ export function PendingRepliesHeader(props: {
     >
       <hr className="grow border-border-light" />
       <span className="flex items-center gap-1 shrink-0 uppercase">
-        Approval Pending ({props.pending})
+        {props.label}
         <ArrowDownTiny className={props.open ? "" : "rotate-90"} />
       </span>
       <hr className="grow border-border-light" />

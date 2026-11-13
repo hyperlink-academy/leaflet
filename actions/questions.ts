@@ -22,7 +22,10 @@ import {
   pingIdentityToUpdateNotification,
 } from "src/notifications";
 import { resolveInteractionBlock } from "src/utils/documentHasBlock";
-import { questionsAudience } from "src/questionsAudience";
+import {
+  questionsAudience,
+  type QuestionsAudience,
+} from "src/questionsAudience";
 import {
   canAskQuestion,
   mirrorQuestionVisibility,
@@ -37,6 +40,11 @@ import {
   type QuestionState,
 } from "src/documentQuestions";
 import { scanIndexLocal } from "src/replicache/utils";
+import { getProfiles } from "src/identity";
+import {
+  interactionAuthor,
+  type InteractionAuthor,
+} from "src/interactionAuthor";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { processBlocksToPages } from "src/utils/factsToPagesRecord";
@@ -60,6 +68,35 @@ export async function getDocumentQuestions(
   return loadDocumentQuestions(subject, identity?.atp_did ?? null);
 }
 
+export async function getCanAskQuestion(
+  subject: string,
+  audience: QuestionsAudience,
+): Promise<{ canAsk: boolean; author: InteractionAuthor | null }> {
+  const identity = await getAuthIdentity();
+  if (!identity?.atp_did) return { canAsk: false, author: null };
+  let canAsk: boolean;
+  try {
+    canAsk = await canAskQuestion(
+      supabaseServerClient,
+      subject,
+      identity.atp_did,
+      audience,
+    );
+  } catch (e) {
+    console.error("[questions] audience check failed", e);
+    return { canAsk: true, author: null };
+  }
+  if (canAsk) return { canAsk, author: null };
+  const authorDid = new AtUri(subject).host;
+  try {
+    const profiles = await getProfiles([authorDid]);
+    return { canAsk, author: interactionAuthor(authorDid, profiles) };
+  } catch (e) {
+    console.error("[questions] author profile lookup failed", e);
+    return { canAsk, author: null };
+  }
+}
+
 export type QuestionError =
   | {
       type:
@@ -68,7 +105,9 @@ export type QuestionError =
         | "questions_closed"
         | "not_follows"
         | "not_follower"
+        | "not_subscriber"
         | "not_owner"
+        | "answered"
         | "failed";
     }
   | OAuthSessionError;
@@ -105,12 +144,19 @@ export async function askQuestion(args: {
   if (!questionsBlock) return Err({ type: "questions_closed" });
   const audience = questionsAudience(questionsBlock.audience);
   try {
-    if (!(await canAskQuestion(args.subject, did, audience)))
+    if (
+      !(await canAskQuestion(supabaseServerClient, args.subject, did, audience))
+    )
       return Err({
-        type: audience === "follows" ? "not_follows" : "not_follower",
+        type:
+          audience === "subscribers"
+            ? "not_subscriber"
+            : audience === "follows"
+              ? "not_follows"
+              : "not_follower",
       });
   } catch (e) {
-    console.error("[questions] follow check failed", e);
+    console.error("[questions] audience check failed", e);
     return Err({ type: "failed" });
   }
 
@@ -171,6 +217,77 @@ export async function askQuestion(args: {
       document_uri: args.subject,
     });
   return Ok({ uri });
+}
+
+export async function editQuestion(args: {
+  uri: string;
+  plaintext: string;
+  facets: PubLeafletRichtextFacet.Main[];
+}): Promise<Result<null, QuestionError>> {
+  const identity = await getAuthIdentity();
+  if (!identity?.atp_did) return Err(notAuthenticated);
+  let uri: AtUri;
+  try {
+    uri = new AtUri(args.uri);
+  } catch {
+    return Err({ type: "not_owner" });
+  }
+  if (
+    uri.host !== identity.atp_did ||
+    uri.collection !== ids.PubLeafletInteractionsQuestion
+  )
+    return Err({ type: "not_owner" });
+  if (!args.plaintext.trim()) return Err({ type: "empty" });
+
+  const { data: row } = await supabaseServerClient
+    .from("document_questions")
+    .select("subject, cid, record, document_question_answers(uri)")
+    .eq("uri", args.uri)
+    .maybeSingle();
+  if (!row) return Err({ type: "not_found" });
+  if (row.document_question_answers) return Err({ type: "answered" });
+
+  const previous =
+    row.record as unknown as PubLeafletInteractionsQuestion.Record;
+  const record: PubLeafletInteractionsQuestion.Record = {
+    ...previous,
+    plaintext: args.plaintext,
+    facets: args.facets.length > 0 ? args.facets : undefined,
+  };
+  if (!PubLeafletInteractionsQuestion.validateRecord(record).success)
+    return Err({ type: "failed" });
+
+  const agent = await agentFor(identity.atp_did);
+  if (!agent.ok) return Err(agent.error);
+  let cid: string;
+  try {
+    const put = await agent.value.com.atproto.repo.putRecord({
+      repo: uri.host,
+      collection: uri.collection,
+      rkey: uri.rkey,
+      record,
+      swapRecord: row.cid,
+      validate: false,
+    });
+    cid = put.data.cid;
+  } catch (e) {
+    console.error("[questions] question putRecord failed", e);
+    return Err({ type: "failed" });
+  }
+  const { error } = await supabaseServerClient
+    .from("document_questions")
+    .update({ cid, record: record as unknown as Json })
+    .eq("uri", args.uri);
+  if (error) {
+    console.error("[questions] question row update failed", error);
+    return Err({ type: "failed" });
+  }
+  await Promise.all([
+    broadcastDocumentEvent(supabaseServerClient, "question", row.subject),
+    // A shown question was server-rendered into the post's pages.
+    revalidateDocumentPaths(row.subject, { neighbours: false }),
+  ]);
+  return Ok(null);
 }
 
 export async function withdrawQuestion(

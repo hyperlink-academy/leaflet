@@ -514,7 +514,7 @@ export let Block = ({
         <div className={className} {...blockProps}>
           <InteractionBlockFrame
             anchor={interactionBlockAnchor("questions", block.key)}
-            className="questionsBlock block-border w-full p-2 sm:p-3"
+            className="questionsBlock light-container rounded-lg! block-border w-full p-2 sm:p-3"
           >
             {(targeted) => (
               <DocumentQuestions
@@ -524,6 +524,20 @@ export let Block = ({
                 buttonText={block.buttonText}
                 audience={questionsAudience(block.audience)}
                 showPending={!!block.showPending}
+                publication={
+                  document.publication
+                    ? {
+                        publicationUri: document.publication.uri,
+                        publicationUrl: document.normalizedPublication?.url,
+                        publicationName:
+                          document.normalizedPublication?.name ??
+                          document.publication.name,
+                        publicationDescription:
+                          document.normalizedPublication?.description,
+                        newsletterMode: document.publication.newsletterMode,
+                      }
+                    : undefined
+                }
                 autoFocus={targeted}
               />
             )}

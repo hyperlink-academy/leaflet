@@ -1017,6 +1017,19 @@ const discardQuestionAnswer: Mutation<{
   await removeAnswer(args.answerEntity, ctx);
 };
 
+// Replaces the answer's blocks with `facts`, which sit on `entities`.
+const restoreQuestionAnswer: Mutation<{
+  answerEntity: string;
+  permission_set: string;
+  entities: string[];
+  facts: FactInput[];
+}> = async (args, ctx) => {
+  await removeDescendants(args.answerEntity, ctx);
+  for (let entityID of args.entities)
+    await ctx.createEntity({ entityID, permission_set: args.permission_set });
+  for (let fact of args.facts) await ctx.assertFact(fact);
+};
+
 const archiveDraft: Mutation<{
   mailboxEntity: string;
   archiveEntity: string;
@@ -1635,6 +1648,7 @@ export const mutations = {
   createDraft,
   createQuestionAnswer,
   discardQuestionAnswer,
+  restoreQuestionAnswer,
   createEntity,
   addPollOption,
   removePollOption,

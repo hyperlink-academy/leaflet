@@ -10,6 +10,7 @@ import { ids } from "lexicons/api/lexicons";
 import type { NormalizedDocument } from "src/utils/normalizeRecords";
 import { findDocumentBlocks } from "src/utils/documentHasBlock";
 import type { QuestionsAudience } from "src/questionsAudience";
+import { deriveSubscriptionState } from "src/subscriptions/state";
 import type { QuestionState } from "src/documentQuestions";
 
 export const questionsBlocksOf = (document: NormalizedDocument | null) =>
@@ -18,9 +19,8 @@ export const questionsBlocksOf = (document: NormalizedDocument | null) =>
     ids.PubLeafletBlocksQuestions,
   );
 
-// Whether `asker` may ask the author of `subject` under the block's audience,
-// checked against the Bluesky follow graph when the question is asked.
 export async function canAskQuestion(
+  supabase: SupabaseClient<Database>,
   subject: string,
   asker: string,
   audience: QuestionsAudience,
@@ -28,6 +28,8 @@ export async function canAskQuestion(
   if (audience === "anyone") return true;
   const author = new AtUri(subject).host;
   if (author === asker) return true;
+  if (audience === "subscribers")
+    return isPublicationSubscriber(supabase, subject, asker);
   const agent = new AtpAgent({ service: "https://public.api.bsky.app" });
   const res = await agent.app.bsky.graph.getRelationships({
     actor: author,
@@ -38,6 +40,41 @@ export async function canAskQuestion(
   ) as { following?: string; followedBy?: string } | undefined;
   if (!rel) return false;
   return audience === "follows" ? !!rel.following : !!rel.followedBy;
+}
+
+async function isPublicationSubscriber(
+  supabase: SupabaseClient<Database>,
+  subject: string,
+  did: string,
+) {
+  const { data: inPublication, error: publicationError } = await supabase
+    .from("documents_in_publications")
+    .select("publication")
+    .eq("document", subject)
+    .limit(1);
+  if (publicationError) throw publicationError;
+  const publication = inPublication?.[0]?.publication;
+  if (!publication) return false;
+  const { data: identities, error } = await supabase
+    .from("identities")
+    .select(
+      `publication_subscriptions(publication),
+       publication_email_subscribers(publication, state),
+       publication_memberships(publication, tier, status, current_period_end)`,
+    )
+    .eq("atp_did", did)
+    .eq("publication_subscriptions.publication", publication)
+    .eq("publication_email_subscribers.publication", publication)
+    .eq("publication_memberships.publication", publication);
+  if (error) throw error;
+  return (identities ?? []).some(
+    (identity) =>
+      deriveSubscriptionState(publication, {
+        subscriptions: identity.publication_subscriptions,
+        emailSubscribers: identity.publication_email_subscribers,
+        memberships: identity.publication_memberships,
+      }).subscribed,
+  );
 }
 
 // Hidden wins over accepted if a question is somehow in both.
@@ -64,15 +101,13 @@ export async function mirrorQuestionVisibility(
     .delete()
     .eq("subject", subject);
   if (states.size === 0) return;
-  const { error } = await supabase
-    .from("document_question_visibility")
-    .upsert(
-      [...states].map(([question, state]) => ({
-        uri,
-        subject,
-        question,
-        state,
-      })),
-    );
+  const { error } = await supabase.from("document_question_visibility").upsert(
+    [...states].map(([question, state]) => ({
+      uri,
+      subject,
+      question,
+      state,
+    })),
+  );
   if (error) console.error("[questions] visibility row upsert failed", error);
 }

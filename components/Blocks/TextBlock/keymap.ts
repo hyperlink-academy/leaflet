@@ -33,8 +33,12 @@ type PropsRef = RefObject<
   BlockProps & {
     entity_set: { set: string };
     alignment: Fact<"block/text-alignment">["data"]["value"];
+    isLimited: boolean;
   }
 >;
+
+const blockMenuOpen = (state: EditorState, propsRef: PropsRef) =>
+  !propsRef.current.isLimited && state.doc.textContent.startsWith("/");
 export const TextBlockKeymap = (
   propsRef: PropsRef,
   repRef: RefObject<Replicache<ReplicacheMutators> | null>,
@@ -225,7 +229,7 @@ const moveCursorDown =
     view?: EditorView,
   ) => {
     if (!view) return true;
-    if (state.doc.textContent.startsWith("/")) return true;
+    if (blockMenuOpen(state, propsRef)) return true;
     if (useUIState.getState().selectedBlocks.length > 1) return true;
     if (view.state.selection.from !== view.state.selection.to) return false;
     const viewClientRect = view.dom.getBoundingClientRect();
@@ -254,7 +258,7 @@ const moveCursorUp =
     view?: EditorView,
   ) => {
     if (!view) return false;
-    if (state.doc.textContent.startsWith("/")) return true;
+    if (blockMenuOpen(state, propsRef)) return true;
     if (useUIState.getState().selectedBlocks.length > 1) return true;
     if (view.state.selection.from !== view.state.selection.to) return false;
     const viewClientRect = view.dom.getBoundingClientRect();
@@ -456,6 +460,9 @@ const backspace =
         state.doc.textContent.length === 0
       ) {
         let next = propsRef.current.nextBlock;
+        // A limited editor keeps its last line, so focus never falls through
+        // to the page around it.
+        if (!next && propsRef.current.isLimited) return finish(true);
         mutate(
           repRef.current?.mutate.removeBlock({
             blockEntity: propsRef.current.entityID,
@@ -694,7 +701,7 @@ const enter =
     dispatch?: (tr: Transaction) => void,
     view?: EditorView,
   ) => {
-    if (state.doc.textContent.startsWith("/")) return true;
+    if (blockMenuOpen(state, propsRef)) return true;
     // Empty list item: just outdent, don't create a new block
     if (propsRef.current.listData && state.doc.content.size <= 2) {
       // The outdent's mutations run async, so keep the undo group open until

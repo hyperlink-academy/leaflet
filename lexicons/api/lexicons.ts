@@ -1930,9 +1930,9 @@ export const schemaDict = {
           },
           audience: {
             type: 'string',
-            knownValues: ['anyone', 'follows', 'followers'],
+            knownValues: ['anyone', 'subscribers', 'follows', 'followers'],
             description:
-              'Who may ask: anyone, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a question is asked.',
+              "Who may ask: anyone, only subscribers to the document's publication, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a question is asked.",
           },
           showPending: {
             type: 'boolean',

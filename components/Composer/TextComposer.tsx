@@ -3,9 +3,9 @@ import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
 import { formattingKeymap } from "src/utils/prosemirror/formattingKeymap";
 import { applyLinkPaste } from "src/utils/prosemirror/linkOnPaste";
 import { multiBlockSchema } from "components/Blocks/TextBlock/schema";
-import { baseKeymap, toggleMark } from "prosemirror-commands";
+import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
-import { Mark, MarkType, Node } from "prosemirror-model";
+import { Node } from "prosemirror-model";
 import { EditorState, TextSelection } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { history, redo, undo } from "prosemirror-history";
@@ -18,10 +18,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
-import { DotLoader } from "components/utils/DotLoader";
-import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
-import { setMark } from "src/utils/prosemirror/setMark";
+import { ComposerChrome } from ".";
 import { isIOS } from "src/utils/isDevice";
 import { betterIsUrl } from "src/utils/isURL";
 import { Mention, MentionAutocomplete } from "components/Mention";
@@ -30,11 +27,6 @@ import {
   loadDraftDoc,
   saveDraftDoc,
 } from "src/utils/prosemirror/draftPersistence";
-import { docToFacetedText, type FacetedText } from "./facetedText";
-export type { FacetedText } from "./facetedText";
-import { BoldTiny } from "components/Icons/BoldTiny";
-import { ItalicTiny } from "components/Icons/ItalicTiny";
-import { StrikethroughTiny } from "components/Icons/StrikethroughTiny";
 
 const addMentionToEditor = (
   mention: Mention,
@@ -66,37 +58,36 @@ const addMentionToEditor = (
   view.focus();
 };
 
-// A short rich-text input that produces plaintext + facets: bold, italic,
-// strikethrough, links, and @-mentions, with Cmd-Enter to submit. Comments
-// and questions share it.
-export function FacetedTextComposer(props: {
-  // Persists the in-progress text under this key across reloads; null
-  // persists nothing.
-  draftKey: string | null;
+export function TextComposer(props: {
+  draftKey?: string | null;
   // Seeds the editor instead of the persisted draft (editing a record).
   initialDoc?: Node;
+  placeholder?: string;
+  mentions?: boolean;
   autoFocus?: boolean;
-  submitLabel: React.ReactNode;
-  cancelLabel?: React.ReactNode;
-  onCancel?: () => void;
+  bare?: boolean;
+  onChange?: (doc: Node) => void;
   // Resolves true to clear the input once the text is sent.
-  onSubmit: (text: FacetedText) => Promise<boolean>;
+  onSubmit?: (doc: Node) => Promise<boolean>;
+  onCancel?: () => void;
   // Intercepts pasted plain text; returns true when handled.
   onPasteText?: (text: string) => boolean | void;
   // Rendered above the input
   above?: React.ReactNode;
-  // Rendered beside the buttons
-  trailing?: React.ReactNode;
+  actions?: React.ReactNode;
   className?: string;
   inputClassName?: string;
 }) {
   let mountRef = useRef<HTMLPreElement | null>(null);
   let view = useRef<null | EditorView>(null);
+  let [mountedView, setMountedView] = useState<EditorView | null>(null);
   let [submitting, setSubmitting] = useState(false);
   let onCancelRef = useRef(props.onCancel);
   onCancelRef.current = props.onCancel;
   let onPasteTextRef = useRef(props.onPasteText);
   onPasteTextRef.current = props.onPasteText;
+  let onChangeRef = useRef(props.onChange);
+  onChangeRef.current = props.onChange;
 
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionCoords, setMentionCoords] = useState<{
@@ -143,12 +134,12 @@ export function FacetedTextComposer(props: {
 
   const handleSubmitRef = useRef<() => Promise<void>>(async () => {});
   handleSubmitRef.current = async () => {
-    if (submitting || !view.current) return;
+    if (submitting || !view.current || !props.onSubmit) return;
     setSubmitting(true);
     let currentState = view.current.state;
     let clear = false;
     try {
-      clear = await props.onSubmit(docToFacetedText(currentState.doc));
+      clear = await props.onSubmit(currentState.doc);
     } finally {
       setSubmitting(false);
     }
@@ -202,15 +193,19 @@ export function FacetedTextComposer(props: {
           shouldAutoLink: () => true,
           defaultProtocol: "https",
         }),
-        inputRules({
-          rules: [
-            // @ at start of line or after space
-            new InputRule(/(?:^|\s)@$/, () => {
-              setTimeout(() => openMentionAutocompleteRef.current(), 0);
-              return null;
-            }),
-          ],
-        }),
+        ...(props.mentions
+          ? [
+              inputRules({
+                rules: [
+                  // @ at start of line or after space
+                  new InputRule(/(?:^|\s)@$/, () => {
+                    setTimeout(() => openMentionAutocompleteRef.current(), 0);
+                    return null;
+                  }),
+                ],
+              }),
+            ]
+          : []),
         history(),
       ],
     });
@@ -278,12 +273,15 @@ export function FacetedTextComposer(props: {
               ? null
               : newState.doc.toJSON(),
           );
+          if (tr.docChanged) onChangeRef.current?.(newState.doc);
         },
       },
     );
+    setMountedView(view.current);
     return () => {
       view.current?.destroy();
       view.current = null;
+      setMountedView(null);
     };
   }, []);
   useEffect(() => {
@@ -291,81 +289,44 @@ export function FacetedTextComposer(props: {
   }, [props.autoFocus]);
 
   return (
-    <div className={`flex flex-col grow ${props.className ?? ""}`}>
-      {props.above}
-      <div className="commentComposer w-full relative group">
-        <pre
-          ref={mountRef}
-          style={{ fontFamily: "inherit" }}
-          onFocus={() => handleMentionOpenChange(false)}
-          onBlur={(e) => {
-            // Keep the dropdown when focus moved into it
-            const relatedTarget = e.relatedTarget as HTMLElement | null;
-            if (!relatedTarget?.closest(".dropdownMenu"))
-              handleMentionOpenChange(false);
-          }}
-          className={`commentInput border whitespace-pre-wrap input-with-border min-h-32 h-fit px-2! py-[6px]! ${props.inputClassName ?? ""}`}
-        />
-        <IOSBS view={view} />
-        <MentionAutocomplete
-          open={mentionOpen}
-          onOpenChange={handleMentionOpenChange}
-          view={view}
-          onSelect={handleMentionSelect}
-          coords={mentionCoords}
-        />
-      </div>
-      <div className="flex justify-between pt-1">
-        <div className="flex gap-1">
-          <TextDecorationButton
-            mark={multiBlockSchema.marks.strong}
-            icon={<BoldTiny />}
-            editor={editorState}
-            view={view}
-          />
-          <TextDecorationButton
-            mark={multiBlockSchema.marks.em}
-            icon={<ItalicTiny />}
-            editor={editorState}
-            view={view}
-          />
-          <TextDecorationButton
-            mark={multiBlockSchema.marks.strikethrough}
-            icon={<StrikethroughTiny />}
-            editor={editorState}
-            view={view}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          {props.trailing}
-          {props.onCancel && props.cancelLabel && (
-            <ButtonTertiary compact onClick={() => props.onCancel?.()}>
-              {props.cancelLabel}
-            </ButtonTertiary>
-          )}
-          <ButtonPrimary
-            compact
-            disabled={submitting}
-            onClick={() => handleSubmitRef.current()}
-          >
-            {submitting ? <DotLoader /> : props.submitLabel}
-          </ButtonPrimary>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Same footprint as the composer (input + toolbar row) so what's below
-// doesn't jump while the viewer's identity or the editor chunk is loading.
-export function ComposerPlaceholder(props: { className?: string }) {
-  return (
-    <div className="flex flex-col grow">
-      <div
-        className={`border input-with-border min-h-32 px-2 py-[6px] ${props.className ?? ""}`}
+    <ComposerChrome
+      editor={mountedView && { state: editorState, view: mountedView }}
+      bare={props.bare}
+      onSubmit={props.onSubmit && (() => handleSubmitRef.current())}
+      submitting={submitting}
+      above={props.above}
+      actions={props.actions}
+      className={props.className}
+      inputClassName={props.inputClassName}
+    >
+      <pre
+        ref={mountRef}
+        style={{ fontFamily: "inherit" }}
+        onFocus={() => handleMentionOpenChange(false)}
+        onBlur={(e) => {
+          // Keep the dropdown when focus moved into it
+          const relatedTarget = e.relatedTarget as HTMLElement | null;
+          if (!relatedTarget?.closest(".dropdownMenu"))
+            handleMentionOpenChange(false);
+        }}
+        className={`textComposerInput grow whitespace-pre-wrap outline-hidden ${props.bare ? "min-h-12" : ""}`}
       />
-      <div className="pt-1 h-[30px]" />
-    </div>
+      {props.placeholder && editorState.doc.textContent.length === 0 && (
+        <div
+          className={`absolute top-0 left-0 pointer-events-none italic text-tertiary ${props.bare ? "" : "px-2 py-[6px]"}`}
+        >
+          {props.placeholder}
+        </div>
+      )}
+      <IOSBS view={view} />
+      <MentionAutocomplete
+        open={mentionOpen}
+        onOpenChange={handleMentionOpenChange}
+        view={view}
+        onSelect={handleMentionSelect}
+        coords={mentionCoords}
+      />
+    </ComposerChrome>
   );
 }
 
@@ -393,52 +354,4 @@ export function IOSBS(props: { view: RefObject<EditorView | null> }) {
       }}
     />
   );
-}
-
-function TextDecorationButton(props: {
-  editor: EditorState;
-  mark: MarkType;
-  icon: React.ReactNode;
-  view: RefObject<EditorView | null>;
-}) {
-  let hasMark: boolean = false;
-  let mark: Mark | null = null;
-  if (props.editor) {
-    let { to, from, $cursor } = props.editor.selection as TextSelection;
-    mark = rangeHasMark(props.editor, props.mark, from, to);
-    if ($cursor)
-      hasMark = !!props.mark.isInSet(
-        props.editor.storedMarks || $cursor.marks(),
-      );
-    else hasMark = !!mark;
-  }
-  return (
-    <button
-      className={`rounded-md hover:bg-border-light p-1 ${hasMark ? "bg-border-light text-primary" : "text-border"}`}
-      onMouseDown={(e) => {
-        e.preventDefault();
-        if (!props.view.current) return;
-        toggleMarkInComposer(props.view.current, props.mark);
-      }}
-    >
-      {props.icon}
-    </button>
-  );
-}
-
-function toggleMarkInComposer(view: EditorView, markT: MarkType, attrs?: any) {
-  let { to, from, $cursor } = view.state.selection as TextSelection;
-  let mark = rangeHasMark(view.state, markT, from, to);
-  if (
-    to === from &&
-    markT?.isInSet(view.state.storedMarks || $cursor?.marks() || [])
-  ) {
-    return toggleMark(markT, attrs)(view.state, view.dispatch);
-  }
-  if (
-    mark &&
-    (!attrs || JSON.stringify(attrs) === JSON.stringify(mark.attrs))
-  ) {
-    toggleMark(markT, attrs)(view.state, view.dispatch);
-  } else setMark(markT, attrs)(view.state, view.dispatch);
 }

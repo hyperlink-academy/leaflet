@@ -11,7 +11,11 @@ import {
 } from "drizzle/schema";
 import { supabaseServerClient } from "supabase/serverClient";
 import { cachedServerMutationContext } from "src/replicache/cachedServerMutationContext";
-import { Attributes, type Attribute } from "src/replicache/attributes";
+import {
+  Attributes,
+  REFERENCE_TYPES,
+  type Attribute,
+} from "src/replicache/attributes";
 import { SCHEMA_VERSION } from "components/Blocks/TextBlock/schema";
 import {
   closureImagePaths,
@@ -19,12 +23,6 @@ import {
   getClosureFacts,
   type SnapshotFact,
 } from "./cutVersion";
-
-const REFERENCE_TYPES = new Set([
-  "reference",
-  "ordered-reference",
-  "spatial-reference",
-]);
 
 function tokenHash(tokenId: string): number {
   return tokenId.split("").reduce((acc, char) => {
@@ -75,6 +73,17 @@ function compensatingTextValue(
   });
   stampSchemaVersion(currentDoc);
   return base64.fromByteArray(Y.encodeStateAsUpdate(currentDoc));
+}
+
+// The text value that takes `current` back to `snapshot`, or null when they
+// already read the same. A yjs doc only ever merges, so this is an update
+// rewriting the current doc rather than the older state itself.
+function restoredTextValue(current: string, snapshot: string) {
+  try {
+    return compensatingTextValue(current, snapshot);
+  } catch {
+    return stampedEncoding(snapshot);
+  }
 }
 
 function closureEntities(facts: SnapshotFact[]): Set<string> {
@@ -193,15 +202,10 @@ export async function restoreDocumentVersion(args: {
             matchedCurrentIds.add(cur.id);
             if (JSON.stringify(cur.data) === JSON.stringify(sf.data)) continue;
             if (attr.type === "text") {
-              let value: string | null;
-              try {
-                value = compensatingTextValue(
-                  (cur.data as { value: string }).value,
-                  (sf.data as { value: string }).value,
-                );
-              } catch {
-                value = stampedEncoding((sf.data as { value: string }).value);
-              }
+              let value = restoredTextValue(
+                (cur.data as { value: string }).value,
+                (sf.data as { value: string }).value,
+              );
               if (value === null) continue;
               await assertSnapshotFact(sf, { type: "text", value }, undefined);
             } else {

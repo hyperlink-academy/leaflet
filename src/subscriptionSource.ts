@@ -8,6 +8,7 @@ export const SUBSCRIPTION_PLACEMENTS = [
   "pub_nav",
   "post_footer",
   "signup_block",
+  "questions_block",
   "subscribe_page",
   "paywall",
   "join_page",

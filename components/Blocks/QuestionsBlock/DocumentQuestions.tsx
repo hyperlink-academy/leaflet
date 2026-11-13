@@ -4,13 +4,14 @@ import useSWR from "swr";
 import { AtUri } from "@atproto/syntax";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { usePathname } from "next/navigation";
-import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useIdentityData } from "components/IdentityProvider";
 import { useToaster } from "components/Toast";
 import { useActionToast } from "components/useActionToast";
 import { usePostEditLink } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/usePostEditLink";
 import {
   askQuestion,
+  editQuestion,
+  getCanAskQuestion,
   getDocumentQuestions,
   setQuestionState,
   withdrawQuestion,
@@ -22,29 +23,41 @@ import type {
   QuestionState,
 } from "src/documentQuestions";
 import type { QuestionsAudience } from "src/questionsAudience";
+import type { InteractionAuthor } from "src/interactionAuthor";
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
-import { ComposerPlaceholder } from "components/FacetedTextComposer";
+import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
+import { ComposerPlaceholder } from "components/Composer";
 import {
+  DisabledAskButton,
+  QuestionAction,
+  QuestionAnswer,
   QuestionComposer,
   QuestionComposerPreview,
+  QuestionEditorEmpty,
+  QuestionsEditorNotice,
+  QuestionsEmpty,
   QuestionsList,
   QuestionsModeration,
-  SignInToAsk,
+  QuestionsRestricted,
+  LoggedOutQuestionComposer,
+  type QuestionsPublication,
 } from "./QuestionsView";
 import { PublishedAnswer } from "./PublishedAnswer";
-import type { FacetedText } from "components/FacetedTextComposer";
+import type { FacetedText } from "components/Composer/facetedText";
 import {
-  AnswerEditor,
-  useHasAnswerDraft,
+  LimitedLeafletEditor,
+  useAnswerDrafts,
   useStartAnswer,
-} from "./AnswerEditor";
+} from "./LimitedLeafletEditor";
 
 const questionErrorMessages: Partial<Record<QuestionError["type"], string>> = {
   not_found: "We couldn't find that post.",
   empty: "Write a question first.",
   questions_closed: "This post isn't taking questions.",
-  not_follows: "Only people the author follows can ask here.",
-  not_follower: "Only the author's followers can ask here.",
+  not_follows: "Only people the author follows can submit a question.",
+  not_follower: "Only the author's followers can submit a question.",
+  not_subscriber: "Only subscribers can submit a question.",
+  answered: "This question has been answered, so it can't be edited.",
 };
 
 // Questions on a published document, for whoever is looking: the document's
@@ -65,6 +78,8 @@ export function DocumentQuestions(props: {
   initialQuestions?: DocumentQuestion[];
   buttonText?: string;
   audience?: QuestionsAudience;
+
+  publication?: QuestionsPublication;
   editor?: {
     // The questions block entity, whose answer drafts hang off it
     blockEntity: string;
@@ -79,6 +94,14 @@ export function DocumentQuestions(props: {
 }) {
   let { identity, identityPending } = useIdentityData();
   let viewer = identity?.atp_did ?? null;
+  let viewerAuthor: InteractionAuthor | null = viewer
+    ? {
+        did: viewer,
+        handle: identity?.bsky_profiles?.handle ?? null,
+        displayName: identity?.bsky_profiles?.record.displayName ?? null,
+        avatar: identity?.bsky_profiles?.record.avatar ?? null,
+      }
+    : null;
   // An anonymous reader of a cached page has nothing to add to the public
   // list it was rendered with, until something happens to it.
   let [changed, setChanged] = useState(false);
@@ -96,15 +119,32 @@ export function DocumentQuestions(props: {
         }),
     },
   );
+  let audience = props.audience ?? "anyone";
+  let { subscribed } = useViewerSubscription(props.publication?.publicationUri);
+  let followAudience = audience === "follows" || audience === "followers";
+  let { data: followCheck, error: followCheckError } = useSWR(
+    viewer &&
+      followAudience &&
+      !props.editor &&
+      !isDocumentOwner(props.documentUri, viewer)
+      ? ["can_ask_question", props.documentUri, viewer, audience]
+      : null,
+    () => getCanAskQuestion(props.documentUri, audience),
+    { revalidateOnFocus: false, revalidateIfStale: false },
+  );
+  let canAsk =
+    audience === "anyone"
+      ? true
+      : audience === "subscribers"
+        ? subscribed
+        : // askQuestion checks again, so a failed lookup lets them try.
+          followCheckError
+          ? true
+          : followCheck?.canAsk;
   useDocumentEvents(props.documentUri, ["question", "answer"], () => {
     setChanged(true);
     mutate();
   });
-  // Questions whose inline answer editor is open (editor only), and whether
-  // opening it started the draft
-  let [editing, setEditing] = useState<Record<string, { fresh: boolean }>>({});
-  let closeEditor = (uri: string) =>
-    setEditing(({ [uri]: _, ...rest }) => rest);
   let run = useActionToast<QuestionError>(questionErrorMessages);
   let [busy, setBusy] = useState(false);
   let questions = (data?.questions ?? []).filter(
@@ -139,6 +179,26 @@ export function DocumentQuestions(props: {
     if (typeof window === "undefined") return;
     return new URL(pathname, window.location.origin).toString();
   }, [pathname]);
+  let edit = async (uri: string, text: FacetedText) => {
+    if (!(await run(() => editQuestion({ uri, ...text })))) return false;
+    await mutate(
+      (current) =>
+        current && {
+          ...current,
+          questions: current.questions.map((q) =>
+            q.uri === uri
+              ? {
+                  ...q,
+                  plaintext: text.plaintext,
+                  facets: text.facets.length > 0 ? text.facets : undefined,
+                }
+              : q,
+          ),
+        },
+      { revalidate: false },
+    );
+    return true;
+  };
   let withdraw = async (uri: string) => {
     if (await run(() => withdrawQuestion(uri)))
       await mutate(
@@ -150,53 +210,22 @@ export function DocumentQuestions(props: {
         { revalidate: false },
       );
   };
+  let help = { audience, showPending: props.showPending };
   if (props.editor) {
     let editor = props.editor;
-    let preview = (
-      <QuestionComposerPreview
-        action={editor.action}
-        audience={props.audience}
-        showPending={props.showPending}
-      />
-    );
-    if (!data) return preview;
-    let isAuthor = data.isAuthor;
+    if (!data) return <QuestionEditorEmpty action={editor.action} {...help} />;
     return (
-      <QuestionsModeration
+      <EditorQuestions
         questions={questions}
-        header={preview}
+        header={<QuestionComposerPreview action={editor.action} />}
+        empty={<QuestionsEditorNotice {...help} />}
         busy={busy}
-        onSetState={isAuthor ? setState : undefined}
-        renderAnswer={(q, showHandle) =>
-          editing[q.uri] ? (
-            <AnswerEditor
-              blockEntity={editor.blockEntity}
-              question={q.uri}
-              page={editor.page}
-              published={!!q.answer}
-              discardOnClose={editing[q.uri].fresh}
-              onPublished={async () => {
-                await mutate();
-                closeEditor(q.uri);
-              }}
-              onClose={() => closeEditor(q.uri)}
-            />
-          ) : (
-            publishedAnswer(q, showHandle)
-          )
-        }
-        renderControl={(q) =>
-          isAuthor &&
-          !editing[q.uri] && (
-            <EditorAnswerControl
-              question={q}
-              blockEntity={editor.blockEntity}
-              onOpen={(fresh) =>
-                setEditing((e) => ({ ...e, [q.uri]: { fresh } }))
-              }
-            />
-          )
-        }
+        isAuthor={data.isAuthor}
+        onSetState={setState}
+        blockEntity={editor.blockEntity}
+        page={editor.page}
+        author={viewerAuthor}
+        onPublished={() => mutate()}
       />
     );
   }
@@ -207,6 +236,12 @@ export function DocumentQuestions(props: {
         questions={questions}
         busy={busy}
         onSetState={setState}
+        empty={<QuestionsEmpty {...help} />}
+        header={
+          <QuestionComposerPreview
+            action={<DisabledAskButton text={props.buttonText} />}
+          />
+        }
       />
     );
   if (!data) return null;
@@ -224,25 +259,40 @@ export function DocumentQuestions(props: {
     toaster({ content: "Question sent.", type: "success" });
     return true;
   };
+  let restrictedAudience =
+    viewer && canAsk === false && audience !== "anyone" ? audience : null;
   return (
     <QuestionsList
+      audience={restrictedAudience ? "anyone" : audience}
+      showPending={props.showPending}
       questions={questions}
       onWithdraw={withdraw}
+      onEdit={edit}
       renderAnswer={publishedAnswer}
       action={
-        identityPending ? (
+        identityPending || (viewer && canAsk === undefined) ? (
           <ComposerPlaceholder className="min-h-20!" />
         ) : viewer ? (
-          <QuestionComposer
-            draftKey={`question:${props.documentUri}${props.block ? `:${props.block}` : ""}`}
-            submitLabel={props.buttonText}
-            audience={props.audience}
-            showPending={props.showPending}
-            autoFocus={props.autoFocus}
-            onSubmit={ask}
-          />
+          restrictedAudience ? (
+            <QuestionsRestricted
+              audience={restrictedAudience}
+              author={followCheck?.author ?? null}
+              publication={props.publication}
+            />
+          ) : (
+            <QuestionComposer
+              asker={viewerAuthor}
+              draftKey={`question:${props.documentUri}${props.block ? `:${props.block}` : ""}`}
+              submitLabel={props.buttonText}
+              autoFocus={props.autoFocus}
+              onSubmit={ask}
+            />
+          )
         ) : (
-          <SignInToAsk linkAccount={!!identity} redirectRoute={redirectRoute} />
+          <LoggedOutQuestionComposer
+            linkAccount={!!identity}
+            redirectRoute={redirectRoute}
+          />
         )
       }
     />
@@ -253,62 +303,117 @@ const publishedAnswer = (q: DocumentQuestion, showHandle?: boolean) =>
   q.answer ? (
     <PublishedAnswer answer={q.answer} showHandle={showHandle} />
   ) : null;
-
-// The author on their published post: answers are written in the editor.
 function PublishedAuthorView(props: {
   documentUri: string;
   questions: DocumentQuestion[];
   busy: boolean;
   onSetState: (uri: string, state: QuestionState) => void;
+  header: React.ReactNode;
+  empty: React.ReactNode;
 }) {
   let editLink = usePostEditLink(
     props.documentUri,
     new AtUri(props.documentUri).host,
   );
+  let toEditor = (label: string) =>
+    editLink && (
+      <QuestionAction primary onClick={() => window.location.assign(editLink)}>
+        {label}
+      </QuestionAction>
+    );
   return (
     <QuestionsModeration
       questions={props.questions}
+      header={props.header}
+      empty={props.empty}
       busy={props.busy}
       onSetState={props.onSetState}
-      renderAnswer={publishedAnswer}
-      renderControl={(q) =>
-        !q.answer &&
-        editLink && (
-          <ButtonSecondary
-            compact
-            onClick={() => window.location.assign(editLink)}
-          >
-            Answer in editor
-          </ButtonSecondary>
+      renderAnswer={(q, showHandle) =>
+        q.answer && (
+          <PublishedAnswer
+            answer={q.answer}
+            showHandle={showHandle}
+            actions={toEditor("Edit answer in editor")}
+          />
         )
       }
+      renderControl={(q) => !q.answer && toEditor("Answer in editor")}
     />
   );
 }
 
-// Opens the inline editor, starting a draft when the question has none.
-function EditorAnswerControl(props: {
-  question: DocumentQuestion;
+function EditorQuestions(props: {
+  questions: DocumentQuestion[];
+  header: React.ReactNode;
+  empty: React.ReactNode;
+  busy: boolean;
+  isAuthor: boolean;
+  onSetState: (uri: string, state: QuestionState) => void;
   blockEntity: string;
-  onOpen: (fresh: boolean) => void;
+  page: string;
+  author: InteractionAuthor | null;
+  onPublished: () => Promise<unknown>;
 }) {
-  let hasDraft = useHasAnswerDraft(props.blockEntity, props.question.uri);
-  let start = useStartAnswer(props.blockEntity);
+  let drafts = useAnswerDrafts(props.blockEntity);
+  let startAnswer = useStartAnswer(props.blockEntity);
+  let [opened, setOpened] = useState<Set<string>>(new Set());
+  let close = (uri: string) =>
+    setOpened((o) => new Set([...o].filter((u) => u !== uri)));
+  let { author } = props;
+  let isOpen = (q: DocumentQuestion) =>
+    props.isAuthor &&
+    (opened.has(q.uri) || (q.state === "pending" && drafts.includes(q.uri)));
+  let answerControl = (q: DocumentQuestion) => {
+    if (!props.isAuthor || isOpen(q)) return null;
+    return (
+      <QuestionAction
+        primary
+        onClick={async () => {
+          await startAnswer(q.uri, !!q.answer);
+          setOpened((o) => new Set(o).add(q.uri));
+        }}
+      >
+        {!q.answer
+          ? "Answer"
+          : drafts.includes(q.uri)
+            ? "Edit answer"
+            : "Write a new answer"}
+      </QuestionAction>
+    );
+  };
   return (
-    <ButtonPrimary
-      compact
-      onClick={async () => {
-        if (!hasDraft) await start(props.question.uri);
-        props.onOpen(!hasDraft);
-      }}
-    >
-      {hasDraft
-        ? props.question.answer
-          ? "Edit answer"
-          : "Continue answer"
-        : props.question.answer
-          ? "Write a new answer"
-          : "Answer"}
-    </ButtonPrimary>
+    <QuestionsModeration
+      questions={props.questions}
+      header={props.header}
+      empty={props.empty}
+      busy={props.busy}
+      onSetState={props.isAuthor ? props.onSetState : undefined}
+      renderAnswer={(q, showHandle) =>
+        isOpen(q) && author ? (
+          <QuestionAnswer author={author} showHandle={showHandle} composing>
+            <LimitedLeafletEditor
+              blockEntity={props.blockEntity}
+              question={q.uri}
+              page={props.page}
+              published={!!q.answer}
+              onPublished={async () => {
+                await props.onPublished();
+                close(q.uri);
+              }}
+              onClose={() => close(q.uri)}
+            />
+          </QuestionAnswer>
+        ) : (
+          q.answer && (
+            <PublishedAnswer
+              answer={q.answer}
+              showHandle={showHandle}
+              actions={answerControl(q)}
+            />
+          )
+        )
+      }
+      renderControl={(q) => !q.answer && answerControl(q)}
+    />
   );
 }

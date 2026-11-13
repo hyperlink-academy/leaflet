@@ -1,30 +1,38 @@
 "use client";
-import React, { useState } from "react";
-import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
-import { Popover } from "components/Popover";
+import React, { Fragment, useState } from "react";
 import { Avatar } from "components/Avatar";
-import { CloseTiny } from "components/Icons/CloseTiny";
-import { InfoSmall } from "components/Icons/InfoSmall";
+import { Separator } from "components/Layout";
 import { LoginModal } from "components/LoginButton";
+import { Modal } from "components/Modal";
+import { SubscribePanel } from "components/Subscribe/SubscribeButton";
+import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { BaseTextBlock } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
+import { ComposerChrome, ComposerSubmit } from "components/Composer";
+import { TextComposer } from "components/Composer/TextComposer";
 import {
-  FacetedTextComposer,
+  docToFacetedText,
+  facetedTextToDoc,
   type FacetedText,
-} from "components/FacetedTextComposer";
+} from "components/Composer/facetedText";
 import type { DocumentQuestion, QuestionState } from "src/documentQuestions";
-import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
+import type { InteractionAuthor } from "src/interactionAuthor";
 import {
   authorDisplayName,
   hasSeveralAuthors,
   InteractionAuthorName,
 } from "../InteractionAuthorName";
-import { ReplyButtonTextInput } from "../ReplyBlock/RepliesHeader";
+import {
+  CollapsibleDivider,
+  ReplyButtonTextInput,
+} from "../ReplyBlock/RepliesHeader";
 import { DEFAULT_QUESTIONS_BUTTON_TEXT } from "./constants";
 import {
+  QUESTIONS_AUDIENCE_LABELS,
   questionsAudienceNotice,
   type QuestionsAudience,
 } from "src/questionsAudience";
+import { SettingsTiny } from "components/Icons/SettingsTiny";
 
 export function QuestionsButtonTextInput(props: {
   value: string;
@@ -35,316 +43,466 @@ export function QuestionsButtonTextInput(props: {
       {...props}
       label="Ask button text"
       placeholder={DEFAULT_QUESTIONS_BUTTON_TEXT}
+      variant="muted"
     />
   );
 }
 
-export function PublicQuestionNotice(props: {
-  defaultOpen?: boolean;
-  audience?: QuestionsAudience;
-  showPending?: boolean;
-}) {
-  let restriction = questionsAudienceNotice(props.audience ?? "anyone");
+export function DisabledAskButton(props: { text?: string }) {
   return (
-    <Popover
-      asChild
-      side="top"
-      align="end"
-      defaultOpen={props.defaultOpen}
-      className="max-w-64 text-sm text-secondary"
-      trigger={
-        <button
-          type="button"
-          aria-label="About public questions"
-          className="text-tertiary hover:text-accent-contrast"
-        >
-          <InfoSmall />
-        </button>
-      }
-    >
-      Questions are public. Yours is posted to your account, where anyone can
-      see it,{" "}
-      {props.showPending
-        ? "and appears here unless the author hides it."
-        : "and appears here once the author accepts or answers it."}
-      {restriction && <div className="pt-2">{restriction}</div>}
-    </Popover>
+    <ButtonPrimary compact disabled>
+      {props.text || DEFAULT_QUESTIONS_BUTTON_TEXT}
+    </ButtonPrimary>
   );
 }
 
-// The restriction readers see beside the composer, if there is one
-function AudienceNotice(props: { audience?: QuestionsAudience }) {
-  let restriction = questionsAudienceNotice(props.audience ?? "anyone");
-  if (!restriction) return null;
-  return <span className="text-sm text-tertiary italic">{restriction}</span>;
+type QuestionHelpProps = {
+  audience: QuestionsAudience;
+  showPending?: boolean;
+};
+
+function questionHelpLines(props: QuestionHelpProps) {
+  return [
+    questionsAudienceNotice(props.audience),
+    !props.showPending && "Questions show once the author answers them.",
+  ].filter((line): line is string => !!line);
+}
+
+function QuestionHelp(props: QuestionHelpProps) {
+  let lines = questionHelpLines(props);
+  if (lines.length === 0) return null;
+  return (
+    <div className="text-sm text-center italic text-tertiary">
+      {lines.join(" ")}
+      <hr className="mt-3" />
+    </div>
+  );
+}
+
+export function QuestionsEmpty(props: QuestionHelpProps) {
+  return (
+    <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4 leading-snug flex flex-col gap-2">
+      <div className="font-bold">No questions yet…</div>
+      {questionHelpLines(props).map((line) => (
+        <div key={line}>{line}</div>
+      ))}
+    </div>
+  );
+}
+
+export function QuestionsEditorNotice(props: QuestionHelpProps) {
+  return (
+    <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4 leading-snug flex flex-col gap-2">
+      <div className="text-base font-bold">No questions yet…</div>
+      <div>
+        {QUESTIONS_AUDIENCE_LABELS[props.audience].label} can submit
+        questions. You can answer them from here.
+      </div>
+      <div>
+        {props.showPending
+          ? "Questions will be visible to readers as soon as they're submitted. You can remove any question at any time."
+          : "Questions will only be visible to readers once you answer them."}
+      </div>
+      <hr />
+      <div>
+        To adjust this, click <SettingsTiny className="inline-flex scale-90" />{" "}
+        in the upper right of this block.
+      </div>
+    </div>
+  );
 }
 
 export function QuestionComposer(props: {
+  asker?: InteractionAuthor | null;
   draftKey: string | null;
   submitLabel?: string;
   autoFocus?: boolean;
-  audience?: QuestionsAudience;
-  showPending?: boolean;
   onSubmit: (text: FacetedText) => Promise<boolean>;
 }) {
   return (
-    <FacetedTextComposer
+    <TextComposer
       draftKey={props.draftKey}
+      mentions
       autoFocus={props.autoFocus}
       inputClassName="min-h-20!"
-      submitLabel={props.submitLabel || DEFAULT_QUESTIONS_BUTTON_TEXT}
-      onSubmit={props.onSubmit}
-      trailing={
+      onSubmit={(doc) => props.onSubmit(docToFacetedText(doc))}
+      actions={
         <>
-          <AudienceNotice audience={props.audience} />
-          <PublicQuestionNotice
-            audience={props.audience}
-            showPending={props.showPending}
-          />
+          {props.asker && (
+            <Avatar
+              src={props.asker.avatar}
+              displayName={authorDisplayName(props.asker)}
+              size="small"
+            />
+          )}
+          <ComposerSubmit>
+            {props.submitLabel || DEFAULT_QUESTIONS_BUTTON_TEXT}
+          </ComposerSubmit>
         </>
       }
     />
   );
 }
 
-// The editor shows readers' input without taking questions.
-export function QuestionComposerPreview(props: {
-  action: React.ReactNode;
-  audience?: QuestionsAudience;
-  showPending?: boolean;
-}) {
+export function QuestionComposerPreview(props: { action: React.ReactNode }) {
   return (
-    <div className="flex flex-col grow">
-      <div className="commentInput border input-with-border min-h-20 px-2 py-[6px] text-tertiary italic">
-        Readers write their question here…
-      </div>
-      <div className="flex justify-end items-center gap-2 pt-1">
-        <AudienceNotice audience={props.audience} />
-        <PublicQuestionNotice
-          audience={props.audience}
-          showPending={props.showPending}
-        />
-        {props.action}
-      </div>
-    </div>
+    <ComposerChrome
+      editor={null}
+      inputClassName="min-h-20! bg-transparent! text-tertiary! hover:border-border! italic"
+      actions={props.action}
+    >
+      Readers will be able to ask a question here…
+    </ComposerChrome>
   );
 }
 
-// Readers without an Atmosphere account sign in (or link one) before they
-// can ask; the same box the comments drawer shows.
-export function SignInToAsk(props: {
-  // Signed in, but without an Atmosphere account
+export function LoggedOutQuestionComposer(props: {
   linkAccount?: boolean;
   redirectRoute?: string;
-  trigger?: React.ReactNode;
 }) {
   return (
-    <div className="w-full accent-container text-tertiary text-center italic p-3">
-      <span className="text-accent-contrast font-bold">
-        {props.trigger ?? (
-          <LoginModal
-            noEmailLogin
-            trigger={props.linkAccount ? "Link" : "Log in"}
-            redirectRoute={props.redirectRoute}
-          />
-        )}
-      </span>{" "}
-      {props.linkAccount ? "" : "with "}an Atmosphere account to ask a question
+    <div className="w-full accent-container flex text-center justify-center gap-2 sm:p-4 p-3 text-tertiary italic text-sm ">
+      <div>
+        <LoginModal
+          asChild
+          noEmailLogin
+          redirectRoute={props.redirectRoute}
+          trigger={
+            <button className="shrink-0 text-accent-contrast font-bold">
+              {props.linkAccount ? "Link " : "Log in"}
+            </button>
+          }
+        />{" "}
+        {!props.linkAccount && "with"} an Atmosphere account to ask a question!
+      </div>
     </div>
   );
 }
 
-export function QuestionsDraft(props: {
-  action: React.ReactNode;
-  audience?: QuestionsAudience;
-  showPending?: boolean;
+export type QuestionsPublication = {
+  publicationUri: string;
+  publicationUrl?: string;
+  publicationName: string;
+  publicationDescription?: string;
+  newsletterMode: boolean;
+};
+
+export function QuestionsRestricted(props: {
+  audience: Exclude<QuestionsAudience, "anyone">;
+  author: InteractionAuthor | null;
+  publication?: QuestionsPublication;
 }) {
+  let author = props.author ? authorDisplayName(props.author) : "the author";
   return (
-    <div className="flex flex-col gap-3">
-      <QuestionComposerPreview
-        action={props.action}
+    <div className="opaque-container text-sm italic text-tertiary text-center sm:p-4 p-3">
+      {props.audience === "subscribers" ? (
+        <>
+          Subscribers can submit a question.{" "}
+          {props.publication && (
+            <Modal
+              asChild
+              trigger={
+                <button className="text-accent-contrast font-bold not-italic">
+                  Subscribe!
+                </button>
+              }
+            >
+              <div className="w-md max-w-full">
+                <SubscribePanel
+                  {...props.publication}
+                  source={{ placement: "questions_block" }}
+                />
+              </div>
+            </Modal>
+          )}
+        </>
+      ) : props.audience === "follows" ? (
+        `People ${author} follows can submit a question.`
+      ) : (
+        `People who follow ${author} can submit a question.`
+      )}
+    </div>
+  );
+}
+
+export function QuestionEditorEmpty(
+  props: QuestionHelpProps & { action: React.ReactNode },
+) {
+  return (
+    <div className="flex flex-col gap-4">
+      <QuestionComposerPreview action={props.action} />
+      <hr />
+      <QuestionsEditorNotice
         audience={props.audience}
         showPending={props.showPending}
       />
-      <div className="light-container text-sm italic text-tertiary text-center p-3 sm:p-4">
-        <div className="text-base font-bold">
-          Questions open when you publish
-        </div>
-        Readers can ask you public questions. Accept one to show it, or answer
-        it right here and the answer appears under it.
-      </div>
     </div>
   );
 }
 
-function QuestionBody(props: {
-  question: DocumentQuestion;
+function ThreadEntry(props: {
+  author: InteractionAuthor;
   showHandle?: boolean;
-  control?: React.ReactNode;
+  date?: string;
+  actions?: React.ReactNode;
+  continues?: boolean;
+  children: React.ReactNode;
 }) {
-  let { asker } = props.question;
   return (
     <div className="flex gap-2 min-w-0">
-      <Avatar
-        src={asker.avatar}
-        displayName={authorDisplayName(asker)}
-        size="small"
-      />
-      <div className="flex flex-col min-w-0 grow">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
-          <InteractionAuthorName author={asker} showHandle={props.showHandle} />
-          {props.question.createdAt && (
+      <div className="flex flex-col items-center shrink-0">
+        <Avatar
+          src={props.author.avatar}
+          displayName={authorDisplayName(props.author)}
+          size="medium"
+        />
+        {props.continues && (
+          <div className="w-[2px] grow bg-border-light mt-1" />
+        )}
+      </div>
+      <div
+        className={`flex flex-col min-w-0 grow ${props.continues ? "pb-3" : ""}`}
+      >
+        <div className="flex items-center gap-1.5 min-h-6 min-w-0 text-sm whitespace-nowrap">
+          <InteractionAuthorName
+            author={props.author}
+            showHandle={props.showHandle}
+          />
+          {props.date && (
             <span className="text-tertiary shrink-0">
+              ·{" "}
               <LocalizedDate
-                dateString={props.question.createdAt}
+                dateString={props.date}
                 omitYear
                 options={{ year: "2-digit", month: "short", day: "numeric" }}
               />
             </span>
           )}
-          {props.control && (
-            <span className="ml-auto shrink-0 flex items-center gap-2 text-tertiary">
-              {props.control}
-            </span>
-          )}
         </div>
-        <pre
-          style={{ wordBreak: "break-word", fontFamily: "inherit" }}
-          className="whitespace-pre-wrap text-primary"
-        >
-          <BaseTextBlock
-            index={[]}
-            plaintext={props.question.plaintext}
-            facets={props.question.facets}
-            ugcLinks
-          />
-        </pre>
+        {props.children}
+        {props.actions && (
+          <div className="mt-1 flex items-center gap-2">{props.actions}</div>
+        )}
       </div>
     </div>
   );
 }
 
-// A question, whatever answers it under it (the published answer, or the
-// author's inline editor), and whatever acts on it beside the asker's name.
-export function QuestionRow(props: {
+function QuestionRow(props: {
   question: DocumentQuestion;
   showHandle?: boolean;
   answer?: React.ReactNode;
-  control?: React.ReactNode;
+  actions?: React.ReactNode;
+  editor?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-2 transparent-container p-2 sm:p-3">
-      <QuestionBody
-        question={props.question}
-        showHandle={props.showHandle}
-        control={props.control}
-      />
-      {props.answer && <div className="pl-8 sm:pl-9">{props.answer}</div>}
+    <div className="questionRow flex flex-col">
+      <div className="pl-2 pr-3">
+        <ThreadEntry
+          author={props.question.asker}
+          showHandle={props.showHandle}
+          date={props.question.createdAt}
+          actions={props.actions}
+          continues={!!props.answer}
+        >
+          {props.editor ?? (
+            <pre
+              style={{ wordBreak: "break-word", fontFamily: "inherit" }}
+              className="whitespace-pre-wrap text-primary leading-snug"
+            >
+              <BaseTextBlock
+                index={[]}
+                plaintext={props.question.plaintext}
+                facets={props.question.facets}
+                ugcLinks
+              />
+            </pre>
+          )}
+        </ThreadEntry>
+      </div>
+      {props.answer}
     </div>
   );
 }
 
-export function AnswerEditorFrame(props: {
+export function QuestionAnswer(props: {
+  author: InteractionAuthor;
+  showHandle?: boolean;
+  date?: string;
+  actions?: React.ReactNode;
+  composing?: boolean;
   children: React.ReactNode;
-  // The question already has a published answer this would replace
-  published: boolean;
-  // Closing drops the draft
-  discardOnClose: boolean;
-  publishing?: boolean;
-  onPublish: () => void;
-  onCancel: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-1">
-      <div className="answerEditor bg-bg-page border border-border rounded-md py-1">
+    <div
+      className={`questionAnswer relative opaque-container rounded-lg! p-2 pr-3 ${props.composing ? "" : "border-accent-contrast!"}`}
+    >
+      {!props.composing && (
+        <span className="absolute -top-2.5 right-3 rounded-md bg-accent-1 text-accent-2 px-1.5 text-xs leading-5 font-bold uppercase">
+          Answer
+        </span>
+      )}
+      <ThreadEntry
+        author={props.author}
+        showHandle={props.showHandle}
+        date={props.date}
+        actions={props.actions}
+      >
         {props.children}
-      </div>
-      <div className="flex justify-end gap-2">
-        <ButtonTertiary
-          compact
-          disabled={props.publishing}
-          onClick={props.onCancel}
-        >
-          {props.discardOnClose ? "Discard" : "Close"}
-        </ButtonTertiary>
-        <ButtonPrimary
-          compact
-          disabled={props.publishing}
-          onClick={props.onPublish}
-        >
-          {props.publishing
-            ? "Publishing…"
-            : props.published
-              ? "Update answer"
-              : "Publish answer"}
-        </ButtonPrimary>
-      </div>
+      </ThreadEntry>
     </div>
   );
 }
 
-// The reader's view: the questions shown on the post, plus their own still
-// waiting.
-export function QuestionsList(props: {
-  questions: DocumentQuestion[];
-  // The composer or a sign-in button
-  action?: React.ReactNode;
-  renderAnswer: RenderAnswer;
-  onWithdraw?: (uri: string) => void;
-}) {
-  let { onWithdraw } = props;
+export function QuestionAction(
+  props: React.ButtonHTMLAttributes<HTMLButtonElement> & { primary?: boolean },
+) {
+  let { primary, className, ...rest } = props;
   return (
-    <div className="flex flex-col gap-3">
-      {props.action}
+    <button
+      type="button"
+      className={`text-sm shrink-0 flex items-center gap-1 disabled:opacity-50 ${
+        primary
+          ? "font-bold text-accent-contrast"
+          : "text-tertiary hover:text-accent-contrast"
+      } ${className ?? ""}`}
+      {...rest}
+    />
+  );
+}
+
+export function QuestionsList(
+  props: QuestionHelpProps & {
+    questions: DocumentQuestion[];
+    // The composer or a sign-in button
+    action?: React.ReactNode;
+    renderAnswer: RenderAnswer;
+    onWithdraw?: (uri: string) => void;
+    onEdit?: (uri: string, text: FacetedText) => Promise<boolean>;
+  },
+) {
+  let { onWithdraw, onEdit } = props;
+  let [editing, setEditing] = useState<string | null>(null);
+  let others = props.questions.filter((q) => !q.mine);
+  let ordered = [
+    ...props.questions.filter((q) => q.mine),
+    ...others.filter((q) => q.answer),
+    ...others.filter((q) => !q.answer),
+  ];
+  return (
+    <div className="flex flex-col gap-4">
+      {props.action && (
+        <>
+          {props.action}
+          <hr />
+        </>
+      )}
+      {ordered.length === 0 ? (
+        <QuestionsEmpty
+          audience={props.audience}
+          showPending={props.showPending}
+        />
+      ) : (
+        <QuestionHelp
+          audience={props.audience}
+          showPending={props.showPending}
+        />
+      )}
       <QuestionRows
-        questions={props.questions}
+        questions={ordered}
         showHandles={showHandlesFor(props.questions)}
         renderAnswer={props.renderAnswer}
-        renderControl={(question) =>
-          !question.answer && (
-            <>
-              <span className="italic">
-                {question.mine && question.state !== "accepted"
-                  ? "Awaiting the author"
-                  : "Awaiting an answer"}
-              </span>
-              {onWithdraw && question.mine && (
-                <button
-                  aria-label="Withdraw question"
-                  className="hover:text-accent-contrast"
-                  onClick={() => onWithdraw(question.uri)}
-                >
-                  <CloseTiny />
-                </button>
-              )}
-            </>
+        renderEditor={(question) =>
+          onEdit &&
+          editing === question.uri && (
+            <QuestionEditor
+              question={question}
+              onCancel={() => setEditing(null)}
+              onSubmit={async (text) => {
+                if (await onEdit(question.uri, text)) setEditing(null);
+              }}
+            />
           )
+        }
+        renderControls={(question) =>
+          question.mine && !question.answer && editing !== question.uri
+            ? [
+                onEdit && (
+                  <QuestionAction
+                    aria-label="Edit question"
+                    onClick={() => setEditing(question.uri)}
+                  >
+                    Edit
+                  </QuestionAction>
+                ),
+                onWithdraw && (
+                  <QuestionAction
+                    aria-label="Withdraw question"
+                    onClick={() => onWithdraw(question.uri)}
+                  >
+                    Withdraw
+                  </QuestionAction>
+                ),
+                !props.showPending && question.state === "pending" && (
+                  <span className="text-sm italic text-tertiary">
+                    Visible to others once answered
+                  </span>
+                ),
+              ]
+            : []
         }
       />
     </div>
   );
 }
 
-// The author's view: pending questions first, each with controls to accept
-// or hide it, then the ones shown on the post, and the hidden ones behind a
-// toggle.
+function QuestionEditor(props: {
+  question: DocumentQuestion;
+  onCancel: () => void;
+  onSubmit: (text: FacetedText) => Promise<void>;
+}) {
+  let [initialDoc] = useState(() =>
+    facetedTextToDoc(props.question.plaintext, props.question.facets ?? []),
+  );
+  return (
+    <TextComposer
+      className="pt-1"
+      mentions
+      autoFocus
+      initialDoc={initialDoc}
+      onCancel={props.onCancel}
+      onSubmit={async (doc) => {
+        await props.onSubmit(docToFacetedText(doc));
+        return false;
+      }}
+      actions={
+        <>
+          <ButtonTertiary compact className="text-sm" onClick={props.onCancel}>
+            Cancel
+          </ButtonTertiary>
+          <ComposerSubmit className="text-sm">Update</ComposerSubmit>
+        </>
+      }
+    />
+  );
+}
+
 export function QuestionsModeration(props: {
   questions: DocumentQuestion[];
-  // Above the lists: the editor's composer preview
   header?: React.ReactNode;
-  // A state change is being published
+  empty: React.ReactNode;
   busy?: boolean;
-  // Unset for an editor who isn't the post's author
   onSetState?: (uri: string, state: QuestionState) => void;
   renderAnswer: RenderAnswer;
-  // Beside a question's moderation controls: "Answer", or a link to the
-  // editor
   renderControl: (question: DocumentQuestion) => React.ReactNode;
 }) {
   let [showHidden, setShowHidden] = useState(false);
-  let inState = (state: QuestionState) =>
-    props.questions.filter((q) => q.state === state);
-  let hidden = inState("hidden");
+  let shown = props.questions.filter((q) => q.state !== "hidden");
+  let ordered = [
+    ...shown.filter((q) => !q.answer),
+    ...shown.filter((q) => q.answer),
+  ];
+  let hidden = props.questions.filter((q) => q.state === "hidden");
   if (showHidden && hidden.length === 0) setShowHidden(false);
   let showHandles = showHandlesFor(props.questions);
   let stateButton = (
@@ -353,64 +511,40 @@ export function QuestionsModeration(props: {
     label: string,
   ) =>
     props.onSetState && (
-      <ButtonTertiary
-        compact
+      <QuestionAction
         disabled={props.busy}
         onClick={() => props.onSetState?.(q.uri, state)}
       >
         {label}
-      </ButtonTertiary>
+      </QuestionAction>
     );
   let rows = (
     questions: DocumentQuestion[],
-    controls: (q: DocumentQuestion) => React.ReactNode,
-    className?: string,
+    controls: (q: DocumentQuestion) => React.ReactNode[],
   ) => (
     <QuestionRows
       questions={questions}
-      className={className}
       showHandles={showHandles}
       renderAnswer={props.renderAnswer}
-      renderControl={(q) => (
-        <>
-          {controls(q)}
-          {props.renderControl(q)}
-        </>
-      )}
+      renderControls={(q) => [props.renderControl(q), ...controls(q)]}
     />
   );
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {props.header}
-      {props.questions.length === 0 && (
-        <div className="light-container text-sm italic text-tertiary text-center p-3">
-          No one has asked anything yet.
-        </div>
-      )}
-      {rows(
-        inState("pending"),
-        (q) => (
-          <>
-            {stateButton(q, "hidden", "Hide")}
-            {stateButton(q, "accepted", "Accept")}
-          </>
-        ),
-        "light-container p-2",
-      )}
-      {rows(inState("accepted"), (q) => stateButton(q, "hidden", "Hide"))}
+      <hr />
+      {ordered.length === 0
+        ? props.empty
+        : rows(ordered, (q) => [stateButton(q, "hidden", "Remove")])}
       {hidden.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <ButtonTertiary
-            compact
-            className="w-fit"
-            aria-expanded={showHidden}
-            onClick={() => setShowHidden(!showHidden)}
-          >
-            {hidden.length} hidden
-            <ArrowDownTiny className={showHidden ? "rotate-180" : ""} />
-          </ButtonTertiary>
+        <div className="flex flex-col gap-4">
+          <CollapsibleDivider
+            label={`Removed (${hidden.length})`}
+            open={showHidden}
+            onToggle={() => setShowHidden(!showHidden)}
+          />
           {showHidden &&
-            rows(hidden, (q) => stateButton(q, "pending", "Unhide"))}
+            rows(hidden, (q) => [stateButton(q, "pending", "Restore")])}
         </div>
       )}
     </div>
@@ -434,23 +568,37 @@ type RenderAnswer = (
 
 function QuestionRows(props: {
   questions: DocumentQuestion[];
-  className?: string;
   showHandles?: boolean;
   renderAnswer: RenderAnswer;
-  renderControl: (question: DocumentQuestion) => React.ReactNode;
+  renderEditor?: (question: DocumentQuestion) => React.ReactNode;
+  renderControls: (question: DocumentQuestion) => React.ReactNode[];
 }) {
   if (props.questions.length === 0) return null;
   return (
-    <div className={`flex flex-col gap-2 ${props.className ?? ""}`}>
-      {props.questions.map((question) => (
-        <QuestionRow
-          key={question.uri}
-          question={question}
-          showHandle={props.showHandles}
-          answer={props.renderAnswer(question, props.showHandles)}
-          control={props.renderControl(question)}
-        />
-      ))}
+    <div className="questionList flex flex-col gap-6 pb-3">
+      {props.questions.map((question) => {
+        let actions = props.renderControls(question).filter(Boolean);
+        return (
+          <Fragment key={question.uri}>
+            <QuestionRow
+              question={question}
+              showHandle={props.showHandles}
+              answer={props.renderAnswer(question, props.showHandles)}
+              editor={props.renderEditor?.(question) || undefined}
+              actions={
+                actions.length > 0 &&
+                actions.map((control, i) => (
+                  <Fragment key={i}>
+                    {i > 0 && <Separator classname="h-4!" />}
+                    {control}
+                  </Fragment>
+                ))
+              }
+            />
+            <hr className="last:hidden" />
+          </Fragment>
+        );
+      })}
     </div>
   );
 }

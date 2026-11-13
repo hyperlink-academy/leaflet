@@ -41,6 +41,7 @@ export type DocumentQuestion = {
     uri: string;
     author: InteractionAuthor;
     content: PubLeafletPagesLinearDocument.Main;
+    createdAt: string;
   } | null;
 };
 
@@ -144,6 +145,7 @@ export async function loadDocumentQuestions(
                   profiles,
                 ),
                 content: answerRecord.content,
+                createdAt: answerRecord.createdAt,
               }
             : null,
       };

@@ -11,11 +11,14 @@ import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { useIdentityData } from "components/IdentityProvider";
 import { useRecordFromDid } from "src/utils/useRecordFromDid";
 import { Avatar } from "components/Avatar";
-import { FacetedTextComposer } from "components/FacetedTextComposer";
+import { ComposerSubmit } from "components/Composer";
+import { TextComposer } from "components/Composer/TextComposer";
+import { ButtonTertiary } from "components/Buttons";
 import {
+  docToFacetedText,
   facetedTextToDoc,
-  type FacetedText,
-} from "components/FacetedTextComposer/facetedText";
+} from "components/Composer/facetedText";
+import type { Node } from "prosemirror-model";
 
 export function CommentBox(props: {
   doc_uri: string;
@@ -45,7 +48,8 @@ export function CommentBox(props: {
   let { identity } = useIdentityData();
   let { data: record } = useRecordFromDid(identity?.atp_did);
 
-  let submit = async ({ plaintext, facets }: FacetedText) => {
+  let submit = async (doc: Node) => {
+    let { plaintext, facets } = docToFacetedText(doc);
     if (props.editing) {
       let editing = props.editing;
       let result = await updateComment({
@@ -123,9 +127,10 @@ export function CommentBox(props: {
   };
 
   return (
-    <FacetedTextComposer
+    <TextComposer
       className={props.className}
       draftKey={draftKey}
+      mentions
       initialDoc={
         props.editing
           ? facetedTextToDoc(
@@ -136,8 +141,6 @@ export function CommentBox(props: {
       }
       autoFocus={props.autoFocus}
       onCancel={props.onCancel}
-      cancelLabel={props.editing ? "Cancel" : undefined}
-      submitLabel={props.editing ? "Update" : <ShareSmall />}
       onSubmit={submit}
       onPasteText={(text) => {
         if (
@@ -172,14 +175,24 @@ export function CommentBox(props: {
           </div>
         )
       }
-      trailing={
-        record && (
-          <Avatar
-            src={record.avatar}
-            displayName={record.displayName || record.handle}
-            size="small"
-          />
-        )
+      actions={
+        <>
+          {record && (
+            <Avatar
+              src={record.avatar}
+              displayName={record.displayName || record.handle}
+              size="small"
+            />
+          )}
+          {props.editing && props.onCancel && (
+            <ButtonTertiary compact onClick={props.onCancel}>
+              Cancel
+            </ButtonTertiary>
+          )}
+          <ComposerSubmit>
+            {props.editing ? "Update" : <ShareSmall />}
+          </ComposerSubmit>
+        </>
       }
     />
   );

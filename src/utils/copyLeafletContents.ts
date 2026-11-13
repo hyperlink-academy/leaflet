@@ -4,10 +4,9 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { markTitleBlockAsCopy } from "src/utils/markTitleBlockAsCopy";
 import { insertLeaflet } from "src/utils/insertLeaflet";
 import type { Fact } from "src/replicache";
-import type { Attribute } from "src/replicache/attributes";
+import { REFERENCE_TYPES, type Attribute } from "src/replicache/attributes";
 
 const ASSET_BUCKET = "minilink-user-assets";
-const REFERENCE_TYPES = ["reference", "ordered-reference", "spatial-reference"];
 
 /**
  * Deep-copy a leaflet's contents into a brand new entity set and permission
@@ -53,14 +52,14 @@ export async function copyLeafletContents({
   };
   for (let fact of sourceFacts) {
     mapEntity(fact.entity);
-    if (REFERENCE_TYPES.includes(fact.data.type))
+    if (REFERENCE_TYPES.has(fact.data.type))
       mapEntity((fact.data as { value: string }).value);
   }
 
   let newFacts = await Promise.all(
     sourceFacts.map(async (fact) => {
       let data = { ...fact.data };
-      if (REFERENCE_TYPES.includes(data.type))
+      if (REFERENCE_TYPES.has(data.type))
         (data as { value: string }).value =
           entityIDMap[(data as { value: string }).value];
       if (data.type === "image") data.src = await copyAsset(data.src);
