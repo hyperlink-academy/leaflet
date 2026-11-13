@@ -123,10 +123,14 @@ export function DocumentQuestions(props: {
   let { subscribed } = useViewerSubscription(props.publication?.publicationUri);
   let followAudience = audience === "follows" || audience === "followers";
   let { data: followCheck, error: followCheckError } = useSWR(
-    viewer && followAudience && !props.editor
+    viewer &&
+      followAudience &&
+      !props.editor &&
+      !isDocumentOwner(props.documentUri, viewer)
       ? ["can_ask_question", props.documentUri, viewer, audience]
       : null,
     () => getCanAskQuestion(props.documentUri, audience),
+    { revalidateOnFocus: false, revalidateIfStale: false },
   );
   let canAsk =
     audience === "anyone"
@@ -206,7 +210,7 @@ export function DocumentQuestions(props: {
         { revalidate: false },
       );
   };
-  let help = { audience: props.audience, showPending: props.showPending };
+  let help = { audience, showPending: props.showPending };
   if (props.editor) {
     let editor = props.editor;
     if (!data) return <QuestionEditorEmpty action={editor.action} {...help} />;
@@ -255,11 +259,12 @@ export function DocumentQuestions(props: {
     toaster({ content: "Question sent.", type: "success" });
     return true;
   };
-  let restricted = !!viewer && canAsk === false;
+  let restrictedAudience =
+    viewer && canAsk === false && audience !== "anyone" ? audience : null;
   return (
     <QuestionsList
-      {...help}
-      audience={restricted ? "anyone" : audience}
+      audience={restrictedAudience ? "anyone" : audience}
+      showPending={props.showPending}
       questions={questions}
       onWithdraw={withdraw}
       onEdit={edit}
@@ -268,9 +273,9 @@ export function DocumentQuestions(props: {
         identityPending || (viewer && canAsk === undefined) ? (
           <ComposerPlaceholder className="min-h-20!" />
         ) : viewer ? (
-          restricted && audience !== "anyone" ? (
+          restrictedAudience ? (
             <QuestionsRestricted
-              audience={audience}
+              audience={restrictedAudience}
               author={followCheck?.author ?? null}
               publication={props.publication}
             />

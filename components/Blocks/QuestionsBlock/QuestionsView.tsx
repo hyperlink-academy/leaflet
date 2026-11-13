@@ -43,7 +43,7 @@ export function QuestionsButtonTextInput(props: {
       {...props}
       label="Ask button text"
       placeholder={DEFAULT_QUESTIONS_BUTTON_TEXT}
-      colors="bg-border-light border-border-light text-tertiary placeholder:text-tertiary focus:outline-border hover:outline-border"
+      variant="muted"
     />
   );
 }
@@ -56,24 +56,24 @@ export function DisabledAskButton(props: { text?: string }) {
   );
 }
 
-export type QuestionHelpProps = {
-  audience?: QuestionsAudience;
+type QuestionHelpProps = {
+  audience: QuestionsAudience;
   showPending?: boolean;
 };
 
 function questionHelpLines(props: QuestionHelpProps) {
   return [
-    questionsAudienceNotice(props.audience ?? "anyone"),
+    questionsAudienceNotice(props.audience),
     !props.showPending && "Questions show once the author answers them.",
   ].filter((line): line is string => !!line);
 }
 
 function QuestionHelp(props: QuestionHelpProps) {
-  if (props.audience === "anyone" && props.showPending) return null;
+  let lines = questionHelpLines(props);
+  if (lines.length === 0) return null;
   return (
     <div className="text-sm text-center italic text-tertiary">
-      {questionsAudienceNotice(props.audience ?? "anyone")}
-      {!props.showPending && " Questions show once the author answers them."}
+      {lines.join(" ")}
       <hr className="mt-3" />
     </div>
   );
@@ -95,7 +95,7 @@ export function QuestionsEditorNotice(props: QuestionHelpProps) {
     <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4 leading-snug flex flex-col gap-2">
       <div className="text-base font-bold">No questions yet…</div>
       <div>
-        {QUESTIONS_AUDIENCE_LABELS[props.audience ?? "anyone"].label} can submit
+        {QUESTIONS_AUDIENCE_LABELS[props.audience].label} can submit
         questions. You can answer them from here.
       </div>
       <div>
@@ -159,23 +159,20 @@ export function QuestionComposerPreview(props: { action: React.ReactNode }) {
 export function LoggedOutQuestionComposer(props: {
   linkAccount?: boolean;
   redirectRoute?: string;
-  trigger?: React.ReactNode;
 }) {
   return (
     <div className="w-full accent-container flex text-center justify-center gap-2 sm:p-4 p-3 text-tertiary italic text-sm ">
       <div>
-        {props.trigger ?? (
-          <LoginModal
-            asChild
-            noEmailLogin
-            redirectRoute={props.redirectRoute}
-            trigger={
-              <button className="shrink-0 text-accent-contrast font-bold">
-                {props.linkAccount ? "Link " : "Log in"}
-              </button>
-            }
-          />
-        )}{" "}
+        <LoginModal
+          asChild
+          noEmailLogin
+          redirectRoute={props.redirectRoute}
+          trigger={
+            <button className="shrink-0 text-accent-contrast font-bold">
+              {props.linkAccount ? "Link " : "Log in"}
+            </button>
+          }
+        />{" "}
         {!props.linkAccount && "with"} an Atmosphere account to ask a question!
       </div>
     </div>
@@ -194,7 +191,6 @@ export function QuestionsRestricted(props: {
   audience: Exclude<QuestionsAudience, "anyone">;
   author: InteractionAuthor | null;
   publication?: QuestionsPublication;
-  subscribeTrigger?: React.ReactNode;
 }) {
   let author = props.author ? authorDisplayName(props.author) : "the author";
   return (
@@ -202,24 +198,23 @@ export function QuestionsRestricted(props: {
       {props.audience === "subscribers" ? (
         <>
           Subscribers can submit a question.{" "}
-          {props.subscribeTrigger ??
-            (props.publication && (
-              <Modal
-                asChild
-                trigger={
-                  <button className="text-accent-contrast font-bold not-italic">
-                    Subscribe!
-                  </button>
-                }
-              >
-                <div className="w-md max-w-full">
-                  <SubscribePanel
-                    {...props.publication}
-                    source={{ placement: "questions_block" }}
-                  />
-                </div>
-              </Modal>
-            ))}
+          {props.publication && (
+            <Modal
+              asChild
+              trigger={
+                <button className="text-accent-contrast font-bold not-italic">
+                  Subscribe!
+                </button>
+              }
+            >
+              <div className="w-md max-w-full">
+                <SubscribePanel
+                  {...props.publication}
+                  source={{ placement: "questions_block" }}
+                />
+              </div>
+            </Modal>
+          )}
         </>
       ) : props.audience === "follows" ? (
         `People ${author} follows can submit a question.`
@@ -293,7 +288,7 @@ function ThreadEntry(props: {
   );
 }
 
-export function QuestionRow(props: {
+function QuestionRow(props: {
   question: DocumentQuestion;
   showHandle?: boolean;
   answer?: React.ReactNode;
@@ -340,7 +335,7 @@ export function QuestionAnswer(props: {
 }) {
   return (
     <div
-      className={`questionAnswer relative opaque-container rounded-lg! p-2 pr-3 ${props.composing ? "border-border-light!" : "border-accent-contrast!"}`}
+      className={`questionAnswer relative opaque-container rounded-lg! p-2 pr-3 ${props.composing ? "" : "border-accent-contrast!"}`}
     >
       {!props.composing && (
         <span className="absolute -top-2.5 right-3 rounded-md bg-accent-1 text-accent-2 px-1.5 text-xs leading-5 font-bold uppercase">
@@ -586,7 +581,6 @@ function QuestionRows(props: {
         return (
           <Fragment key={question.uri}>
             <QuestionRow
-              key={question.uri}
               question={question}
               showHandle={props.showHandles}
               answer={props.renderAnswer(question, props.showHandles)}

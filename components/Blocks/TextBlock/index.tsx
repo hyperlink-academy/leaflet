@@ -394,8 +394,7 @@ const TextBlockOverlays = (
             or type &quot;/&quot; to add a block
           </div>
         </div>
-      ) : textContent.length === 0 && props.focused ? (
-        // if not the only block on page but is the block is empty and selected, but NOT multiselected show add button
+      ) : textContent.length === 0 && props.focused && !isLimited ? (
         <CommandOptions {...props} className={props.className} />
       ) : null}
 

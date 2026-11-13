@@ -1,19 +1,13 @@
 import type { ReadTransaction, Replicache } from "replicache";
 import { v7 } from "uuid";
 import type { Fact, ReplicacheMutators } from "src/replicache";
-import type { Attribute } from "src/replicache/attributes";
+import { REFERENCE_TYPES, type Attribute } from "src/replicache/attributes";
 import { scanIndex } from "src/replicache/utils";
 import type { FactInput } from "src/replicache/mutations";
 import { flushPendingTextWrites } from "components/Blocks/TextBlock/useCollabText";
 
 type AnyFact = Fact<Attribute>;
 type Rep = Replicache<ReplicacheMutators>;
-
-const REFERENCE_TYPES = new Set([
-  "reference",
-  "ordered-reference",
-  "spatial-reference",
-]);
 
 // The answer's block list and everything under it. Page links aren't
 // followed: a linked page isn't part of the answer.
@@ -74,7 +68,6 @@ export async function snapshotPublishedAnswer(
   });
 }
 
-// False when there is no snapshot to go back to.
 export async function revertAnswerToPublished(
   rep: Rep,
   answerEntity: string,

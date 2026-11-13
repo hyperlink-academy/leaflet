@@ -27,7 +27,6 @@ import {
   loadDraftDoc,
   saveDraftDoc,
 } from "src/utils/prosemirror/draftPersistence";
-export type { FacetedText } from "./facetedText";
 
 const addMentionToEditor = (
   mention: Mention,

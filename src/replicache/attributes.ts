@@ -594,6 +594,13 @@ export const Attributes = {
   ...DrawingBlockAttributes,
 };
 export type Attributes = typeof Attributes;
+
+// Data types whose value is another entity's id
+export const REFERENCE_TYPES: ReadonlySet<string> = new Set([
+  "reference",
+  "ordered-reference",
+  "spatial-reference",
+]);
 export type Attribute = keyof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
   text: { type: "text"; value: string };

@@ -24,7 +24,7 @@ import {
 
 // A question's answer entity is named after it, so nothing has to be looked
 // up to find the draft (or know there isn't one).
-export function answerEntityFor(blockEntity: string, question: string) {
+function answerEntityFor(blockEntity: string, question: string) {
   return v5(question, blockEntity);
 }
 
@@ -140,6 +140,16 @@ export function LimitedLeafletEditor(props: {
     props.onClose();
   };
   let editor = useFocusedEditorIn(answerEntity);
+  let blocks = useMemo(
+    () => (
+      <div className="-mx-3 sm:-mx-4">
+        <IsLimitedContext.Provider value={true}>
+          <Blocks entityID={answerEntity} group />
+        </IsLimitedContext.Provider>
+      </div>
+    ),
+    [answerEntity],
+  );
   return (
     <LimitedLeafletComposer
       editor={editor}
@@ -148,11 +158,7 @@ export function LimitedLeafletEditor(props: {
       discardLabel={props.published ? "Discard changes" : "Discard draft"}
       onDiscard={discard}
     >
-      <div className="-mx-3 sm:-mx-4 [&_.newLineActions]:hidden">
-        <IsLimitedContext.Provider value={true}>
-          <Blocks entityID={answerEntity} group />
-        </IsLimitedContext.Provider>
-      </div>
+      {blocks}
     </LimitedLeafletComposer>
   );
 }

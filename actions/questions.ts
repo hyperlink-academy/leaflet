@@ -282,9 +282,11 @@ export async function editQuestion(args: {
     console.error("[questions] question row update failed", error);
     return Err({ type: "failed" });
   }
-  await broadcastDocumentEvent(supabaseServerClient, "question", row.subject);
-  // A shown question was server-rendered into the post's pages.
-  await revalidateDocumentPaths(row.subject, { neighbours: false });
+  await Promise.all([
+    broadcastDocumentEvent(supabaseServerClient, "question", row.subject),
+    // A shown question was server-rendered into the post's pages.
+    revalidateDocumentPaths(row.subject, { neighbours: false }),
+  ]);
   return Ok(null);
 }
 
