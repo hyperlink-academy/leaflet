@@ -38,6 +38,7 @@ import { stripThemeWithoutType } from "src/utils/stripThemeWithoutType";
 import { pageHasMembersDelimiter } from "src/membership";
 import { MAIN_SITE_URL } from "src/utils/customDomain";
 import { tombstoneComment } from "src/comments/tombstoneComment";
+import { enqueueEmailNotification } from "src/notificationEmails/enqueueEmailNotification";
 import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
@@ -63,7 +64,7 @@ const redisClient: Client | null = process.env.REDIS_URL
   : null;
 
 class RedisProfileCache {
-  constructor(private client: Client) {}
+  constructor(private client: Client) { }
   async clearEntry(did: string): Promise<void> {
     await this.client.del(`bsky-profile:${did}`);
   }
@@ -436,6 +437,11 @@ async function handleEvent(evt: Event) {
       });
       if (!error)
         await broadcastDocumentEvent(supabase, "comment", record.value.subject);
+      if (!error && evt.event === "create")
+        await enqueueEmailNotification(
+          { type: "comments", subjectUri: evt.uri.toString() },
+          supabase,
+        );
       // Comment counts are server-rendered into post pages and listings.
       if (await isInLeafletPublication(record.value.subject))
         await notifyRevalidate({
@@ -922,10 +928,10 @@ async function handleEvent(evt: Event) {
             // publishToPublication wrote untouched.
             ...(!hasBlobPages && PubLeafletContent.isMain(record.value.content)
               ? {
-                  members_only: pageHasMembersDelimiter(
-                    record.value.content.pages?.[0],
-                  ),
-                }
+                members_only: pageHasMembersDelimiter(
+                  record.value.content.pages?.[0],
+                ),
+              }
               : {}),
           });
         await supabase

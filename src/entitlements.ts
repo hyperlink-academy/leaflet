@@ -13,6 +13,7 @@ const PAYMENTS_ENTITLEMENT_KEY = "payments";
 // are rolled out to specific authors. Readers of a post that carries a block
 // need nothing.
 export const REPLIES_ENTITLEMENT_KEY = "post_replies";
+export const EMAIL_NOTIFICATION_ENTITLEMENT_KEY = "email_notification_enabled";
 
 // Keys the app currently checks, surfaced as suggestions in the admin UI.
 // Grants are not restricted to this list.
@@ -20,6 +21,7 @@ export const KNOWN_ENTITLEMENT_KEYS = [
   PRO_ENTITLEMENT_KEY,
   PAYMENTS_ENTITLEMENT_KEY,
   REPLIES_ENTITLEMENT_KEY,
+  EMAIL_NOTIFICATION_ENTITLEMENT_KEY,
   "pro_plan_visible",
 ];
 
@@ -41,4 +43,10 @@ export function canSeePayments(
   entitlements: Record<string, unknown> | null | undefined,
 ): boolean {
   return hasEntitlement(entitlements, PAYMENTS_ENTITLEMENT_KEY);
+}
+
+export function canUseEmailNotifications(
+  entitlements: Record<string, unknown> | null | undefined,
+): boolean {
+  return hasEntitlement(entitlements, EMAIL_NOTIFICATION_ENTITLEMENT_KEY);
 }

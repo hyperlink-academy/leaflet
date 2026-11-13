@@ -18,6 +18,7 @@ import { ThemeAndLayoutSettings } from "./ThemeAndLayoutSettings";
 import { ShareSettings } from "./ShareSettings";
 import { SubscribePageSettings } from "./SubscribePageSettings";
 import { NewsletterSettings } from "./NewsletterSettings";
+import { NotificationSettings } from "./NotificationSettings";
 import { ContributorSettings } from "./ContributorSettings";
 import { MonetizationSettings } from "./MonetizationSettings";
 import { useIsPro, useCanSeePayments } from "src/hooks/useEntitlement";
@@ -30,11 +31,13 @@ import {
 } from "src/utils/mergePreferences";
 import { DeletePublication } from "./DeletePublicationSection";
 import { UpgradeContent } from "app/(app)/(published)/lish/[did]/[publication]/UpgradeModal";
+import { canUseEmailNotifications } from "src/entitlements";
 
 export type PubSettingsTab =
   | "general"
   | "monetization"
   | "contributors"
+  | "notifications"
   | "newsletter";
 
 // The tabs the current viewer can see; non-owners (contributors) get none and
@@ -59,6 +62,9 @@ export function usePubSettingsTabs(): {
       : []),
     { value: "contributors" as const, label: "Contributors" },
     { value: "newsletter" as const, label: "Newsletter" },
+    ...(canUseEmailNotifications(identity?.entitlements)
+      ? [{ value: "notifications" as const, label: "Notifications" }]
+      : []),
   ];
 }
 
@@ -261,6 +267,15 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
     return (
       <SettingsPageLayout>
         {isPro ? <ContributorSettings /> : <UpgradeSection />}
+      </SettingsPageLayout>
+    );
+  }
+
+  if (props.tab === "notifications") {
+    if (!canUseEmailNotifications(identity?.entitlements)) return null;
+    return (
+      <SettingsPageLayout>
+        <NotificationSettings />
       </SettingsPageLayout>
     );
   }

@@ -1150,6 +1150,114 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_history: {
+        Row: {
+          channel: string
+          created_at: string
+          delivery_key: string
+          identity: string
+          mode: string
+          notification_type: string
+          period_end: string | null
+          period_start: string | null
+          provider_message_id: string | null
+          publication: string
+          sent_at: string | null
+          status: string
+          subject_uri: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          delivery_key: string
+          identity: string
+          mode?: string
+          notification_type: string
+          period_end?: string | null
+          period_start?: string | null
+          provider_message_id?: string | null
+          publication: string
+          sent_at?: string | null
+          status?: string
+          subject_uri?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          delivery_key?: string
+          identity?: string
+          mode?: string
+          notification_type?: string
+          period_end?: string | null
+          period_start?: string | null
+          provider_message_id?: string | null
+          publication?: string
+          sent_at?: string | null
+          status?: string
+          subject_uri?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_history_identity_fkey"
+            columns: ["identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_history_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          channel: string
+          comments_enabled_at: string | null
+          digest_frequency: string | null
+          digest_next_at: string | null
+          enabled_types: string[]
+          identity: string
+          publication: string
+        }
+        Insert: {
+          channel?: string
+          comments_enabled_at?: string | null
+          digest_frequency?: string | null
+          digest_next_at?: string | null
+          enabled_types?: string[]
+          identity: string
+          publication: string
+        }
+        Update: {
+          channel?: string
+          comments_enabled_at?: string | null
+          digest_frequency?: string | null
+          digest_next_at?: string | null
+          enabled_types?: string[]
+          identity?: string
+          publication?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_identity_fkey"
+            columns: ["identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -2809,6 +2917,12 @@ export type Database = {
           uri: string
         }[]
       }
+      has_comment_email_recipients: {
+        Args: {
+          p_comment_uri: string
+        }
+        Returns: boolean
+      }
       log_subscriber_events: {
         Args: {
           p_events: Json
@@ -2844,6 +2958,15 @@ export type Database = {
           name: string
           document_count: number
         }[]
+      }
+      set_notification_preference: {
+        Args: {
+          p_identity: string
+          p_publication: string
+          p_type: string
+          p_frequency: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

@@ -21,6 +21,9 @@ import {
 } from "./functions/send_email_post";
 import { publish_scheduled_post } from "./functions/publish_scheduled_post";
 import { cleanup_deleted_blobs } from "./functions/cleanup_deleted_blobs";
+import { send_notification_email } from "./functions/send_notification_email";
+import { queue_due_digests } from "./functions/queue_due_digests";
+import { send_scheduled_digest } from "./functions/send_scheduled_digest";
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
@@ -42,5 +45,8 @@ export const { GET, POST, PUT } = serve({
     send_email_post_on_subscribe,
     publish_scheduled_post,
     cleanup_deleted_blobs,
+    send_notification_email,
+    queue_due_digests,
+    send_scheduled_digest,
   ],
 });
