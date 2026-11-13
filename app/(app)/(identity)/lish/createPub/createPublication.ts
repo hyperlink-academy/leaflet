@@ -146,55 +146,72 @@ export async function createPublication({
     validate: false,
   });
 
-  //optimistically write to our db!
-  let { data: publication } = await supabaseServerClient
-    .from("publications")
-    .upsert({
-      uri: result.uri,
-      identity_did: credentialSession.did!,
-      name,
-      record: record as unknown as Json,
-    })
-    .select()
-    .single();
+  let did = credentialSession.did!;
+  let atp_did = identity.atp_did;
 
-  // Queues it for the admin spam review at /admin/publications.
-  await supabaseServerClient
-    .from("publication_reviews")
-    .upsert(
-      { publication: result.uri },
-      { onConflict: "publication", ignoreDuplicates: true },
-    );
+  // The publication row and the domain row don't depend on each other, so
+  // they're written concurrently; everything keyed to one of them chains off
+  // that write.
+  let publicationWrite = (async () =>
+    //optimistically write to our db!
+    await supabaseServerClient
+      .from("publications")
+      .upsert({
+        uri: result.uri,
+        identity_did: did,
+        name,
+        record: record as unknown as Json,
+      })
+      .select()
+      .single())();
 
-  // Every publication gets a draft leaflet holding its draft pages, nav, and
-  // theme; seed it with a home page now so the pages editor is ready to go.
-  await createPublicationDraftLeaflet({
-    publication_uri: result.uri,
-    did: credentialSession.did!,
-    description,
-    postsListView,
-    theme: resolvePublicationTheme(
-      normalizePublicationRecord(record as unknown as Json),
+  let domainWrite = (async () => {
+    if (isProductionDomain()) {
+      await vercel.projects.addProjectDomain({
+        idOrName: VERCEL_PROJECT,
+        teamId: VERCEL_TEAM,
+        requestBody: {
+          name: domain,
+        },
+      });
+    }
+    await supabaseServerClient
+      .from("custom_domains")
+      .insert({ domain, confirmed: true, identity: null });
+  })();
+
+  let [{ data: publication }] = await Promise.all([
+    publicationWrite,
+    domainWrite,
+    publicationWrite.then(() =>
+      Promise.all([
+        // Queues it for the admin spam review at /admin/publications.
+        supabaseServerClient
+          .from("publication_reviews")
+          .upsert(
+            { publication: result.uri },
+            { onConflict: "publication", ignoreDuplicates: true },
+          ),
+        // Every publication gets a draft leaflet holding its draft pages,
+        // nav, and theme; seed it with a home page now so the pages editor is
+        // ready to go.
+        createPublicationDraftLeaflet({
+          publication_uri: result.uri,
+          did,
+          description,
+          postsListView,
+          theme: resolvePublicationTheme(
+            normalizePublicationRecord(record as unknown as Json),
+          ),
+        }),
+      ]),
     ),
-  });
-
-  // Create the custom domain
-  if (isProductionDomain()) {
-    await vercel.projects.addProjectDomain({
-      idOrName: VERCEL_PROJECT,
-      teamId: VERCEL_TEAM,
-      requestBody: {
-        name: domain,
-      },
-    });
-  }
-  await supabaseServerClient
-    .from("custom_domains")
-    .insert({ domain, confirmed: true, identity: null });
-
-  await supabaseServerClient
-    .from("publication_domains")
-    .insert({ domain, publication: result.uri, identity: identity.atp_did });
+    Promise.all([publicationWrite, domainWrite]).then(() =>
+      supabaseServerClient
+        .from("publication_domains")
+        .insert({ domain, publication: result.uri, identity: atp_did }),
+    ),
+  ]);
 
   trackUserEvent(identity, "create_publication", { publication: result.uri });
   return { success: true, publication };

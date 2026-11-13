@@ -91,14 +91,11 @@ export const CreatePubForm = () => {
           return;
         }
 
-        // Show a spinner while this is happening! Maybe a progress bar?
-        setTimeout(() => {
-          setFormState("normal");
-          if (result.publication)
-            router.push(
-              `${getBasePublicationURL(result.publication)}/edit?create=true`,
-            );
-        }, 500);
+        setFormState("normal");
+        if (result.publication)
+          router.push(
+            `${getBasePublicationURL(result.publication)}/edit?create=true`,
+          );
       }}
     >
       <div className="flex flex-col items-center mb-4 gap-2">
