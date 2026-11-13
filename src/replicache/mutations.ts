@@ -1392,6 +1392,42 @@ const deleteFootnote: Mutation<{
   await ctx.deleteEntity(args.footnoteEntityID);
 };
 
+// Footnote nodes and comment marks that move between blocks (split, merge)
+// take their owning facts with them: the fact is what lists the annotation on
+// the page and what lets its block delete it.
+const moveBlockAnnotations: Mutation<{
+  entityIDs: string[];
+  fromBlock: string;
+  toBlock: string;
+}> = async (args, ctx) => {
+  for (let attribute of ["block/footnote", "block/comment"] as const) {
+    let moving = (await ctx.scanIndex.eav(args.fromBlock, attribute))
+      .filter((f) => args.entityIDs.includes(f.data.value))
+      .toSorted(byPosition);
+    if (moving.length === 0) continue;
+    let last = (await ctx.scanIndex.eav(args.toBlock, attribute))
+      .toSorted(byPosition)
+      .at(-1);
+    let positions = generateNKeysBetween(
+      last?.data.position || null,
+      null,
+      moving.length,
+    );
+    for (let [i, fact] of moving.entries()) {
+      await ctx.assertFact({
+        id: fact.id,
+        entity: args.toBlock,
+        attribute,
+        data: {
+          type: "ordered-reference",
+          value: fact.data.value,
+          position: positions[i],
+        },
+      });
+    }
+  }
+};
+
 const COLLAPSED_BLOCKS_FACT_NAMESPACE = "5f4bfb95-2a1f-49f4-8f6b-77f0f1a72897";
 const toggleCollapsedBlocks: Mutation<{
   collapse?: string[];
@@ -1540,7 +1576,11 @@ const deleteEditorComment: Mutation<{
   // comment's anchor text is deleted. Deletes the root comment and all replies.
   let comments = await ctx.scanIndex.eav(args.blockID, "block/comment");
   let fact = comments.find((f) => f.data.value === args.commentEntityID);
-  if (fact) await ctx.retractFact(fact.id);
+  // Only the owning block may delete the comment. A split through the anchor
+  // leaves marks in a second block that doesn't own it; deleting that text
+  // must not destroy a thread still anchored in the first.
+  if (!fact) return;
+  await ctx.retractFact(fact.id);
   let replies = await ctx.scanIndex.eav(args.commentEntityID, "comment/reply");
   for (let reply of replies) {
     await ctx.deleteEntity(reply.data.value);
@@ -1620,6 +1660,7 @@ export const mutations = {
   toggleCollapsedBlocks,
   createFootnote,
   deleteFootnote,
+  moveBlockAnnotations,
   createEditorComment,
   createEditorCommentReply,
   deleteEditorComment,
