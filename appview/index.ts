@@ -19,6 +19,7 @@ import {
   PubLeafletInteractionsReplyVisibility,
   PubLeafletInteractionsQuestion,
   PubLeafletInteractionsQuestionVisibility,
+  PubLeafletInteractionsCommentAuthorModeration,
   PubLeafletInteractionsAnswer,
   SiteStandardDocument,
   SiteStandardPublication,
@@ -38,6 +39,10 @@ import { stripThemeWithoutType } from "src/utils/stripThemeWithoutType";
 import { pageHasMembersDelimiter } from "src/membership";
 import { MAIN_SITE_URL } from "src/utils/customDomain";
 import { tombstoneComment } from "src/comments/tombstoneComment";
+import {
+  mirrorCommentAuthorModeration,
+  syncHiddenComments,
+} from "src/comments/commentAuthorModeration";
 import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
@@ -268,6 +273,7 @@ async function main() {
       ids.PubLeafletGraphSubscription,
       ids.PubLeafletGraphRecommendations,
       ids.PubLeafletComment,
+      ids.PubLeafletInteractionsCommentAuthorModeration,
       ids.PubLeafletPollVote,
       ids.PubLeafletPollDefinition,
       ids.PubLeafletInteractionsRecommend,
@@ -434,6 +440,8 @@ async function handleEvent(evt: Event) {
         document: record.value.subject,
         record: record.value as Json,
       });
+      // The author may have hidden it before this event arrived.
+      await syncHiddenComments(supabase, record.value.subject);
       if (!error)
         await broadcastDocumentEvent(supabase, "comment", record.value.subject);
       // Comment counts are server-rendered into post pages and listings.
@@ -700,6 +708,48 @@ async function handleEvent(evt: Event) {
           kind: "interaction",
           document: question.subject,
         });
+    }
+  }
+  if (evt.collection === ids.PubLeafletInteractionsCommentAuthorModeration) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = PubLeafletInteractionsCommentAuthorModeration.validateRecord(
+        evt.record,
+      );
+      if (!record.success) return;
+      let subjectUri;
+      try {
+        subjectUri = new AtUri(record.value.subject);
+      } catch {
+        return;
+      }
+      // Only the document's own repo moderates its comments, through the
+      // one record keyed like the document.
+      if (subjectUri.host !== evt.did || subjectUri.rkey !== evt.uri.rkey)
+        return;
+      await mirrorCommentAuthorModeration(
+        supabase,
+        evt.uri.toString(),
+        record.value.subject,
+        record.value.hidden,
+      );
+      await broadcastDocumentEvent(supabase, "comment", record.value.subject);
+      if (await isInLeafletPublication(record.value.subject))
+        await notifyRevalidate({
+          kind: "interaction",
+          document: record.value.subject,
+        });
+    }
+    if (evt.event === "delete") {
+      let { data: rows } = await supabase
+        .from("document_comment_author_moderation")
+        .delete()
+        .eq("uri", evt.uri.toString())
+        .select("subject");
+      let subject = rows?.[0]?.subject;
+      if (subject) await syncHiddenComments(supabase, subject);
+      if (subject) await broadcastDocumentEvent(supabase, "comment", subject);
+      if (subject && (await isInLeafletPublication(subject)))
+        await notifyRevalidate({ kind: "interaction", document: subject });
     }
   }
   if (evt.collection === ids.PubLeafletInteractionsQuestionVisibility) {

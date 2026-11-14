@@ -177,7 +177,7 @@ export function CommentBox(props: {
       }
       actions={
         <>
-          {record && (
+          {record && !props.editing && (
             <Avatar
               src={record.avatar}
               displayName={record.displayName || record.handle}
@@ -185,11 +185,15 @@ export function CommentBox(props: {
             />
           )}
           {props.editing && props.onCancel && (
-            <ButtonTertiary compact onClick={props.onCancel}>
-              Cancel
+            <ButtonTertiary
+              compact
+              className="text-sm"
+              onClick={props.onCancel}
+            >
+              Discard changes
             </ButtonTertiary>
           )}
-          <ComposerSubmit>
+          <ComposerSubmit className={props.editing ? "text-sm" : undefined}>
             {props.editing ? "Update" : <ShareSmall />}
           </ComposerSubmit>
         </>

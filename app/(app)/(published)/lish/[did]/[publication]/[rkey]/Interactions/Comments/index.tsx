@@ -6,19 +6,26 @@ import { Json } from "supabase/database.types";
 import { PubLeafletComment } from "lexicons/api";
 import { BaseTextBlock } from "../../Blocks/BaseTextBlock";
 import { Fragment, useMemo, useState } from "react";
-import useSWR from "swr";
+import useSWR, { useSWRConfig } from "swr";
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 import { discussionKey, fetchDiscussion } from "../useDocumentDiscussionData";
 import { CollapsibleReplies } from "components/CollapsibleReplies";
 import { CommentTiny } from "components/Icons/CommentTiny";
-import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
+import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 import { DeleteSmall } from "components/Icons/DeleteSmall";
-import { EditTiny } from "components/Icons/EditTiny";
+import { EditSmall } from "components/Icons/EditSmall";
 import { Menu, MenuItem } from "components/Menu";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { useToaster } from "components/Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
-import { deleteComment } from "./commentAction";
+import {
+  deleteComment,
+  getHiddenComments,
+  setCommentHidden,
+} from "./commentAction";
+import { isDocumentOwner } from "src/utils/isDocumentOwner";
+import { Separator } from "components/Layout";
+import { CollapsibleDivider } from "components/Blocks/ReplyBlock/RepliesHeader";
 
 import { AtUri } from "@atproto/api";
 import { usePathname } from "next/navigation";
@@ -34,10 +41,16 @@ export type Comment = {
   record: Json;
   uri: string;
   profile: Profile | null;
-  // Tombstoned: `record` is stripped to subject/createdAt/onPage/reply and the
-  // comment renders as a placeholder only while it still has visible replies.
   deleted?: boolean;
   edited?: boolean;
+  hidden?: boolean;
+};
+
+// Passed down every thread for the document's author. `removed` marks the
+// list of comments they hid, where restoring replaces the usual actions.
+type ModerationProps = {
+  removed?: boolean;
+  onSetHidden?: (comment: string, hidden: boolean) => Promise<void>;
 };
 
 // Loaded when the comments drawer renders rather than bundled: the comment
@@ -69,10 +82,67 @@ export function CommentsDrawerContent(props: {
   let live = useSWR(changed ? discussionKey(props.document_uri) : null, () =>
     fetchDiscussion(props.document_uri),
   );
+  let isOwner =
+    !!identity?.atp_did &&
+    isDocumentOwner(props.document_uri, identity.atp_did);
+  let hidden = useSWR(
+    isOwner ? ["hidden_comments", props.document_uri] : null,
+    () => getHiddenComments(props.document_uri),
+  );
   useDocumentEvents(props.document_uri, ["comment"], () => {
     setChanged(true);
     live.mutate();
+    hidden.mutate();
   });
+  let { mutate } = useSWRConfig();
+  let toaster = useToaster();
+  let setHidden = async (comment: string, hide: boolean) => {
+    let result = await setCommentHidden({
+      document: props.document_uri,
+      comment,
+      hidden: hide,
+    });
+    if (!result.success) {
+      toaster({
+        content: isOAuthSessionError(result.error) ? (
+          <OAuthErrorMessage error={result.error} />
+        ) : hide ? (
+          "We couldn't remove this."
+        ) : (
+          "We couldn't restore this."
+        ),
+        type: "error",
+      });
+      return;
+    }
+    // Both lists land together, so the comment moves between them in one step.
+    await Promise.all([
+      mutate(
+        discussionKey(props.document_uri),
+        fetchDiscussion(props.document_uri),
+        { revalidate: false },
+      ),
+      hidden.mutate(),
+    ]);
+    setChanged(true);
+  };
+  let removed = useMemo(
+    () =>
+      (hidden.data ?? []).filter(
+        (c) => (c.record as PubLeafletComment.Record)?.onPage === pageId,
+      ),
+    [hidden.data, pageId],
+  );
+  let removedThreads = useMemo(() => {
+    let uris = new Set(removed.map((c) => c.uri));
+    return removed
+      .filter((c) => {
+        let parent = (c.record as PubLeafletComment.Record).reply?.parent;
+        return !(parent && uris.has(parent)) && isCommentShown(c, removed);
+      })
+      .sort(byNewest);
+  }, [removed]);
+  let [removedOpen, setRemovedOpen] = useState(false);
   let serverComments = live.data?.comments ?? props.comments;
   let comments = useMemo(() => {
     let filtered = serverComments.filter(
@@ -114,6 +184,23 @@ export function CommentsDrawerContent(props: {
     return url.toString();
   }, []);
 
+  let commentThreads = (threads: Comment[], all: Comment[], removed: boolean) =>
+    threads.map((comment) => (
+      <Fragment key={comment.uri}>
+        <Comment
+          pageId={pageId}
+          profile={comment.profile}
+          document={props.document_uri}
+          comment={comment}
+          record={comment.record as PubLeafletComment.Record}
+          comments={all}
+          removed={removed}
+          onSetHidden={isOwner ? setHidden : undefined}
+        />
+        <hr className="border-border last:hidden" />
+      </Fragment>
+    ));
+
   return (
     <div
       id={"commentsDrawer"}
@@ -141,25 +228,24 @@ export function CommentsDrawerContent(props: {
           <hr className="border-border-light" />
         </>
       )}
-      <div className="comments flex flex-col gap-4 sm:gap-6 py-2">
+      <div className="comments flex flex-col gap-4 sm:gap-5 py-2">
         {topLevel.length === 0 && <EmptyState>No comments yet…</EmptyState>}
-        {topLevel.map((comment) => {
-          let record = comment.record as PubLeafletComment.Record;
-          return (
-            <Fragment key={comment.uri}>
-              <Comment
-                pageId={pageId}
-                profile={comment.profile}
-                document={props.document_uri}
-                comment={comment}
-                record={record}
-                comments={comments}
-              />
-              <hr className="border-border last:hidden" />
-            </Fragment>
-          );
-        })}
+        {commentThreads(topLevel, comments, false)}
       </div>
+      {isOwner && removedThreads.length > 0 && (
+        <div className="removedComments flex flex-col gap-4 pb-2">
+          <CollapsibleDivider
+            label={`Removed (${removed.length})`}
+            open={removedOpen}
+            onToggle={() => setRemovedOpen(!removedOpen)}
+          />
+          {removedOpen && (
+            <div className="flex flex-col gap-4 sm:gap-6">
+              {commentThreads(removedThreads, removed, true)}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -189,14 +275,16 @@ function getVisibleReplies(parentUri: string, comments: Comment[]) {
     .sort(byNewest);
 }
 
-const Comment = (props: {
-  document: string;
-  comment: Comment;
-  comments: Comment[];
-  profile: Profile | null;
-  record: PubLeafletComment.Record;
-  pageId?: string;
-}) => {
+const Comment = (
+  props: {
+    document: string;
+    comment: Comment;
+    comments: Comment[];
+    profile: Profile | null;
+    record: PubLeafletComment.Record;
+    pageId?: string;
+  } & ModerationProps,
+) => {
   let { identity } = useIdentityData();
   let isAuthor =
     !!identity?.atp_did &&
@@ -211,15 +299,19 @@ const Comment = (props: {
       >
         <div className="h-6 w-6 shrink-0 rounded-full bg-border-light" />
         <div className="min-w-0 w-full grow flex flex-col pt-1">
-          <div className="italic text-tertiary pb-[4px]">
-            This comment has been deleted
+          <div className="italic text-tertiary pb-[4px] -mt-px">
+            {props.comment.hidden
+              ? "This comment was removed by the author"
+              : "This comment has been deleted"}
           </div>
           <Replies
             pageId={props.pageId}
             comment_uri={props.comment.uri}
             comments={props.comments}
             document={props.document}
-            canReply={false}
+            deleted
+            removed={props.removed}
+            onSetHidden={props.onSetHidden}
           />
         </div>
       </div>
@@ -241,7 +333,7 @@ const Comment = (props: {
         size={"medium"}
       />
 
-      <div className="min-w-0 w-full grow flex flex-col pt-1">
+      <div className="min-w-0 w-full grow flex flex-col">
         <div className="flex items-center gap-2">
           <PostInfo
             displayName={props.profile?.displayName}
@@ -250,7 +342,9 @@ const Comment = (props: {
             compact
           />
           {props.comment.edited && (
-            <span className="text-xs text-tertiary shrink-0">edited</span>
+            <span className="text-xs text-tertiary italic shrink-0">
+              edited
+            </span>
           )}
           {isAuthor && !editing && (
             <CommentOptions
@@ -300,21 +394,34 @@ const Comment = (props: {
           comment_uri={props.comment.uri}
           comments={props.comments}
           document={props.document}
+          removed={props.removed}
+          onSetHidden={props.onSetHidden}
         />
       </div>
     </div>
   );
 };
 
-const Replies = (props: {
-  comment_uri: string;
-  comments: Comment[];
-  document: string;
-  pageId?: string;
-  canReply?: boolean;
-}) => {
+const Replies = (
+  props: {
+    comment_uri: string;
+    comments: Comment[];
+    document: string;
+    pageId?: string;
+    deleted?: boolean;
+  } & ModerationProps,
+) => {
   let { identity } = useIdentityData();
-  let canReply = props.canReply !== false && !!identity?.atp_did;
+  let canReply = !props.deleted && !props.removed && !!identity?.atp_did;
+  let canRemove = !!props.onSetHidden && !props.removed && !props.deleted;
+  let canRestore = !!props.onSetHidden && !!props.removed;
+  let [moderating, setModerating] = useState(false);
+  let setHidden = async (hidden: boolean) => {
+    if (!props.onSetHidden) return;
+    setModerating(true);
+    await props.onSetHidden(props.comment_uri, hidden);
+    setModerating(false);
+  };
 
   let [replyBoxOpen, setReplyBoxOpen] = useState(false);
   let [repliesOpen, setRepliesOpen] = useState(true);
@@ -345,6 +452,27 @@ const Replies = (props: {
             }}
           >
             Reply
+          </button>
+        )}
+        {canRemove && (
+          <>
+            <Separator classname="h-4!" />
+            <button
+              className="text-tertiary hover:text-accent-contrast text-sm disabled:opacity-50"
+              disabled={moderating}
+              onClick={() => setHidden(true)}
+            >
+              Hide
+            </button>
+          </>
+        )}
+        {canRestore && (
+          <button
+            className="text-accent-contrast text-sm disabled:opacity-50"
+            disabled={moderating}
+            onClick={() => setHidden(false)}
+          >
+            Restore
           </button>
         )}
       </div>
@@ -399,6 +527,8 @@ const Replies = (props: {
                     profile={reply.profile}
                     record={reply.record as PubLeafletComment.Record}
                     comments={props.comments}
+                    removed={props.removed}
+                    onSetHidden={props.onSetHidden}
                   />
                 );
               })}
@@ -423,6 +553,8 @@ const CommentOptions = (props: {
     <Menu
       asChild
       align="end"
+      // Above the z-50 mobile sheet the comments open in.
+      className="z-[60]!"
       onOpenChange={(open) => {
         if (!open) setState("menu");
       }}
@@ -431,14 +563,14 @@ const CommentOptions = (props: {
           className="shrink-0 text-tertiary hover:text-accent-contrast"
           aria-label="Comment options"
         >
-          <MoreOptionsTiny />
+          <MoreOptionsVerticalTiny />
         </button>
       }
     >
       {state === "menu" ? (
         <>
           <MenuItem onSelect={() => props.onEdit()}>
-            <EditTiny />
+            <EditSmall />
             Edit Comment
           </MenuItem>
           <MenuItem

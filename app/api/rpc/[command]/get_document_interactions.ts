@@ -11,16 +11,14 @@ import { AtUri } from "@atproto/syntax";
 import { getProfiles } from "src/identity";
 import { getDocumentPages } from "src/utils/normalizeRecords";
 import { truncatePagesAtMembersDelimiter } from "src/membership";
+import { hiddenCommentPlaceholders } from "src/comments/commentAuthorModeration";
 
 export const get_document_interactions = makeRoute({
   route: "get_document_interactions",
   input: z.object({
     document_uri: z.string(),
   }),
-  handler: async (
-    { document_uri },
-    { supabase }: Pick<Env, "supabase">,
-  ) => {
+  handler: async ({ document_uri }, { supabase }: Pick<Env, "supabase">) => {
     let { data: document } = await supabase
       .from("documents")
       .select(
@@ -29,6 +27,7 @@ export const get_document_interactions = makeRoute({
         uri,
         comments_on_documents(*),
         comment_tombstones(uri, record),
+        hidden_comments(uri, record),
         document_mentions_in_bsky(*),
         documents_in_publications(publications(*))
         `,
@@ -47,10 +46,7 @@ export const get_document_interactions = makeRoute({
       };
     }
 
-    const normalizedData = normalizeDocumentRecord(
-      document.data,
-      document.uri,
-    );
+    const normalizedData = normalizeDocumentRecord(document.data, document.uri);
     // Unauthenticated endpoint: discussion views only need the document's
     // metadata, so gated blocks never leave the server regardless of viewer.
     if (normalizedData) {
@@ -125,6 +121,13 @@ export const get_document_interactions = makeRoute({
         profile: null,
         deleted: true,
       })),
+      // Unauthenticated endpoint, so what the author hid never leaves the
+      // server; they load it through getHiddenComments.
+      ...hiddenCommentPlaceholders(
+        document.hidden_comments,
+        document.comments_on_documents,
+        document.comment_tombstones,
+      ),
     ];
 
     return {

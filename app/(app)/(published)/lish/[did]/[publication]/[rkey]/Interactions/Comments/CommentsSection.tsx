@@ -2,6 +2,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { getProfiles } from "src/identity";
 import { CommentsDrawerContent, type Comment } from "./index";
 import { AtUri } from "@atproto/syntax";
+import { hiddenCommentPlaceholders } from "src/comments/commentAuthorModeration";
 
 export async function CommentsSection({
   document_uri,
@@ -11,7 +12,7 @@ export async function CommentsSection({
   const { data: document } = await supabaseServerClient
     .from("documents")
     .select(
-      "comments_on_documents(uri, record, past_versions), comment_tombstones(uri, record)",
+      "comments_on_documents(uri, record, past_versions), comment_tombstones(uri, record), hidden_comments(uri, record)",
     )
     .eq("uri", document_uri)
     .maybeSingle();
@@ -34,6 +35,11 @@ export async function CommentsSection({
       profile: null,
       deleted: true,
     })),
+    ...hiddenCommentPlaceholders(
+      document?.hidden_comments ?? [],
+      rows,
+      tombstones,
+    ),
   ];
 
   return (

@@ -1,6 +1,17 @@
 "use server";
 
-import { AtpBaseClient, PubLeafletComment } from "lexicons/api";
+import {
+  AtpBaseClient,
+  PubLeafletComment,
+  PubLeafletInteractionsCommentAuthorModeration,
+} from "lexicons/api";
+import { ids } from "lexicons/api/lexicons";
+import { XRPCError } from "@atproto/xrpc";
+import { getProfiles } from "src/identity";
+import { isDocumentOwner } from "src/utils/isDocumentOwner";
+import { revalidateDocumentPaths } from "src/utils/revalidatePublication";
+import { mirrorCommentAuthorModeration } from "src/comments/commentAuthorModeration";
+import type { Comment } from "./index";
 import { getAuthIdentity } from "src/auth";
 import { PubLeafletRichtextFacet } from "lexicons/api";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
@@ -282,6 +293,147 @@ export async function deleteComment(args: {
       comment.document,
     );
   return { success: true };
+}
+
+// Hides a comment on the viewer's own document, or restores it. The hidden
+// list lives in one pub.leaflet.interactions.commentAuthorModeration record in the
+// document's repo, keyed by the document's rkey so every change is a plain
+// overwrite; the supabase rows mirror what the appview indexes from it.
+export async function setCommentHidden(args: {
+  document: string;
+  comment: string;
+  hidden: boolean;
+}): Promise<DeleteCommentResult> {
+  let identity = await getAuthIdentity();
+  if (!identity?.atp_did || !isDocumentOwner(args.document, identity.atp_did))
+    return {
+      success: false,
+      error: { type: "forbidden", message: "Not your post" },
+    };
+  let failed = (message: string): DeleteCommentResult => ({
+    success: false,
+    error: { type: "failed", message },
+  });
+
+  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  if (!sessionResult.ok) return { success: false, error: sessionResult.error };
+  let credentialSession = sessionResult.value;
+  let agent = new AtpBaseClient(
+    credentialSession.fetchHandler.bind(credentialSession),
+  );
+  let documentUri = new AtUri(args.document);
+  let repo = documentUri.host;
+  let collection = ids.PubLeafletInteractionsCommentAuthorModeration;
+  let rkey = documentUri.rkey;
+
+  // Built from the record rather than the mirrored rows: the appview rewrites
+  // the rows from each record event, which can land after a newer change.
+  let hidden = new Set<string>();
+  try {
+    let { data } = await agent.com.atproto.repo.getRecord({
+      repo,
+      collection,
+      rkey,
+    });
+    let record = PubLeafletInteractionsCommentAuthorModeration.validateRecord(
+      data.value,
+    );
+    if (record.success) hidden = new Set(record.value.hidden);
+  } catch (e) {
+    if (!(e instanceof XRPCError && e.error === "RecordNotFound")) {
+      console.error("[comments] visibility read failed", e);
+      return failed("Couldn't read the hidden comments");
+    }
+  }
+  if (args.hidden) hidden.add(args.comment);
+  else hidden.delete(args.comment);
+
+  // Comments that no longer exist drop out of the list here, so it can't
+  // grow without bound.
+  let [{ data: live, error: liveError }, { data: stored, error }] =
+    await Promise.all([
+      supabaseServerClient
+        .from("comments_on_documents")
+        .select("uri")
+        .eq("document", args.document)
+        .in("uri", [...hidden]),
+      supabaseServerClient
+        .from("hidden_comments")
+        .select("uri")
+        .eq("document", args.document)
+        .in("uri", [...hidden]),
+    ]);
+  if (liveError || error || !live || !stored) {
+    console.error("[comments] comment read failed", liveError || error);
+    return failed("Couldn't read the comments");
+  }
+  let existing = new Set([...live, ...stored].map((c) => c.uri));
+  if (args.hidden && !existing.has(args.comment))
+    return failed("Comment not found");
+  for (let uri of hidden) if (!existing.has(uri)) hidden.delete(uri);
+
+  try {
+    if (hidden.size === 0) {
+      await agent.com.atproto.repo
+        .deleteRecord({ repo, collection, rkey })
+        .catch(() => {});
+    } else {
+      let record: PubLeafletInteractionsCommentAuthorModeration.Record = {
+        $type: "pub.leaflet.interactions.commentAuthorModeration",
+        subject: args.document,
+        hidden: [...hidden],
+      };
+      if (
+        !PubLeafletInteractionsCommentAuthorModeration.validateRecord(record)
+          .success
+      )
+        return failed("Too many hidden comments");
+      await agent.com.atproto.repo.putRecord({
+        repo,
+        collection,
+        rkey,
+        record,
+        validate: false,
+      });
+    }
+  } catch (e) {
+    console.error("[comments] visibility write failed", e);
+    return failed("Couldn't update the hidden comments");
+  }
+
+  // Mirror the record now rather than waiting on the appview.
+  await mirrorCommentAuthorModeration(
+    supabaseServerClient,
+    AtUri.make(repo, collection, rkey).toString(),
+    args.document,
+    hidden,
+  );
+  await broadcastDocumentEvent(supabaseServerClient, "comment", args.document);
+  // Comments and their counts are server-rendered into the post's pages.
+  await revalidateDocumentPaths(args.document, { neighbours: false });
+  return { success: true };
+}
+
+// The comments the viewer hid on their own document. Empty for anyone else.
+export async function getHiddenComments(document: string): Promise<Comment[]> {
+  let identity = await getAuthIdentity();
+  if (!identity?.atp_did || !isDocumentOwner(document, identity.atp_did))
+    return [];
+  let { data } = await supabaseServerClient
+    .from("hidden_comments")
+    .select("uri, record, past_versions")
+    .eq("document", document);
+  if (!data || data.length === 0) return [];
+  let profiles = await getProfiles([
+    ...new Set(data.map((c) => new AtUri(c.uri).host)),
+  ]);
+  return data.map((c) => ({
+    uri: c.uri,
+    record: c.record,
+    profile: profiles.get(new AtUri(c.uri).host) ?? null,
+    edited: Array.isArray(c.past_versions) && c.past_versions.length > 0,
+    hidden: true,
+  }));
 }
 
 /**

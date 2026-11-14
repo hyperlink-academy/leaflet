@@ -103,6 +103,19 @@ export const custom_domains = pgTable("custom_domains", {
 	identity_id: uuid("identity_id").references(() => identities.id, { onDelete: "cascade" } ),
 });
 
+export const document_comment_author_moderation = pgTable("document_comment_author_moderation", {
+	comment: text("comment").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	subject: text("subject").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	uri: text("uri").notNull(),
+},
+(table) => {
+	return {
+		document_comment_author_moderation_pkey: primaryKey({ columns: [table.subject, table.comment], name: "document_comment_author_moderation_pkey"}),
+		uri_idx: index("document_comment_author_moderation_uri_idx").on(table.uri),
+	}
+});
+
 export const document_mentions_in_bsky = pgTable("document_mentions_in_bsky", {
 	document: text("document").notNull().references(() => documents.uri, { onDelete: "cascade" } ),
 	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
@@ -328,6 +341,20 @@ export const facts = pgTable("facts", {
 (table) => {
 	return {
 		entity_idx: index("facts_entity_idx").on(table.entity),
+	}
+});
+
+export const hidden_comments = pgTable("hidden_comments", {
+	document: text("document").references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	past_versions: jsonb("past_versions").default([]).notNull(),
+	profile: text("profile"),
+	record: jsonb("record").notNull(),
+	uri: text("uri").primaryKey().notNull(),
+},
+(table) => {
+	return {
+		document_idx: index("hidden_comments_document_idx").on(table.document),
 	}
 });
 

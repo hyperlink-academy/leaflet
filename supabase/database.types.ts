@@ -312,6 +312,35 @@ export type Database = {
           },
         ]
       }
+      document_comment_author_moderation: {
+        Row: {
+          comment: string
+          indexed_at: string
+          subject: string
+          uri: string
+        }
+        Insert: {
+          comment: string
+          indexed_at?: string
+          subject: string
+          uri: string
+        }
+        Update: {
+          comment?: string
+          indexed_at?: string
+          subject?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_comment_author_moderation_subject_fkey"
+            columns: ["subject"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       document_mentions_in_bsky: {
         Row: {
           document: string
@@ -910,6 +939,41 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "entities"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      hidden_comments: {
+        Row: {
+          document: string | null
+          indexed_at: string
+          past_versions: Json
+          profile: string | null
+          record: Json
+          uri: string
+        }
+        Insert: {
+          document?: string | null
+          indexed_at?: string
+          past_versions?: Json
+          profile?: string | null
+          record: Json
+          uri: string
+        }
+        Update: {
+          document?: string | null
+          indexed_at?: string
+          past_versions?: Json
+          profile?: string | null
+          record?: Json
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hidden_comments_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
           },
         ]
       }
@@ -2883,6 +2947,12 @@ export type Database = {
           name: string
           document_count: number
         }[]
+      }
+      sync_hidden_comments: {
+        Args: {
+          doc: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

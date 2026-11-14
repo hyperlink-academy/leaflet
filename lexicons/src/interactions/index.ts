@@ -88,6 +88,37 @@ export const PubLeafletInteractionsReplyVisibility: LexiconDoc = {
   },
 };
 
+export const PubLeafletInteractionsCommentAuthorModeration: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.interactions.commentAuthorModeration",
+  defs: {
+    main: {
+      type: "record",
+      key: "any",
+      description:
+        "Declares which comments on a document its author hid. Lives in the document's repo, with a record key matching the document's. A hidden comment is not shown on the document; replies to it still are.",
+      record: {
+        type: "object",
+        required: ["subject", "hidden"],
+        properties: {
+          subject: {
+            type: "string",
+            format: "at-uri",
+            description: "The document whose comments this record moderates.",
+          },
+          hidden: {
+            type: "array",
+            maxLength: 500,
+            description:
+              "pub.leaflet.comment records never shown on the document.",
+            items: { type: "string", format: "at-uri" },
+          },
+        },
+      },
+    },
+  },
+};
+
 export const PubLeafletInteractionsQuestion: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.interactions.question",

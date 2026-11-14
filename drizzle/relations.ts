@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { atp_poll_records, atp_poll_votes, bsky_follows, bsky_posts, bsky_profiles, comment_tombstones, comments_on_documents, custom_domain_routes, custom_domains, document_mentions_in_bsky, document_question_answers, document_question_visibility, document_questions, document_replies, document_reply_rejections, document_reply_visibility, document_tags, document_version_blob_refs, document_versions, documents, documents_in_publications, email_auth_tokens, email_subscriptions_to_entity, entities, entity_sets, facts, identities, leaflet_contributors, leaflets_in_publications, leaflets_to_documents, notifications, permission_token_on_homepage, permission_token_rights, permission_tokens, phone_rsvps_to_entity, poll_votes_on_entity, publication_contributors, publication_domains, publication_email_posts, publication_email_subscriber_events, publication_email_subscribers, publication_membership_settings, publication_membership_tiers, publication_memberships, publication_newsletter_settings, publication_pages, publication_post_sends, publication_recommendations, publication_reviews, publication_scheduled_posts, publication_subscriptions, publications, recommends_on_documents, reply_drafts, site_standard_documents, site_standard_documents_in_publications, site_standard_publications, site_standard_subscriptions, stripe_connected_accounts, stripe_connected_customers, stripe_wallets, user_entitlements, user_subscriptions } from "./schema";
+import { atp_poll_records, atp_poll_votes, bsky_follows, bsky_posts, bsky_profiles, comment_tombstones, comments_on_documents, custom_domain_routes, custom_domains, document_comment_author_moderation, document_mentions_in_bsky, document_question_answers, document_question_visibility, document_questions, document_replies, document_reply_rejections, document_reply_visibility, document_tags, document_version_blob_refs, document_versions, documents, documents_in_publications, email_auth_tokens, email_subscriptions_to_entity, entities, entity_sets, facts, hidden_comments, identities, leaflet_contributors, leaflets_in_publications, leaflets_to_documents, notifications, permission_token_on_homepage, permission_token_rights, permission_tokens, phone_rsvps_to_entity, poll_votes_on_entity, publication_contributors, publication_domains, publication_email_posts, publication_email_subscriber_events, publication_email_subscribers, publication_membership_settings, publication_membership_tiers, publication_memberships, publication_newsletter_settings, publication_pages, publication_post_sends, publication_recommendations, publication_reviews, publication_scheduled_posts, publication_subscriptions, publications, recommends_on_documents, reply_drafts, site_standard_documents, site_standard_documents_in_publications, site_standard_publications, site_standard_subscriptions, stripe_connected_accounts, stripe_connected_customers, stripe_wallets, user_entitlements, user_subscriptions } from "./schema";
 
 export const atp_poll_recordsRelations = relations(atp_poll_records, ({many}) => ({
 	atp_poll_votes: many(atp_poll_votes),
@@ -80,6 +80,13 @@ export const custom_domainsRelations = relations(custom_domains, ({one, many}) =
 		relationName: "custom_domains_identity_id_identities_id",
 	}),
 	publication_domains: many(publication_domains),
+}));
+
+export const document_comment_author_moderationRelations = relations(document_comment_author_moderation, ({one}) => ({
+	document: one(documents, {
+		fields: [document_comment_author_moderation.subject],
+		references: [documents.uri],
+	}),
 }));
 
 export const document_mentions_in_bskyRelations = relations(document_mentions_in_bsky, ({one}) => ({
@@ -180,6 +187,7 @@ export const document_versionsRelations = relations(document_versions, ({one, ma
 export const documentsRelations = relations(documents, ({many}) => ({
 	comment_tombstones: many(comment_tombstones),
 	comments_on_documents: many(comments_on_documents),
+	document_comment_author_moderations: many(document_comment_author_moderation),
 	document_mentions_in_bskies: many(document_mentions_in_bsky),
 	document_question_answers: many(document_question_answers),
 	document_question_visibilities: many(document_question_visibility),
@@ -194,6 +202,7 @@ export const documentsRelations = relations(documents, ({many}) => ({
 	document_reply_visibilities: many(document_reply_visibility),
 	document_tags: many(document_tags),
 	documents_in_publications: many(documents_in_publications),
+	hidden_comments: many(hidden_comments),
 	leaflets_in_publications: many(leaflets_in_publications),
 	leaflets_to_documents: many(leaflets_to_documents),
 	publication_pages: many(publication_pages),
@@ -260,6 +269,13 @@ export const factsRelations = relations(facts, ({one}) => ({
 	}),
 }));
 
+export const hidden_commentsRelations = relations(hidden_comments, ({one}) => ({
+	document: one(documents, {
+		fields: [hidden_comments.document],
+		references: [documents.uri],
+	}),
+}));
+
 export const identitiesRelations = relations(identities, ({one, many}) => ({
 	bsky_follows_follows: many(bsky_follows, {
 		relationName: "bsky_follows_follows_identities_atp_did",
@@ -287,6 +303,7 @@ export const identitiesRelations = relations(identities, ({one, many}) => ({
 	publication_domains: many(publication_domains),
 	publication_email_subscribers: many(publication_email_subscribers),
 	publication_memberships: many(publication_memberships),
+	publication_reviews: many(publication_reviews),
 	publication_subscriptions: many(publication_subscriptions),
 	publications: many(publications),
 	recommends_on_documents: many(recommends_on_documents),
@@ -610,6 +627,7 @@ export const publicationsRelations = relations(publications, ({one, many}) => ({
 	publication_pages: many(publication_pages),
 	publication_post_sends: many(publication_post_sends),
 	publication_recommendations: many(publication_recommendations),
+	publication_reviews: many(publication_reviews),
 	publication_scheduled_posts: many(publication_scheduled_posts),
 	publication_subscriptions: many(publication_subscriptions),
 }));

@@ -26,6 +26,7 @@
             "pub.leaflet.interactions.recommend",
             "pub.leaflet.interactions.reply",
             "pub.leaflet.interactions.replyVisibility",
+            "pub.leaflet.interactions.commentAuthorModeration",
             "pub.leaflet.interactions.question",
             "pub.leaflet.interactions.questionVisibility",
             "pub.leaflet.interactions.answer",
