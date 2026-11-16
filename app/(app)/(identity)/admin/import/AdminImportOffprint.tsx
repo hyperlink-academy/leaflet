@@ -26,6 +26,7 @@ import {
   ImportOptions,
   SelectAllHeader,
   type PathMode,
+  unanswered,
 } from "./ImportShared";
 
 const OFFPRINT_CONTENT = "app.offprint.content";
@@ -107,7 +108,7 @@ export function AdminImportOffprint() {
         mode,
         pathMode,
         showInDiscover,
-      });
+      }).catch(unanswered);
       if (res.ok) next.set(post.uri, { state: "done", result: res.value });
       else {
         next.set(post.uri, { state: "failed", error: res.error });

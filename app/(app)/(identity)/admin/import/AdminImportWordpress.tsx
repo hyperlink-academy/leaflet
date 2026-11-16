@@ -29,6 +29,7 @@ import {
   SelectAllHeader,
   type ImportMode,
   type PathMode,
+  unanswered,
 } from "./ImportShared";
 
 type PostStatus =
@@ -118,7 +119,7 @@ export function AdminImportWordpress() {
         mode,
         pathMode,
         showInDiscover,
-      });
+      }).catch(unanswered);
       if (res.ok) {
         next.set(post.id, { state: "done", result: res.value });
         if (res.value.kind === "page") pagesImported++;
@@ -133,7 +134,7 @@ export function AdminImportWordpress() {
       setPagesStatus({ state: "publishing" });
       let res = await publishWordpressPages({
         publicationUri: publication.uri,
-      });
+      }).catch(unanswered);
       if (res.ok) setPagesStatus({ state: "published" });
       else {
         setPagesStatus({ state: "failed", error: res.error });

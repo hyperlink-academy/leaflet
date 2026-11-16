@@ -377,11 +377,14 @@ async function publish({
       ? scan.eav(coverRef.data.value, "block/image")
       : [];
     if (imageData) {
-      let imageResponse = await fetch(imageData.data.src);
+      let imageResponse = await fetch(imageData.data.src, {
+        signal: AbortSignal.timeout(30_000),
+      });
       if (imageResponse.status === 200) {
         let binary = await imageResponse.blob();
         let blob = await agent.com.atproto.repo.uploadBlob(binary, {
           headers: { "Content-Type": binary.type },
+          signal: AbortSignal.timeout(60_000),
         });
         coverImageBlob = blob.data.blob;
       } else

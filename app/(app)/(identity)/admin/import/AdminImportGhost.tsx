@@ -28,6 +28,7 @@ import {
   ImportOptions,
   SelectAllHeader,
   type PathMode,
+  unanswered,
 } from "./ImportShared";
 
 type PostStatus =
@@ -113,7 +114,7 @@ export function AdminImportGhost() {
         mode,
         pathMode,
         showInDiscover,
-      });
+      }).catch(unanswered);
       if (res.ok) {
         next.set(post.id, { state: "done", result: res.value });
         if (res.value.kind === "page") pagesImported++;
@@ -126,7 +127,9 @@ export function AdminImportGhost() {
     // Pages all land in the one draft leaflet, so they publish in one go.
     if (mode === "publish" && pagesImported > 0) {
       setPagesStatus({ state: "publishing" });
-      let res = await publishGhostPages({ publicationUri: publication.uri });
+      let res = await publishGhostPages({
+        publicationUri: publication.uri,
+      }).catch(unanswered);
       if (res.ok) setPagesStatus({ state: "published" });
       else {
         setPagesStatus({ state: "failed", error: res.error });

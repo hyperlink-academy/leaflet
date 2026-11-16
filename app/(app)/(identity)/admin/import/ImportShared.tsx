@@ -137,3 +137,13 @@ export function ExternalLink(props: {
     </a>
   );
 }
+
+// A server action the server never answers (a function timeout returns a 504)
+// rejects instead of resolving to an error Result. The import may still have
+// been written before the function was killed.
+export function unanswered(e: unknown): { ok: false; error: string } {
+  return {
+    ok: false,
+    error: `${e instanceof Error ? e.message : String(e)} Check the publication before retrying — it may have been partly imported.`,
+  };
+}

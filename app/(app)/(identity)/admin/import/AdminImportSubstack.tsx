@@ -30,6 +30,7 @@ import {
   SelectAllHeader,
   type ImportMode,
   type PathMode,
+  unanswered,
 } from "./ImportShared";
 
 type PostStatus =
@@ -129,7 +130,7 @@ export function AdminImportSubstack() {
         mode,
         pathMode,
         showInDiscover,
-      });
+      }).catch(unanswered);
       if (res.ok) next.set(post.id, { state: "done", result: res.value });
       else {
         next.set(post.id, { state: "failed", error: res.error });
