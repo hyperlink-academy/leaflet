@@ -2,6 +2,7 @@ import { JSDOM } from "jsdom";
 import {
   contentBuilder,
   escapeHtml,
+  hoist,
   numberFact,
   stringFact,
   type ConvertedContent,
@@ -76,22 +77,6 @@ const positive = (v: unknown): number | null => {
   const n = Number(v);
   return n > 0 ? n : null;
 };
-
-// Lift an element out of whatever contains it so it stands directly in the
-// body, splitting each ancestor in two around it. An image inside a list item
-// becomes: the list up to that point, the image, the rest of the list.
-function hoist(el: Element, body: Element) {
-  while (el.parentElement && el.parentElement !== body) {
-    const parent = el.parentElement;
-    const after = parent.cloneNode(false) as Element;
-    after.removeAttribute("id");
-    while (el.nextSibling) after.appendChild(el.nextSibling);
-    const container = parent.parentNode!;
-    container.insertBefore(el, parent.nextSibling);
-    if (after.childNodes.length) container.insertBefore(after, el.nextSibling);
-    if (!parent.childNodes.length) parent.remove();
-  }
-}
 
 function prepare(
   doc: Document,

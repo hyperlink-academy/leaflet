@@ -2,20 +2,14 @@
 
 import { v7 } from "uuid";
 import { isValidRecordKey } from "@atproto/syntax";
-import { generateKeyBetween } from "fractional-indexing";
-import { supabaseServerClient } from "supabase/serverClient";
 import type { Result } from "src/result";
 import { asAdmin } from "src/admin/asAdmin";
-import { appendToLeaflet } from "src/utils/insertLeaflet";
 import { assertRkeyFree } from "src/utils/assertRkeyFree";
+import { routeShape } from "src/utils/publishPublicationPages";
 import {
-  publishPublicationPages,
-  routeShape,
-} from "src/utils/publishPublicationPages";
-import { readNavEntries } from "src/utils/publicationNavEntries";
-import { createPublicationDraftLeaflet } from "actions/createPublicationDraftLeaflet";
-import { normalizePublicationRecord } from "src/utils/normalizeRecords";
-import { resolvePublicationTheme } from "lexicons/src/normalize";
+  appendPublicationPage,
+  publishImportedPages,
+} from "src/import/importPage";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import type { GhostPost } from "src/ghostImport/parseGhostExport";
@@ -93,63 +87,8 @@ export async function importGhostPost(args: {
         throw new Error(
           `Slug "${slug}" can't be a page path (lowercase letters, digits, and dashes only)`,
         );
-      let pubRecord = normalizePublicationRecord(pub.record);
-      let draftLeaflet =
-        pub.draft_leaflet ??
-        (await createPublicationDraftLeaflet({
-          publication_uri: pub.uri,
-          did: pub.identity_did,
-          description: pubRecord?.description,
-          theme: resolvePublicationTheme(pubRecord),
-        }));
-      let [{ data: token }, { data: rights }] = await Promise.all([
-        supabaseServerClient
-          .from("permission_tokens")
-          .select("root_entity")
-          .eq("id", draftLeaflet)
-          .single()
-          .throwOnError(),
-        supabaseServerClient
-          .from("permission_token_rights")
-          .select("entity_set")
-          .eq("token", draftLeaflet)
-          .eq("write", true)
-          .throwOnError(),
-      ]);
-      let entitySet = rights?.[0]?.entity_set;
-      if (!token || !entitySet)
-        throw new Error("Draft leaflet has no writable set");
-      let rootEntity = token.root_entity;
-      let { data: factData } = await supabaseServerClient
-        .rpc("get_facts", { root: rootEntity })
-        .throwOnError();
-      let nav = readNavEntries(
-        (factData as unknown as Fact<Attribute>[]) ?? [],
-        rootEntity,
-      );
-      let clash = nav.find((e) => e.route === route);
-      if (clash)
-        throw new Error(
-          `The publication already has a page at ${route} ("${clash.title}")`,
-        );
-
       let page = await ghostPostToPage(args.post, args.siteUrl, resolveImage);
-      await appendToLeaflet({
-        entitySetId: entitySet,
-        entityIds: page.entities,
-        facts: [
-          {
-            entity: rootEntity,
-            attribute: "root/page",
-            data: {
-              type: "ordered-reference",
-              value: page.pageId,
-              position: generateKeyBetween(nav.at(-1)?.position ?? null, null),
-            },
-          },
-          ...page.facts,
-        ],
-      });
+      await appendPublicationPage({ publication: pub, route, page });
       return { kind: "page", route };
     }
 
@@ -175,19 +114,7 @@ export async function importGhostPost(args: {
 export async function publishGhostPages(args: {
   publicationUri: string;
 }): Promise<Result<{ published: number }, string>> {
-  return asAdmin("import-ghost", async () => {
-    let { data: pub } = await supabaseServerClient
-      .from("publications")
-      .select("identity_did")
-      .eq("uri", args.publicationUri)
-      .maybeSingle()
-      .throwOnError();
-    if (!pub) throw new Error("Publication not found");
-    let result = await publishPublicationPages({
-      publication_uri: args.publicationUri,
-      actorDid: pub.identity_did,
-    });
-    if (!result.success) throw new Error(result.error.message);
-    return { published: result.published.length };
-  });
+  return asAdmin("import-ghost", () =>
+    publishImportedPages(args.publicationUri),
+  );
 }

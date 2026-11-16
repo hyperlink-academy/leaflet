@@ -4,8 +4,9 @@ import { useState } from "react";
 import { AdminImportGhost } from "./AdminImportGhost";
 import { AdminImportOffprint } from "./AdminImportOffprint";
 import { AdminImportSubstack } from "./AdminImportSubstack";
+import { AdminImportWordpress } from "./AdminImportWordpress";
 
-type Source = "ghost" | "substack" | "offprint";
+type Source = "ghost" | "substack" | "wordpress" | "offprint";
 
 export function AdminImport() {
   let [source, setSource] = useState<Source>("ghost");
@@ -38,6 +39,13 @@ export function AdminImport() {
           description="The zip export of a Substack publication. Published posts become posts; cover images and tags are read from the live site."
         />
         <SourceRadio
+          value="wordpress"
+          current={source}
+          onChange={setSource}
+          label="WordPress export"
+          description="The XML export of a WordPress site. Posts become posts; pages become pages in the publication's navigation."
+        />
+        <SourceRadio
           value="offprint"
           current={source}
           onChange={setSource}
@@ -48,6 +56,7 @@ export function AdminImport() {
 
       {source === "ghost" && <AdminImportGhost />}
       {source === "substack" && <AdminImportSubstack />}
+      {source === "wordpress" && <AdminImportWordpress />}
       {source === "offprint" && <AdminImportOffprint />}
     </div>
   );

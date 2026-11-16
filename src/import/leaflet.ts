@@ -46,6 +46,32 @@ export type ImportedLeaflet = {
   imageCount: number;
 };
 
+// The facts that make a page entity a publication page at `route`, listed in
+// the publication's nav under `title`.
+export function publicationPageFacts(
+  pageId: string,
+  route: string,
+  title: string,
+): LeafletFact[] {
+  return [
+    {
+      entity: pageId,
+      attribute: "page/type",
+      data: { type: "page-type-union", value: "doc" },
+    },
+    {
+      entity: pageId,
+      attribute: "page/route",
+      data: { type: "string", value: route },
+    },
+    {
+      entity: pageId,
+      attribute: "page/title",
+      data: { type: "string", value: title },
+    },
+  ];
+}
+
 export function coverImage(url: string | null | undefined): ImportImage | null {
   return url ? { entityID: v7(), url, width: null, height: null } : null;
 }

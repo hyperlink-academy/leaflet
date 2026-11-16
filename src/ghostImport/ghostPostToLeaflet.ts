@@ -3,6 +3,7 @@ import { gateContent, type ImportImage } from "src/import/content";
 import {
   buildPage,
   coverImage,
+  publicationPageFacts,
   wrapInLeaflet,
   type ImportedLeaflet,
   type ResolveImage,
@@ -74,24 +75,7 @@ export async function ghostPostToPage(
   );
   const facts = page.facts;
   const route = `/${post.slug}`;
-  if (isPage)
-    facts.push(
-      {
-        entity: pageId,
-        attribute: "page/type",
-        data: { type: "page-type-union", value: "doc" },
-      },
-      {
-        entity: pageId,
-        attribute: "page/route",
-        data: { type: "string", value: route },
-      },
-      {
-        entity: pageId,
-        attribute: "page/title",
-        data: { type: "string", value: post.title },
-      },
-    );
+  if (isPage) facts.push(...publicationPageFacts(pageId, route, post.title));
 
   return {
     pageId,
