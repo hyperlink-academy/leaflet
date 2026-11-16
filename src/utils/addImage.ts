@@ -171,13 +171,16 @@ export async function uploadImageAndFinalize(opts: {
   ignoreUndo?: boolean;
 }) {
   const client = supabaseBrowserClient();
+  const contentType =
+    opts.blob.type || opts.file.type || "application/octet-stream";
   const attempt = async (): Promise<StorageError | null> => {
     try {
+      const body = await opts.blob.arrayBuffer();
       const { error } = await client.storage
         .from("minilink-user-assets")
-        .upload(opts.fileID, opts.blob, {
-          // storage-js expects seconds here, not a header value — anything
-          // else is stored as a malformed Cache-Control and defeats the CDN.
+        .upload(opts.fileID, body, {
+          contentType,
+
           cacheControl: "31536000",
         });
       if (error && !isAlreadyUploaded(error)) return error;
