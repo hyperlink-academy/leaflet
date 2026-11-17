@@ -11,7 +11,10 @@ import type { Attribute } from "src/replicache/attributes";
 import {
   getImportPublication,
   imageUploader,
+  findExistingImport,
   insertImportedPost,
+  skipPublished,
+  type ImportedPostResult,
   type ImportMode,
 } from "src/import/importPost";
 import type { SubstackPost } from "src/substackImport/parseSubstackExport";
@@ -57,7 +60,7 @@ export async function previewSubstackImport(args: {
   });
 }
 
-export type SubstackImportResult = { leafletId: string; rkey: string | null };
+export type SubstackImportResult = ImportedPostResult;
 
 // Import one Substack post as a draft in the publication and, in publish
 // mode, publish it as the owner. Posts that were drafts on Substack stay
@@ -77,6 +80,18 @@ export async function importSubstackPost(args: {
     let mode: ImportMode = post.isPublished ? args.mode : "draft";
     let pub = await getImportPublication(args.publicationUri, mode);
     let keepSlug = args.pathMode === "source";
+    let { title, description } = await substackPostToLeaflet(
+      post,
+      substackPreviewImage,
+    );
+    let existing = await findExistingImport({
+      publication: pub,
+      title,
+      description,
+      rkey: keepSlug ? post.slug : undefined,
+    });
+    let skipped = skipPublished(existing);
+    if (skipped) return skipped;
     if (mode === "publish" && keepSlug) {
       if (!isValidRecordKey(post.slug))
         throw new Error(`Slug "${post.slug}" is not a valid record key`);
@@ -97,6 +112,7 @@ export async function importSubstackPost(args: {
       mode,
       rkey: keepSlug ? post.slug : undefined,
       showInDiscover: args.showInDiscover,
+      replaces: existing,
     });
   });
 }

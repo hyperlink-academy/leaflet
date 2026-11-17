@@ -20,9 +20,12 @@ import {
 } from "src/ghostImport/ghostPostToLeaflet";
 import { previewImage } from "src/import/leaflet";
 import {
+  findExistingImport,
   getImportPublication,
   imageUploader,
   insertImportedPost,
+  skipPublished,
+  type ImportedPostResult,
 } from "src/import/importPost";
 
 export type GhostPostPreview = GhostLeaflet & {
@@ -54,7 +57,7 @@ export type GhostImportMode = "draft" | "publish";
 export type GhostPathMode = "source" | "leaflet";
 
 export type GhostImportResult =
-  | { kind: "post"; leafletId: string; rkey: string | null }
+  | ({ kind: "post" } & ImportedPostResult)
   | { kind: "page"; route: string };
 
 // Import one Ghost post as a draft in the publication (and, in publish mode,
@@ -76,6 +79,22 @@ export async function importGhostPost(args: {
     let keepSlug = args.post.type === "page" || args.pathMode === "source";
     if (args.mode === "publish" && keepSlug && !isValidRecordKey(slug))
       throw new Error(`Slug "${slug}" is not a valid record key`);
+    let existing = null;
+    if (args.post.type !== "page") {
+      let { title, description } = await ghostPostToLeaflet(
+        args.post,
+        args.siteUrl,
+        previewImage,
+      );
+      existing = await findExistingImport({
+        publication: pub,
+        title,
+        description,
+        rkey: keepSlug ? slug : undefined,
+      });
+      let skipped = skipPublished(existing);
+      if (skipped) return { kind: "post", ...skipped };
+    }
     // Published pages take precedence over posts at the same /slug, so a
     // clash either way would hide one of them.
     if (keepSlug) await assertRkeyFree(pub.identity_did, slug);
@@ -103,6 +122,7 @@ export async function importGhostPost(args: {
       mode: args.mode,
       rkey: keepSlug ? slug : undefined,
       showInDiscover: args.showInDiscover,
+      replaces: existing,
     });
     return { kind: "post", ...result };
   });

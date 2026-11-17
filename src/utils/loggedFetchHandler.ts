@@ -1,6 +1,9 @@
 import type { FetchHandler } from "@atproto/xrpc";
 import type { OAuthSession } from "@atproto/oauth-client-node";
 import { bodyBytes } from "src/utils/primeDpopNonce";
+import { withDeadline } from "src/utils/withDeadline";
+
+const REQUEST_DEADLINE_MS = 120_000;
 
 // Rate limiting, DPoP nonce churn, and the PDS's own request correlation ids.
 const HEADERS_TO_LOG =
@@ -26,14 +29,21 @@ export function loggedFetchHandler(
     });
     let res: Response;
     try {
-      res = await session.fetchHandler(url, init);
+      res = await withDeadline(
+        session.fetchHandler(url, init),
+        REQUEST_DEADLINE_MS,
+        `PDS request ${url}`,
+        (late) => void late.body?.cancel().catch(() => {}),
+      );
     } catch (e) {
       console.error("[pds] request threw", {
         ...details(),
-        // No response to read the host from, and it's the one field that
-        // tells one PDS implementation's behaviour apart from another's.
-        pds: await session
-          .getTokenInfo(false)
+
+        pds: await withDeadline(
+          session.getTokenInfo(false),
+          3_000,
+          "PDS host lookup",
+        )
           .then((t) => t.aud)
           .catch(() => undefined),
         error: e instanceof Error ? `${e.name}: ${e.message}` : String(e),

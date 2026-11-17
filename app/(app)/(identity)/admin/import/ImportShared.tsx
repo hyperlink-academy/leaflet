@@ -147,3 +147,17 @@ export function unanswered(e: unknown): { ok: false; error: string } {
     error: `${e instanceof Error ? e.message : String(e)} Check the publication before retrying — it may have been partly imported.`,
   };
 }
+
+// Says so when an earlier run had already left the post in the publication.
+export function ExistingNote(props: {
+  existing: "published" | "draft" | undefined;
+}) {
+  if (!props.existing) return null;
+  return (
+    <span className="text-tertiary">
+      {props.existing === "published"
+        ? "Already published, skipped"
+        : "Replaced the existing draft"}
+    </span>
+  );
+}

@@ -1,7 +1,6 @@
 "use server";
 
 import { v7 } from "uuid";
-import { supabaseServerClient } from "supabase/serverClient";
 import type { Result } from "src/result";
 import { asAdmin } from "src/admin/asAdmin";
 import { assertRkeyFree } from "src/utils/assertRkeyFree";
@@ -9,9 +8,12 @@ import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { previewImage } from "src/import/leaflet";
 import {
+  findExistingImport,
   getImportPublication,
   imageUploader,
   insertImportedPost,
+  skipPublished,
+  type ImportedPostResult,
 } from "src/import/importPost";
 import {
   fetchOffprintDocument,
@@ -67,7 +69,7 @@ export type OffprintImportMode = "draft" | "publish";
 // its record key or gets a fresh one.
 export type OffprintPathMode = "source" | "leaflet";
 
-export type OffprintImportResult = { leafletId: string; rkey: string | null };
+export type OffprintImportResult = ImportedPostResult;
 
 // Import one Offprint document as a draft in the publication and, in publish
 // mode, publish it as the owner (a post that fails to publish is left as a
@@ -93,21 +95,20 @@ export async function importOffprintPost(args: {
       throw new Error(
         `Publishing at /${rkey} would overwrite the Offprint record itself`,
       );
+    let { title, description } = await offprintDocToLeaflet(
+      { ...source, uri: args.uri },
+      previewImage,
+    );
+    let existing = await findExistingImport({
+      publication: pub,
+      title,
+      description,
+      rkey,
+    });
+    let skipped = skipPublished(existing);
+    if (skipped) return skipped;
     if (rkey && args.mode === "publish")
       await assertRkeyFree(pub.identity_did, rkey);
-    // Nothing ties a draft back to its source record, so a re-run would
-    // duplicate every post; the title is the best available guard.
-    let { data: existing } = await supabaseServerClient
-      .from("leaflets_in_publications")
-      .select("leaflet")
-      .eq("publication", args.publicationUri)
-      .eq("title", source.doc.title)
-      .limit(1)
-      .throwOnError();
-    if (existing && existing.length > 0)
-      throw new Error(
-        `The publication already has a draft or post titled "${source.doc.title}"`,
-      );
 
     let leaflet = await offprintDocToLeaflet(
       { ...source, uri: args.uri },
@@ -119,6 +120,7 @@ export async function importOffprintPost(args: {
       mode: args.mode,
       rkey,
       showInDiscover: args.showInDiscover,
+      replaces: existing,
     });
   });
 }

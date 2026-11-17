@@ -17,6 +17,9 @@ import Client from "ioredis";
 import Redlock from "redlock";
 import { Result, Ok, Err } from "./result";
 import { primeNonceBeforeLargeUploads } from "./utils/primeDpopNonce";
+import { withDeadline } from "./utils/withDeadline";
+
+const LOCK_DEADLINE_MS = 10_000;
 
 // Flattens the library's nested error chain (TokenRefreshError → cause
 // OAuthResponseError → PDS payload) into one loggable object. The PDS's
@@ -37,7 +40,8 @@ export function describeOAuthError(error: unknown): Record<string, unknown> {
   };
   if (e.status !== undefined) out.status = e.status;
   if (e.error !== undefined) out.oauthError = e.error;
-  if (e.errorDescription !== undefined) out.errorDescription = e.errorDescription;
+  if (e.errorDescription !== undefined)
+    out.errorDescription = e.errorDescription;
   if (e.response?.url) out.url = e.response.url;
   if (e.cause !== undefined) out.cause = describeOAuthError(e.cause);
   return out;
@@ -83,11 +87,38 @@ async function buildOauthClient(): Promise<NodeOAuthClient> {
     requestLock = async (key, fn) => {
       // 30 seconds should be enough. Since we will be using one lock per user id
       // we can be quite liberal with the lock duration here.
-      const lock = await redlock.acquire([key], 45e3);
+      // Every PDS request made through a session passes through here first,
+      // and Redis commands on a stalled socket never settle, so without a
+      // deadline one bad connection holds the request until the function is
+      // killed.
+      const started = Date.now();
+      const logFailure = (step: string, e: unknown) =>
+        console.error("[oauth] request lock failed", {
+          step,
+          key,
+          redis: client.status,
+          durationMs: Date.now() - started,
+          error: e instanceof Error ? `${e.name}: ${e.message}` : String(e),
+        });
+      const lock = await withDeadline<{ release(): Promise<unknown> }>(
+        redlock.acquire([key], 45e3),
+        LOCK_DEADLINE_MS,
+        "OAuth request lock acquire",
+        (late) => void late.release().catch(() => {}),
+      ).catch((e) => {
+        logFailure("acquire", e);
+        throw e;
+      });
       try {
         return await fn();
       } finally {
-        await lock.release();
+        // The lock expires on its own, so a release that can't reach Redis
+        // mustn't fail a request whose work is already done.
+        await withDeadline(
+          lock.release(),
+          LOCK_DEADLINE_MS,
+          "OAuth request lock release",
+        ).catch((e) => logFailure("release", e));
       }
     };
   }

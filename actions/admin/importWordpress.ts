@@ -11,9 +11,12 @@ import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { previewImage } from "src/import/leaflet";
 import {
+  findExistingImport,
   getImportPublication,
   imageUploader,
   insertImportedPost,
+  skipPublished,
+  type ImportedPostResult,
   type ImportMode,
 } from "src/import/importPost";
 import {
@@ -22,6 +25,7 @@ import {
 } from "src/import/importPage";
 import type { WordpressPost } from "src/wordpressImport/parseWordpressExport";
 import { wordpressLinkRewriter } from "src/wordpressImport/wordpressLinks";
+import { wordpressExcerpt } from "src/wordpressImport/wordpressToBlocks";
 import {
   wordpressPostToLeaflet,
   wordpressPostToPage,
@@ -48,7 +52,7 @@ export async function previewWordpressImport(args: {
 }
 
 export type WordpressImportResult =
-  | { kind: "post"; leafletId: string; rkey: string | null }
+  | ({ kind: "post" } & ImportedPostResult)
   | { kind: "page"; route: string };
 
 // Import one WordPress post as a draft in the publication (and, in publish
@@ -80,6 +84,18 @@ export async function importWordpressPost(args: {
     let keepSlug = isPage || args.pathMode === "source";
     if (mode === "publish" && keepSlug && !isValidRecordKey(slug))
       throw new Error(`Slug "${slug}" is not a valid record key`);
+    let description = isPage ? "" : wordpressExcerpt(post);
+    let existing = isPage
+      ? null
+      : await findExistingImport({
+          publication: pub,
+          title: post.title,
+          description,
+          rkey: keepSlug ? slug : undefined,
+        });
+    let skipped = skipPublished(existing);
+    if (skipped) return { kind: "post", ...skipped };
+
     // Published pages take precedence over posts at the same /slug, so a
     // clash either way would hide one of them.
     if (keepSlug) await assertRkeyFree(pub.identity_did, slug);
@@ -111,6 +127,7 @@ export async function importWordpressPost(args: {
       mode,
       rkey: keepSlug ? slug : undefined,
       showInDiscover: args.showInDiscover,
+      replaces: existing,
     });
     return { kind: "post", ...result };
   });

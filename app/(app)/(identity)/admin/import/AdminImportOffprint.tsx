@@ -26,6 +26,7 @@ import {
   ImportOptions,
   SelectAllHeader,
   type PathMode,
+  ExistingNote,
   unanswered,
 } from "./ImportShared";
 
@@ -286,6 +287,7 @@ function PostRow(props: {
                 )}
                 {status.state === "done" && (
                   <>
+                    <ExistingNote existing={status.result.existing} />
                     <ExternalLink href={`/${status.result.leafletId}`}>
                       Edit draft
                     </ExternalLink>
