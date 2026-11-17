@@ -27,13 +27,15 @@ import {
   SelectAllHeader,
   type PathMode,
   ExistingNote,
+  importWithRetry,
+  ImportingNote,
   unanswered,
 } from "./ImportShared";
 
 const OFFPRINT_CONTENT = "app.offprint.content";
 
 type PostStatus =
-  | { state: "importing" }
+  | { state: "importing"; attempt?: number }
   | { state: "done"; result: OffprintImportResult }
   | { state: "failed"; error: string };
 
@@ -103,13 +105,20 @@ export function AdminImportOffprint() {
     // single call for the whole publication would outlive a server action.
     for (let post of selectedPosts) {
       setStatuses(new Map(next.set(post.uri, { state: "importing" })));
-      let res = await importOffprintPost({
-        uri: post.uri,
-        publicationUri: publication.uri,
-        mode,
-        pathMode,
-        showInDiscover,
-      }).catch(unanswered);
+      let res = await importWithRetry(
+        () =>
+          importOffprintPost({
+            uri: post.uri,
+            publicationUri: publication.uri,
+            mode,
+            pathMode,
+            showInDiscover,
+          }),
+        (attempt) =>
+          setStatuses(
+            new Map(next.set(post.uri, { state: "importing", attempt })),
+          ),
+      );
       if (res.ok) next.set(post.uri, { state: "done", result: res.value });
       else {
         next.set(post.uri, { state: "failed", error: res.error });
@@ -280,7 +289,7 @@ function PostRow(props: {
             {status && (
               <span className="text-xs flex flex-wrap gap-x-2">
                 {status.state === "importing" && (
-                  <span className="text-tertiary">Importing…</span>
+                  <ImportingNote attempt={status.attempt} />
                 )}
                 {status.state === "failed" && (
                   <span className="text-accent-1">Failed: {status.error}</span>

@@ -161,3 +161,28 @@ export function ExistingNote(props: {
     </span>
   );
 }
+
+const IMPORT_ATTEMPTS = 2;
+
+// Runs one post's import, trying again when it fails. A re-run is safe: the
+// import skips a post an earlier attempt already published and replaces a
+// draft one left behind. Only the last attempt's error is returned.
+export async function importWithRetry<T>(
+  run: () => Promise<{ ok: true; value: T } | { ok: false; error: string }>,
+  onRetry: (attempt: number) => void,
+): Promise<{ ok: true; value: T } | { ok: false; error: string }> {
+  let res = await run().catch(unanswered);
+  for (let attempt = 2; !res.ok && attempt <= IMPORT_ATTEMPTS; attempt++) {
+    onRetry(attempt);
+    res = await run().catch(unanswered);
+  }
+  return res;
+}
+
+export function ImportingNote(props: { attempt?: number }) {
+  return (
+    <span className="text-tertiary">
+      {props.attempt ? "Failed, trying again…" : "Importing…"}
+    </span>
+  );
+}

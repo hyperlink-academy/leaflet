@@ -492,15 +492,15 @@ export function wordpressHtmlToBlocks(
   return builder.finish();
 }
 
-// The first paragraph of a post's text, for a description when the post has
-// no excerpt. Leaflet shows the description as a subtitle and meta
-// description, so keep it to a sentence or two.
+// The post's excerpt as plain text, for its description. Leaflet shows the
+// description as a subtitle and meta description, so keep it to a sentence or
+// two.
 export function wordpressExcerpt(
-  post: { excerpt: string; html: string },
+  post: { excerpt: string },
   maxLength = 280,
 ): string {
-  const source = post.excerpt || post.html;
-  let html = source.replace(/\[[a-z_-]+[^\]]*\][\s\S]*?\[\/[a-z_-]+\]/g, "");
+  if (!post.excerpt) return "";
+  let html = post.excerpt.replace(/\[[a-z_-]+[^\]]*\][\s\S]*?\[\/[a-z_-]+\]/g, "");
   if (!/<!--\s*wp:/.test(html)) html = autop(html);
   const doc = new JSDOM(`<body>${html}</body>`).window.document;
   const first =

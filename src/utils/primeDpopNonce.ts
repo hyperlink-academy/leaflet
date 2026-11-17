@@ -46,17 +46,22 @@ export function primeNonceBeforeLargeUploads(
       body != null && (bodyBytes(body) ?? Infinity) >= LARGE_BODY_BYTES;
     if (large && Date.now() - lastResponseAt > NONCE_FRESH_MS) {
       const started = Date.now();
-      await tracked(PRIMING_PATH, {
-        signal: AbortSignal.timeout(PRIMING_TIMEOUT_MS),
-      }).then(
-        (res) => res.body?.cancel(),
-        (e) =>
-          console.error("[pds] nonce priming failed", {
-            did: session.did,
-            durationMs: Date.now() - started,
-            error: e instanceof Error ? `${e.name}: ${e.message}` : String(e),
-          }),
-      );
+      try {
+        const res = await tracked(PRIMING_PATH, {
+          signal: AbortSignal.timeout(PRIMING_TIMEOUT_MS),
+        });
+        // Read to the end, not cancelled: Next.js's fetch tees every GET
+        // response and keeps one branch, and a cancel of the branch we get
+        // only settles once that other branch is garbage-collected — which
+        // can be never, holding the upload behind it.
+        await res.arrayBuffer();
+      } catch (e) {
+        console.error("[pds] nonce priming failed", {
+          did: session.did,
+          durationMs: Date.now() - started,
+          error: e instanceof Error ? `${e.name}: ${e.message}` : String(e),
+        });
+      }
     }
     return tracked(pathname, init);
   };

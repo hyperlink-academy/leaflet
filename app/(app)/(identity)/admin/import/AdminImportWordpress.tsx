@@ -30,11 +30,13 @@ import {
   type ImportMode,
   type PathMode,
   ExistingNote,
+  importWithRetry,
+  ImportingNote,
   unanswered,
 } from "./ImportShared";
 
 type PostStatus =
-  | { state: "importing" }
+  | { state: "importing"; attempt?: number }
   | { state: "done"; result: WordpressImportResult }
   | { state: "failed"; error: string };
 
@@ -113,14 +115,21 @@ export function AdminImportWordpress() {
     // single call for the whole export would outlive a server action.
     for (let post of selectedPosts) {
       setStatuses(new Map(next.set(post.id, { state: "importing" })));
-      let res = await importWordpressPost({
-        post,
-        publicationUri: publication.uri,
-        permalinks,
-        mode,
-        pathMode,
-        showInDiscover,
-      }).catch(unanswered);
+      let res = await importWithRetry(
+        () =>
+          importWordpressPost({
+            post,
+            publicationUri: publication.uri,
+            permalinks,
+            mode,
+            pathMode,
+            showInDiscover,
+          }),
+        (attempt) =>
+          setStatuses(
+            new Map(next.set(post.id, { state: "importing", attempt })),
+          ),
+      );
       if (res.ok) {
         next.set(post.id, { state: "done", result: res.value });
         if (res.value.kind === "page") pagesImported++;
@@ -300,7 +309,7 @@ function PostRow(props: {
             {status && (
               <span className="text-xs flex flex-wrap gap-x-2">
                 {status.state === "importing" && (
-                  <span className="text-tertiary">Importing…</span>
+                  <ImportingNote attempt={status.attempt} />
                 )}
                 {status.state === "failed" && (
                   <span className="text-accent-1">Failed: {status.error}</span>

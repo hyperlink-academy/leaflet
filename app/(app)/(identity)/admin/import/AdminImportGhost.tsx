@@ -29,11 +29,13 @@ import {
   SelectAllHeader,
   type PathMode,
   ExistingNote,
+  importWithRetry,
+  ImportingNote,
   unanswered,
 } from "./ImportShared";
 
 type PostStatus =
-  | { state: "importing" }
+  | { state: "importing"; attempt?: number }
   | { state: "done"; result: GhostImportResult }
   | { state: "failed"; error: string };
 
@@ -108,14 +110,21 @@ export function AdminImportGhost() {
     // single call for the whole export would outlive a server action.
     for (let post of selectedPosts) {
       setStatuses(new Map(next.set(post.id, { state: "importing" })));
-      let res = await importGhostPost({
-        post,
-        publicationUri: publication.uri,
-        siteUrl: siteUrl.trim(),
-        mode,
-        pathMode,
-        showInDiscover,
-      }).catch(unanswered);
+      let res = await importWithRetry(
+        () =>
+          importGhostPost({
+            post,
+            publicationUri: publication.uri,
+            siteUrl: siteUrl.trim(),
+            mode,
+            pathMode,
+            showInDiscover,
+          }),
+        (attempt) =>
+          setStatuses(
+            new Map(next.set(post.id, { state: "importing", attempt })),
+          ),
+      );
       if (res.ok) {
         next.set(post.id, { state: "done", result: res.value });
         if (res.value.kind === "page") pagesImported++;
@@ -311,7 +320,7 @@ function PostRow(props: {
             {status && (
               <span className="text-xs flex flex-wrap gap-x-2">
                 {status.state === "importing" && (
-                  <span className="text-tertiary">Importing…</span>
+                  <ImportingNote attempt={status.attempt} />
                 )}
                 {status.state === "failed" && (
                   <span className="text-accent-1">Failed: {status.error}</span>

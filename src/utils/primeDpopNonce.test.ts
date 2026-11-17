@@ -58,6 +58,30 @@ describe("primeNonceBeforeLargeUploads", () => {
     expect(calls).toEqual([PRIME, UPLOAD]);
   });
 
+  it("isn't held up by a priming response whose cancel never settles", async () => {
+    // How a response reaches us through Next.js's fetch: one branch of a tee,
+    // whose cancel waits on the other branch.
+    const stuckCancel = () => {
+      const body = new ReadableStream({
+        start(c) {
+          c.enqueue(new TextEncoder().encode("{}"));
+          c.close();
+        },
+        cancel: () => new Promise<void>(() => {}),
+      });
+      return new Response(body);
+    };
+    const { session, calls } = fakeSession(async (path) =>
+      path === PRIME ? stuckCancel() : new Response("{}"),
+    );
+    const res = await session.fetchHandler(UPLOAD, {
+      method: "post",
+      body: big(),
+    });
+    expect(res.status).toBe(200);
+    expect(calls).toEqual([PRIME, UPLOAD]);
+  });
+
   it("wraps a session only once", async () => {
     const { session, calls } = fakeSession(async () => new Response("{}"));
     primeNonceBeforeLargeUploads(session);

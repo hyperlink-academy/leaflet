@@ -308,21 +308,14 @@ describe("embedPlayer", () => {
 });
 
 describe("wordpressExcerpt", () => {
-  test("the excerpt, else the first paragraph", () => {
-    expect(wordpressExcerpt({ excerpt: "Short.", html: "<p>Long</p>" })).toBe(
-      "Short.",
-    );
+  test("the excerpt as plain text", () => {
+    expect(wordpressExcerpt({ excerpt: "Short." })).toBe("Short.");
     expect(
-      wordpressExcerpt({
-        excerpt: "",
-        html: `<!-- wp:image --><figure><img src="x"></figure><!-- /wp:image --><!-- wp:paragraph --><p>First   one.</p><!-- /wp:paragraph --><p>Second</p>`,
-      }),
-    ).toBe("First one.");
-    expect(
-      wordpressExcerpt({
-        excerpt: "",
-        html: "[caption]x[/caption]\n\nClassic",
-      }),
-    ).toBe("Classic");
+      wordpressExcerpt({ excerpt: "[caption]x[/caption]\n\nSome   text" }),
+    ).toBe("Some text");
+  });
+
+  test("blank when the post has no excerpt", () => {
+    expect(wordpressExcerpt({ excerpt: "" })).toBe("");
   });
 });
