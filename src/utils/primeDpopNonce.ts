@@ -13,6 +13,7 @@ const LARGE_BODY_BYTES = 1024 * 1024;
 const NONCE_FRESH_MS = 30_000;
 
 const PRIMING_PATH = "/xrpc/com.atproto.server.getSession";
+const PRIMING_TIMEOUT_MS = 15_000;
 
 export function bodyBytes(body: unknown): number | undefined {
   if (typeof body === "string") return Buffer.byteLength(body);
@@ -43,11 +44,20 @@ export function primeNonceBeforeLargeUploads(
     // A body of unknown length is a stream, which can't be replayed either.
     const large =
       body != null && (bodyBytes(body) ?? Infinity) >= LARGE_BODY_BYTES;
-    if (large && Date.now() - lastResponseAt > NONCE_FRESH_MS)
-      await tracked(PRIMING_PATH).then(
+    if (large && Date.now() - lastResponseAt > NONCE_FRESH_MS) {
+      const started = Date.now();
+      await tracked(PRIMING_PATH, {
+        signal: AbortSignal.timeout(PRIMING_TIMEOUT_MS),
+      }).then(
         (res) => res.body?.cancel(),
-        () => {},
+        (e) =>
+          console.error("[pds] nonce priming failed", {
+            did: session.did,
+            durationMs: Date.now() - started,
+            error: e instanceof Error ? `${e.name}: ${e.message}` : String(e),
+          }),
       );
+    }
     return tracked(pathname, init);
   };
   return session;

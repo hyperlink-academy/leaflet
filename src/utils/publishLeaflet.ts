@@ -22,7 +22,10 @@ import type { PubLeafletPublication } from "lexicons/api";
 import { processBlocksToPages } from "src/utils/factsToPagesRecord";
 import { pageBlocksInOrder } from "src/utils/pageBlocksInOrder";
 import {
+  BLOB_UPLOAD_TIMEOUT_MS,
+  errorText,
   extractThemeFromFacts,
+  IMAGE_FETCH_TIMEOUT_MS,
   makePublishUploadHooks,
   PublishImageError,
 } from "src/utils/publishHelpers";
@@ -377,22 +380,39 @@ async function publish({
       ? scan.eav(coverRef.data.value, "block/image")
       : [];
     if (imageData) {
-      let imageResponse = await fetch(imageData.data.src, {
-        signal: AbortSignal.timeout(30_000),
-      });
-      if (imageResponse.status === 200) {
-        let binary = await imageResponse.blob();
-        let blob = await agent.com.atproto.repo.uploadBlob(binary, {
-          headers: { "Content-Type": binary.type },
-          signal: AbortSignal.timeout(60_000),
+      let started = Date.now();
+      let step = "fetch";
+      let bytes: number | undefined;
+      try {
+        let imageResponse = await fetch(imageData.data.src, {
+          signal: AbortSignal.timeout(IMAGE_FETCH_TIMEOUT_MS),
         });
-        coverImageBlob = blob.data.blob;
-      } else
-        console.error(
-          "[publish] cover image fetch failed",
-          imageData.data.src,
-          imageResponse.status,
-        );
+        if (imageResponse.status === 200) {
+          let binary = await imageResponse.blob();
+          bytes = binary.size;
+          step = "uploadBlob";
+          let blob = await agent.com.atproto.repo.uploadBlob(binary, {
+            headers: { "Content-Type": binary.type },
+            signal: AbortSignal.timeout(BLOB_UPLOAD_TIMEOUT_MS),
+          });
+          coverImageBlob = blob.data.blob;
+        } else
+          console.error(
+            "[publish] cover image fetch failed",
+            imageData.data.src,
+            imageResponse.status,
+          );
+      } catch (e) {
+        console.error("[publish] cover image step failed", {
+          step,
+          src: imageData.data.src,
+          did: credentialSession.did,
+          bytes,
+          elapsedMs: Date.now() - started,
+          error: errorText(e),
+        });
+        throw e;
+      }
     }
   }
 

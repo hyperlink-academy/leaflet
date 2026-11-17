@@ -37,6 +37,14 @@ export class PublishImageError extends Error {
   }
 }
 
+export const IMAGE_FETCH_TIMEOUT_MS = 30_000;
+export const BLOB_UPLOAD_TIMEOUT_MS = 60_000;
+const SLOW_IMAGE_MS = 10_000;
+
+export function errorText(e: unknown) {
+  return e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+}
+
 export function makePublishUploadHooks(
   agent: AtpBaseClient,
   did: string,
@@ -52,9 +60,12 @@ export function makePublishUploadHooks(
   },
 ): ProcessBlocksToPagesHooks {
   const uploadLock = new Lock();
-  let failure: PublishImageError | undefined;
+  let failure: Error | undefined;
   return {
-    uploadImage: async (src: string, { membersOnly }: { membersOnly: boolean }) => {
+    uploadImage: async (
+      src: string,
+      { membersOnly }: { membersOnly: boolean },
+    ) => {
       if (opts?.gatedImages && membersOnly) {
         // Fall back to the draft URL if the copy fails — an image tied to the
         // draft asset's lifetime beats a dropped block.
@@ -71,18 +82,63 @@ export function makePublishUploadHooks(
         // The publish is already lost, and each upload still queued would
         // otherwise run to completion after the author has their answer.
         if (failure) throw failure;
-        const data = await fetch(src);
-        if (data.status !== 200) {
-          console.error("[publish] image fetch failed", src, data.status);
-          return;
+        // Neither call has a deadline of its own, so a stalled connection
+        // would otherwise hold the publish until the function is killed,
+        // with nothing logged to say which step it was stuck on.
+        const started = Date.now();
+        const step = (name: string, extra?: object) => ({
+          step: name,
+          src,
+          did,
+          elapsedMs: Date.now() - started,
+          ...extra,
+        });
+        let binary: Blob;
+        try {
+          const data = await fetch(src, {
+            signal: AbortSignal.timeout(IMAGE_FETCH_TIMEOUT_MS),
+          });
+          if (data.status !== 200) {
+            console.error("[publish] image fetch failed", src, data.status);
+            return;
+          }
+          binary = await data.blob();
+        } catch (e) {
+          console.error(
+            "[publish] image step failed",
+            step("fetch", { error: errorText(e) }),
+          );
+          failure = new Error(
+            `Couldn't download one of this post's images to publish it (${errorText(e)}). Please try again!`,
+            { cause: e },
+          );
+          throw failure;
         }
-        const binary = await data.blob();
+        const fetchedAt = Date.now();
         try {
           const blob = await agent.com.atproto.repo.uploadBlob(binary, {
             headers: { "Content-Type": binary.type },
+            signal: AbortSignal.timeout(BLOB_UPLOAD_TIMEOUT_MS),
           });
+          if (Date.now() - started > SLOW_IMAGE_MS)
+            console.warn(
+              "[publish] slow image",
+              step("done", {
+                bytes: binary.size,
+                fetchMs: fetchedAt - started,
+                uploadMs: Date.now() - fetchedAt,
+              }),
+            );
           return blob.data.blob;
         } catch (e) {
+          console.error(
+            "[publish] image step failed",
+            step("uploadBlob", {
+              bytes: binary.size,
+              fetchMs: fetchedAt - started,
+              error: errorText(e),
+            }),
+          );
           failure = new PublishImageError(binary.size, e);
           throw failure;
         }
