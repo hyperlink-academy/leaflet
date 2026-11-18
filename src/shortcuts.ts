@@ -18,7 +18,10 @@ export function addShortcut(shortcuts: Shortcut | Shortcut[]) {
     // Chrome on Wayland reports modified Space as key "Unidentified".
     let key = e.key === "Unidentified" && e.code === "Space" ? " " : e.key;
     for (let shortcut of [shortcuts].flat()) {
-      if (shortcut.skipIfDefaultPrevented && e.defaultPrevented) continue;
+      let hasModifier =
+        shortcut.metaKey || shortcut.metaAndCtrl || shortcut.altKey;
+      if (e.defaultPrevented && (shortcut.skipIfDefaultPrevented || !hasModifier))
+        continue;
       if (e.shiftKey !== !!shortcut.shift) continue;
       if (e.altKey !== !!shortcut.altKey) continue;
       if (shortcut.metaAndCtrl) {
