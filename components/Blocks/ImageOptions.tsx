@@ -13,6 +13,7 @@ import { Input } from "components/Input";
 import { ToggleWithLabel } from "components/Toggle";
 
 import { BlockSettings } from "./SettingsTriggerButton";
+import { useIsLimited } from "./TextBlock/useIsLimited";
 
 export function ImageOptions(props: {
   entityID: string;
@@ -21,7 +22,19 @@ export function ImageOptions(props: {
   let { rep } = useReplicache();
   let image = useEntity(props.entityID, "block/image");
   let isFullBleed = !!useEntity(props.entityID, "image/full-bleed")?.data.value;
+  let isLimited = useIsLimited();
   if (!image) return null;
+
+  if (isLimited)
+    return (
+      <BlockSettings label="Image" className="w-sm">
+        <MaxWidthControl
+          entityID={props.entityID}
+          intrinsicWidth={image.data.width}
+          onPreviewWidth={props.onPreviewWidth}
+        />
+      </BlockSettings>
+    );
 
   return (
     <BlockSettings label="Image" className="w-sm">
