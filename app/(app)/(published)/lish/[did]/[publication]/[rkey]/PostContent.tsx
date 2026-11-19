@@ -232,6 +232,16 @@ export let Block = ({
   let postResources = useOptionalPostResources();
   let replyData = postResources?.replyData;
   let questionData = postResources?.questionData;
+  let interactionPublication = document?.publication
+    ? {
+        publicationUri: document.publication.uri,
+        publicationUrl: document.normalizedPublication?.url,
+        publicationName:
+          document.normalizedPublication?.name ?? document.publication.name,
+        publicationDescription: document.normalizedPublication?.description,
+        newsletterMode: document.publication.newsletterMode,
+      }
+    : undefined;
   let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
     style: {
@@ -502,6 +512,8 @@ export let Block = ({
                 buttonText={block.buttonText}
                 prompt={block.promptText || DEFAULT_REPLY_PROMPT_TEXT}
                 showThemes={block.showPublicationTheme !== false}
+                audience={questionsAudience(block.audience)}
+                publication={interactionPublication}
               />
             )}
           </InteractionBlockFrame>
@@ -524,20 +536,7 @@ export let Block = ({
                 buttonText={block.buttonText}
                 audience={questionsAudience(block.audience)}
                 showPending={!!block.showPending}
-                publication={
-                  document.publication
-                    ? {
-                        publicationUri: document.publication.uri,
-                        publicationUrl: document.normalizedPublication?.url,
-                        publicationName:
-                          document.normalizedPublication?.name ??
-                          document.publication.name,
-                        publicationDescription:
-                          document.normalizedPublication?.description,
-                        newsletterMode: document.publication.newsletterMode,
-                      }
-                    : undefined
-                }
+                publication={interactionPublication}
                 autoFocus={targeted}
               />
             )}

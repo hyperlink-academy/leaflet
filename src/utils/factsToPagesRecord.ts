@@ -602,11 +602,16 @@ export async function processBlocksToPages(opts: {
       const [buttonText] = scan.eav(b.entityID, "reply/button-text");
       const [promptText] = scan.eav(b.entityID, "reply/prompt-text");
       const [showTheme] = scan.eav(b.entityID, "reply/show-publication-theme");
+      const [audience] = scan.eav(b.entityID, "reply/audience");
       const block: $Typed<PubLeafletBlocksReply.Main> = {
         $type: "pub.leaflet.blocks.reply",
         ...(buttonText?.data.value && { buttonText: buttonText.data.value }),
         ...(promptText?.data.value && { promptText: promptText.data.value }),
         ...(showTheme?.data.value === false && { showPublicationTheme: false }),
+        ...(isQuestionsAudience(audience?.data.value) &&
+          audience.data.value !== "anyone" && {
+            audience: audience.data.value,
+          }),
         key: b.entityID,
       };
       return block;

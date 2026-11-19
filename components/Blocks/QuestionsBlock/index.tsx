@@ -17,11 +17,8 @@ import {
   QuestionEditorEmpty,
 } from "./QuestionsView";
 import { BlockSettings } from "../SettingsTriggerButton";
-import {
-  QUESTIONS_AUDIENCES,
-  QUESTIONS_AUDIENCE_LABELS,
-  questionsAudience,
-} from "src/questionsAudience";
+import { questionsAudience } from "src/questionsAudience";
+import { AudienceOptions } from "../AudienceOptions";
 
 export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
   let isSelected = useIsBlockSelected(props.entityID);
@@ -70,47 +67,13 @@ export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
         !props.preview ? (
           <BlockSettings label="Questions" className="max-w-sm">
             <div className="flex flex-col gap-2 ">
-              <div className="font-bold ">Who can submit questions</div>
-              {QUESTIONS_AUDIENCES.filter(
-                (option) =>
-                  option !== "subscribers" ||
-                  !!data?.publications ||
-                  audience === option,
-              ).map((option) => {
-                let selected = audience === option;
-                let id = `questions-audience-${props.entityID}-${option}`;
-                return (
-                  <label
-                    key={option}
-                    htmlFor={id}
-                    className={`${selected ? "accent-container border border-accent-contrast outline-offset-1 outline-2 outline-accent-contrast" : "transparent-container"} flex flex-col leading-snug px-2 py-1.5 cursor-pointer`}
-                  >
-                    <input
-                      type="radio"
-                      name={`questions-audience-${props.entityID}`}
-                      id={id}
-                      value={option}
-                      checked={selected}
-                      onChange={() =>
-                        rep?.mutate.assertFact({
-                          entity: props.entityID,
-                          attribute: "questions/audience",
-                          data: { type: "string", value: option },
-                        })
-                      }
-                      className="sr-only"
-                    />
-                    <span
-                      className={`font-bold ${selected ? "text-accent-contrast" : "text-secondary"}`}
-                    >
-                      {QUESTIONS_AUDIENCE_LABELS[option].label}
-                    </span>
-                    <span className="text-sm text-tertiary">
-                      {QUESTIONS_AUDIENCE_LABELS[option].description}
-                    </span>
-                  </label>
-                );
-              })}
+              <AudienceOptions
+                entityID={props.entityID}
+                attribute="questions/audience"
+                value={audience}
+                label="Who can submit questions"
+                inPublication={!!data?.publications}
+              />
               <hr className="border-border-light my-1" />
               <ToggleWithLabel
                 label="Show pending questions"

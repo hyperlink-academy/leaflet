@@ -421,7 +421,7 @@ const QuestionsBlockAttributes = {
     type: "string",
     cardinality: "one",
   },
-  // "anyone" | "follows" | "followers"; see pub.leaflet.blocks.questions
+  // See pub.leaflet.blocks.questions
   "questions/audience": {
     type: "string",
     cardinality: "one",
@@ -460,6 +460,11 @@ const ReplyBlockAttributes = {
   },
   "reply/show-publication-theme": {
     type: "boolean",
+    cardinality: "one",
+  },
+  // See pub.leaflet.blocks.reply
+  "reply/audience": {
+    type: "string",
     cardinality: "one",
   },
 } as const;

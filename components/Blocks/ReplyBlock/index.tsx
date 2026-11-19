@@ -18,6 +18,8 @@ import { RepliesEmptyDraft } from "./RepliesList";
 import { ReplyButtonTextInput, ReplyPromptTextInput } from "./RepliesHeader";
 import { BlockSettings } from "../SettingsTriggerButton";
 import { ToggleWithLabel } from "components/Toggle";
+import { questionsAudience } from "src/questionsAudience";
+import { AudienceOptions } from "../AudienceOptions";
 
 export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
   let isSelected = useIsBlockSelected(props.entityID);
@@ -30,6 +32,9 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
   let showThemes =
     useEntity(props.entityID, "reply/show-publication-theme")?.data.value !==
     false;
+  let audience = questionsAudience(
+    useEntity(props.entityID, "reply/audience")?.data.value,
+  );
   let { data, normalizedDocument } = useLeafletPublicationData();
   let documentUri = data?.documents?.uri;
   let { replies: initial } = useEditorBlockData();
@@ -80,7 +85,15 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
       className={`replyBlock light-container rounded-lg!  ${isSelected ? "border-border!" : ""}`}
       extraOptions={
         !props.preview ? (
-          <BlockSettings label="Replies" className="w-xs">
+          <BlockSettings label="Replies" className="max-w-sm">
+            <AudienceOptions
+              entityID={props.entityID}
+              attribute="reply/audience"
+              value={audience}
+              label="Who can submit replies"
+              inPublication={!!data?.publications}
+            />
+            <hr className="border-border-light my-1" />
             <ToggleWithLabel
               label="Show submissions with themes"
               helpText="Each reply appears in its own publication's theme."
@@ -102,6 +115,7 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
           documentUri={documentUri}
           block={blockKey}
           showThemes={showThemes}
+          audience={audience}
           prompt={prompt}
           action={button}
           initial={initial}

@@ -27,6 +27,7 @@ export function RepliesList(props: {
   showThemes?: boolean;
   prompt?: React.ReactNode;
   action?: React.ReactNode;
+  notice?: string | null;
   onWithdraw?: (uri: string) => void;
   onWithdrawDraft?: (leaflet: string) => void;
 }) {
@@ -58,6 +59,14 @@ export function RepliesList(props: {
   return (
     <div className="flex flex-col gap-4">
       <RepliesHeader prompt={props.prompt} action={props.action} />
+      {props.notice && (
+        <>
+          <hr />
+          <div className="text-sm text-center italic text-tertiary">
+            {props.notice}
+          </div>
+        </>
+      )}
       <DraftReplies
         drafts={props.drafts}
         showThemes={props.showThemes}
