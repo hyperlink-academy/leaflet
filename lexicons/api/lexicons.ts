@@ -1996,6 +1996,12 @@ export const schemaDict = {
             description:
               "Render each reply in its own publication's theme. Defaults to true.",
           },
+          audience: {
+            type: 'string',
+            knownValues: ['anyone', 'subscribers', 'follows', 'followers'],
+            description:
+              "Who may reply: anyone, only subscribers to the document's publication, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a reply is submitted.",
+          },
           key: {
             type: 'string',
             maxLength: 100,

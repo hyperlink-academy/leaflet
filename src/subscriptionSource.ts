@@ -9,6 +9,7 @@ export const SUBSCRIPTION_PLACEMENTS = [
   "post_footer",
   "signup_block",
   "questions_block",
+  "reply_block",
   "subscribe_page",
   "paywall",
   "join_page",

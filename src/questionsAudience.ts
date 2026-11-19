@@ -1,4 +1,5 @@
-// Who a questions block takes questions from; see pub.leaflet.blocks.questions.
+// Who a questions or reply block takes submissions from; see
+// pub.leaflet.blocks.questions and pub.leaflet.blocks.reply.
 export const QUESTIONS_AUDIENCES = [
   "anyone",
   "subscribers",
@@ -36,13 +37,16 @@ export const QUESTIONS_AUDIENCE_LABELS: Record<
   },
 };
 
-// Shown to readers under the composer
-export function questionsAudienceNotice(audience: QuestionsAudience) {
+// Shown to readers of a questions or reply block
+export function audienceNotice(
+  audience: QuestionsAudience,
+  submissions: "questions" | "replies",
+) {
   if (audience === "subscribers")
-    return "Only subscribers can submit questions.";
+    return `Only subscribers can submit ${submissions}.`;
   if (audience === "follows")
-    return "Only people the author follows can submit questions.";
+    return `Only people the author follows can submit ${submissions}.`;
   if (audience === "followers")
-    return "Only the author's followers can submit questions.";
+    return `Only the author's followers can submit ${submissions}.`;
   return null;
 }

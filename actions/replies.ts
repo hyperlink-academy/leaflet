@@ -39,6 +39,9 @@ import {
 } from "src/notifications";
 import { v7 } from "uuid";
 import { replyEventProperties, trackUserEvent } from "src/activeUserAnalytics";
+import { canAskQuestion } from "src/questionsBlocks";
+import { questionsAudience } from "src/questionsAudience";
+import type { PubLeafletBlocksReply } from "lexicons/api";
 
 const viewerDid = () =>
   getAuthIdentity().then((identity) => identity?.atp_did ?? null);
@@ -156,6 +159,29 @@ export async function resolveReplyLink(args: {
   return Ok({ ...candidate, title: candidate.title || "Untitled" });
 }
 
+async function replyAudienceError(
+  block: PubLeafletBlocksReply.Main,
+  subject: string,
+  did: string,
+): Promise<ReplyError | null> {
+  const audience = questionsAudience(block.audience);
+  try {
+    if (await canAskQuestion(supabaseServerClient, subject, did, audience))
+      return null;
+  } catch (e) {
+    console.error("[replies] audience check failed", e);
+    return { type: "failed" };
+  }
+  return {
+    type:
+      audience === "subscribers"
+        ? "not_subscriber"
+        : audience === "follows"
+          ? "not_follows"
+          : "not_follower",
+  };
+}
+
 function replyDocumentError(
   document: string | null,
   did: string,
@@ -180,6 +206,12 @@ export async function createReplyDraft(args: {
   if (!identity?.atp_did) return Err(notAuthenticated);
   const block = await subjectReplyBlock(args.subject, args.block);
   if (!block) return Err({ type: "replies_closed" });
+  const audienceError = await replyAudienceError(
+    block,
+    args.subject,
+    identity.atp_did,
+  );
+  if (audienceError) return Err(audienceError);
   const leaflet = args.publication_uri
     ? await createPublicationDraft(args.publication_uri, "doc")
     : await createNewLeaflet({
@@ -225,6 +257,9 @@ export type ReplyError =
         | "same_post"
         | "already_submitted"
         | "replies_closed"
+        | "not_subscriber"
+        | "not_follows"
+        | "not_follower"
         | "not_owner"
         | "failed";
     }
@@ -256,6 +291,8 @@ export async function submitReply(args: {
   if (!block) return Err({ type: "replies_closed" });
   if (existing) return Err({ type: "already_submitted" });
   if (!agent.ok) return Err(agent.error);
+  const audienceError = await replyAudienceError(block, args.subject, did);
+  if (audienceError) return Err(audienceError);
   const reply = await createReplyRecord({
     did,
     subject: args.subject,

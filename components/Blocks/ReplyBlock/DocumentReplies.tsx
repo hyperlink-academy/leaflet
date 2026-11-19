@@ -32,6 +32,10 @@ import { RepliesList, RepliesListWithModeration } from "./RepliesList";
 import { useWithdrawReply } from "./useWithdrawReply";
 import { ReplyPicker, type ReplyCandidate } from "./ReplyPicker";
 import { Err, Ok, type OkValue } from "src/result";
+import { audienceNotice, type QuestionsAudience } from "src/questionsAudience";
+import type { QuestionsPublication } from "../QuestionsBlock/QuestionsView";
+import { AudienceRestricted } from "../AudienceRestricted";
+import { useCanSubmit } from "../useCanSubmit";
 
 const replyErrorMessages: Partial<Record<ReplyError["type"], string>> = {
   not_found: "Hmmm… We couldn't find that post.",
@@ -40,6 +44,9 @@ const replyErrorMessages: Partial<Record<ReplyError["type"], string>> = {
   same_post: "A post can't reply to itself.",
   already_submitted: "This post was already submitted.",
   replies_closed: "This post isn't taking replies.",
+  not_follows: "Only people the author follows can submit a reply.",
+  not_follower: "Only the author's followers can submit a reply.",
+  not_subscriber: "Only subscribers can submit a reply.",
 };
 
 export function DocumentReplies(props: {
@@ -49,11 +56,20 @@ export function DocumentReplies(props: {
   initial?: DocumentRepliesData;
   buttonText?: string;
   showThemes?: boolean;
+  audience?: QuestionsAudience;
+  publication?: QuestionsPublication;
   prompt?: React.ReactNode;
   action?: React.ReactNode;
 }) {
   let { identity, identityPending } = useIdentityData();
   let viewer = identity?.atp_did ?? null;
+  let audience = props.audience ?? "anyone";
+  let { canSubmit, author } = useCanSubmit({
+    documentUri: props.documentUri,
+    audience,
+    publicationUri: props.publication?.publicationUri,
+    skip: props.action !== undefined,
+  });
   let [changed, setChanged] = useState(false);
   let needsFetch =
     !identityPending && (!!viewer || !props.initialReplies || changed);
@@ -191,19 +207,30 @@ export function DocumentReplies(props: {
   }
   if (!data) return null;
 
+  let restrictedAudience =
+    viewer && canSubmit === false && audience !== "anyone" ? audience : null;
   return (
     <RepliesList
       replies={data.replies}
       drafts={data.drafts}
       showThemes={props.showThemes}
       prompt={props.prompt}
+      notice={restrictedAudience ? null : audienceNotice(audience, "replies")}
       onWithdraw={withdraw}
       onWithdrawDraft={withdrawDraft}
       action={
-        identityPending ? (
+        identityPending || (viewer && canSubmit === undefined) ? (
           <ButtonPrimary disabled className={ACTION_CLASS}>
             <span className="truncate">{label}</span>
           </ButtonPrimary>
+        ) : restrictedAudience ? (
+          <AudienceRestricted
+            audience={restrictedAudience}
+            author={author}
+            publication={props.publication}
+            submission="a reply"
+            placement="reply_block"
+          />
         ) : viewer ? (
           <ReplyButton
             label={label}

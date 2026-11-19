@@ -11,7 +11,6 @@ import { usePostEditLink } from "app/(app)/(published)/lish/[did]/[publication]/
 import {
   askQuestion,
   editQuestion,
-  getCanAskQuestion,
   getDocumentQuestions,
   setQuestionState,
   withdrawQuestion,
@@ -25,7 +24,7 @@ import type {
 import type { QuestionsAudience } from "src/questionsAudience";
 import type { InteractionAuthor } from "src/interactionAuthor";
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
-import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
+import { useCanSubmit } from "../useCanSubmit";
 import { ComposerPlaceholder } from "components/Composer";
 import {
   DisabledAskButton,
@@ -120,27 +119,12 @@ export function DocumentQuestions(props: {
     },
   );
   let audience = props.audience ?? "anyone";
-  let { subscribed } = useViewerSubscription(props.publication?.publicationUri);
-  let followAudience = audience === "follows" || audience === "followers";
-  let { data: followCheck, error: followCheckError } = useSWR(
-    viewer &&
-      followAudience &&
-      !props.editor &&
-      !isDocumentOwner(props.documentUri, viewer)
-      ? ["can_ask_question", props.documentUri, viewer, audience]
-      : null,
-    () => getCanAskQuestion(props.documentUri, audience),
-    { revalidateOnFocus: false, revalidateIfStale: false },
-  );
-  let canAsk =
-    audience === "anyone"
-      ? true
-      : audience === "subscribers"
-        ? subscribed
-        : // askQuestion checks again, so a failed lookup lets them try.
-          followCheckError
-          ? true
-          : followCheck?.canAsk;
+  let { canSubmit: canSubmit, author: author } = useCanSubmit({
+    documentUri: props.documentUri,
+    audience,
+    publicationUri: props.publication?.publicationUri,
+    skip: !!props.editor,
+  });
   useDocumentEvents(props.documentUri, ["question", "answer"], () => {
     setChanged(true);
     mutate();
@@ -260,7 +244,7 @@ export function DocumentQuestions(props: {
     return true;
   };
   let restrictedAudience =
-    viewer && canAsk === false && audience !== "anyone" ? audience : null;
+    viewer && canSubmit === false && audience !== "anyone" ? audience : null;
   return (
     <QuestionsList
       audience={restrictedAudience ? "anyone" : audience}
@@ -270,13 +254,13 @@ export function DocumentQuestions(props: {
       onEdit={edit}
       renderAnswer={publishedAnswer}
       action={
-        identityPending || (viewer && canAsk === undefined) ? (
+        identityPending || (viewer && canSubmit === undefined) ? (
           <ComposerPlaceholder className="min-h-20!" />
         ) : viewer ? (
           restrictedAudience ? (
             <QuestionsRestricted
               audience={restrictedAudience}
-              author={followCheck?.author ?? null}
+              author={author}
               publication={props.publication}
             />
           ) : (
