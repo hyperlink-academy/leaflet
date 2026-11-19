@@ -121,18 +121,11 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
           initial={initial}
         />
       ) : (
-        <>
-          {" "}
-          {editable && !promptText && !buttonText && (
-            <>
-              <div className="text-center w-full text-sm text-tertiary italic ">
-                Click the prompt and button text to edit them.
-              </div>
-              <hr className="mb-2 mt-1" />
-            </>
-          )}
-          <RepliesEmptyDraft prompt={prompt} action={button} />
-        </>
+        <RepliesEmptyDraft
+          audience={audience}
+          prompt={prompt}
+          action={button}
+        />
       )}
     </BlockLayout>
   );

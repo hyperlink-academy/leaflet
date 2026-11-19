@@ -244,7 +244,7 @@ export function DocumentQuestions(props: {
     return true;
   };
   let restrictedAudience =
-    viewer && canSubmit === false && audience !== "anyone" ? audience : null;
+    canSubmit === false && audience !== "anyone" ? audience : null;
   return (
     <QuestionsList
       audience={restrictedAudience ? "anyone" : audience}
@@ -256,22 +256,20 @@ export function DocumentQuestions(props: {
       action={
         identityPending || (viewer && canSubmit === undefined) ? (
           <ComposerPlaceholder className="min-h-20!" />
+        ) : restrictedAudience ? (
+          <QuestionsRestricted
+            audience={restrictedAudience}
+            author={author}
+            publication={props.publication}
+          />
         ) : viewer ? (
-          restrictedAudience ? (
-            <QuestionsRestricted
-              audience={restrictedAudience}
-              author={author}
-              publication={props.publication}
-            />
-          ) : (
-            <QuestionComposer
-              asker={viewerAuthor}
-              draftKey={`question:${props.documentUri}${props.block ? `:${props.block}` : ""}`}
-              submitLabel={props.buttonText}
-              autoFocus={props.autoFocus}
-              onSubmit={ask}
-            />
-          )
+          <QuestionComposer
+            asker={viewerAuthor}
+            draftKey={`question:${props.documentUri}${props.block ? `:${props.block}` : ""}`}
+            submitLabel={props.buttonText}
+            autoFocus={props.autoFocus}
+            onSubmit={ask}
+          />
         ) : (
           <LoggedOutQuestionComposer
             linkAccount={!!identity}

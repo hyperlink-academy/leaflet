@@ -6,6 +6,7 @@ import type { QuestionsAudience } from "src/questionsAudience";
 import type { SubscriptionPlacement } from "src/subscriptionSource";
 import type { QuestionsPublication } from "./QuestionsBlock/QuestionsView";
 import { authorDisplayName } from "./InteractionAuthorName";
+import { ProfilePopover } from "components/ProfilePopover";
 
 export function AudienceRestricted(props: {
   audience: Exclude<QuestionsAudience, "anyone">;
@@ -16,7 +17,6 @@ export function AudienceRestricted(props: {
   placement: SubscriptionPlacement;
   className?: string;
 }) {
-  let author = props.author ? authorDisplayName(props.author) : "the author";
   return (
     <div className={`text-sm italic text-tertiary ${props.className ?? ""}`}>
       {props.audience === "subscribers" ? (
@@ -41,9 +41,20 @@ export function AudienceRestricted(props: {
           )}
         </>
       ) : props.audience === "follows" ? (
-        `People ${author} follows can submit ${props.submission}.`
+        <div>People the author follows can submit {props.submission}.</div>
       ) : (
-        `People who follow ${author} can submit ${props.submission}.`
+        <div>
+          People who{" "}
+          {props.author ? (
+            <ProfilePopover
+              trigger={<span className="underline">follow the author</span>}
+              didOrHandle={props.author?.did}
+            />
+          ) : (
+            "follow the author"
+          )}{" "}
+          on Bluesky can submit {props.submission}.
+        </div>
       )}
     </div>
   );

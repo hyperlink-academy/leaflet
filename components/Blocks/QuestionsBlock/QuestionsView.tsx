@@ -93,19 +93,22 @@ export function QuestionsEditorNotice(props: QuestionHelpProps) {
   return (
     <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4 leading-snug flex flex-col gap-2">
       <div className="text-base font-bold">No questions yet…</div>
-      <div>
-        {QUESTIONS_AUDIENCE_LABELS[props.audience].label} can submit questions.
-        You can answer them from here.
-      </div>
-      <div>
-        {props.showPending
-          ? "Questions will be visible to readers as soon as they're submitted. You can remove any question at any time."
-          : "Questions will only be visible to readers once you answer them."}
-      </div>
-      <hr />
-      <div>
-        To adjust this, click <SettingsTiny className="inline-flex scale-90" />{" "}
-        in the upper right of this block.
+      <div className="flex flex-col gap-1">
+        <div>
+          {QUESTIONS_AUDIENCE_LABELS[props.audience].label} can submit
+          questions. You can answer them from here.
+        </div>
+        <div>
+          {props.showPending
+            ? "Questions will be visible to readers as soon as they're submitted. You can remove any question at any time."
+            : "Questions will only be visible to readers once you answer them."}
+        </div>
+        <hr className="my-1" />
+        <div>
+          To adjust permissions, click{" "}
+          <SettingsTiny className="inline-flex scale-90" /> in the upper right
+          of this block.
+        </div>
       </div>
     </div>
   );

@@ -28,7 +28,11 @@ import type {
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { DEFAULT_REPLY_BUTTON_TEXT } from "./constants";
-import { RepliesList, RepliesListWithModeration } from "./RepliesList";
+import {
+  RepliesEditorNotice,
+  RepliesList,
+  RepliesListWithModeration,
+} from "./RepliesList";
 import { useWithdrawReply } from "./useWithdrawReply";
 import { ReplyPicker, type ReplyCandidate } from "./ReplyPicker";
 import { Err, Ok, type OkValue } from "src/result";
@@ -127,6 +131,7 @@ export function DocumentReplies(props: {
   let ownsDocument = !!viewer && isDocumentOwner(props.documentUri, viewer);
   if (inEditor || ownsDocument) {
     let loaded = inEditor || data?.isAuthor ? data : undefined;
+    let empty = inEditor && <RepliesEditorNotice audience={audience} />;
     let controls = props.action ?? (
       <ReplyButton
         label={label}
@@ -151,6 +156,7 @@ export function DocumentReplies(props: {
           onWithdraw={withdraw}
           onWithdrawDraft={withdrawDraft}
           action={controls}
+          empty={empty}
         />
       );
 
@@ -202,13 +208,16 @@ export function DocumentReplies(props: {
         onWithdraw={withdraw}
         onWithdrawDraft={withdrawDraft}
         action={controls}
+        empty={empty}
       />
     );
   }
   if (!data) return null;
 
+  // Logged out, canSubmit is false only for a subscribers-only block, whose
+  // subscribe panel handles signing in.
   let restrictedAudience =
-    viewer && canSubmit === false && audience !== "anyone" ? audience : null;
+    canSubmit === false && audience !== "anyone" ? audience : null;
   return (
     <RepliesList
       replies={data.replies}
