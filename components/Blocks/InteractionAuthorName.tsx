@@ -1,5 +1,6 @@
 "use client";
 import type { InteractionAuthor } from "src/interactionAuthor";
+import { ProfilePopover } from "components/ProfilePopover";
 
 export function authorDisplayName(author: InteractionAuthor) {
   return author.displayName || author.handle || "Someone";
@@ -16,13 +17,21 @@ export function InteractionAuthorName(props: {
   showHandle?: boolean;
 }) {
   return (
-    <>
-      <span className="font-bold text-secondary truncate">
-        {authorDisplayName(props.author)}
-      </span>
-      {props.showHandle && props.author.handle && (
-        <span className="text-tertiary truncate">@{props.author.handle}</span>
-      )}
-    </>
+    <ProfilePopover
+      didOrHandle={props.author.did}
+      triggerClassName="flex items-center gap-1.5 min-w-0"
+      trigger={
+        <>
+          <span className="font-bold text-secondary truncate">
+            {authorDisplayName(props.author)}
+          </span>
+          {props.showHandle && props.author.handle && (
+            <span className="text-tertiary truncate">
+              @{props.author.handle}
+            </span>
+          )}
+        </>
+      }
+    />
   );
 }
