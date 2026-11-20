@@ -9,9 +9,6 @@ export type AudienceChecklistTier = {
   monthly_price_cents: number;
 };
 
-// Nested publication audiences, each row taking in everyone below it: all
-// subscribers, paid members, then each paid tier. Clicking a row picks that
-// level, so the rows above it uncheck and the rows below it stay checked.
 export function AudienceChecklist(props: {
   tiers: AudienceChecklistTier[];
   value: GatePolicy;
@@ -57,8 +54,6 @@ export function AudienceChecklist(props: {
           small
           checked={paid}
           onChange={() => {
-            // Unchecked or under subscribers, this picks paid members; on its
-            // own it can't uncheck, since nothing would be left.
             if (!paid || subscribers) props.onChange({ audience: "paid" });
           }}
         >
@@ -67,7 +62,7 @@ export function AudienceChecklist(props: {
       )}
       {!singleTier && tiers.length > 0 && (
         <>
-          <hr className="border-border-light my-1" />
+          <hr className="border-border-light my-1 border-dashed" />
           {tiers.map((tier) => {
             let checked = selectedTiers.includes(tier.id);
             return (
