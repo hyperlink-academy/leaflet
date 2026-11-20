@@ -125,9 +125,9 @@ type Command = {
   // Not offered inside a question's answer, whose published form renders
   // only self-contained blocks.
   hiddenInAnswer?: boolean;
-  // Only shown when the publication has paid memberships enabled, the current
-  // page is the post's first page, and no delimiter exists yet (gating is
-  // computed against the served first page, and one delimiter is enough).
+  // Only shown when the current page is the post's first page and no
+  // delimiter exists yet (gating is computed against the served first page,
+  // and one delimiter is enough).
   membersOnlyDelimiter?: boolean;
   onSelect: (
     rep: Replicache<ReplicacheMutators>,
@@ -605,11 +605,19 @@ export const blockCommands: Command[] = [
     },
   },
   {
-    name: "Paywall",
+    name: "Gated Content",
     hiddenInAnswer: true,
     icon: <LockTiny />,
     type: "publication",
-    alternateNames: ["members", "membership", "members only", "premium"],
+    alternateNames: [
+      "paywall",
+      "gate",
+      "members",
+      "membership",
+      "members only",
+      "subscribers only",
+      "premium",
+    ],
     publicationOnly: true,
     hiddenOnPublicationPage: true,
     membersOnlyDelimiter: true,

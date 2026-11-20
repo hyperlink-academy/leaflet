@@ -259,9 +259,7 @@ export async function broadcastPostEmail(
   const { pub, pubRecord, pubProps, fromHeader, replyToEmail } = args.sender;
   const pubTiers = pub.publication_membership_tiers ?? [];
   const firstPageBlocks = args.rootCanvas?.blocks ?? blocks;
-  const hasDelimiter =
-    !!pub.publication_membership_settings?.enabled &&
-    pageHasMembersDelimiter({ blocks: firstPageBlocks });
+  const hasDelimiter = pageHasMembersDelimiter({ blocks: firstPageBlocks });
   const gatePolicy = hasDelimiter
     ? getMembersDelimiterGatePolicy(firstPageBlocks)
     : null;

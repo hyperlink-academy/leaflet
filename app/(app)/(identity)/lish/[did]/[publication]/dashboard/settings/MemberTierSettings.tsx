@@ -70,8 +70,8 @@ export const MembershipTiers = (props: { publicationUri: string }) => {
           Readers can join a tier to unlock paywalled content in your posts.
         </p>
         <p>
-          Add paywalls by typing "/" in the post editor and selecting "Paywall"
-          from the block menu.
+          Gate content by typing "/" in the post editor and selecting "Gated
+          Content" from the block menu.
         </p>
       </div>
 
@@ -463,8 +463,8 @@ const TierEditorModal = (props: {
         {priceLocked && (
           <p className="text-tertiary text-sm leading-snug">
             {members === 1 ? "1 member is" : `${members} members are`} on this
-            tier, so its price can't be changed. To offer a different price,
-            add a new tier.
+            tier, so its price can't be changed. To offer a different price, add
+            a new tier.
           </p>
         )}
         <div className="flex justify-between items-center pt-1">

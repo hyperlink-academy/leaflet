@@ -37,13 +37,16 @@ export const BlockCommandBar = ({
   let publicationPage = useLeafletPublicationPage();
   let inPublicationEdit = !!publicationPage;
 
-  // Gating for the members-only delimiter: memberships enabled, first page
-  // only (that's the page the server truncates), and at most one per post.
+  // Gating for the members-only delimiter: first page only (that's the page
+  // the server truncates), and at most one per post. Monetization isn't
+  // required — without it the gate is for free subscribers.
   let membershipsEnabled =
     !!pub?.publications?.publication_membership_settings?.enabled;
-  let hasPaidTiers = (
-    pub?.publications?.publication_membership_tiers ?? []
-  ).some((t) => t.active);
+  let hasPaidTiers =
+    membershipsEnabled &&
+    (pub?.publications?.publication_membership_tiers ?? []).some(
+      (t) => t.active,
+    );
   let firstPage = useEntity(rootEntity, "root/page")[0]?.data.value;
   let hasMembersDelimiter = useBlocks(props.parent).some(
     (b) => b.type === "members-only-delimiter",
@@ -78,9 +81,7 @@ export const BlockCommandBar = ({
     const isVisible = !pub || !command.hiddenInPublication;
     const hasMembership =
       !command.membersOnlyDelimiter ||
-      (membershipsEnabled &&
-        props.parent === firstPage &&
-        !hasMembersDelimiter);
+      (props.parent === firstPage && !hasMembersDelimiter);
 
     const allowedForAccount = !command.atprotoOnly || !!identity?.atp_did;
     const allowedInPublication =

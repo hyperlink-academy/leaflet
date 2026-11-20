@@ -18,9 +18,13 @@ export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
   let audienceFact = useEntity(props.entityID, "block/members-only-audience");
   let tierFacts = useEntity(props.entityID, "block/members-only-tier");
 
-  let tiers = (pub?.publications?.publication_membership_tiers ?? [])
-    .filter((t) => t.active)
-    .sort((a, b) => a.monthly_price_cents - b.monthly_price_cents);
+  let membershipsEnabled =
+    !!pub?.publications?.publication_membership_settings?.enabled;
+  let tiers = membershipsEnabled
+    ? (pub?.publications?.publication_membership_tiers ?? [])
+        .filter((t) => t.active)
+        .sort((a, b) => a.monthly_price_cents - b.monthly_price_cents)
+    : [];
 
   let checkedIds = [
     ...new Set(
@@ -130,12 +134,19 @@ function TierSelector(props: {
       }
     >
       <div className="flex flex-col gap-2 text-primary font-normal">
-        <div className="text-tertiary text-sm font-bold">Unlocked for…</div>
-        <AudienceChecklist
-          tiers={props.tiers}
-          value={props.policy}
-          onChange={setPolicy}
-        />
+        {/* With no paid tiers, subscribers are the only audience — unless an
+            older gate is still set to paid members, which needs a way back. */}
+        {(props.tiers.length > 0 ||
+          props.policy.audience !== "subscribers") && (
+          <>
+            <div className="text-tertiary text-sm font-bold">Unlocked for…</div>
+            <AudienceChecklist
+              tiers={props.tiers}
+              value={props.policy}
+              onChange={setPolicy}
+            />
+          </>
+        )}
       </div>
     </Popover>
   );
