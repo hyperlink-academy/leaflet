@@ -18,8 +18,16 @@ import { RepliesEmptyDraft } from "./RepliesList";
 import { ReplyButtonTextInput, ReplyPromptTextInput } from "./RepliesHeader";
 import { BlockSettings } from "../SettingsTriggerButton";
 import { ToggleWithLabel } from "components/Toggle";
-import { questionsAudience } from "src/questionsAudience";
+import {
+  questionsAudience,
+  type QuestionsAudience,
+} from "src/questionsAudience";
 import { AudienceOptions } from "../AudienceOptions";
+import {
+  CloseSubmissionsOption,
+  ClosesAtPage,
+  usePopoverHeight,
+} from "../CloseSubmissionsOption";
 
 export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
   let isSelected = useIsBlockSelected(props.entityID);
@@ -35,6 +43,7 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
   let audience = questionsAudience(
     useEntity(props.entityID, "reply/audience")?.data.value,
   );
+  let closesAt = useEntity(props.entityID, "reply/closes-at")?.data.value;
   let { data, normalizedDocument } = useLeafletPublicationData();
   let documentUri = data?.documents?.uri;
   let { replies: initial } = useEditorBlockData();
@@ -85,26 +94,12 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
       className={`replyBlock light-container rounded-lg!  ${isSelected ? "border-border!" : ""}`}
       extraOptions={
         !props.preview ? (
-          <BlockSettings label="Replies" className="max-w-sm">
-            <AudienceOptions
+          <BlockSettings label="Replies" className="w-sm">
+            <ReplySettings
               entityID={props.entityID}
-              attribute="reply/audience"
-              value={audience}
-              label="Who can submit replies"
+              audience={audience}
+              showThemes={showThemes}
               inPublication={!!data?.publications}
-            />
-            <hr className="border-border-light my-1" />
-            <ToggleWithLabel
-              label="Show submissions with themes"
-              helpText="Each reply appears in its own publication's theme."
-              toggle={showThemes}
-              onToggle={() =>
-                rep?.mutate.assertFact({
-                  entity: props.entityID,
-                  attribute: "reply/show-publication-theme",
-                  data: { type: "boolean", value: !showThemes },
-                })
-              }
             />
           </BlockSettings>
         ) : undefined
@@ -116,6 +111,7 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
           block={blockKey}
           showThemes={showThemes}
           audience={audience}
+          closesAt={closesAt}
           prompt={prompt}
           action={button}
           initial={initial}
@@ -123,6 +119,7 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
       ) : (
         <RepliesEmptyDraft
           audience={audience}
+          closesAt={closesAt}
           prompt={prompt}
           action={button}
         />
@@ -130,3 +127,54 @@ export const ReplyBlock = (props: BlockProps & { preview?: boolean }) => {
     </BlockLayout>
   );
 };
+
+function ReplySettings(props: {
+  entityID: string;
+  audience: QuestionsAudience;
+  showThemes: boolean;
+  inPublication: boolean;
+}) {
+  let { rep } = useReplicache();
+  let page = usePopoverHeight();
+  return (
+    <div ref={page.ref} style={page.style} className="flex flex-col gap-3">
+      {page.onSubpage ? (
+        <ClosesAtPage
+          entityID={props.entityID}
+          attribute="reply/closes-at"
+          onBack={page.back}
+        />
+      ) : (
+        <>
+          <AudienceOptions
+            entityID={props.entityID}
+            attribute="reply/audience"
+            value={props.audience}
+            label="Who can submit replies"
+            inPublication={props.inPublication}
+          />
+          <hr className="border-border-light my-1" />
+          <CloseSubmissionsOption
+            entityID={props.entityID}
+            attribute="reply/closes-at"
+            submissions="replies"
+            onPickDate={page.open}
+          />
+          <hr className="border-border-light my-1" />
+          <ToggleWithLabel
+            label="Show submission themes"
+            helpText="Replies appear in their publication theme."
+            toggle={props.showThemes}
+            onToggle={() =>
+              rep?.mutate.assertFact({
+                entity: props.entityID,
+                attribute: "reply/show-publication-theme",
+                data: { type: "boolean", value: !props.showThemes },
+              })
+            }
+          />
+        </>
+      )}
+    </div>
+  );
+}

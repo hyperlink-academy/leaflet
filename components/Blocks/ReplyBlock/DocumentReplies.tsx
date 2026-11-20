@@ -29,6 +29,7 @@ import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { DEFAULT_REPLY_BUTTON_TEXT } from "./constants";
 import {
+  RepliesClosed,
   RepliesEditorNotice,
   RepliesList,
   RepliesListWithModeration,
@@ -40,6 +41,7 @@ import { audienceNotice, type QuestionsAudience } from "src/questionsAudience";
 import type { QuestionsPublication } from "../QuestionsBlock/QuestionsView";
 import { AudienceRestricted } from "../AudienceRestricted";
 import { useCanSubmit } from "../useCanSubmit";
+import { ClosesAtNotice, useSubmissionsClosed } from "../useSubmissionsClosed";
 
 const replyErrorMessages: Partial<Record<ReplyError["type"], string>> = {
   not_found: "Hmmm… We couldn't find that post.",
@@ -61,18 +63,20 @@ export function DocumentReplies(props: {
   buttonText?: string;
   showThemes?: boolean;
   audience?: QuestionsAudience;
+  closesAt?: string;
   publication?: QuestionsPublication;
   prompt?: React.ReactNode;
   action?: React.ReactNode;
 }) {
   let { identity, identityPending } = useIdentityData();
   let viewer = identity?.atp_did ?? null;
+  let closed = useSubmissionsClosed(props.closesAt);
   let audience = props.audience ?? "anyone";
   let { canSubmit, author } = useCanSubmit({
     documentUri: props.documentUri,
     audience,
     publicationUri: props.publication?.publicationUri,
-    skip: props.action !== undefined,
+    skip: props.action !== undefined || closed,
   });
   let [changed, setChanged] = useState(false);
   let needsFetch =
@@ -131,15 +135,21 @@ export function DocumentReplies(props: {
   let ownsDocument = !!viewer && isDocumentOwner(props.documentUri, viewer);
   if (inEditor || ownsDocument) {
     let loaded = inEditor || data?.isAuthor ? data : undefined;
-    let empty = inEditor && <RepliesEditorNotice audience={audience} />;
-    let controls = props.action ?? (
-      <ReplyButton
-        label={label}
-        documentUri={props.documentUri}
-        block={props.block}
-        onSubmitted={() => mutate()}
-      />
+    let empty = inEditor && (
+      <RepliesEditorNotice audience={audience} closesAt={props.closesAt} />
     );
+    let controls =
+      props.action ??
+      (closed ? (
+        <RepliesClosed />
+      ) : (
+        <ReplyButton
+          label={label}
+          documentUri={props.documentUri}
+          block={props.block}
+          onSubmitted={() => mutate()}
+        />
+      ));
     if (!loaded || !loaded.isAuthor)
       return (
         <RepliesList
@@ -217,18 +227,33 @@ export function DocumentReplies(props: {
   // Logged out, canSubmit is false only for a subscribers-only block, whose
   // subscribe panel handles signing in.
   let restrictedAudience =
-    canSubmit === false && audience !== "anyone" ? audience : null;
+    !closed && canSubmit === false && audience !== "anyone" ? audience : null;
+  let audienceLine =
+    restrictedAudience || closed ? null : audienceNotice(audience, "replies");
+  let closesAtLine = !closed && props.closesAt && (
+    <ClosesAtNotice closesAt={props.closesAt} />
+  );
   return (
     <RepliesList
       replies={data.replies}
       drafts={data.drafts}
       showThemes={props.showThemes}
       prompt={props.prompt}
-      notice={restrictedAudience ? null : audienceNotice(audience, "replies")}
+      notice={
+        (audienceLine || closesAtLine) && (
+          <>
+            {audienceLine}
+            {audienceLine && closesAtLine && " "}
+            {closesAtLine}
+          </>
+        )
+      }
       onWithdraw={withdraw}
       onWithdrawDraft={withdrawDraft}
       action={
-        identityPending || (viewer && canSubmit === undefined) ? (
+        closed ? (
+          <RepliesClosed />
+        ) : identityPending || (viewer && canSubmit === undefined) ? (
           <ButtonPrimary disabled className={ACTION_CLASS}>
             <span className="truncate">{label}</span>
           </ButtonPrimary>

@@ -430,6 +430,11 @@ const QuestionsBlockAttributes = {
     type: "boolean",
     cardinality: "one",
   },
+  // ISO datetime; see pub.leaflet.blocks.questions
+  "questions/closes-at": {
+    type: "string",
+    cardinality: "one",
+  },
   // The author's answer drafts: entities holding a linear block list under
   // card/block, kept in the leaflet but never published with the document.
   "questions/answer": {
@@ -464,6 +469,11 @@ const ReplyBlockAttributes = {
   },
   // See pub.leaflet.blocks.reply
   "reply/audience": {
+    type: "string",
+    cardinality: "one",
+  },
+  // ISO datetime; see pub.leaflet.blocks.reply
+  "reply/closes-at": {
     type: "string",
     cardinality: "one",
   },

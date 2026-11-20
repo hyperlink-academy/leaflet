@@ -1934,6 +1934,12 @@ export const schemaDict = {
             description:
               "Who may ask: anyone, only subscribers to the document's publication, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a question is asked.",
           },
+          closesAt: {
+            type: 'string',
+            format: 'datetime',
+            description:
+              'When the block stops taking questions. Absent means it never closes. Checked when a question is submitted.',
+          },
           showPending: {
             type: 'boolean',
             description:
@@ -2001,6 +2007,12 @@ export const schemaDict = {
             knownValues: ['anyone', 'subscribers', 'follows', 'followers'],
             description:
               "Who may reply: anyone, only subscribers to the document's publication, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a reply is submitted.",
+          },
+          closesAt: {
+            type: 'string',
+            format: 'datetime',
+            description:
+              'When the block stops taking replies. Absent means it never closes. Checked when a reply is submitted.',
           },
           key: {
             type: 'string',

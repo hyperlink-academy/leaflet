@@ -53,6 +53,43 @@ export function Checkbox(props: {
 
 type RadioProps = Omit<JSX.IntrinsicElements["input"], "content">;
 
+export const RadioButton = (
+  props: {
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    children: React.ReactNode;
+    compact?: boolean;
+    className?: string;
+    radioEmptyClassName?: string;
+    radioCheckedClassName?: string;
+  } & JSX.IntrinsicElements["input"],
+) => {
+  return (
+    <label
+      htmlFor={props.id}
+      className={`
+      m-0 h-max w-max max-w-full
+      ${props.compact ? "py-0 px-1" : "px-2 py-0.5 "}
+      ${props.checked ? "text-accent-contrast font-bold bg-[var(--accent-light)] outline-accent-contrast border-accent-contrast focus:outline-accent-contrast hover:outline-accent-contrast" : "text-tertiary font-normal border-border-light bg-transparent focus:outline-border hover:outline-border"}
+      border  rounded-md
+      outline-2 outline-transparent outline-offset-1
+      text-base font-bold text-accent-2 disabled:text-border disabled:hover:text-border
+      flex gap-2 items-center justify-center shrink-0 cursor-pointer
+      ${props.className}`}
+    >
+      <input
+        type="radio"
+        name={props.name}
+        id={props.id}
+        value={props.value}
+        checked={props.checked}
+        className="hidden"
+        onChange={(e) => props.onChange(e)}
+      />
+      {props.children}
+    </label>
+  );
+};
+
 export function Radio(
   props: {
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;

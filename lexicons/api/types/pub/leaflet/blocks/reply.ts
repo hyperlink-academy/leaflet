@@ -25,6 +25,8 @@ export interface Main {
   showPublicationTheme?: boolean
   /** Who may reply: anyone, only subscribers to the document's publication, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a reply is submitted. */
   audience?: 'anyone' | 'subscribers' | 'follows' | 'followers' | (string & {})
+  /** When the block stops taking replies. Absent means it never closes. Checked when a reply is submitted. */
+  closesAt?: string
   /** Tells this block apart from the document's other blocks of its type; interaction records name it in their `block` field. Records without a matching key belong to the first block of the type. */
   key?: string
 }

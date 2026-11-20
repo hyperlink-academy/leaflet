@@ -21,6 +21,7 @@ import {
 } from "./RepliesHeader";
 import { EditTiny } from "components/Icons/EditTiny";
 import { SettingsTiny } from "components/Icons/SettingsTiny";
+import { ClosesAtNotice, useSubmissionsClosed } from "../useSubmissionsClosed";
 import {
   QUESTIONS_AUDIENCE_LABELS,
   type QuestionsAudience,
@@ -33,7 +34,7 @@ export function RepliesList(props: {
   showThemes?: boolean;
   prompt?: React.ReactNode;
   action?: React.ReactNode;
-  notice?: string | null;
+  notice?: React.ReactNode;
   onWithdraw?: (uri: string) => void;
   onWithdrawDraft?: (leaflet: string) => void;
 }) {
@@ -201,18 +202,34 @@ export function RepliesListWithModeration(props: {
 
 export function RepliesEmptyDraft(props: {
   audience: QuestionsAudience;
+  closesAt?: string;
   prompt?: React.ReactNode;
   action?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-4">
       <RepliesHeader prompt={props.prompt} action={props.action} />
-      <RepliesEditorNotice audience={props.audience} />
+      <RepliesEditorNotice
+        audience={props.audience}
+        closesAt={props.closesAt}
+      />
     </div>
   );
 }
 
-export function RepliesEditorNotice(props: { audience: QuestionsAudience }) {
+export function RepliesClosed() {
+  return (
+    <div className="text-sm italic text-tertiary">
+      This post is no longer accepting replies!
+    </div>
+  );
+}
+
+export function RepliesEditorNotice(props: {
+  audience: QuestionsAudience;
+  closesAt?: string;
+}) {
+  let closed = useSubmissionsClosed(props.closesAt);
   return (
     <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4 leading-snug flex flex-col gap-2">
       <div className="text-base font-bold">No responses yet…</div>
@@ -224,6 +241,15 @@ export function RepliesEditorNotice(props: { audience: QuestionsAudience }) {
         <div>
           Replies will only be visible to readers once you approve them.
         </div>
+        {props.closesAt && (
+          <div>
+            {closed ? (
+              "Submissions are closed."
+            ) : (
+              <ClosesAtNotice closesAt={props.closesAt} />
+            )}
+          </div>
+        )}
         <hr className="my-1" />
         <div>
           To adjust permissions, click{" "}

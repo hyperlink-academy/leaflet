@@ -54,6 +54,7 @@ import {
   questionVisibilityStates,
 } from "src/questionsBlocks";
 import { questionsAudience } from "src/questionsAudience";
+import { submissionsClosed } from "src/submissionsClose";
 import type { AppviewRevalidateEvent } from "app/api/appview_revalidate/route";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
@@ -655,9 +656,7 @@ async function handleEvent(evt: Event) {
         record.value.block,
       );
       if (!block) return;
-      // askQuestion checks the audience before writing, but a record written
-      // straight to a PDS skips it, and a block showing pending questions
-      // would publish it.
+      if (evt.event === "create" && submissionsClosed(block.closesAt)) return;
       try {
         if (
           !(await canAskQuestion(

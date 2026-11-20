@@ -513,6 +513,7 @@ export let Block = ({
                 prompt={block.promptText || DEFAULT_REPLY_PROMPT_TEXT}
                 showThemes={block.showPublicationTheme !== false}
                 audience={questionsAudience(block.audience)}
+                closesAt={block.closesAt}
                 publication={interactionPublication}
               />
             )}
@@ -535,6 +536,7 @@ export let Block = ({
                 initialQuestions={questionData}
                 buttonText={block.buttonText}
                 audience={questionsAudience(block.audience)}
+                closesAt={block.closesAt}
                 showPending={!!block.showPending}
                 publication={interactionPublication}
                 autoFocus={targeted}

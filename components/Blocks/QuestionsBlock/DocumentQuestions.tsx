@@ -25,6 +25,7 @@ import type { QuestionsAudience } from "src/questionsAudience";
 import type { InteractionAuthor } from "src/interactionAuthor";
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 import { useCanSubmit } from "../useCanSubmit";
+import { useSubmissionsClosed } from "../useSubmissionsClosed";
 import { ComposerPlaceholder } from "components/Composer";
 import {
   DisabledAskButton,
@@ -34,6 +35,7 @@ import {
   QuestionComposerPreview,
   QuestionEditorEmpty,
   QuestionsEditorNotice,
+  QuestionsClosed,
   QuestionsEmpty,
   QuestionsList,
   QuestionsModeration,
@@ -77,6 +79,7 @@ export function DocumentQuestions(props: {
   initialQuestions?: DocumentQuestion[];
   buttonText?: string;
   audience?: QuestionsAudience;
+  closesAt?: string;
 
   publication?: QuestionsPublication;
   editor?: {
@@ -118,12 +121,13 @@ export function DocumentQuestions(props: {
         }),
     },
   );
+  let closed = useSubmissionsClosed(props.closesAt);
   let audience = props.audience ?? "anyone";
   let { canSubmit: canSubmit, author: author } = useCanSubmit({
     documentUri: props.documentUri,
     audience,
     publicationUri: props.publication?.publicationUri,
-    skip: !!props.editor,
+    skip: !!props.editor || closed,
   });
   useDocumentEvents(props.documentUri, ["question", "answer"], () => {
     setChanged(true);
@@ -194,15 +198,21 @@ export function DocumentQuestions(props: {
         { revalidate: false },
       );
   };
-  let help = { audience, showPending: props.showPending };
+  let help = {
+    audience,
+    showPending: props.showPending,
+    closesAt: closed ? undefined : props.closesAt,
+  };
   if (props.editor) {
     let editor = props.editor;
-    if (!data) return <QuestionEditorEmpty action={editor.action} {...help} />;
+    let editorHelp = { ...help, closesAt: props.closesAt };
+    if (!data)
+      return <QuestionEditorEmpty action={editor.action} {...editorHelp} />;
     return (
       <EditorQuestions
         questions={questions}
         header={<QuestionComposerPreview action={editor.action} />}
-        empty={<QuestionsEditorNotice {...help} />}
+        empty={<QuestionsEditorNotice {...editorHelp} />}
         busy={busy}
         isAuthor={data.isAuthor}
         onSetState={setState}
@@ -244,17 +254,20 @@ export function DocumentQuestions(props: {
     return true;
   };
   let restrictedAudience =
-    canSubmit === false && audience !== "anyone" ? audience : null;
+    !closed && canSubmit === false && audience !== "anyone" ? audience : null;
   return (
     <QuestionsList
-      audience={restrictedAudience ? "anyone" : audience}
+      audience={restrictedAudience || closed ? "anyone" : audience}
       showPending={props.showPending}
+      closesAt={help.closesAt}
       questions={questions}
       onWithdraw={withdraw}
       onEdit={edit}
       renderAnswer={publishedAnswer}
       action={
-        identityPending || (viewer && canSubmit === undefined) ? (
+        closed ? (
+          <QuestionsClosed />
+        ) : identityPending || (viewer && canSubmit === undefined) ? (
           <ComposerPlaceholder className="min-h-20!" />
         ) : restrictedAudience ? (
           <QuestionsRestricted

@@ -32,6 +32,7 @@ import {
 } from "src/questionsAudience";
 import { SettingsTiny } from "components/Icons/SettingsTiny";
 import { AudienceRestricted } from "../AudienceRestricted";
+import { ClosesAtNotice, useSubmissionsClosed } from "../useSubmissionsClosed";
 
 export function QuestionsButtonTextInput(props: {
   value: string;
@@ -58,13 +59,15 @@ export function DisabledAskButton(props: { text?: string }) {
 type QuestionHelpProps = {
   audience: QuestionsAudience;
   showPending?: boolean;
+  closesAt?: string;
 };
 
 function questionHelpLines(props: QuestionHelpProps) {
   return [
     audienceNotice(props.audience, "questions"),
+    props.closesAt && <ClosesAtNotice closesAt={props.closesAt} />,
     !props.showPending && "Questions show once the author answers them.",
-  ].filter((line): line is string => !!line);
+  ].filter((line) => !!line);
 }
 
 function QuestionHelp(props: QuestionHelpProps) {
@@ -72,7 +75,12 @@ function QuestionHelp(props: QuestionHelpProps) {
   if (lines.length === 0) return null;
   return (
     <div className="text-sm text-center italic text-tertiary">
-      {lines.join(" ")}
+      {lines.map((line, i) => (
+        <Fragment key={i}>
+          {i > 0 && " "}
+          {line}
+        </Fragment>
+      ))}
       <hr className="mt-3" />
     </div>
   );
@@ -82,14 +90,23 @@ export function QuestionsEmpty(props: QuestionHelpProps) {
   return (
     <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4 leading-snug flex flex-col gap-2">
       <div className="font-bold">No questions yet…</div>
-      {questionHelpLines(props).map((line) => (
-        <div key={line}>{line}</div>
+      {questionHelpLines(props).map((line, i) => (
+        <div key={i}>{line}</div>
       ))}
     </div>
   );
 }
 
+export function QuestionsClosed() {
+  return (
+    <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4">
+      This post is no longer accepting questions!
+    </div>
+  );
+}
+
 export function QuestionsEditorNotice(props: QuestionHelpProps) {
+  let closed = useSubmissionsClosed(props.closesAt);
   return (
     <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4 leading-snug flex flex-col gap-2">
       <div className="text-base font-bold">No questions yet…</div>
@@ -103,6 +120,15 @@ export function QuestionsEditorNotice(props: QuestionHelpProps) {
             ? "Questions will be visible to readers as soon as they're submitted. You can remove any question at any time."
             : "Questions will only be visible to readers once you answer them."}
         </div>
+        {props.closesAt && (
+          <div>
+            {closed ? (
+              "Submissions are closed."
+            ) : (
+              <ClosesAtNotice closesAt={props.closesAt} />
+            )}
+          </div>
+        )}
         <hr className="my-1" />
         <div>
           To adjust permissions, click{" "}
@@ -214,6 +240,7 @@ export function QuestionEditorEmpty(
       <QuestionsEditorNotice
         audience={props.audience}
         showPending={props.showPending}
+        closesAt={props.closesAt}
       />
     </div>
   );
@@ -380,11 +407,13 @@ export function QuestionsList(
         <QuestionsEmpty
           audience={props.audience}
           showPending={props.showPending}
+          closesAt={props.closesAt}
         />
       ) : (
         <QuestionHelp
           audience={props.audience}
           showPending={props.showPending}
+          closesAt={props.closesAt}
         />
       )}
       <QuestionRows

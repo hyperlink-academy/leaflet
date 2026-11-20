@@ -41,6 +41,7 @@ import { v7 } from "uuid";
 import { replyEventProperties, trackUserEvent } from "src/activeUserAnalytics";
 import { canAskQuestion } from "src/questionsBlocks";
 import { questionsAudience } from "src/questionsAudience";
+import { submissionsClosed } from "src/submissionsClose";
 import type { PubLeafletBlocksReply } from "lexicons/api";
 
 const viewerDid = () =>
@@ -205,7 +206,8 @@ export async function createReplyDraft(args: {
   const identity = await getAuthIdentity();
   if (!identity?.atp_did) return Err(notAuthenticated);
   const block = await subjectReplyBlock(args.subject, args.block);
-  if (!block) return Err({ type: "replies_closed" });
+  if (!block || submissionsClosed(block.closesAt))
+    return Err({ type: "replies_closed" });
   const audienceError = await replyAudienceError(
     block,
     args.subject,
@@ -288,7 +290,8 @@ export async function submitReply(args: {
       .maybeSingle(),
     agentFor(did),
   ]);
-  if (!block) return Err({ type: "replies_closed" });
+  if (!block || submissionsClosed(block.closesAt))
+    return Err({ type: "replies_closed" });
   if (existing) return Err({ type: "already_submitted" });
   if (!agent.ok) return Err(agent.error);
   const audienceError = await replyAudienceError(block, args.subject, did);

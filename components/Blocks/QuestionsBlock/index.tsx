@@ -17,8 +17,16 @@ import {
   QuestionEditorEmpty,
 } from "./QuestionsView";
 import { BlockSettings } from "../SettingsTriggerButton";
-import { questionsAudience } from "src/questionsAudience";
+import {
+  questionsAudience,
+  type QuestionsAudience,
+} from "src/questionsAudience";
 import { AudienceOptions } from "../AudienceOptions";
+import {
+  CloseSubmissionsOption,
+  ClosesAtPage,
+  usePopoverHeight,
+} from "../CloseSubmissionsOption";
 
 export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
   let isSelected = useIsBlockSelected(props.entityID);
@@ -31,6 +39,7 @@ export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
   );
   let showPending = !!useEntity(props.entityID, "questions/show-pending")?.data
     .value;
+  let closesAt = useEntity(props.entityID, "questions/closes-at")?.data.value;
   let { data, normalizedDocument } = useLeafletPublicationData();
   let documentUri = data?.documents?.uri;
   let { questions: initial } = useEditorBlockData();
@@ -65,29 +74,13 @@ export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
       className={`questionsBlock light-container rounded-lg! ${isSelected ? "border-border!" : ""}`}
       extraOptions={
         !props.preview ? (
-          <BlockSettings label="Questions" className="max-w-sm">
-            <div className="flex flex-col gap-2 ">
-              <AudienceOptions
-                entityID={props.entityID}
-                attribute="questions/audience"
-                value={audience}
-                label="Who can submit questions"
-                inPublication={!!data?.publications}
-              />
-              <hr className="border-border-light my-1" />
-              <ToggleWithLabel
-                label="Show pending questions"
-                helpText="Readers see questions before you answer them. Removed ones never show."
-                toggle={showPending}
-                onToggle={() =>
-                  rep?.mutate.assertFact({
-                    entity: props.entityID,
-                    attribute: "questions/show-pending",
-                    data: { type: "boolean", value: !showPending },
-                  })
-                }
-              />
-            </div>
+          <BlockSettings label="Questions" className="w-sm">
+            <QuestionsSettings
+              entityID={props.entityID}
+              audience={audience}
+              showPending={showPending}
+              inPublication={!!data?.publications}
+            />
           </BlockSettings>
         ) : undefined
       }
@@ -98,6 +91,7 @@ export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
           block={blockKey}
           audience={audience}
           showPending={showPending}
+          closesAt={closesAt}
           editor={{
             blockEntity: props.entityID,
             page: pageOfParent(props.parent),
@@ -110,8 +104,60 @@ export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
           action={button}
           audience={audience}
           showPending={showPending}
+          closesAt={closesAt}
         />
       )}
     </BlockLayout>
   );
 };
+
+function QuestionsSettings(props: {
+  entityID: string;
+  audience: QuestionsAudience;
+  showPending: boolean;
+  inPublication: boolean;
+}) {
+  let { rep } = useReplicache();
+  let page = usePopoverHeight();
+  return (
+    <div ref={page.ref} style={page.style} className="flex flex-col gap-3">
+      {page.onSubpage ? (
+        <ClosesAtPage
+          entityID={props.entityID}
+          attribute="questions/closes-at"
+          onBack={page.back}
+        />
+      ) : (
+        <>
+          <AudienceOptions
+            entityID={props.entityID}
+            attribute="questions/audience"
+            value={props.audience}
+            label="Who can submit questions"
+            inPublication={props.inPublication}
+          />
+          <hr className="border-border-light my-1" />
+          <CloseSubmissionsOption
+            entityID={props.entityID}
+            attribute="questions/closes-at"
+            submissions="questions"
+            onPickDate={page.open}
+          />
+          <hr className="border-border-light my-1" />
+          <ToggleWithLabel
+            label="Show pending questions"
+            helpText="Readers see questions before you answer them. Removed ones never show."
+            toggle={props.showPending}
+            onToggle={() =>
+              rep?.mutate.assertFact({
+                entity: props.entityID,
+                attribute: "questions/show-pending",
+                data: { type: "boolean", value: !props.showPending },
+              })
+            }
+          />
+        </>
+      )}
+    </div>
+  );
+}

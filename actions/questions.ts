@@ -26,6 +26,7 @@ import {
   questionsAudience,
   type QuestionsAudience,
 } from "src/questionsAudience";
+import { submissionsClosed } from "src/submissionsClose";
 import {
   canAskQuestion,
   mirrorQuestionVisibility,
@@ -141,7 +142,8 @@ export async function askQuestion(args: {
     questionsBlocksOf(subjectRecord),
     args.block,
   );
-  if (!questionsBlock) return Err({ type: "questions_closed" });
+  if (!questionsBlock || submissionsClosed(questionsBlock.closesAt))
+    return Err({ type: "questions_closed" });
   const audience = questionsAudience(questionsBlock.audience);
   try {
     if (

@@ -51,7 +51,8 @@ import {
 } from "src/utils/collectionHelpers";
 import { inngest } from "app/api/inngest/client";
 import { withPublishLock } from "src/utils/publishLock";
-import { createReplyRecord } from "src/documentReplies";
+import { createReplyRecord, subjectReplyBlock } from "src/documentReplies";
+import { submissionsClosed } from "src/submissionsClose";
 import { cutPublishVersion } from "src/versioning/cutPublishVersion";
 import { loggedFetchHandler } from "src/utils/loggedFetchHandler";
 import { XRPCError } from "@atproto/xrpc";
@@ -615,7 +616,13 @@ async function publish({
   let createdReply:
     | { uri: string; subject: string; document: string }
     | undefined;
-  if (replyDraft) {
+  // A draft published after the reply block closed stays a plain post.
+  let replyBlock =
+    replyDraft &&
+    (await subjectReplyBlock(replyDraft.subject, replyDraft.block).catch(
+      () => null,
+    ));
+  if (replyDraft && replyBlock && !submissionsClosed(replyBlock.closesAt)) {
     const reply = await createReplyRecord({
       did: credentialSession.did!,
       subject: replyDraft.subject,
