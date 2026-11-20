@@ -1,5 +1,5 @@
 "use client";
-import { questionsAudience } from "src/questionsAudience";
+import { audienceTierIds, questionsAudience } from "src/questionsAudience";
 import {
   blockSpacingClassName,
   type SpacingKind,
@@ -232,6 +232,21 @@ export let Block = ({
   let postResources = useOptionalPostResources();
   let replyData = postResources?.replyData;
   let questionData = postResources?.questionData;
+  let tierNames = postResources?.tierNames;
+  let interactionPublication = document?.publication
+    ? {
+        publicationUri: document.publication.uri,
+        publicationUrl: document.normalizedPublication?.url,
+        publicationName:
+          document.normalizedPublication?.name ?? document.publication.name,
+        publicationDescription: document.normalizedPublication?.description,
+        newsletterMode: document.publication.newsletterMode,
+      }
+    : undefined;
+  let blockTierNames = (block: { tierIds?: unknown }) =>
+    audienceTierIds(block).flatMap((id) =>
+      tierNames?.[id] ? [tierNames[id]] : [],
+    );
   let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
     style: {
@@ -502,6 +517,11 @@ export let Block = ({
                 buttonText={block.buttonText}
                 prompt={block.promptText || DEFAULT_REPLY_PROMPT_TEXT}
                 showThemes={block.showPublicationTheme !== false}
+                audience={questionsAudience(block.audience)}
+                tierIds={audienceTierIds(block)}
+                tierNames={blockTierNames(block)}
+                closesAt={block.closesAt}
+                publication={interactionPublication}
               />
             )}
           </InteractionBlockFrame>
@@ -523,21 +543,11 @@ export let Block = ({
                 initialQuestions={questionData}
                 buttonText={block.buttonText}
                 audience={questionsAudience(block.audience)}
+                tierIds={audienceTierIds(block)}
+                tierNames={blockTierNames(block)}
+                closesAt={block.closesAt}
                 showPending={!!block.showPending}
-                publication={
-                  document.publication
-                    ? {
-                        publicationUri: document.publication.uri,
-                        publicationUrl: document.normalizedPublication?.url,
-                        publicationName:
-                          document.normalizedPublication?.name ??
-                          document.publication.name,
-                        publicationDescription:
-                          document.normalizedPublication?.description,
-                        newsletterMode: document.publication.newsletterMode,
-                      }
-                    : undefined
-                }
+                publication={interactionPublication}
                 autoFocus={targeted}
               />
             )}

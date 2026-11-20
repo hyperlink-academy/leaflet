@@ -20,13 +20,21 @@ import {
   RepliesHeader,
 } from "./RepliesHeader";
 import { EditTiny } from "components/Icons/EditTiny";
+import { SettingsTiny } from "components/Icons/SettingsTiny";
+import { ClosesAtNotice, useSubmissionsClosed } from "../useSubmissionsClosed";
+import {
+  AUDIENCE_SUBMITTERS,
+  type QuestionsAudience,
+} from "src/questionsAudience";
 
 export function RepliesList(props: {
+  empty?: React.ReactNode;
   replies: DocumentReply[];
   drafts?: ReplyDraft[];
   showThemes?: boolean;
   prompt?: React.ReactNode;
   action?: React.ReactNode;
+  notice?: React.ReactNode;
   onWithdraw?: (uri: string) => void;
   onWithdrawDraft?: (leaflet: string) => void;
 }) {
@@ -58,6 +66,15 @@ export function RepliesList(props: {
   return (
     <div className="flex flex-col gap-4">
       <RepliesHeader prompt={props.prompt} action={props.action} />
+      {props.notice && (
+        <>
+          <hr />
+          <div className="text-sm text-center italic text-tertiary">
+            {props.notice}
+          </div>
+        </>
+      )}
+      {props.replies.length === 0 && !props.drafts?.length && props.empty}
       <DraftReplies
         drafts={props.drafts}
         showThemes={props.showThemes}
@@ -84,6 +101,8 @@ export function RepliesList(props: {
 }
 
 export function RepliesListWithModeration(props: {
+  // Shown while there are no replies or drafts
+  empty?: React.ReactNode;
   replies: DocumentReply[];
   drafts?: ReplyDraft[];
   showThemes?: boolean;
@@ -112,6 +131,7 @@ export function RepliesListWithModeration(props: {
   return (
     <div className="flex flex-col gap-4">
       <RepliesHeader prompt={props.prompt} action={props.action} />
+      {props.replies.length === 0 && !props.drafts?.length && props.empty}
       <DraftReplies
         drafts={props.drafts}
         showThemes={props.showThemes}
@@ -181,18 +201,59 @@ export function RepliesListWithModeration(props: {
 }
 
 export function RepliesEmptyDraft(props: {
+  audience: QuestionsAudience;
+  closesAt?: string;
   prompt?: React.ReactNode;
   action?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-4">
       <RepliesHeader prompt={props.prompt} action={props.action} />
-      <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4">
-        <div className="text-base font-bold">
-          Replies will open when you publish this post.
+      <RepliesEditorNotice
+        audience={props.audience}
+        closesAt={props.closesAt}
+      />
+    </div>
+  );
+}
+
+export function RepliesClosed() {
+  return (
+    <div className="text-sm italic text-tertiary">
+      This post is no longer accepting replies!
+    </div>
+  );
+}
+
+export function RepliesEditorNotice(props: {
+  audience: QuestionsAudience;
+  closesAt?: string;
+}) {
+  let closed = useSubmissionsClosed(props.closesAt);
+  return (
+    <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4 leading-snug flex flex-col gap-2">
+      <div className="text-base font-bold">No responses yet…</div>
+      <div className="flex flex-col gap-1">
+        <div>{AUDIENCE_SUBMITTERS[props.audience]} can submit responses.</div>
+        <div>
+          Replies will only be visible to readers once you approve them.
         </div>
-        Here, readers can submit their own posts as replies to this post.
-        Replies are shown on your published post once you approve them.
+        {props.closesAt && (
+          <div>
+            {closed ? (
+              "Submissions are closed."
+            ) : (
+              <ClosesAtNotice closesAt={props.closesAt} />
+            )}
+          </div>
+        )}
+        <hr className="my-1" />
+        <div>
+          To adjust permissions, click{" "}
+          <SettingsTiny className="inline-flex scale-90" /> in the upper right
+          of this block.
+        </div>
+        <div>Click the prompt and button text above to edit them.</div>
       </div>
     </div>
   );

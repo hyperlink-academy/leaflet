@@ -26,6 +26,7 @@ import {
   SiteStandardGraphSubscription,
   SiteStandardGraphRecommend,
 } from "lexicons/api";
+import type { PubLeafletBlocksReply } from "lexicons/api";
 import {
   AppBskyEmbedExternal,
   AppBskyEmbedRecordWithMedia,
@@ -46,14 +47,17 @@ import {
 import { broadcastDocumentEvent } from "src/documentEvents/broadcast";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
-import { resolveInteractionBlock } from "src/utils/documentHasBlock";
 import {
-  canAskQuestion,
+  findDocumentBlocks,
+  resolveInteractionBlock,
+} from "src/utils/documentHasBlock";
+import {
   mirrorQuestionVisibility,
   questionsBlocksOf,
   questionVisibilityStates,
+  submissionAudienceError,
 } from "src/questionsBlocks";
-import { questionsAudience } from "src/questionsAudience";
+import { submissionsClosed } from "src/submissionsClose";
 import type { AppviewRevalidateEvent } from "app/api/appview_revalidate/route";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
@@ -551,9 +555,37 @@ async function handleEvent(evt: Event) {
       // A repo may only submit its own documents as replies.
       if (documentUri.host !== evt.did) return;
       if (record.value.document === record.value.subject) return;
-      // Replies to (or with) documents we don't index fail the foreign keys
-      // and are dropped; a second submission of the same document fails the
-      // (subject, document) unique key.
+
+      let { data: subjectDoc } = await supabase
+        .from("documents")
+        .select("uri, data")
+        .eq("uri", record.value.subject)
+        .maybeSingle();
+      if (!subjectDoc) return;
+      let block = resolveInteractionBlock(
+        findDocumentBlocks<PubLeafletBlocksReply.Main>(
+          normalizeDocumentRecord(subjectDoc.data, subjectDoc.uri),
+          ids.PubLeafletBlocksReply,
+        ),
+        record.value.block,
+      );
+      if (!block) return;
+      if (evt.event === "create" && submissionsClosed(block.closesAt)) return;
+      try {
+        if (
+          await submissionAudienceError(
+            supabase,
+            record.value.subject,
+            evt.did,
+            block,
+          )
+        )
+          return;
+      } catch (e) {
+        console.log("Error checking reply audience:", e);
+        return;
+      }
+
       let { error } = await supabase.from("document_replies").upsert({
         uri: evt.uri.toString(),
         subject: record.value.subject,
@@ -655,17 +687,15 @@ async function handleEvent(evt: Event) {
         record.value.block,
       );
       if (!block) return;
-      // askQuestion checks the audience before writing, but a record written
-      // straight to a PDS skips it, and a block showing pending questions
-      // would publish it.
+      if (evt.event === "create" && submissionsClosed(block.closesAt)) return;
       try {
         if (
-          !(await canAskQuestion(
+          await submissionAudienceError(
             supabase,
             record.value.subject,
             evt.did,
-            questionsAudience(block.audience),
-          ))
+            block,
+          )
         )
           return;
       } catch (e) {

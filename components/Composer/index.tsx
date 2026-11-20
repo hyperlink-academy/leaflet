@@ -7,10 +7,12 @@ import { DotLoader } from "components/utils/DotLoader";
 import { BoldTiny } from "components/Icons/BoldTiny";
 import { ItalicTiny } from "components/Icons/ItalicTiny";
 import { StrikethroughTiny } from "components/Icons/StrikethroughTiny";
+import { ComposerAddImageButton } from "./ComposerAddImageButton";
 import {
   isMarkActive,
   toggleMarkInSelection,
 } from "src/utils/prosemirror/markInSelection";
+import { Separator } from "components/Layout";
 
 export type ComposerEditor = { state: EditorState; view: EditorView };
 
@@ -19,8 +21,8 @@ export function ComposerChrome(props: {
   bare?: boolean;
   onSubmit?: () => void;
   submitting?: boolean;
-  // Rendered above the input
   above?: React.ReactNode;
+  allowImages?: string;
   actions?: React.ReactNode;
   className?: string;
   inputClassName?: string;
@@ -37,7 +39,16 @@ export function ComposerChrome(props: {
         {props.children}
       </div>
       <div className="composerFormatting flex justify-between pt-1">
-        <div className="flex gap-1">
+        <div className="flex gap-1 items-center">
+          {props.allowImages && (
+            <>
+              <ComposerAddImageButton
+                root={props.allowImages}
+                disabled={!props.editor}
+              />
+              <Separator classname="mx-1 h-5!" />
+            </>
+          )}
           <MarkButton
             editor={props.editor}
             mark="strong"
@@ -87,7 +98,7 @@ function MarkButton(props: {
       type="button"
       aria-label={props.label}
       disabled={!type}
-      className={`composerMarkButton rounded-md p-1 enabled:hover:bg-border-light disabled:opacity-50 ${active ? "bg-border-light text-primary" : "text-border"}`}
+      className={`composerMarkButton shrink-0 rounded-md p-1 enabled:hover:bg-border-light disabled:opacity-50 ${active ? "bg-border-light text-primary" : "text-border"}`}
       onMouseDown={(e) => {
         e.preventDefault();
         if (props.editor && type)

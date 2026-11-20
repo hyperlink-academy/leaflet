@@ -11,7 +11,6 @@ import { usePostEditLink } from "app/(app)/(published)/lish/[did]/[publication]/
 import {
   askQuestion,
   editQuestion,
-  getCanAskQuestion,
   getDocumentQuestions,
   setQuestionState,
   withdrawQuestion,
@@ -25,7 +24,8 @@ import type {
 import type { QuestionsAudience } from "src/questionsAudience";
 import type { InteractionAuthor } from "src/interactionAuthor";
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
-import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
+import { useCanSubmit } from "../useCanSubmit";
+import { useSubmissionsClosed } from "../useSubmissionsClosed";
 import { ComposerPlaceholder } from "components/Composer";
 import {
   DisabledAskButton,
@@ -35,6 +35,7 @@ import {
   QuestionComposerPreview,
   QuestionEditorEmpty,
   QuestionsEditorNotice,
+  QuestionsClosed,
   QuestionsEmpty,
   QuestionsList,
   QuestionsModeration,
@@ -57,6 +58,7 @@ const questionErrorMessages: Partial<Record<QuestionError["type"], string>> = {
   not_follows: "Only people the author follows can submit a question.",
   not_follower: "Only the author's followers can submit a question.",
   not_subscriber: "Only subscribers can submit a question.",
+  not_member: "Your membership doesn't include submitting questions here.",
   answered: "This question has been answered, so it can't be edited.",
 };
 
@@ -78,6 +80,10 @@ export function DocumentQuestions(props: {
   initialQuestions?: DocumentQuestion[];
   buttonText?: string;
   audience?: QuestionsAudience;
+  tierIds?: string[];
+  // Names the tiers of a "tiers" audience
+  tierNames?: string[];
+  closesAt?: string;
 
   publication?: QuestionsPublication;
   editor?: {
@@ -119,28 +125,15 @@ export function DocumentQuestions(props: {
         }),
     },
   );
+  let closed = useSubmissionsClosed(props.closesAt);
   let audience = props.audience ?? "anyone";
-  let { subscribed } = useViewerSubscription(props.publication?.publicationUri);
-  let followAudience = audience === "follows" || audience === "followers";
-  let { data: followCheck, error: followCheckError } = useSWR(
-    viewer &&
-      followAudience &&
-      !props.editor &&
-      !isDocumentOwner(props.documentUri, viewer)
-      ? ["can_ask_question", props.documentUri, viewer, audience]
-      : null,
-    () => getCanAskQuestion(props.documentUri, audience),
-    { revalidateOnFocus: false, revalidateIfStale: false },
-  );
-  let canAsk =
-    audience === "anyone"
-      ? true
-      : audience === "subscribers"
-        ? subscribed
-        : // askQuestion checks again, so a failed lookup lets them try.
-          followCheckError
-          ? true
-          : followCheck?.canAsk;
+  let { canSubmit: canSubmit, author: author } = useCanSubmit({
+    documentUri: props.documentUri,
+    audience,
+    tierIds: props.tierIds,
+    publicationUri: props.publication?.publicationUri,
+    skip: !!props.editor || closed,
+  });
   useDocumentEvents(props.documentUri, ["question", "answer"], () => {
     setChanged(true);
     mutate();
@@ -210,15 +203,22 @@ export function DocumentQuestions(props: {
         { revalidate: false },
       );
   };
-  let help = { audience, showPending: props.showPending };
+  let help = {
+    audience,
+    tierNames: props.tierNames,
+    showPending: props.showPending,
+    closesAt: closed ? undefined : props.closesAt,
+  };
   if (props.editor) {
     let editor = props.editor;
-    if (!data) return <QuestionEditorEmpty action={editor.action} {...help} />;
+    let editorHelp = { ...help, closesAt: props.closesAt };
+    if (!data)
+      return <QuestionEditorEmpty action={editor.action} {...editorHelp} />;
     return (
       <EditorQuestions
         questions={questions}
         header={<QuestionComposerPreview action={editor.action} />}
-        empty={<QuestionsEditorNotice {...help} />}
+        empty={<QuestionsEditorNotice {...editorHelp} />}
         busy={busy}
         isAuthor={data.isAuthor}
         onSetState={setState}
@@ -260,34 +260,37 @@ export function DocumentQuestions(props: {
     return true;
   };
   let restrictedAudience =
-    viewer && canAsk === false && audience !== "anyone" ? audience : null;
+    !closed && canSubmit === false && audience !== "anyone" ? audience : null;
   return (
     <QuestionsList
-      audience={restrictedAudience ? "anyone" : audience}
+      audience={restrictedAudience || closed ? "anyone" : audience}
+      tierNames={props.tierNames}
       showPending={props.showPending}
+      closesAt={help.closesAt}
       questions={questions}
       onWithdraw={withdraw}
       onEdit={edit}
       renderAnswer={publishedAnswer}
       action={
-        identityPending || (viewer && canAsk === undefined) ? (
+        closed ? (
+          <QuestionsClosed />
+        ) : identityPending || (viewer && canSubmit === undefined) ? (
           <ComposerPlaceholder className="min-h-20!" />
+        ) : restrictedAudience ? (
+          <QuestionsRestricted
+            audience={restrictedAudience}
+            tierNames={props.tierNames}
+            author={author}
+            publication={props.publication}
+          />
         ) : viewer ? (
-          restrictedAudience ? (
-            <QuestionsRestricted
-              audience={restrictedAudience}
-              author={followCheck?.author ?? null}
-              publication={props.publication}
-            />
-          ) : (
-            <QuestionComposer
-              asker={viewerAuthor}
-              draftKey={`question:${props.documentUri}${props.block ? `:${props.block}` : ""}`}
-              submitLabel={props.buttonText}
-              autoFocus={props.autoFocus}
-              onSubmit={ask}
-            />
-          )
+          <QuestionComposer
+            asker={viewerAuthor}
+            draftKey={`question:${props.documentUri}${props.block ? `:${props.block}` : ""}`}
+            submitLabel={props.buttonText}
+            autoFocus={props.autoFocus}
+            onSubmit={ask}
+          />
         ) : (
           <LoggedOutQuestionComposer
             linkAccount={!!identity}

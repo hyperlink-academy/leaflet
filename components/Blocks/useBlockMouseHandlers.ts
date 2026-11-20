@@ -14,6 +14,8 @@ import { elementId } from "src/utils/elementId";
 
 let debounce: number | null = null;
 
+const handledMouseDowns = new WeakSet<Event>();
+
 // Track scrolling state for mobile
 let isScrolling = false;
 let scrollTimeout: number | null = null;
@@ -43,10 +45,17 @@ export function useBlockMouseHandlers(props: Block) {
     isMobile,
     rep,
   });
-  latest.current = { props, write: entity_set.permissions.write, isMobile, rep };
+  latest.current = {
+    props,
+    write: entity_set.permissions.write,
+    isMobile,
+    rep,
+  };
 
   let onMouseDown = useCallback((e: MouseEvent) => {
     let { props, write, isMobile } = latest.current;
+    if (handledMouseDowns.has(e.nativeEvent)) return;
+    handledMouseDowns.add(e.nativeEvent);
     if ((e.target as Element).getAttribute("data-draggable")) return;
     if ((e.target as Element).tagName === "BUTTON") return;
     if ((e.target as Element).tagName === "SELECT") return;
@@ -94,7 +103,9 @@ export function useBlockMouseHandlers(props: Block) {
       let selection = useSelectingMouse.getState();
       if (!selection.start) return;
       let siblings = rep ? getPageBlocks(rep, props.parent) : [];
-      let startIndex = siblings.findIndex((b) => b.entityID === selection.start);
+      let startIndex = siblings.findIndex(
+        (b) => b.entityID === selection.start,
+      );
       if (startIndex === -1) return;
       let endIndex = siblings.findIndex((b) => b.entityID === props.entityID);
       let start = Math.min(startIndex, endIndex);

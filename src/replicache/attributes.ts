@@ -421,13 +421,23 @@ const QuestionsBlockAttributes = {
     type: "string",
     cardinality: "one",
   },
-  // "anyone" | "follows" | "followers"; see pub.leaflet.blocks.questions
+  // See pub.leaflet.blocks.questions
   "questions/audience": {
     type: "string",
     cardinality: "one",
   },
   "questions/show-pending": {
     type: "boolean",
+    cardinality: "one",
+  },
+  // Paid tier ids for the "tiers" audience; see pub.leaflet.blocks.questions
+  "questions/audience-tier": {
+    type: "string",
+    cardinality: "many",
+  },
+  // ISO datetime; see pub.leaflet.blocks.questions
+  "questions/closes-at": {
+    type: "string",
     cardinality: "one",
   },
   // The author's answer drafts: entities holding a linear block list under
@@ -460,6 +470,21 @@ const ReplyBlockAttributes = {
   },
   "reply/show-publication-theme": {
     type: "boolean",
+    cardinality: "one",
+  },
+  // See pub.leaflet.blocks.reply
+  "reply/audience": {
+    type: "string",
+    cardinality: "one",
+  },
+  // Paid tier ids for the "tiers" audience; see pub.leaflet.blocks.reply
+  "reply/audience-tier": {
+    type: "string",
+    cardinality: "many",
+  },
+  // ISO datetime; see pub.leaflet.blocks.reply
+  "reply/closes-at": {
+    type: "string",
     cardinality: "one",
   },
 } as const;

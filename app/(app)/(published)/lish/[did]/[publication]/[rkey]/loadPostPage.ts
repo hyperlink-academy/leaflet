@@ -76,10 +76,12 @@ export async function loadPostPage({
     pollData,
     replyData,
     questionData,
+    tierNames,
     prerenderedCodeBlocks,
   } = await collectAndFetchBlockResources({
     agent,
     documentUri: document.uri,
+    publicationUri: document.publication?.uri,
     pages: pages as (
       | PubLeafletPagesLinearDocument.Main
       | PubLeafletPagesCanvas.Main
@@ -110,6 +112,7 @@ export async function loadPostPage({
       pollData,
       replyData,
       questionData,
+      tierNames,
     },
     prerenderedCodeBlocks,
   };

@@ -13,7 +13,10 @@ const CustomChevron = (props: ChevronProps) => {
   );
 };
 
-export const DatePicker = (props: DayPickerProps) => {
+export const DatePicker = ({
+  fullWidth,
+  ...props
+}: DayPickerProps & { fullWidth?: boolean }) => {
   const dayPickerProps = {
     ...props,
     required: props.required ?? false,
@@ -25,7 +28,9 @@ export const DatePicker = (props: DayPickerProps) => {
       ...props.components,
     },
     classNames: {
-      months: "relative",
+      root: fullWidth ? "w-full" : "",
+      months: fullWidth ? "relative w-full" : "relative",
+      month: fullWidth ? "w-full" : "",
       month_caption:
         "font-bold text-center w-full bg-border-light mb-2 py-1 rounded-md",
       button_next:
@@ -33,11 +38,14 @@ export const DatePicker = (props: DayPickerProps) => {
       button_previous:
         "absolute left-0 top-1 p-1 text-secondary hover:text-accent-contrast rotate-180 flex align-center",
       chevron: "text-inherit",
-      month_grid: "border-separate [border-spacing:2px]",
+      month_grid: fullWidth
+        ? "w-full table-fixed border-separate [border-spacing:2px]"
+        : "border-separate [border-spacing:2px]",
       weekdays: "text-secondary text-sm",
       selected: "bg-accent-1 text-accent-2 rounded-md font-bold",
       range_middle: "bg-[var(--accent-light)]! text-accent-contrast",
-      day: "h-8! w-8! text-center rounded-md sm:hover:bg-border-light",
+      day: `h-8! ${fullWidth ? "" : "w-8!"} text-center rounded-md sm:hover:bg-border-light`,
+      day_button: fullWidth ? "w-full h-full" : "",
       outside: "text-tertiary",
       today: "font-bold",
       disabled: "text-border cursor-not-allowed hover:bg-transparent!",

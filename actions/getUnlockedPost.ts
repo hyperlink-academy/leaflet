@@ -30,6 +30,7 @@ export type UnlockedPost = {
   pollData: PollData[];
   replyData: DocumentReply[];
   questionData: DocumentQuestion[];
+  tierNames: Record<string, string>;
 };
 
 // Companion to getPostPageData's unconditional gating: published pages render
@@ -93,9 +94,11 @@ export async function getUnlockedPost(
     pollData,
     replyData,
     questionData,
+    tierNames,
   } = await collectAndFetchBlockResources({
     agent,
     documentUri: document.uri,
+    publicationUri: pub.uri,
     pages: pages as Parameters<
       typeof collectAndFetchBlockResources
     >[0]["pages"],
@@ -116,5 +119,6 @@ export async function getUnlockedPost(
     pollData,
     replyData,
     questionData,
+    tierNames,
   };
 }

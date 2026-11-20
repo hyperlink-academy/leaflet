@@ -2,19 +2,13 @@ import { useIsBlockSelected } from "src/useUIState";
 import { LockTiny } from "components/Icons/LockTiny";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { BlockProps } from "./Block";
-import { useEntity, useReplicache } from "src/replicache";
+import { useEntity } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
-import {
-  Menu,
-  CheckboxMenuItem,
-  MenuSeparator,
-  RadioMenuGroup,
-  RadioMenuItem,
-} from "components/Menu";
-import { formatPrice } from "components/Memberships/TierGrid";
+import { Popover } from "components/Popover";
+import { AudienceChecklist } from "components/Memberships/AudienceChecklist";
 import type { GatePolicy } from "src/membership";
-import { v7 } from "uuid";
+import { useSetGatePolicy } from "components/Memberships/useSetGatePolicy";
 
 export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
   let isSelected = useIsBlockSelected(props.entityID);
@@ -59,8 +53,6 @@ export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
           <TierSelector
             entityID={props.entityID}
             tiers={tiers}
-            audienceFact={audienceFact}
-            tierFacts={tierFacts}
             policy={policy}
           />
         ) : (
@@ -103,88 +95,25 @@ function gateSummary(policy: GatePolicy, tiers: Tier[]) {
 function TierSelector(props: {
   entityID: string;
   tiers: Tier[];
-  audienceFact: { id: string; data: { value: string } } | null | undefined;
-  tierFacts: { id: string; data: { value: string } }[];
   policy: GatePolicy;
 }) {
-  let { rep, undoManager } = useReplicache();
-  const checkedIds =
-    props.policy.audience === "tiers" ? props.policy.tierIds : [];
-
-  let setAudience = (audience: string) => {
-    if (!rep) return;
-    if (
-      audience !== "subscribers" &&
-      audience !== "paid" &&
-      audience !== "tiers"
-    )
-      return;
-    if (audience === "tiers" && props.tiers.length === 0) return;
-    undoManager.withUndoGroup(async () => {
-      await rep.mutate.assertFact({
-        id: props.audienceFact?.id ?? v7(),
-        entity: props.entityID,
-        attribute: "block/members-only-audience",
-        data: { type: "string", value: audience },
-      });
-      if (audience === "tiers") {
-        const activeTierIds = new Set(props.tiers.map((tier) => tier.id));
-        const selectedActiveTierIds = new Set(
-          props.tierFacts
-            .map((fact) => fact.data.value)
-            .filter((id) => activeTierIds.has(id)),
-        );
-        const mutations = props.tierFacts
-          .filter((fact) => !activeTierIds.has(fact.data.value))
-          .map((fact) => rep.mutate.retractFact({ factID: fact.id }));
-        if (selectedActiveTierIds.size === 0) {
-          mutations.push(
-            ...props.tiers.map((tier) =>
-              rep.mutate.assertFact({
-                id: v7(),
-                entity: props.entityID,
-                attribute: "block/members-only-tier",
-                data: { type: "string", value: tier.id },
-              }),
-            ),
-          );
-        }
-        await Promise.all(mutations);
-      }
-    });
-  };
-
-  let toggleTier = (tier: Tier) => {
-    if (!rep) return;
-    let checked = checkedIds.includes(tier.id);
-    if (checked && checkedIds.length === 1) return;
-    let next = checked
-      ? checkedIds.filter((id) => id !== tier.id)
-      : [...checkedIds, tier.id];
-    undoManager.withUndoGroup(async () => {
-      if (!rep) return;
-      for (let fact of props.tierFacts) {
-        if (!next.includes(fact.data.value))
-          await rep.mutate.retractFact({ factID: fact.id });
-      }
-      for (let id of next) {
-        if (props.tierFacts.some((f) => f.data.value === id)) continue;
-        await rep.mutate.assertFact({
-          id: v7(),
-          entity: props.entityID,
-          attribute: "block/members-only-tier",
-          data: { type: "string", value: id },
-        });
-      }
-    });
-  };
+  let { setAudience } = useSetGatePolicy(
+    props.entityID,
+    "block/members-only-audience",
+    "block/members-only-tier",
+  );
+  let setPolicy = (policy: GatePolicy) =>
+    setAudience(
+      policy.audience,
+      policy.audience === "tiers" ? policy.tierIds : [],
+    );
 
   return (
-    <Menu
+    <Popover
       asChild
       side="top"
       align="center"
-      className="p-1! max-w-full w-xs min-w-0"
+      className="max-w-full w-xs min-w-0"
       trigger={
         <button
           type="button"
@@ -200,71 +129,14 @@ function TierSelector(props: {
         </button>
       }
     >
-      <div className="text-tertiary text-sm font-bold px-2 pt-1">
-        Unlocked for…{" "}
+      <div className="flex flex-col gap-2 text-primary font-normal">
+        <div className="text-tertiary text-sm font-bold">Unlocked for…</div>
+        <AudienceChecklist
+          tiers={props.tiers}
+          value={props.policy}
+          onChange={setPolicy}
+        />
       </div>
-      <RadioMenuGroup value={props.policy.audience} onValueChange={setAudience}>
-        <RadioMenuItem
-          value="subscribers"
-          selected={props.policy.audience === "subscribers"}
-        >
-          <div className="flex flex-col min-w-0 leading-tight">
-            <span>All Subscribers</span>
-            <span className="text-tertiary text-xs font-normal">
-              All free and paid subscribers
-            </span>
-          </div>
-        </RadioMenuItem>
-
-        {(props.tiers.length > 0 || props.policy.audience === "paid") && (
-          <RadioMenuItem
-            value="paid"
-            selected={props.policy.audience === "paid"}
-          >
-            {paidLabel(props.tiers)}
-          </RadioMenuItem>
-        )}
-        {/* A post already gated to selected tiers keeps this option so the
-            current choice stays visible after the publication drops to one
-            tier. */}
-        {(props.tiers.length > 1 ||
-          (props.tiers.length === 1 && props.policy.audience === "tiers")) && (
-          <RadioMenuItem
-            value="tiers"
-            selected={props.policy.audience === "tiers"}
-            // Keep the menu open so the tier checkboxes it reveals can be used
-            onSelect={(e) => e.preventDefault()}
-          >
-            Selected Paid Tiers
-          </RadioMenuItem>
-        )}
-      </RadioMenuGroup>
-
-      {props.policy.audience === "tiers" && (
-        <div className="flex flex-col gap-0.5 py-1">
-          {props.tiers.map((tier) => (
-            <CheckboxMenuItem
-              compact
-              key={tier.id}
-              onSelect={(e) => {
-                e.preventDefault();
-                toggleTier(tier);
-              }}
-              checked={checkedIds.includes(tier.id)}
-              className="pl-2 py-0.5!"
-            >
-              <div className="flex flex-col min-w-0 leading-snug ">
-                <span className="truncate font-normal text-secondary">
-                  {tier.name}
-                </span>
-                <span className="text-tertiary text-xs font-normal">
-                  {formatPrice(tier.monthly_price_cents)}/month
-                </span>
-              </div>
-            </CheckboxMenuItem>
-          ))}
-        </div>
-      )}
-    </Menu>
+    </Popover>
   );
 }

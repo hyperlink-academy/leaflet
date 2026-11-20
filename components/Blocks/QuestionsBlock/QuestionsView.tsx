@@ -3,8 +3,6 @@ import React, { Fragment, useState } from "react";
 import { Avatar } from "components/Avatar";
 import { Separator } from "components/Layout";
 import { LoginModal } from "components/LoginButton";
-import { Modal } from "components/Modal";
-import { SubscribePanel } from "components/Subscribe/SubscribeButton";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { BaseTextBlock } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
 import { LocalizedDate } from "app/(app)/(published)/lish/[did]/[publication]/LocalizedDate";
@@ -28,11 +26,13 @@ import {
 } from "../ReplyBlock/RepliesHeader";
 import { DEFAULT_QUESTIONS_BUTTON_TEXT } from "./constants";
 import {
-  QUESTIONS_AUDIENCE_LABELS,
-  questionsAudienceNotice,
+  AUDIENCE_SUBMITTERS,
+  audienceNotice,
   type QuestionsAudience,
 } from "src/questionsAudience";
 import { SettingsTiny } from "components/Icons/SettingsTiny";
+import { AudienceRestricted } from "../AudienceRestricted";
+import { ClosesAtNotice, useSubmissionsClosed } from "../useSubmissionsClosed";
 
 export function QuestionsButtonTextInput(props: {
   value: string;
@@ -58,14 +58,18 @@ export function DisabledAskButton(props: { text?: string }) {
 
 type QuestionHelpProps = {
   audience: QuestionsAudience;
+  // Names the tiers of a "tiers" audience
+  tierNames?: string[];
   showPending?: boolean;
+  closesAt?: string;
 };
 
 function questionHelpLines(props: QuestionHelpProps) {
   return [
-    questionsAudienceNotice(props.audience),
+    audienceNotice(props.audience, "questions", props.tierNames),
+    props.closesAt && <ClosesAtNotice closesAt={props.closesAt} />,
     !props.showPending && "Questions show once the author answers them.",
-  ].filter((line): line is string => !!line);
+  ].filter((line) => !!line);
 }
 
 function QuestionHelp(props: QuestionHelpProps) {
@@ -73,7 +77,12 @@ function QuestionHelp(props: QuestionHelpProps) {
   if (lines.length === 0) return null;
   return (
     <div className="text-sm text-center italic text-tertiary">
-      {lines.join(" ")}
+      {lines.map((line, i) => (
+        <Fragment key={i}>
+          {i > 0 && " "}
+          {line}
+        </Fragment>
+      ))}
       <hr className="mt-3" />
     </div>
   );
@@ -83,30 +92,51 @@ export function QuestionsEmpty(props: QuestionHelpProps) {
   return (
     <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4 leading-snug flex flex-col gap-2">
       <div className="font-bold">No questions yet…</div>
-      {questionHelpLines(props).map((line) => (
-        <div key={line}>{line}</div>
+      {questionHelpLines(props).map((line, i) => (
+        <div key={i}>{line}</div>
       ))}
     </div>
   );
 }
 
+export function QuestionsClosed() {
+  return (
+    <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4">
+      This post is no longer accepting questions!
+    </div>
+  );
+}
+
 export function QuestionsEditorNotice(props: QuestionHelpProps) {
+  let closed = useSubmissionsClosed(props.closesAt);
   return (
     <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4 leading-snug flex flex-col gap-2">
       <div className="text-base font-bold">No questions yet…</div>
-      <div>
-        {QUESTIONS_AUDIENCE_LABELS[props.audience].label} can submit
-        questions. You can answer them from here.
-      </div>
-      <div>
-        {props.showPending
-          ? "Questions will be visible to readers as soon as they're submitted. You can remove any question at any time."
-          : "Questions will only be visible to readers once you answer them."}
-      </div>
-      <hr />
-      <div>
-        To adjust this, click <SettingsTiny className="inline-flex scale-90" />{" "}
-        in the upper right of this block.
+      <div className="flex flex-col gap-1">
+        <div>
+          {AUDIENCE_SUBMITTERS[props.audience]} can submit questions. You can
+          answer them from here.
+        </div>
+        <div>
+          {props.showPending
+            ? "Questions will be visible to readers as soon as they're submitted. You can remove any question at any time."
+            : "Questions will only be visible to readers once you answer them."}
+        </div>
+        {props.closesAt && (
+          <div>
+            {closed ? (
+              "Submissions are closed."
+            ) : (
+              <ClosesAtNotice closesAt={props.closesAt} />
+            )}
+          </div>
+        )}
+        <hr className="my-1" />
+        <div>
+          To adjust permissions, click{" "}
+          <SettingsTiny className="inline-flex scale-90" /> in the upper right
+          of this block.
+        </div>
       </div>
     </div>
   );
@@ -191,37 +221,15 @@ export function QuestionsRestricted(props: {
   audience: Exclude<QuestionsAudience, "anyone">;
   author: InteractionAuthor | null;
   publication?: QuestionsPublication;
+  tierNames?: string[];
 }) {
-  let author = props.author ? authorDisplayName(props.author) : "the author";
   return (
-    <div className="opaque-container text-sm italic text-tertiary text-center sm:p-4 p-3">
-      {props.audience === "subscribers" ? (
-        <>
-          Subscribers can submit a question.{" "}
-          {props.publication && (
-            <Modal
-              asChild
-              trigger={
-                <button className="text-accent-contrast font-bold not-italic">
-                  Subscribe!
-                </button>
-              }
-            >
-              <div className="w-md max-w-full">
-                <SubscribePanel
-                  {...props.publication}
-                  source={{ placement: "questions_block" }}
-                />
-              </div>
-            </Modal>
-          )}
-        </>
-      ) : props.audience === "follows" ? (
-        `People ${author} follows can submit a question.`
-      ) : (
-        `People who follow ${author} can submit a question.`
-      )}
-    </div>
+    <AudienceRestricted
+      {...props}
+      submission="a question"
+      placement="questions_block"
+      className="opaque-container text-center sm:p-4 p-3"
+    />
   );
 }
 
@@ -235,6 +243,7 @@ export function QuestionEditorEmpty(
       <QuestionsEditorNotice
         audience={props.audience}
         showPending={props.showPending}
+        closesAt={props.closesAt}
       />
     </div>
   );
@@ -400,12 +409,16 @@ export function QuestionsList(
       {ordered.length === 0 ? (
         <QuestionsEmpty
           audience={props.audience}
+          tierNames={props.tierNames}
           showPending={props.showPending}
+          closesAt={props.closesAt}
         />
       ) : (
         <QuestionHelp
           audience={props.audience}
+          tierNames={props.tierNames}
           showPending={props.showPending}
+          closesAt={props.closesAt}
         />
       )}
       <QuestionRows

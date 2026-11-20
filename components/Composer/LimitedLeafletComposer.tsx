@@ -8,14 +8,17 @@ export function LimitedLeafletComposer(props: {
   editor: ComposerEditor | null;
   publishing?: boolean;
   onPublish: () => void;
+  publishLabel: string;
   discardLabel: string;
   onDiscard: () => void;
+  imagesInto?: string;
   children: React.ReactNode;
 }) {
   return (
     <ComposerChrome
       bare
       editor={props.editor}
+      allowImages={props.imagesInto}
       onSubmit={props.onPublish}
       submitting={props.publishing}
       actions={
@@ -29,7 +32,7 @@ export function LimitedLeafletComposer(props: {
             {props.discardLabel}
           </ButtonTertiary>
           <ComposerSubmit className="text-sm">
-            Answer <ShareTiny />
+            {props.publishLabel} <ShareTiny />
           </ComposerSubmit>
         </>
       }

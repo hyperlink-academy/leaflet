@@ -28,10 +28,20 @@ import type {
 import { useDocumentEvents } from "src/documentEvents/useDocumentEvents";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 import { DEFAULT_REPLY_BUTTON_TEXT } from "./constants";
-import { RepliesList, RepliesListWithModeration } from "./RepliesList";
+import {
+  RepliesClosed,
+  RepliesEditorNotice,
+  RepliesList,
+  RepliesListWithModeration,
+} from "./RepliesList";
 import { useWithdrawReply } from "./useWithdrawReply";
 import { ReplyPicker, type ReplyCandidate } from "./ReplyPicker";
 import { Err, Ok, type OkValue } from "src/result";
+import { audienceNotice, type QuestionsAudience } from "src/questionsAudience";
+import type { QuestionsPublication } from "../QuestionsBlock/QuestionsView";
+import { AudienceRestricted } from "../AudienceRestricted";
+import { useCanSubmit } from "../useCanSubmit";
+import { ClosesAtNotice, useSubmissionsClosed } from "../useSubmissionsClosed";
 
 const replyErrorMessages: Partial<Record<ReplyError["type"], string>> = {
   not_found: "Hmmm… We couldn't find that post.",
@@ -40,6 +50,10 @@ const replyErrorMessages: Partial<Record<ReplyError["type"], string>> = {
   same_post: "A post can't reply to itself.",
   already_submitted: "This post was already submitted.",
   replies_closed: "This post isn't taking replies.",
+  not_follows: "Only people the author follows can submit a reply.",
+  not_follower: "Only the author's followers can submit a reply.",
+  not_subscriber: "Only subscribers can submit a reply.",
+  not_member: "Your membership doesn't include submitting replies here.",
 };
 
 export function DocumentReplies(props: {
@@ -49,11 +63,25 @@ export function DocumentReplies(props: {
   initial?: DocumentRepliesData;
   buttonText?: string;
   showThemes?: boolean;
+  audience?: QuestionsAudience;
+  tierIds?: string[];
+  tierNames?: string[];
+  closesAt?: string;
+  publication?: QuestionsPublication;
   prompt?: React.ReactNode;
   action?: React.ReactNode;
 }) {
   let { identity, identityPending } = useIdentityData();
   let viewer = identity?.atp_did ?? null;
+  let closed = useSubmissionsClosed(props.closesAt);
+  let audience = props.audience ?? "anyone";
+  let { canSubmit, author } = useCanSubmit({
+    documentUri: props.documentUri,
+    audience,
+    tierIds: props.tierIds,
+    publicationUri: props.publication?.publicationUri,
+    skip: props.action !== undefined || closed,
+  });
   let [changed, setChanged] = useState(false);
   let needsFetch =
     !identityPending && (!!viewer || !props.initialReplies || changed);
@@ -111,14 +139,21 @@ export function DocumentReplies(props: {
   let ownsDocument = !!viewer && isDocumentOwner(props.documentUri, viewer);
   if (inEditor || ownsDocument) {
     let loaded = inEditor || data?.isAuthor ? data : undefined;
-    let controls = props.action ?? (
-      <ReplyButton
-        label={label}
-        documentUri={props.documentUri}
-        block={props.block}
-        onSubmitted={() => mutate()}
-      />
+    let empty = inEditor && (
+      <RepliesEditorNotice audience={audience} closesAt={props.closesAt} />
     );
+    let controls =
+      props.action ??
+      (closed ? (
+        <RepliesClosed />
+      ) : (
+        <ReplyButton
+          label={label}
+          documentUri={props.documentUri}
+          block={props.block}
+          onSubmitted={() => mutate()}
+        />
+      ));
     if (!loaded || !loaded.isAuthor)
       return (
         <RepliesList
@@ -135,6 +170,7 @@ export function DocumentReplies(props: {
           onWithdraw={withdraw}
           onWithdrawDraft={withdrawDraft}
           action={controls}
+          empty={empty}
         />
       );
 
@@ -186,24 +222,56 @@ export function DocumentReplies(props: {
         onWithdraw={withdraw}
         onWithdrawDraft={withdrawDraft}
         action={controls}
+        empty={empty}
       />
     );
   }
   if (!data) return null;
 
+  // Logged out, canSubmit is false only for a subscribers-only block, whose
+  // subscribe panel handles signing in.
+  let restrictedAudience =
+    !closed && canSubmit === false && audience !== "anyone" ? audience : null;
+  let audienceLine =
+    restrictedAudience || closed
+      ? null
+      : audienceNotice(audience, "replies", props.tierNames);
+  let closesAtLine = !closed && props.closesAt && (
+    <ClosesAtNotice closesAt={props.closesAt} />
+  );
   return (
     <RepliesList
       replies={data.replies}
       drafts={data.drafts}
       showThemes={props.showThemes}
       prompt={props.prompt}
+      notice={
+        (audienceLine || closesAtLine) && (
+          <>
+            {audienceLine}
+            {audienceLine && closesAtLine && " "}
+            {closesAtLine}
+          </>
+        )
+      }
       onWithdraw={withdraw}
       onWithdrawDraft={withdrawDraft}
       action={
-        identityPending ? (
+        closed ? (
+          <RepliesClosed />
+        ) : identityPending || (viewer && canSubmit === undefined) ? (
           <ButtonPrimary disabled className={ACTION_CLASS}>
             <span className="truncate">{label}</span>
           </ButtonPrimary>
+        ) : restrictedAudience ? (
+          <AudienceRestricted
+            audience={restrictedAudience}
+            tierNames={props.tierNames}
+            author={author}
+            publication={props.publication}
+            submission="a reply"
+            placement="reply_block"
+          />
         ) : viewer ? (
           <ReplyButton
             label={label}

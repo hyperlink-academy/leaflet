@@ -19,8 +19,19 @@ export interface Main {
   $type?: 'pub.leaflet.blocks.questions'
   /** Label for the button readers use to submit a question. */
   buttonText?: string
-  /** Who may ask: anyone, only subscribers to the document's publication, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a question is asked. */
-  audience?: 'anyone' | 'subscribers' | 'follows' | 'followers' | (string & {})
+  /** Who may ask: anyone, only subscribers to the document's publication, only its paid members, only members of the tiers in tierIds, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a question is asked. */
+  audience?:
+    | 'anyone'
+    | 'subscribers'
+    | 'paid'
+    | 'tiers'
+    | 'follows'
+    | 'followers'
+    | (string & {})
+  /** Paid membership tier ids whose active members may ask when audience is tiers. */
+  tierIds?: string[]
+  /** When the block stops taking questions. Absent means it never closes. Checked when a question is submitted. */
+  closesAt?: string
   /** Show readers questions the author hasn't accepted, answered or hidden yet. Defaults to false. */
   showPending?: boolean
   /** Tells this block apart from the document's other blocks of its type; interaction records name it in their `block` field. Records without a matching key belong to the first block of the type. */

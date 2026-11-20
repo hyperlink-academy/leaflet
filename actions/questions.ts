@@ -22,15 +22,14 @@ import {
   pingIdentityToUpdateNotification,
 } from "src/notifications";
 import { resolveInteractionBlock } from "src/utils/documentHasBlock";
-import {
-  questionsAudience,
-  type QuestionsAudience,
-} from "src/questionsAudience";
+import { type QuestionsAudience } from "src/questionsAudience";
+import { submissionsClosed } from "src/submissionsClose";
 import {
   canAskQuestion,
   mirrorQuestionVisibility,
   questionsBlocksOf,
   questionVisibilityStates,
+  submissionAudienceError,
 } from "src/questionsBlocks";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import {
@@ -106,6 +105,7 @@ export type QuestionError =
         | "not_follows"
         | "not_follower"
         | "not_subscriber"
+        | "not_member"
         | "not_owner"
         | "answered"
         | "failed";
@@ -141,20 +141,16 @@ export async function askQuestion(args: {
     questionsBlocksOf(subjectRecord),
     args.block,
   );
-  if (!questionsBlock) return Err({ type: "questions_closed" });
-  const audience = questionsAudience(questionsBlock.audience);
+  if (!questionsBlock || submissionsClosed(questionsBlock.closesAt))
+    return Err({ type: "questions_closed" });
   try {
-    if (
-      !(await canAskQuestion(supabaseServerClient, args.subject, did, audience))
-    )
-      return Err({
-        type:
-          audience === "subscribers"
-            ? "not_subscriber"
-            : audience === "follows"
-              ? "not_follows"
-              : "not_follower",
-      });
+    const audienceError = await submissionAudienceError(
+      supabaseServerClient,
+      args.subject,
+      did,
+      questionsBlock,
+    );
+    if (audienceError) return Err({ type: audienceError });
   } catch (e) {
     console.error("[questions] audience check failed", e);
     return Err({ type: "failed" });
