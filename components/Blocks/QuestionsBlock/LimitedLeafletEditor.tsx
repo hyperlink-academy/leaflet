@@ -155,6 +155,7 @@ export function LimitedLeafletEditor(props: {
       editor={editor}
       publishing={publishing}
       onPublish={publish}
+      publishLabel={props.published ? "Update" : "Answer"}
       discardLabel={props.published ? "Discard changes" : "Discard draft"}
       onDiscard={discard}
       allowImages

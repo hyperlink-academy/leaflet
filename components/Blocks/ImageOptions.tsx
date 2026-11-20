@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as Slider from "@radix-ui/react-slider";
 
 import { useEntity, useReplicache } from "src/replicache";
@@ -103,9 +103,10 @@ function MaxWidthControl(props: {
     ? defaultWidth
     : Math.max(MAX_WIDTH_MIN, Math.min(MAX_WIDTH_MAX, interim));
 
-  // Live-preview the width in the editor as the slider/input changes, before
-  // the value is committed to the fact on release.
+  let uncommitted = useRef<number | null>(null);
+
   let preview = (value: number) => {
+    uncommitted.current = value;
     setInterim(value);
     if (!Number.isNaN(value))
       props.onPreviewWidth?.(
@@ -114,6 +115,7 @@ function MaxWidthControl(props: {
   };
 
   let commit = (value: number) => {
+    uncommitted.current = null;
     let clamped = Math.max(
       MAX_WIDTH_MIN,
       Math.min(MAX_WIDTH_MAX, Number.isNaN(value) ? defaultWidth : value),
@@ -127,6 +129,14 @@ function MaxWidthControl(props: {
     // Hand rendering back to the committed fact.
     props.onPreviewWidth?.(null);
   };
+  let commitRef = useRef(commit);
+  commitRef.current = commit;
+  useEffect(
+    () => () => {
+      if (uncommitted.current !== null) commitRef.current(uncommitted.current);
+    },
+    [],
+  );
 
   return (
     <div

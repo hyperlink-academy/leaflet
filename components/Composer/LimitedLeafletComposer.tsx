@@ -8,6 +8,7 @@ export function LimitedLeafletComposer(props: {
   editor: ComposerEditor | null;
   publishing?: boolean;
   onPublish: () => void;
+  publishLabel: string;
   discardLabel: string;
   onDiscard: () => void;
   allowImages?: boolean;
@@ -31,7 +32,7 @@ export function LimitedLeafletComposer(props: {
             {props.discardLabel}
           </ButtonTertiary>
           <ComposerSubmit className="text-sm">
-            Answer <ShareTiny />
+            {props.publishLabel} <ShareTiny />
           </ComposerSubmit>
         </>
       }
