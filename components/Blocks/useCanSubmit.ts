@@ -3,7 +3,11 @@ import useSWR from "swr";
 import { getCanAskQuestion } from "actions/questions";
 import { useIdentityData } from "components/IdentityProvider";
 import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
-import type { QuestionsAudience } from "src/questionsAudience";
+import {
+  audienceGatePolicy,
+  type QuestionsAudience,
+} from "src/questionsAudience";
+import { membershipUnlocksGatedPost } from "src/membership";
 import { isDocumentOwner } from "src/utils/isDocumentOwner";
 
 // Whether the viewer is in a questions or reply block's audience: undefined
@@ -12,12 +16,13 @@ import { isDocumentOwner } from "src/utils/isDocumentOwner";
 export function useCanSubmit(props: {
   documentUri: string;
   audience: QuestionsAudience;
+  tierIds?: string[];
   publicationUri?: string;
   skip?: boolean;
 }) {
   let { identity } = useIdentityData();
   let viewer = identity?.atp_did ?? null;
-  let { subscribed } = useViewerSubscription(props.publicationUri);
+  let { membership } = useViewerSubscription(props.publicationUri);
   let followAudience =
     props.audience === "follows" || props.audience === "followers";
   let { data, error } = useSWR(
@@ -30,13 +35,13 @@ export function useCanSubmit(props: {
     () => getCanAskQuestion(props.documentUri, props.audience),
     { revalidateOnFocus: false, revalidateIfStale: false },
   );
+  let policy = audienceGatePolicy(props.audience, props.tierIds ?? []);
   let canSubmit =
     props.audience === "anyone"
       ? true
-      : props.audience === "subscribers"
-        ? subscribed
-        : // The submit action checks again, so a failed lookup lets them try.
-          error
+      : policy
+        ? membershipUnlocksGatedPost(membership, policy)
+        : error
           ? true
           : data?.canAsk;
   return { canSubmit, author: data?.author ?? null };

@@ -9,7 +9,11 @@ import type { Database } from "supabase/database.types";
 import { ids } from "lexicons/api/lexicons";
 import type { NormalizedDocument } from "src/utils/normalizeRecords";
 import { findDocumentBlocks } from "src/utils/documentHasBlock";
-import type { QuestionsAudience } from "src/questionsAudience";
+import {
+  audienceGatePolicy,
+  type QuestionsAudience,
+} from "src/questionsAudience";
+import { membershipUnlocksGatedPost } from "src/membership";
 import { deriveSubscriptionState } from "src/subscriptions/state";
 import type { QuestionState } from "src/documentQuestions";
 
@@ -24,12 +28,18 @@ export async function canAskQuestion(
   subject: string,
   asker: string,
   audience: QuestionsAudience,
+  // The block's tiers, for the "tiers" audience
+  tierIds: string[] = [],
 ): Promise<boolean> {
   if (audience === "anyone") return true;
   const author = new AtUri(subject).host;
   if (author === asker) return true;
-  if (audience === "subscribers")
-    return isPublicationSubscriber(supabase, subject, asker);
+  const policy = audienceGatePolicy(audience, tierIds);
+  if (policy)
+    return membershipUnlocksGatedPost(
+      await publicationMembership(supabase, subject, asker),
+      policy,
+    );
   const agent = new AtpAgent({ service: "https://public.api.bsky.app" });
   const res = await agent.app.bsky.graph.getRelationships({
     actor: author,
@@ -42,7 +52,7 @@ export async function canAskQuestion(
   return audience === "follows" ? !!rel.following : !!rel.followedBy;
 }
 
-async function isPublicationSubscriber(
+async function publicationMembership(
   supabase: SupabaseClient<Database>,
   subject: string,
   did: string,
@@ -54,7 +64,7 @@ async function isPublicationSubscriber(
     .limit(1);
   if (publicationError) throw publicationError;
   const publication = inPublication?.[0]?.publication;
-  if (!publication) return false;
+  if (!publication) return null;
   const { data: identities, error } = await supabase
     .from("identities")
     .select(
@@ -67,13 +77,18 @@ async function isPublicationSubscriber(
     .eq("publication_email_subscribers.publication", publication)
     .eq("publication_memberships.publication", publication);
   if (error) throw error;
-  return (identities ?? []).some(
+  const memberships = (identities ?? []).map(
     (identity) =>
       deriveSubscriptionState(publication, {
         subscriptions: identity.publication_subscriptions,
         emailSubscribers: identity.publication_email_subscribers,
         memberships: identity.publication_memberships,
-      }).subscribed,
+      }).membership,
+  );
+  return (
+    memberships.find((m) => m?.kind === "paid") ??
+    memberships.find((m) => !!m) ??
+    null
   );
 }
 

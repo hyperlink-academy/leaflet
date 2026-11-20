@@ -58,6 +58,7 @@ const questionErrorMessages: Partial<Record<QuestionError["type"], string>> = {
   not_follows: "Only people the author follows can submit a question.",
   not_follower: "Only the author's followers can submit a question.",
   not_subscriber: "Only subscribers can submit a question.",
+  not_member: "Only some paid members can submit a question.",
   answered: "This question has been answered, so it can't be edited.",
 };
 
@@ -79,6 +80,9 @@ export function DocumentQuestions(props: {
   initialQuestions?: DocumentQuestion[];
   buttonText?: string;
   audience?: QuestionsAudience;
+  tierIds?: string[];
+  // Names the tiers of a "tiers" audience
+  tierNames?: string[];
   closesAt?: string;
 
   publication?: QuestionsPublication;
@@ -126,6 +130,7 @@ export function DocumentQuestions(props: {
   let { canSubmit: canSubmit, author: author } = useCanSubmit({
     documentUri: props.documentUri,
     audience,
+    tierIds: props.tierIds,
     publicationUri: props.publication?.publicationUri,
     skip: !!props.editor || closed,
   });
@@ -200,6 +205,7 @@ export function DocumentQuestions(props: {
   };
   let help = {
     audience,
+    tierNames: props.tierNames,
     showPending: props.showPending,
     closesAt: closed ? undefined : props.closesAt,
   };
@@ -258,6 +264,7 @@ export function DocumentQuestions(props: {
   return (
     <QuestionsList
       audience={restrictedAudience || closed ? "anyone" : audience}
+      tierNames={props.tierNames}
       showPending={props.showPending}
       closesAt={help.closesAt}
       questions={questions}
@@ -272,6 +279,7 @@ export function DocumentQuestions(props: {
         ) : restrictedAudience ? (
           <QuestionsRestricted
             audience={restrictedAudience}
+            tierNames={props.tierNames}
             author={author}
             publication={props.publication}
           />

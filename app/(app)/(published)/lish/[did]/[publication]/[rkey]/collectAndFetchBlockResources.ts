@@ -24,14 +24,13 @@ import { extractCodeBlocks } from "./extractCodeBlocks";
 import { fetchPollData, type PollData } from "./fetchPollData";
 import { fetchBskyPosts } from "src/utils/fetchBskyPosts";
 import { loadDocumentReplies, type DocumentReply } from "src/documentReplies";
+import { audienceTierIds } from "src/questionsAudience";
 import {
   loadDocumentQuestions,
   type DocumentQuestion,
 } from "src/documentQuestions";
 
-type Page =
-  | PubLeafletPagesLinearDocument.Main
-  | PubLeafletPagesCanvas.Main;
+type Page = PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main;
 
 export async function collectAndFetchBlockResources({
   agent,
@@ -58,10 +57,13 @@ export async function collectAndFetchBlockResources({
   replyData: DocumentReply[];
   // The answered questions, for a document carrying a questions block.
   questionData: DocumentQuestion[];
+  // Membership tier names by id, for questions or reply blocks limited to
+  // selected tiers.
+  tierNames: Record<string, string>;
   prerenderedCodeBlocks: Map<string, string>;
 }> {
-  const pageBlocks: PubLeafletPagesLinearDocument.Block[] = pages.flatMap(
-    (p) => pageBlocksInOrder(p).map((b) => b.block),
+  const pageBlocks: PubLeafletPagesLinearDocument.Block[] = pages.flatMap((p) =>
+    pageBlocksInOrder(p).map((b) => b.block),
   );
   const hasQuestionsBlock = pageBlocks.some(
     (b) => b.block.$type === ids.PubLeafletBlocksQuestions,
@@ -136,6 +138,34 @@ export async function collectAndFetchBlockResources({
       ? (await loadDocumentReplies(documentUri, null)).replies
       : [];
 
+  const audienceTiers = [
+    ...new Set(
+      pageBlocks.flatMap((b) => {
+        const block = b.block as {
+          $type: string;
+          audience?: unknown;
+          tierIds?: unknown;
+        };
+        if (
+          block.$type !== ids.PubLeafletBlocksQuestions &&
+          block.$type !== ids.PubLeafletBlocksReply
+        )
+          return [];
+        return block.audience === "tiers" ? audienceTierIds(block) : [];
+      }),
+    ),
+  ];
+  const { data: tiers } =
+    audienceTiers.length > 0
+      ? await supabaseServerClient
+          .from("publication_membership_tiers")
+          .select("id, name")
+          .in("id", audienceTiers)
+      : { data: [] };
+  const tierNames = Object.fromEntries(
+    (tiers ?? []).map((t) => [t.id, t.name]),
+  );
+
   // Keyed `${pageId}:${blockIndex}` to match PostContent's lookup: the root
   // page renders with no pageId, subpages with their page id.
   const prerenderedCodeBlocks = new Map<string, string>();
@@ -146,7 +176,7 @@ export async function collectAndFetchBlockResources({
         pageIndex === 0 || (!!openPageId && page.id === openPageId);
       if (!isServerRendered) return;
       const pageCode = await extractCodeBlocks(page);
-      const pageKey = pageIndex === 0 ? "" : (page.id ?? "");
+      const pageKey = pageIndex === 0 ? "" : page.id ?? "";
       for (const [blockIndex, html] of pageCode) {
         prerenderedCodeBlocks.set(`${pageKey}:${blockIndex}`, html);
       }
@@ -160,6 +190,7 @@ export async function collectAndFetchBlockResources({
     pollData,
     replyData,
     questionData,
+    tierNames,
     prerenderedCodeBlocks,
   };
 }

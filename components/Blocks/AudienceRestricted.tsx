@@ -2,7 +2,11 @@
 import { Modal } from "components/Modal";
 import { SubscribePanel } from "components/Subscribe/SubscribeButton";
 import type { InteractionAuthor } from "src/interactionAuthor";
-import type { QuestionsAudience } from "src/questionsAudience";
+import {
+  isMembershipAudience,
+  listTierNames,
+  type QuestionsAudience,
+} from "src/questionsAudience";
 import type { SubscriptionPlacement } from "src/subscriptionSource";
 import type { QuestionsPublication } from "./QuestionsBlock/QuestionsView";
 import { authorDisplayName } from "./InteractionAuthorName";
@@ -12,16 +16,23 @@ export function AudienceRestricted(props: {
   audience: Exclude<QuestionsAudience, "anyone">;
   author: InteractionAuthor | null;
   publication?: QuestionsPublication;
-  // e.g. "a question"
+  tierNames?: string[];
   submission: string;
   placement: SubscriptionPlacement;
   className?: string;
 }) {
   return (
     <div className={`text-sm italic text-tertiary ${props.className ?? ""}`}>
-      {props.audience === "subscribers" ? (
+      {isMembershipAudience(props.audience) ? (
         <>
-          Subscribers can submit {props.submission}.{" "}
+          {props.audience === "subscribers"
+            ? "Subscribers"
+            : props.audience === "paid"
+              ? "Paid members"
+              : props.tierNames?.length
+                ? `${listTierNames(props.tierNames)} members`
+                : "Selected paid members"}{" "}
+          can submit {props.submission}.{" "}
           {props.publication && (
             <Modal
               asChild

@@ -131,7 +131,7 @@ function QuestionsSettings(props: {
         <>
           <AudienceOptions
             entityID={props.entityID}
-            attribute="questions/audience"
+            block="questions"
             value={props.audience}
             label="Who can submit questions"
             inPublication={props.inPublication}

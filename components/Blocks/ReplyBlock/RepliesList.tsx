@@ -23,7 +23,7 @@ import { EditTiny } from "components/Icons/EditTiny";
 import { SettingsTiny } from "components/Icons/SettingsTiny";
 import { ClosesAtNotice, useSubmissionsClosed } from "../useSubmissionsClosed";
 import {
-  QUESTIONS_AUDIENCE_LABELS,
+  AUDIENCE_SUBMITTERS,
   type QuestionsAudience,
 } from "src/questionsAudience";
 
@@ -234,10 +234,7 @@ export function RepliesEditorNotice(props: {
     <div className="opaque-container text-sm italic text-tertiary text-center p-3 sm:p-4 leading-snug flex flex-col gap-2">
       <div className="text-base font-bold">No responses yet…</div>
       <div className="flex flex-col gap-1">
-        <div>
-          {QUESTIONS_AUDIENCE_LABELS[props.audience].label} can submit
-          responses.
-        </div>
+        <div>{AUDIENCE_SUBMITTERS[props.audience]} can submit responses.</div>
         <div>
           Replies will only be visible to readers once you approve them.
         </div>

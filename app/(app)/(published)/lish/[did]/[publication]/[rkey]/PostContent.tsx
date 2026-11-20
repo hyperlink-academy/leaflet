@@ -1,5 +1,5 @@
 "use client";
-import { questionsAudience } from "src/questionsAudience";
+import { audienceTierIds, questionsAudience } from "src/questionsAudience";
 import {
   blockSpacingClassName,
   type SpacingKind,
@@ -232,6 +232,7 @@ export let Block = ({
   let postResources = useOptionalPostResources();
   let replyData = postResources?.replyData;
   let questionData = postResources?.questionData;
+  let tierNames = postResources?.tierNames;
   let interactionPublication = document?.publication
     ? {
         publicationUri: document.publication.uri,
@@ -513,6 +514,10 @@ export let Block = ({
                 prompt={block.promptText || DEFAULT_REPLY_PROMPT_TEXT}
                 showThemes={block.showPublicationTheme !== false}
                 audience={questionsAudience(block.audience)}
+                tierIds={audienceTierIds(block)}
+                tierNames={audienceTierIds(block).flatMap((id) =>
+                  tierNames?.[id] ? [tierNames[id]] : [],
+                )}
                 closesAt={block.closesAt}
                 publication={interactionPublication}
               />
@@ -536,6 +541,10 @@ export let Block = ({
                 initialQuestions={questionData}
                 buttonText={block.buttonText}
                 audience={questionsAudience(block.audience)}
+                tierIds={audienceTierIds(block)}
+                tierNames={audienceTierIds(block).flatMap((id) =>
+                  tierNames?.[id] ? [tierNames[id]] : [],
+                )}
                 closesAt={block.closesAt}
                 showPending={!!block.showPending}
                 publication={interactionPublication}

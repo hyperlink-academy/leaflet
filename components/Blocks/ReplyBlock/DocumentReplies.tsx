@@ -53,6 +53,7 @@ const replyErrorMessages: Partial<Record<ReplyError["type"], string>> = {
   not_follows: "Only people the author follows can submit a reply.",
   not_follower: "Only the author's followers can submit a reply.",
   not_subscriber: "Only subscribers can submit a reply.",
+  not_member: "Only some paid members can submit a reply.",
 };
 
 export function DocumentReplies(props: {
@@ -63,6 +64,8 @@ export function DocumentReplies(props: {
   buttonText?: string;
   showThemes?: boolean;
   audience?: QuestionsAudience;
+  tierIds?: string[];
+  tierNames?: string[];
   closesAt?: string;
   publication?: QuestionsPublication;
   prompt?: React.ReactNode;
@@ -75,6 +78,7 @@ export function DocumentReplies(props: {
   let { canSubmit, author } = useCanSubmit({
     documentUri: props.documentUri,
     audience,
+    tierIds: props.tierIds,
     publicationUri: props.publication?.publicationUri,
     skip: props.action !== undefined || closed,
   });
@@ -229,7 +233,9 @@ export function DocumentReplies(props: {
   let restrictedAudience =
     !closed && canSubmit === false && audience !== "anyone" ? audience : null;
   let audienceLine =
-    restrictedAudience || closed ? null : audienceNotice(audience, "replies");
+    restrictedAudience || closed
+      ? null
+      : audienceNotice(audience, "replies", props.tierNames);
   let closesAtLine = !closed && props.closesAt && (
     <ClosesAtNotice closesAt={props.closesAt} />
   );
@@ -260,6 +266,7 @@ export function DocumentReplies(props: {
         ) : restrictedAudience ? (
           <AudienceRestricted
             audience={restrictedAudience}
+            tierNames={props.tierNames}
             author={author}
             publication={props.publication}
             submission="a reply"

@@ -1,63 +1,105 @@
 "use client";
-import { useReplicache } from "src/replicache";
+import { v7 } from "uuid";
+import { useEntity, useReplicache } from "src/replicache";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { Radio } from "components/Checkbox";
+import { AudienceChecklist } from "components/Memberships/AudienceChecklist";
+import type { GatePolicy } from "src/membership";
 import {
-  QUESTIONS_AUDIENCES,
   QUESTIONS_AUDIENCE_LABELS,
+  isMembershipAudience,
   type QuestionsAudience,
 } from "src/questionsAudience";
+
+const OPTIONS = ["anyone", "subscribers", "follows", "followers"] as const;
 
 // The "who can submit" setting of a questions or reply block
 export function AudienceOptions(props: {
   entityID: string;
-  attribute: "questions/audience" | "reply/audience";
+  block: "questions" | "reply";
   value: QuestionsAudience;
   label: string;
   inPublication: boolean;
 }) {
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
+  let { data: pub } = useLeafletPublicationData();
+  let attribute = `${props.block}/audience` as const;
+  let tierAttribute = `${props.block}/audience-tier` as const;
+  let tierFacts = useEntity(props.entityID, tierAttribute);
+
+  // A free tier is just subscribing, which the checklist already covers
+  let tiers = (pub?.publications?.publication_membership_tiers ?? [])
+    .filter((t) => t.active && t.monthly_price_cents > 0)
+    .sort((a, b) => a.monthly_price_cents - b.monthly_price_cents);
+  let selected: (typeof OPTIONS)[number] = isMembershipAudience(props.value)
+    ? "subscribers"
+    : (props.value as (typeof OPTIONS)[number]);
+  let checklistValue: GatePolicy =
+    props.value === "tiers"
+      ? { audience: "tiers", tierIds: tierFacts.map((f) => f.data.value) }
+      : props.value === "paid"
+        ? { audience: "paid" }
+        : { audience: "subscribers" };
+
+  let setAudience = (value: QuestionsAudience, tierIds: string[] = []) => {
+    if (!rep) return;
+    undoManager.withUndoGroup(async () => {
+      await rep.mutate.assertFact({
+        entity: props.entityID,
+        attribute,
+        data: { type: "string", value },
+      });
+      if (value !== "tiers") return;
+      for (let fact of tierFacts)
+        if (!tierIds.includes(fact.data.value))
+          await rep.mutate.retractFact({ factID: fact.id });
+      for (let id of tierIds)
+        if (!tierFacts.some((f) => f.data.value === id))
+          await rep.mutate.assertFact({
+            id: v7(),
+            entity: props.entityID,
+            attribute: tierAttribute,
+            data: { type: "string", value: id },
+          });
+    });
+  };
+
+  let options = OPTIONS.filter(
+    (option) =>
+      option !== "subscribers" || props.inPublication || selected === option,
+  );
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1">
       <div className="font-bold">{props.label}</div>
-      {QUESTIONS_AUDIENCES.filter(
-        (option) =>
-          option !== "subscribers" ||
-          props.inPublication ||
-          props.value === option,
-      ).map((option) => {
-        let selected = props.value === option;
-        let id = `${props.attribute}-${props.entityID}-${option}`;
-        return (
-          <label
-            key={option}
-            htmlFor={id}
-            className={`${selected ? "accent-container border border-accent-contrast outline-offset-1 outline-2 outline-accent-contrast" : "transparent-container"} flex flex-col leading-snug px-2 py-1.5 cursor-pointer`}
+      {options.map((option) => (
+        <div key={option} className="flex flex-col gap-1">
+          <Radio
+            id={`${attribute}-${props.entityID}-${option}`}
+            name={`${attribute}-${props.entityID}`}
+            value={option}
+            checked={selected === option}
+            onChange={() => setAudience(option)}
           >
-            <input
-              type="radio"
-              name={`${props.attribute}-${props.entityID}`}
-              id={id}
-              value={option}
-              checked={selected}
-              onChange={() =>
-                rep?.mutate.assertFact({
-                  entity: props.entityID,
-                  attribute: props.attribute,
-                  data: { type: "string", value: option },
-                })
-              }
-              className="sr-only"
-            />
-            <span
-              className={`font-bold ${selected ? "text-accent-contrast" : "text-secondary"}`}
-            >
-              {QUESTIONS_AUDIENCE_LABELS[option].label}
-            </span>
-            <span className="text-sm text-tertiary">
-              {QUESTIONS_AUDIENCE_LABELS[option].description}
-            </span>
-          </label>
-        );
-      })}
+            {QUESTIONS_AUDIENCE_LABELS[option]}
+          </Radio>
+          {option === "subscribers" &&
+            selected === "subscribers" &&
+            tiers.length > 0 && (
+              <div className=" ml-5 pb-1">
+                <AudienceChecklist
+                  tiers={tiers}
+                  value={checklistValue}
+                  onChange={(value) => {
+                    setAudience(
+                      value.audience,
+                      value.audience === "tiers" ? value.tierIds : [],
+                    );
+                  }}
+                />
+              </div>
+            )}
+        </div>
+      ))}
     </div>
   );
 }

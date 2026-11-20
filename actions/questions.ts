@@ -23,6 +23,7 @@ import {
 } from "src/notifications";
 import { resolveInteractionBlock } from "src/utils/documentHasBlock";
 import {
+  audienceTierIds,
   questionsAudience,
   type QuestionsAudience,
 } from "src/questionsAudience";
@@ -107,6 +108,7 @@ export type QuestionError =
         | "not_follows"
         | "not_follower"
         | "not_subscriber"
+        | "not_member"
         | "not_owner"
         | "answered"
         | "failed";
@@ -147,15 +149,23 @@ export async function askQuestion(args: {
   const audience = questionsAudience(questionsBlock.audience);
   try {
     if (
-      !(await canAskQuestion(supabaseServerClient, args.subject, did, audience))
+      !(await canAskQuestion(
+        supabaseServerClient,
+        args.subject,
+        did,
+        audience,
+        audienceTierIds(questionsBlock),
+      ))
     )
       return Err({
         type:
           audience === "subscribers"
             ? "not_subscriber"
-            : audience === "follows"
-              ? "not_follows"
-              : "not_follower",
+            : audience === "paid" || audience === "tiers"
+              ? "not_member"
+              : audience === "follows"
+                ? "not_follows"
+                : "not_follower",
       });
   } catch (e) {
     console.error("[questions] audience check failed", e);

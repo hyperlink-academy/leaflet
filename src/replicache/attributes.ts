@@ -430,6 +430,11 @@ const QuestionsBlockAttributes = {
     type: "boolean",
     cardinality: "one",
   },
+  // Paid tier ids for the "tiers" audience; see pub.leaflet.blocks.questions
+  "questions/audience-tier": {
+    type: "string",
+    cardinality: "many",
+  },
   // ISO datetime; see pub.leaflet.blocks.questions
   "questions/closes-at": {
     type: "string",
@@ -471,6 +476,11 @@ const ReplyBlockAttributes = {
   "reply/audience": {
     type: "string",
     cardinality: "one",
+  },
+  // Paid tier ids for the "tiers" audience; see pub.leaflet.blocks.reply
+  "reply/audience-tier": {
+    type: "string",
+    cardinality: "many",
   },
   // ISO datetime; see pub.leaflet.blocks.reply
   "reply/closes-at": {

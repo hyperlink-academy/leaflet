@@ -22,6 +22,7 @@ export type PostResources = {
   pollData: PollData[];
   replyData: DocumentReply[];
   questionData: DocumentQuestion[];
+  tierNames: Record<string, string>;
 };
 
 export type UnlockStatus = "idle" | "loading" | "error";

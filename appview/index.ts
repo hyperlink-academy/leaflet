@@ -53,7 +53,7 @@ import {
   questionsBlocksOf,
   questionVisibilityStates,
 } from "src/questionsBlocks";
-import { questionsAudience } from "src/questionsAudience";
+import { audienceTierIds, questionsAudience } from "src/questionsAudience";
 import { submissionsClosed } from "src/submissionsClose";
 import type { AppviewRevalidateEvent } from "app/api/appview_revalidate/route";
 
@@ -664,6 +664,7 @@ async function handleEvent(evt: Event) {
             record.value.subject,
             evt.did,
             questionsAudience(block.audience),
+            audienceTierIds(block),
           ))
         )
           return;

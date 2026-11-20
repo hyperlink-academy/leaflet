@@ -40,7 +40,7 @@ import {
 import { v7 } from "uuid";
 import { replyEventProperties, trackUserEvent } from "src/activeUserAnalytics";
 import { canAskQuestion } from "src/questionsBlocks";
-import { questionsAudience } from "src/questionsAudience";
+import { audienceTierIds, questionsAudience } from "src/questionsAudience";
 import { submissionsClosed } from "src/submissionsClose";
 import type { PubLeafletBlocksReply } from "lexicons/api";
 
@@ -167,7 +167,15 @@ async function replyAudienceError(
 ): Promise<ReplyError | null> {
   const audience = questionsAudience(block.audience);
   try {
-    if (await canAskQuestion(supabaseServerClient, subject, did, audience))
+    if (
+      await canAskQuestion(
+        supabaseServerClient,
+        subject,
+        did,
+        audience,
+        audienceTierIds(block),
+      )
+    )
       return null;
   } catch (e) {
     console.error("[replies] audience check failed", e);
@@ -177,9 +185,11 @@ async function replyAudienceError(
     type:
       audience === "subscribers"
         ? "not_subscriber"
-        : audience === "follows"
-          ? "not_follows"
-          : "not_follower",
+        : audience === "paid" || audience === "tiers"
+          ? "not_member"
+          : audience === "follows"
+            ? "not_follows"
+            : "not_follower",
   };
 }
 
@@ -260,6 +270,7 @@ export type ReplyError =
         | "already_submitted"
         | "replies_closed"
         | "not_subscriber"
+        | "not_member"
         | "not_follows"
         | "not_follower"
         | "not_owner"

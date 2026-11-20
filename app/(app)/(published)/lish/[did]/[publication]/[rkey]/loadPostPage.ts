@@ -76,6 +76,7 @@ export async function loadPostPage({
     pollData,
     replyData,
     questionData,
+    tierNames,
     prerenderedCodeBlocks,
   } = await collectAndFetchBlockResources({
     agent,
@@ -110,6 +111,7 @@ export async function loadPostPage({
       pollData,
       replyData,
       questionData,
+      tierNames,
     },
     prerenderedCodeBlocks,
   };

@@ -604,6 +604,7 @@ export async function processBlocksToPages(opts: {
       const [showTheme] = scan.eav(b.entityID, "reply/show-publication-theme");
       const [audience] = scan.eav(b.entityID, "reply/audience");
       const [closesAt] = scan.eav(b.entityID, "reply/closes-at");
+      const audienceTiers = scan.eav(b.entityID, "reply/audience-tier");
       const block: $Typed<PubLeafletBlocksReply.Main> = {
         $type: "pub.leaflet.blocks.reply",
         ...(buttonText?.data.value && { buttonText: buttonText.data.value }),
@@ -614,6 +615,9 @@ export async function processBlocksToPages(opts: {
             audience: audience.data.value,
           }),
         ...(closesAt?.data.value && { closesAt: closesAt.data.value }),
+        ...(audience?.data.value === "tiers" && {
+          tierIds: [...new Set(audienceTiers.map((f) => f.data.value))],
+        }),
         key: b.entityID,
       };
       return block;
@@ -622,6 +626,7 @@ export async function processBlocksToPages(opts: {
       const [buttonText] = scan.eav(b.entityID, "questions/button-text");
       const [audience] = scan.eav(b.entityID, "questions/audience");
       const [closesAt] = scan.eav(b.entityID, "questions/closes-at");
+      const audienceTiers = scan.eav(b.entityID, "questions/audience-tier");
       const [showPending] = scan.eav(b.entityID, "questions/show-pending");
       const block: $Typed<PubLeafletBlocksQuestions.Main> = {
         $type: "pub.leaflet.blocks.questions",
@@ -631,6 +636,9 @@ export async function processBlocksToPages(opts: {
             audience: audience.data.value,
           }),
         ...(closesAt?.data.value && { closesAt: closesAt.data.value }),
+        ...(audience?.data.value === "tiers" && {
+          tierIds: [...new Set(audienceTiers.map((f) => f.data.value))],
+        }),
         ...(showPending?.data.value && { showPending: true }),
         key: b.entityID,
       };

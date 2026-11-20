@@ -583,9 +583,23 @@ export const PubLeafletBlocksReply: LexiconDoc = {
         },
         audience: {
           type: "string",
-          knownValues: ["anyone", "subscribers", "follows", "followers"],
+          knownValues: [
+            "anyone",
+            "subscribers",
+            "paid",
+            "tiers",
+            "follows",
+            "followers",
+          ],
           description:
-            "Who may reply: anyone, only subscribers to the document's publication, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a reply is submitted.",
+            "Who may reply: anyone, only subscribers to the document's publication, only its paid members, only members of the tiers in tierIds, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a reply is submitted.",
+        },
+        tierIds: {
+          type: "array",
+          items: { type: "string", maxLength: 100 },
+          maxLength: 50,
+          description:
+            "Paid membership tier ids whose active members may reply when audience is tiers.",
         },
         closesAt: {
           type: "string",
@@ -622,9 +636,23 @@ export const PubLeafletBlocksQuestions: LexiconDoc = {
         },
         audience: {
           type: "string",
-          knownValues: ["anyone", "subscribers", "follows", "followers"],
+          knownValues: [
+            "anyone",
+            "subscribers",
+            "paid",
+            "tiers",
+            "follows",
+            "followers",
+          ],
           description:
-            "Who may ask: anyone, only subscribers to the document's publication, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a question is asked.",
+            "Who may ask: anyone, only subscribers to the document's publication, only its paid members, only members of the tiers in tierIds, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a question is asked.",
+        },
+        tierIds: {
+          type: "array",
+          items: { type: "string", maxLength: 100 },
+          maxLength: 50,
+          description:
+            "Paid membership tier ids whose active members may ask when audience is tiers.",
         },
         closesAt: {
           type: "string",

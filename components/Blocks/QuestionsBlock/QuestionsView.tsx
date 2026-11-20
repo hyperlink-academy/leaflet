@@ -26,7 +26,7 @@ import {
 } from "../ReplyBlock/RepliesHeader";
 import { DEFAULT_QUESTIONS_BUTTON_TEXT } from "./constants";
 import {
-  QUESTIONS_AUDIENCE_LABELS,
+  AUDIENCE_SUBMITTERS,
   audienceNotice,
   type QuestionsAudience,
 } from "src/questionsAudience";
@@ -58,13 +58,15 @@ export function DisabledAskButton(props: { text?: string }) {
 
 type QuestionHelpProps = {
   audience: QuestionsAudience;
+  // Names the tiers of a "tiers" audience
+  tierNames?: string[];
   showPending?: boolean;
   closesAt?: string;
 };
 
 function questionHelpLines(props: QuestionHelpProps) {
   return [
-    audienceNotice(props.audience, "questions"),
+    audienceNotice(props.audience, "questions", props.tierNames),
     props.closesAt && <ClosesAtNotice closesAt={props.closesAt} />,
     !props.showPending && "Questions show once the author answers them.",
   ].filter((line) => !!line);
@@ -112,8 +114,8 @@ export function QuestionsEditorNotice(props: QuestionHelpProps) {
       <div className="text-base font-bold">No questions yet…</div>
       <div className="flex flex-col gap-1">
         <div>
-          {QUESTIONS_AUDIENCE_LABELS[props.audience].label} can submit
-          questions. You can answer them from here.
+          {AUDIENCE_SUBMITTERS[props.audience]} can submit questions. You can
+          answer them from here.
         </div>
         <div>
           {props.showPending
@@ -219,6 +221,7 @@ export function QuestionsRestricted(props: {
   audience: Exclude<QuestionsAudience, "anyone">;
   author: InteractionAuthor | null;
   publication?: QuestionsPublication;
+  tierNames?: string[];
 }) {
   return (
     <AudienceRestricted
@@ -406,12 +409,14 @@ export function QuestionsList(
       {ordered.length === 0 ? (
         <QuestionsEmpty
           audience={props.audience}
+          tierNames={props.tierNames}
           showPending={props.showPending}
           closesAt={props.closesAt}
         />
       ) : (
         <QuestionHelp
           audience={props.audience}
+          tierNames={props.tierNames}
           showPending={props.showPending}
           closesAt={props.closesAt}
         />

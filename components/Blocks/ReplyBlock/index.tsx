@@ -148,7 +148,7 @@ function ReplySettings(props: {
         <>
           <AudienceOptions
             entityID={props.entityID}
-            attribute="reply/audience"
+            block="reply"
             value={props.audience}
             label="Who can submit replies"
             inPublication={props.inPublication}
