@@ -1,26 +1,30 @@
 "use client";
 import { useRef } from "react";
+import { generateKeyBetween } from "fractional-indexing";
+import { v7 } from "uuid";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useReplicache } from "src/replicache";
 import { getPageBlocks } from "src/replicache/getBlocks";
 import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
-import { addBlockBelow } from "src/utils/addBlockBelow";
-import { addImage } from "src/utils/addImage";
+import { prepareImage } from "src/utils/addImage";
 import { focusBlock } from "src/utils/focusBlock";
 
-export function ComposerAddImageButton(props: { disabled: boolean }) {
+export function ComposerAddImageButton(props: {
+  root: string;
+  disabled: boolean;
+}) {
   let { rep, undoManager } = useReplicache();
   let { set } = useEntitySetContext();
 
-  let targetRef = useRef<{ entityID: string; parent: string } | null>(null);
+  let focusedRef = useRef<string | null>(null);
 
   let insert = async (file: File) => {
-    let focused = targetRef.current;
-    if (!rep || !focused) return;
-    let blocks = getPageBlocks(rep, focused.parent);
-    let index = blocks.findIndex((b) => b.entityID === focused.entityID);
+    if (!rep) return;
+    let blocks = getPageBlocks(rep, props.root);
+    let index = blocks.findIndex((b) => b.entityID === focusedRef.current);
+    if (index === -1) index = blocks.length - 1;
     let target = blocks[index];
     if (!target) return;
     let isEmptyLine =
@@ -28,43 +32,51 @@ export function ComposerAddImageButton(props: { disabled: boolean }) {
       !useEditorStates.getState().editorStates[target.entityID]?.editor.doc
         .textContent;
 
+    let entity = isEmptyLine ? target.entityID : v7();
+    let { imageFact, finishUpload } = await prepareImage(file, rep, {
+      entityID: entity,
+      attribute: "block/image",
+      ignoreUndo: true,
+    });
     await undoManager.withUndoGroup(async () => {
-      let entity: string;
-      if (isEmptyLine) {
-        entity = target.entityID;
+      if (isEmptyLine)
         await rep.mutate.assertFact({
           entity,
           attribute: "block/type",
           data: { type: "block-type-union", value: "image" },
         });
-      } else {
-        entity = await addBlockBelow(rep, {
+      else
+        await rep.mutate.addBlock({
           parent: target.parent,
-          position: target.position,
-          nextPosition: blocks[index + 1]?.position ?? null,
+          factID: v7(),
           permission_set: set,
           type: "image",
+          position: generateKeyBetween(
+            target.position,
+            blocks[index + 1]?.position ?? null,
+          ),
+          newEntityID: entity,
         });
-      }
-      focusBlock(
-        { type: "image", entityID: entity, parent: target.parent },
-        { type: "start" },
-      );
-      await addImage(file, rep, { entityID: entity, attribute: "block/image" });
+      await rep.mutate.assertFact({ ...imageFact, ignoreUndo: undefined });
     });
+    focusBlock(
+      { type: "image", entityID: entity, parent: target.parent },
+      { type: "start" },
+    );
+    await finishUpload();
   };
 
   return (
     <label
       aria-label="Add an image"
       aria-disabled={props.disabled}
-      className={`composerMarkButton rounded-md  text-border ${props.disabled ? "opacity-50 pointer-events-none" : "hover:bg-border-light hover:cursor-pointer hover:text-secordary"}`}
+      className={`composerMarkButton rounded-md  text-border ${props.disabled ? "opacity-50 pointer-events-none" : "hover:bg-border-light hover:cursor-pointer hover:text-secondary"}`}
       onMouseDown={(e) => {
         e.preventDefault();
         let focused = useUIState.getState().focusedEntity;
-        targetRef.current =
-          focused?.entityType === "block"
-            ? { entityID: focused.entityID, parent: focused.parent }
+        focusedRef.current =
+          focused?.entityType === "block" && focused.parent === props.root
+            ? focused.entityID
             : null;
       }}
     >

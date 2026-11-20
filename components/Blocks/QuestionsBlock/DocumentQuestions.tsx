@@ -58,7 +58,7 @@ const questionErrorMessages: Partial<Record<QuestionError["type"], string>> = {
   not_follows: "Only people the author follows can submit a question.",
   not_follower: "Only the author's followers can submit a question.",
   not_subscriber: "Only subscribers can submit a question.",
-  not_member: "Only some paid members can submit a question.",
+  not_member: "Your membership doesn't include submitting questions here.",
   answered: "This question has been answered, so it can't be edited.",
 };
 

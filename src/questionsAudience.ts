@@ -39,6 +39,22 @@ export function audienceTierIds(block: { tierIds?: unknown }): string[] {
     : [];
 }
 
+export type AudienceErrorType =
+  | "not_subscriber"
+  | "not_member"
+  | "not_follows"
+  | "not_follower";
+
+// The error for a submitter outside a restricted audience
+export function audienceErrorType(
+  audience: Exclude<QuestionsAudience, "anyone">,
+): AudienceErrorType {
+  if (audience === "subscribers") return "not_subscriber";
+  if (audience === "paid" || audience === "tiers") return "not_member";
+  if (audience === "follows") return "not_follows";
+  return "not_follower";
+}
+
 // The membership rule a subscriber-based audience applies, or null for the
 // others.
 export function audienceGatePolicy(

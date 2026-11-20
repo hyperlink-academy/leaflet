@@ -1,9 +1,8 @@
 "use client";
-import { v7 } from "uuid";
-import { useEntity, useReplicache } from "src/replicache";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { Radio } from "components/Checkbox";
 import { AudienceChecklist } from "components/Memberships/AudienceChecklist";
+import { useSetGatePolicy } from "components/Memberships/useSetGatePolicy";
 import type { GatePolicy } from "src/membership";
 import {
   QUESTIONS_AUDIENCE_LABELS,
@@ -21,13 +20,14 @@ export function AudienceOptions(props: {
   label: string;
   inPublication: boolean;
 }) {
-  let { rep, undoManager } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
   let attribute = `${props.block}/audience` as const;
-  let tierAttribute = `${props.block}/audience-tier` as const;
-  let tierFacts = useEntity(props.entityID, tierAttribute);
+  let { tierFacts, setAudience } = useSetGatePolicy(
+    props.entityID,
+    attribute,
+    `${props.block}/audience-tier`,
+  );
 
-  // A free tier is just subscribing, which the checklist already covers
   let tiers = (pub?.publications?.publication_membership_tiers ?? [])
     .filter((t) => t.active && t.monthly_price_cents > 0)
     .sort((a, b) => a.monthly_price_cents - b.monthly_price_cents);
@@ -40,29 +40,6 @@ export function AudienceOptions(props: {
       : props.value === "paid"
         ? { audience: "paid" }
         : { audience: "subscribers" };
-
-  let setAudience = (value: QuestionsAudience, tierIds: string[] = []) => {
-    if (!rep) return;
-    undoManager.withUndoGroup(async () => {
-      await rep.mutate.assertFact({
-        entity: props.entityID,
-        attribute,
-        data: { type: "string", value },
-      });
-      if (value !== "tiers") return;
-      for (let fact of tierFacts)
-        if (!tierIds.includes(fact.data.value))
-          await rep.mutate.retractFact({ factID: fact.id });
-      for (let id of tierIds)
-        if (!tierFacts.some((f) => f.data.value === id))
-          await rep.mutate.assertFact({
-            id: v7(),
-            entity: props.entityID,
-            attribute: tierAttribute,
-            data: { type: "string", value: id },
-          });
-    });
-  };
 
   let options = OPTIONS.filter(
     (option) =>
@@ -84,7 +61,7 @@ export function AudienceOptions(props: {
           </Radio>
           {option === "subscribers" &&
             selected === "subscribers" &&
-            tiers.length > 0 && (
+            (tiers.length > 0 || props.value !== "subscribers") && (
               <div className=" ml-5 pb-1">
                 <AudienceChecklist
                   tiers={tiers}

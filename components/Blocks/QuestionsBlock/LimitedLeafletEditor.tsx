@@ -158,7 +158,7 @@ export function LimitedLeafletEditor(props: {
       publishLabel={props.published ? "Update" : "Answer"}
       discardLabel={props.published ? "Discard changes" : "Discard draft"}
       onDiscard={discard}
-      allowImages
+      imagesInto={answerEntity}
     >
       {blocks}
     </LimitedLeafletComposer>

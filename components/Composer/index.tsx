@@ -22,7 +22,7 @@ export function ComposerChrome(props: {
   onSubmit?: () => void;
   submitting?: boolean;
   above?: React.ReactNode;
-  allowImages?: boolean;
+  allowImages?: string;
   actions?: React.ReactNode;
   className?: string;
   inputClassName?: string;
@@ -42,7 +42,10 @@ export function ComposerChrome(props: {
         <div className="flex gap-1 items-center">
           {props.allowImages && (
             <>
-              <ComposerAddImageButton disabled={!props.editor} />
+              <ComposerAddImageButton
+                root={props.allowImages}
+                disabled={!props.editor}
+              />
               <Separator classname="mx-1 h-5!" />
             </>
           )}
@@ -95,7 +98,7 @@ function MarkButton(props: {
       type="button"
       aria-label={props.label}
       disabled={!type}
-      className={`composerMarkButton shrink-0 rounded-md p-1 enabled:hover:bg-border-light hover:text-secordary disabled:opacity-50 ${active ? "bg-border-light text-primary" : "text-border"}`}
+      className={`composerMarkButton shrink-0 rounded-md p-1 enabled:hover:bg-border-light disabled:opacity-50 ${active ? "bg-border-light text-primary" : "text-border"}`}
       onMouseDown={(e) => {
         e.preventDefault();
         if (props.editor && type)

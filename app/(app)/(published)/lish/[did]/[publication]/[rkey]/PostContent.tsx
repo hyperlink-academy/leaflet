@@ -243,6 +243,10 @@ export let Block = ({
         newsletterMode: document.publication.newsletterMode,
       }
     : undefined;
+  let blockTierNames = (block: { tierIds?: unknown }) =>
+    audienceTierIds(block).flatMap((id) =>
+      tierNames?.[id] ? [tierNames[id]] : [],
+    );
   let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
     style: {
@@ -515,9 +519,7 @@ export let Block = ({
                 showThemes={block.showPublicationTheme !== false}
                 audience={questionsAudience(block.audience)}
                 tierIds={audienceTierIds(block)}
-                tierNames={audienceTierIds(block).flatMap((id) =>
-                  tierNames?.[id] ? [tierNames[id]] : [],
-                )}
+                tierNames={blockTierNames(block)}
                 closesAt={block.closesAt}
                 publication={interactionPublication}
               />
@@ -542,9 +544,7 @@ export let Block = ({
                 buttonText={block.buttonText}
                 audience={questionsAudience(block.audience)}
                 tierIds={audienceTierIds(block)}
-                tierNames={audienceTierIds(block).flatMap((id) =>
-                  tierNames?.[id] ? [tierNames[id]] : [],
-                )}
+                tierNames={blockTierNames(block)}
                 closesAt={block.closesAt}
                 showPending={!!block.showPending}
                 publication={interactionPublication}

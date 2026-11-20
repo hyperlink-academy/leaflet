@@ -36,17 +36,16 @@ export async function collectAndFetchBlockResources({
   agent,
   pages,
   documentUri,
+  publicationUri,
   openPageId,
   skipCodeBlocks,
 }: {
   agent: AtpAgent;
   pages: Page[];
-  // Absent for pages that aren't a document (publication pages).
   documentUri?: string;
+  // The document's publication, whose tiers a block's tierIds name
+  publicationUri?: string;
   openPageId?: string;
-  // For callers whose output never reaches the SSR HTML (the members-only
-  // unlock action): PubCodeBlock re-highlights on mount anyway, so running
-  // shiki server-side would be pure waste.
   skipCodeBlocks?: boolean;
 }): Promise<{
   bskyPostData: AppBskyFeedDefs.PostView[];
@@ -65,6 +64,24 @@ export async function collectAndFetchBlockResources({
   const pageBlocks: PubLeafletPagesLinearDocument.Block[] = pages.flatMap((p) =>
     pageBlocksInOrder(p).map((b) => b.block),
   );
+  const audienceTiers = [
+    ...new Set(
+      pageBlocks.flatMap((b) => {
+        const block = b.block as {
+          $type: string;
+          audience?: unknown;
+          tierIds?: unknown;
+        };
+        if (
+          block.$type !== ids.PubLeafletBlocksQuestions &&
+          block.$type !== ids.PubLeafletBlocksReply
+        )
+          return [];
+        return block.audience === "tiers" ? audienceTierIds(block) : [];
+      }),
+    ),
+  ];
+  const tierNamesPromise = fetchTierNames(publicationUri, audienceTiers);
   const hasQuestionsBlock = pageBlocks.some(
     (b) => b.block.$type === ids.PubLeafletBlocksQuestions,
   );
@@ -138,36 +155,6 @@ export async function collectAndFetchBlockResources({
       ? (await loadDocumentReplies(documentUri, null)).replies
       : [];
 
-  const audienceTiers = [
-    ...new Set(
-      pageBlocks.flatMap((b) => {
-        const block = b.block as {
-          $type: string;
-          audience?: unknown;
-          tierIds?: unknown;
-        };
-        if (
-          block.$type !== ids.PubLeafletBlocksQuestions &&
-          block.$type !== ids.PubLeafletBlocksReply
-        )
-          return [];
-        return block.audience === "tiers" ? audienceTierIds(block) : [];
-      }),
-    ),
-  ];
-  const { data: tiers } =
-    audienceTiers.length > 0
-      ? await supabaseServerClient
-          .from("publication_membership_tiers")
-          .select("id, name")
-          .in("id", audienceTiers)
-      : { data: [] };
-  const tierNames = Object.fromEntries(
-    (tiers ?? []).map((t) => [t.id, t.name]),
-  );
-
-  // Keyed `${pageId}:${blockIndex}` to match PostContent's lookup: the root
-  // page renders with no pageId, subpages with their page id.
   const prerenderedCodeBlocks = new Map<string, string>();
   await Promise.all(
     pages.map(async (page, pageIndex) => {
@@ -190,7 +177,24 @@ export async function collectAndFetchBlockResources({
     pollData,
     replyData,
     questionData,
-    tierNames,
+    tierNames: await tierNamesPromise,
     prerenderedCodeBlocks,
   };
+}
+
+async function fetchTierNames(
+  publicationUri: string | undefined,
+  tierIds: string[],
+): Promise<Record<string, string>> {
+  if (!publicationUri || tierIds.length === 0) return {};
+  const { data, error } = await supabaseServerClient
+    .from("publication_membership_tiers")
+    .select("id, name")
+    .eq("publication", publicationUri)
+    .in("id", tierIds);
+  if (error) {
+    console.error("[post] tier names lookup failed", error);
+    return {};
+  }
+  return Object.fromEntries(data.map((t) => [t.id, t.name]));
 }

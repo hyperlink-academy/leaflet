@@ -53,7 +53,7 @@ const replyErrorMessages: Partial<Record<ReplyError["type"], string>> = {
   not_follows: "Only people the author follows can submit a reply.",
   not_follower: "Only the author's followers can submit a reply.",
   not_subscriber: "Only subscribers can submit a reply.",
-  not_member: "Only some paid members can submit a reply.",
+  not_member: "Your membership doesn't include submitting replies here.",
 };
 
 export function DocumentReplies(props: {

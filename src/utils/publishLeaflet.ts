@@ -53,6 +53,7 @@ import { inngest } from "app/api/inngest/client";
 import { withPublishLock } from "src/utils/publishLock";
 import { createReplyRecord, subjectReplyBlock } from "src/documentReplies";
 import { submissionsClosed } from "src/submissionsClose";
+import { submissionAudienceError } from "src/questionsBlocks";
 import { cutPublishVersion } from "src/versioning/cutPublishVersion";
 import { loggedFetchHandler } from "src/utils/loggedFetchHandler";
 import { XRPCError } from "@atproto/xrpc";
@@ -616,13 +617,14 @@ async function publish({
   let createdReply:
     | { uri: string; subject: string; document: string }
     | undefined;
-  // A draft published after the reply block closed stays a plain post.
-  let replyBlock =
-    replyDraft &&
-    (await subjectReplyBlock(replyDraft.subject, replyDraft.block).catch(
-      () => null,
-    ));
-  if (replyDraft && replyBlock && !submissionsClosed(replyBlock.closesAt)) {
+
+  let replyAllowed =
+    !!replyDraft &&
+    (await replyDraftAllowed(replyDraft, credentialSession.did!).catch((e) => {
+      console.error("[publish] reply block check failed", e);
+      return false;
+    }));
+  if (replyDraft && replyAllowed) {
     const reply = await createReplyRecord({
       did: credentialSession.did!,
       subject: replyDraft.subject,
@@ -883,4 +885,18 @@ async function createMentionNotifications(
       }
     }
   }
+}
+
+async function replyDraftAllowed(
+  draft: { subject: string; block: string | null },
+  did: string,
+) {
+  let block = await subjectReplyBlock(draft.subject, draft.block);
+  if (!block || submissionsClosed(block.closesAt)) return false;
+  return !(await submissionAudienceError(
+    supabaseServerClient,
+    draft.subject,
+    did,
+    block,
+  ));
 }

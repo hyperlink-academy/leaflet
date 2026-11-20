@@ -98,6 +98,7 @@ export async function getUnlockedPost(
   } = await collectAndFetchBlockResources({
     agent,
     documentUri: document.uri,
+    publicationUri: pub.uri,
     pages: pages as Parameters<
       typeof collectAndFetchBlockResources
     >[0]["pages"],

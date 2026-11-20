@@ -2,13 +2,13 @@ import { useIsBlockSelected } from "src/useUIState";
 import { LockTiny } from "components/Icons/LockTiny";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { BlockProps } from "./Block";
-import { useEntity, useReplicache } from "src/replicache";
+import { useEntity } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { Popover } from "components/Popover";
 import { AudienceChecklist } from "components/Memberships/AudienceChecklist";
 import type { GatePolicy } from "src/membership";
-import { v7 } from "uuid";
+import { useSetGatePolicy } from "components/Memberships/useSetGatePolicy";
 
 export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
   let isSelected = useIsBlockSelected(props.entityID);
@@ -53,8 +53,6 @@ export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
           <TierSelector
             entityID={props.entityID}
             tiers={tiers}
-            audienceFact={audienceFact}
-            tierFacts={tierFacts}
             policy={policy}
           />
         ) : (
@@ -97,35 +95,18 @@ function gateSummary(policy: GatePolicy, tiers: Tier[]) {
 function TierSelector(props: {
   entityID: string;
   tiers: Tier[];
-  audienceFact: { id: string; data: { value: string } } | null | undefined;
-  tierFacts: { id: string; data: { value: string } }[];
   policy: GatePolicy;
 }) {
-  let { rep, undoManager } = useReplicache();
-
-  let setPolicy = (policy: GatePolicy) => {
-    if (!rep) return;
-    undoManager.withUndoGroup(async () => {
-      await rep.mutate.assertFact({
-        id: props.audienceFact?.id ?? v7(),
-        entity: props.entityID,
-        attribute: "block/members-only-audience",
-        data: { type: "string", value: policy.audience },
-      });
-      if (policy.audience !== "tiers") return;
-      for (let fact of props.tierFacts)
-        if (!policy.tierIds.includes(fact.data.value))
-          await rep.mutate.retractFact({ factID: fact.id });
-      for (let id of policy.tierIds)
-        if (!props.tierFacts.some((f) => f.data.value === id))
-          await rep.mutate.assertFact({
-            id: v7(),
-            entity: props.entityID,
-            attribute: "block/members-only-tier",
-            data: { type: "string", value: id },
-          });
-    });
-  };
+  let { setAudience } = useSetGatePolicy(
+    props.entityID,
+    "block/members-only-audience",
+    "block/members-only-tier",
+  );
+  let setPolicy = (policy: GatePolicy) =>
+    setAudience(
+      policy.audience,
+      policy.audience === "tiers" ? policy.tierIds : [],
+    );
 
   return (
     <Popover

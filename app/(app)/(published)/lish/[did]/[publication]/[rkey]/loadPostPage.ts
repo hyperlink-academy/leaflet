@@ -81,6 +81,7 @@ export async function loadPostPage({
   } = await collectAndFetchBlockResources({
     agent,
     documentUri: document.uri,
+    publicationUri: document.publication?.uri,
     pages: pages as (
       | PubLeafletPagesLinearDocument.Main
       | PubLeafletPagesCanvas.Main

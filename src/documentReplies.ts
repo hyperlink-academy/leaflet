@@ -306,11 +306,12 @@ export async function subjectReplyBlock(
   subject: string,
   key: string | null | undefined,
 ): Promise<PubLeafletBlocksReply.Main | null> {
-  const { data: doc } = await supabaseServerClient
+  const { data: doc, error } = await supabaseServerClient
     .from("documents")
     .select("uri, data")
     .eq("uri", subject)
     .maybeSingle();
+  if (error) throw error;
   return resolveInteractionBlock(
     replyBlocksOf(doc && normalizeDocumentRecord(doc.data, doc.uri)),
     key,

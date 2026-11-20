@@ -21,12 +21,7 @@ import {
   questionsAudience,
   type QuestionsAudience,
 } from "src/questionsAudience";
-import { AudienceOptions } from "../AudienceOptions";
-import {
-  CloseSubmissionsOption,
-  ClosesAtPage,
-  usePopoverHeight,
-} from "../CloseSubmissionsOption";
+import { SubmissionSettings } from "../SubmissionSettings";
 
 export const QuestionsBlock = (props: BlockProps & { preview?: boolean }) => {
   let isSelected = useIsBlockSelected(props.entityID);
@@ -118,46 +113,25 @@ function QuestionsSettings(props: {
   inPublication: boolean;
 }) {
   let { rep } = useReplicache();
-  let page = usePopoverHeight();
   return (
-    <div ref={page.ref} style={page.style} className="flex flex-col gap-3">
-      {page.onSubpage ? (
-        <ClosesAtPage
-          entityID={props.entityID}
-          attribute="questions/closes-at"
-          onBack={page.back}
-        />
-      ) : (
-        <>
-          <AudienceOptions
-            entityID={props.entityID}
-            block="questions"
-            value={props.audience}
-            label="Who can submit questions"
-            inPublication={props.inPublication}
-          />
-          <hr className="border-border-light my-1" />
-          <CloseSubmissionsOption
-            entityID={props.entityID}
-            attribute="questions/closes-at"
-            submissions="questions"
-            onPickDate={page.open}
-          />
-          <hr className="border-border-light my-1" />
-          <ToggleWithLabel
-            label="Show pending questions"
-            helpText="Readers see questions before you answer them. Removed ones never show."
-            toggle={props.showPending}
-            onToggle={() =>
-              rep?.mutate.assertFact({
-                entity: props.entityID,
-                attribute: "questions/show-pending",
-                data: { type: "boolean", value: !props.showPending },
-              })
-            }
-          />
-        </>
-      )}
-    </div>
+    <SubmissionSettings
+      entityID={props.entityID}
+      block="questions"
+      audience={props.audience}
+      inPublication={props.inPublication}
+    >
+      <ToggleWithLabel
+        label="Show pending questions"
+        helpText="Readers can see questions as soon as they are submitted. You can remove a question at any time."
+        toggle={props.showPending}
+        onToggle={() =>
+          rep?.mutate.assertFact({
+            entity: props.entityID,
+            attribute: "questions/show-pending",
+            data: { type: "boolean", value: !props.showPending },
+          })
+        }
+      />
+    </SubmissionSettings>
   );
 }

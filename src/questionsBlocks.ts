@@ -10,7 +10,11 @@ import { ids } from "lexicons/api/lexicons";
 import type { NormalizedDocument } from "src/utils/normalizeRecords";
 import { findDocumentBlocks } from "src/utils/documentHasBlock";
 import {
+  audienceErrorType,
   audienceGatePolicy,
+  audienceTierIds,
+  questionsAudience,
+  type AudienceErrorType,
   type QuestionsAudience,
 } from "src/questionsAudience";
 import { membershipUnlocksGatedPost } from "src/membership";
@@ -50,6 +54,25 @@ export async function canAskQuestion(
   ) as { following?: string; followedBy?: string } | undefined;
   if (!rel) return false;
   return audience === "follows" ? !!rel.following : !!rel.followedBy;
+}
+
+export async function submissionAudienceError(
+  supabase: SupabaseClient<Database>,
+  subject: string,
+  did: string,
+  block: { audience?: unknown; tierIds?: unknown },
+): Promise<AudienceErrorType | null> {
+  const audience = questionsAudience(block.audience);
+  if (audience === "anyone") return null;
+  return (await canAskQuestion(
+    supabase,
+    subject,
+    did,
+    audience,
+    audienceTierIds(block),
+  ))
+    ? null
+    : audienceErrorType(audience);
 }
 
 async function publicationMembership(

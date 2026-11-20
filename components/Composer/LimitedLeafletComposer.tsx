@@ -11,14 +11,14 @@ export function LimitedLeafletComposer(props: {
   publishLabel: string;
   discardLabel: string;
   onDiscard: () => void;
-  allowImages?: boolean;
+  imagesInto?: string;
   children: React.ReactNode;
 }) {
   return (
     <ComposerChrome
       bare
       editor={props.editor}
-      allowImages={props.allowImages}
+      allowImages={props.imagesInto}
       onSubmit={props.onPublish}
       submitting={props.publishing}
       actions={

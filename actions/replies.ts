@@ -39,10 +39,10 @@ import {
 } from "src/notifications";
 import { v7 } from "uuid";
 import { replyEventProperties, trackUserEvent } from "src/activeUserAnalytics";
-import { canAskQuestion } from "src/questionsBlocks";
-import { audienceTierIds, questionsAudience } from "src/questionsAudience";
+import { submissionAudienceError } from "src/questionsBlocks";
 import { submissionsClosed } from "src/submissionsClose";
 import type { PubLeafletBlocksReply } from "lexicons/api";
+import type { AudienceErrorType } from "src/questionsAudience";
 
 const viewerDid = () =>
   getAuthIdentity().then((identity) => identity?.atp_did ?? null);
@@ -160,37 +160,30 @@ export async function resolveReplyLink(args: {
   return Ok({ ...candidate, title: candidate.title || "Untitled" });
 }
 
+function replyBlockOrFailed(subject: string, key: string | null) {
+  return subjectReplyBlock(subject, key).catch((e) => {
+    console.error("[replies] reply block lookup failed", e);
+    return "failed" as const;
+  });
+}
+
 async function replyAudienceError(
   block: PubLeafletBlocksReply.Main,
   subject: string,
   did: string,
 ): Promise<ReplyError | null> {
-  const audience = questionsAudience(block.audience);
   try {
-    if (
-      await canAskQuestion(
-        supabaseServerClient,
-        subject,
-        did,
-        audience,
-        audienceTierIds(block),
-      )
-    )
-      return null;
+    const type = await submissionAudienceError(
+      supabaseServerClient,
+      subject,
+      did,
+      block,
+    );
+    return type ? { type } : null;
   } catch (e) {
     console.error("[replies] audience check failed", e);
     return { type: "failed" };
   }
-  return {
-    type:
-      audience === "subscribers"
-        ? "not_subscriber"
-        : audience === "paid" || audience === "tiers"
-          ? "not_member"
-          : audience === "follows"
-            ? "not_follows"
-            : "not_follower",
-  };
 }
 
 function replyDocumentError(
@@ -215,7 +208,8 @@ export async function createReplyDraft(args: {
 }): Promise<Result<{ leaflet: string }, ReplyError>> {
   const identity = await getAuthIdentity();
   if (!identity?.atp_did) return Err(notAuthenticated);
-  const block = await subjectReplyBlock(args.subject, args.block);
+  const block = await replyBlockOrFailed(args.subject, args.block);
+  if (block === "failed") return Err({ type: "failed" });
   if (!block || submissionsClosed(block.closesAt))
     return Err({ type: "replies_closed" });
   const audienceError = await replyAudienceError(
@@ -269,10 +263,7 @@ export type ReplyError =
         | "same_post"
         | "already_submitted"
         | "replies_closed"
-        | "not_subscriber"
-        | "not_member"
-        | "not_follows"
-        | "not_follower"
+        | AudienceErrorType
         | "not_owner"
         | "failed";
     }
@@ -292,7 +283,7 @@ export async function submitReply(args: {
   if (error) return Err(error);
 
   const [block, { data: existing }, agent] = await Promise.all([
-    subjectReplyBlock(args.subject, args.block),
+    replyBlockOrFailed(args.subject, args.block),
     supabaseServerClient
       .from("document_replies")
       .select("uri")
@@ -301,6 +292,7 @@ export async function submitReply(args: {
       .maybeSingle(),
     agentFor(did),
   ]);
+  if (block === "failed") return Err({ type: "failed" });
   if (!block || submissionsClosed(block.closesAt))
     return Err({ type: "replies_closed" });
   if (existing) return Err({ type: "already_submitted" });

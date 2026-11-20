@@ -22,17 +22,14 @@ import {
   pingIdentityToUpdateNotification,
 } from "src/notifications";
 import { resolveInteractionBlock } from "src/utils/documentHasBlock";
-import {
-  audienceTierIds,
-  questionsAudience,
-  type QuestionsAudience,
-} from "src/questionsAudience";
+import { type QuestionsAudience } from "src/questionsAudience";
 import { submissionsClosed } from "src/submissionsClose";
 import {
   canAskQuestion,
   mirrorQuestionVisibility,
   questionsBlocksOf,
   questionVisibilityStates,
+  submissionAudienceError,
 } from "src/questionsBlocks";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import {
@@ -146,27 +143,14 @@ export async function askQuestion(args: {
   );
   if (!questionsBlock || submissionsClosed(questionsBlock.closesAt))
     return Err({ type: "questions_closed" });
-  const audience = questionsAudience(questionsBlock.audience);
   try {
-    if (
-      !(await canAskQuestion(
-        supabaseServerClient,
-        args.subject,
-        did,
-        audience,
-        audienceTierIds(questionsBlock),
-      ))
-    )
-      return Err({
-        type:
-          audience === "subscribers"
-            ? "not_subscriber"
-            : audience === "paid" || audience === "tiers"
-              ? "not_member"
-              : audience === "follows"
-                ? "not_follows"
-                : "not_follower",
-      });
+    const audienceError = await submissionAudienceError(
+      supabaseServerClient,
+      args.subject,
+      did,
+      questionsBlock,
+    );
+    if (audienceError) return Err({ type: audienceError });
   } catch (e) {
     console.error("[questions] audience check failed", e);
     return Err({ type: "failed" });
