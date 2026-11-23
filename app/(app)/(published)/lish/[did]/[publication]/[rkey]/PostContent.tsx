@@ -85,6 +85,7 @@ import { interactionBlockAnchor } from "src/utils/interactionBlockAnchor";
 import { useOptionalPostResources } from "./PostDataProvider";
 import { PostHeader } from "./PostHeader/PostHeader";
 import { usePostHeaderBlockData } from "./PostHeader/postHeaderBlockContext";
+import { PublishedTable } from "./Blocks/PublishedTable";
 
 // Mirrors HeadingStyle in components/Blocks/TextBlock/index.tsx so published
 // headers match the editor exactly. Keep the two in sync — see the
@@ -848,6 +849,16 @@ export let Block = ({
         </p>
       );
     },
+    "pub.leaflet.blocks.table": (block) => (
+      <div className={className} {...blockProps}>
+        <PublishedTable
+          block={block}
+          index={index}
+          preview={preview}
+          footnoteIndexMap={footnoteIndexMap}
+        />
+      </div>
+    ),
     "pub.leaflet.blocks.header": (block) => {
       let slug = slugify(block.plaintext);
       let headingProps = {

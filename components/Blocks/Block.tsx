@@ -47,6 +47,7 @@ import { MathBlock } from "./MathBlock";
 import { CodeBlock } from "./CodeBlock";
 import { HorizontalRule } from "./HorizontalRule";
 import { DrawingBlock } from "./DrawingBlock";
+import { TableBlock } from "./TableBlock";
 import { MembersOnlyDelimiterBlock } from "./MembersOnlyDelimiterBlock";
 import { PostsListBlock } from "./PostsListBlock";
 import { RecommendedPubsBlock } from "./RecommendedPubsBlock";
@@ -465,6 +466,7 @@ const BlockTypeComponents: {
   "post-header": PostHeaderBlock,
   group: GroupBlock,
   drawing: DrawingBlock,
+  table: TableBlock,
 };
 
 // Only rendered on canvases. The Blocks list pads each block for a page; pull
@@ -571,7 +573,7 @@ export const BlockLayout = (props: {
           ? (e) => {
               if (
                 (e.target as Element).closest(
-                  "button, a, input, textarea, select, [contenteditable], [data-draggable]",
+                  "button, a, input, textarea, select, [contenteditable], [data-draggable], [data-table-block]",
                 )
               )
                 return;

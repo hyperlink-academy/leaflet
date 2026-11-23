@@ -12,12 +12,13 @@ clipboard text/plain ┘        (dialects)            (block elements)          
 - `normalizePastedHTML.ts` rewrites word-processor dialects into ordinary HTML:
   Word's `mso-list` paragraphs, Word Online's `aria-level` list runs, Google
   Docs' sibling-nested `<ul>`, class-driven marks that live in a `<style>`
-  block, tables, task-list checkboxes. It also consumes a markdown renderer's
+  block, and task-list checkboxes. It also consumes a markdown renderer's
   footnote section (GFM `<section data-footnotes>`, pandoc `section.footnotes`,
   python-markdown `div.footnotes`): each ref becomes a span carrying its
   definition's HTML, from which the block builder mints a footnote entity.
 - `htmlToBlocks.ts` flattens the normalized tree into block-level elements and
-  turns each one into the facts a block needs.
+  turns each one into the facts a block needs. It keeps tables intact for
+  `tableClipboard.ts`, which normalizes cells and also parses spreadsheet text.
 
 Everything downstream of `parsePasteHTMLToElements` is pure, which is what the
 tests drive. `useHandlePaste` only owns the Replicache/undo/cursor side.

@@ -36,6 +36,28 @@ function divToMathNode(state: any, node: any) {
   return state.all(node);
 }
 
+function tableCellLineBreaks() {
+  return (tree: any) => {
+    visit(tree, "tableCell", (cell) => {
+      visit(cell, "break", (node, index, parent) => {
+        if (parent && index !== undefined)
+          parent.children[index] = { type: "html", value: "<br>" };
+      });
+    });
+  };
+}
+
+function markdownTableLineBreaks() {
+  return (tree: any) => {
+    visit(tree, "tableCell", (cell) => {
+      visit(cell, "html", (node, index, parent) => {
+        if (parent && index !== undefined && /^<br\s*\/?>$/i.test(node.value))
+          parent.children[index] = { type: "break" };
+      });
+    });
+  };
+}
+
 function remarkTightListify() {
   return (tree: any) => {
     visit(tree, "list", (node) => {
@@ -57,7 +79,11 @@ function expandSoftLineBreaks(markdown: string): string {
   const lines = markdown.split("\n");
   const out: string[] = [];
   const isQuote = (l: string) => /^\s{0,3}>/.test(l);
-  const isTableRow = (l: string) => /^\s{0,3}\|/.test(l);
+  const isTableRow = (l: string) =>
+    /^\s{0,3}\S.*\|/.test(l) || /^\s{0,3}\|/.test(l);
+  const isTableDelimiter = (l: string) =>
+    /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)+\|?\s*$/.test(l);
+  let inTable = false;
   const isSetextUnderline = (l: string) => /^\s{0,3}(=+|-{2,})\s*$/.test(l);
   let fence: string | null = null;
 
@@ -77,7 +103,14 @@ function expandSoftLineBreaks(markdown: string): string {
     if (next === undefined || !next.trim() || !line.trim()) continue;
     if (isSetextUnderline(next)) continue;
     if (isQuote(line) && isQuote(next)) continue;
-    if (isTableRow(line) && isTableRow(next)) continue;
+    if (isTableRow(line) && isTableDelimiter(next)) inTable = true;
+    if (
+      (inTable || /^\s{0,3}\|/.test(line)) &&
+      isTableRow(line) &&
+      isTableRow(next)
+    )
+      continue;
+    inTable = false;
     out.push("");
   }
   return out.join("\n");
@@ -120,6 +153,7 @@ export function markdownToHtml(markdown: string): string {
       // singleDollarTextMath is off so prose like "$5 and $10" isn't parsed as
       // inline math; only display "$$…$$" becomes a math block.
       .use(remarkMath, { singleDollarTextMath: false })
+      .use(markdownTableLineBreaks)
       .use(remarkRehype, {
         handlers: { math: mathNodeToHast, inlineMath: mathNodeToHast },
       }) // Turn markdown syntax tree to HTML syntax tree, ignoring embedded HTML
@@ -133,6 +167,7 @@ export function htmlToMarkdown(html: string): string {
     unified()
       .use(rehypeParse) // Parse HTML to a syntax tree
       .use(rehypeRemark, { handlers: { div: divToMathNode } }) // Turn HTML syntax tree to markdown syntax tree
+      .use(tableCellLineBreaks)
       .use(remarkGfm)
       .use(remarkMath) // serialize math nodes back to "$$…$$"
       .use(remarkTightListify)

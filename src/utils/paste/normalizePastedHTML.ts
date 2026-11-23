@@ -18,9 +18,6 @@ const MARK_STYLE_PROPS = [
 const NON_CONTENT_TAGS =
   "style, script, noscript, template, link, meta, title, base";
 
-const BLOCK_TAGS_SELECTOR =
-  "p, div, h1, h2, h3, h4, h5, h6, blockquote, pre, ul, ol, li";
-
 const BLOCK_TAGS = new Set([
   "P",
   "DIV",
@@ -52,7 +49,6 @@ export function normalizePastedHTML(root: HTMLElement) {
   nestSiblingLists(root);
   normalizeTaskListItems(root);
   expandMultiBlockQuotes(root);
-  flattenTables(root);
 }
 
 // Word's Quote / Intense Quote styles are ordinary paragraphs tagged by class;
@@ -435,47 +431,6 @@ function nestSiblingLists(root: HTMLElement) {
     while (previous && previous.tagName !== "LI")
       previous = previous.previousElementSibling;
     if (previous) previous.appendChild(list);
-  }
-}
-
-// A table has no block representation, so each row becomes one text block whose
-// cells are separated by CELL_SEPARATOR. It has to be a visible character: the
-// editor's DOM parser collapses tabs and runs of spaces, so anything else loses
-// the cell boundaries entirely. Innermost tables first, so nested tables
-// collapse cleanly.
-const CELL_SEPARATOR = " | ";
-
-function flattenTables(root: HTMLElement) {
-  const doc = root.ownerDocument;
-  for (const table of Array.from(root.querySelectorAll("table")).reverse()) {
-    const fragment = doc.createDocumentFragment();
-    for (const row of Array.from(table.querySelectorAll("tr"))) {
-      const paragraph = doc.createElement("p");
-      const cells = Array.from(row.children).filter(
-        (c) => c.tagName === "TD" || c.tagName === "TH",
-      );
-      cells.forEach((cell, index) => {
-        if (index > 0)
-          paragraph.appendChild(doc.createTextNode(CELL_SEPARATOR));
-        unwrapBlockDescendants(cell);
-        while (cell.firstChild) paragraph.appendChild(cell.firstChild);
-      });
-      fragment.appendChild(paragraph);
-    }
-    table.replaceWith(fragment);
-  }
-}
-
-// Cells usually wrap their text in <p>/<div>; a row has to end up as a single
-// paragraph, so those wrappers are replaced by their contents.
-function unwrapBlockDescendants(el: Element) {
-  const doc = el.ownerDocument;
-  for (const block of Array.from(
-    el.querySelectorAll(BLOCK_TAGS_SELECTOR),
-  ).reverse()) {
-    const replacements: Node[] = Array.from(block.childNodes);
-    if (block.nextSibling) replacements.push(doc.createTextNode(" "));
-    block.replaceWith(...replacements);
   }
 }
 

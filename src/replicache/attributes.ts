@@ -571,6 +571,48 @@ const DrawingBlockAttributes = {
   },
 } as const;
 
+// Tables deliberately keep their axes as entities rather than encoding a
+// two-dimensional array in one fact. That lets collaborators insert, delete,
+// and reorder rows or columns without changing the identity of a cell.
+const TableBlockAttributes = {
+  "table/row": {
+    type: "ordered-reference",
+    cardinality: "many",
+  },
+  "table/column": {
+    type: "ordered-reference",
+    cardinality: "many",
+  },
+  "table/header-row": {
+    type: "reference",
+    cardinality: "one",
+  },
+  "table/style": {
+    type: "table-style-union",
+    cardinality: "one",
+  },
+  "table/borders": {
+    type: "boolean",
+    cardinality: "one",
+  },
+  "table/row/cell": {
+    type: "ordered-reference",
+    cardinality: "many",
+  },
+  "table/cell/column": {
+    type: "reference",
+    cardinality: "one",
+  },
+  "table/cell/text-generation": {
+    type: "string",
+    cardinality: "one",
+  },
+  "table/column/alignment": {
+    type: "text-alignment-type-union",
+    cardinality: "one",
+  },
+} as const;
+
 export const Attributes = {
   ...RootAttributes,
   ...PageAttributes,
@@ -592,6 +634,7 @@ export const Attributes = {
   ...QuestionsBlockAttributes,
   ...PostHeaderBlockAttributes,
   ...DrawingBlockAttributes,
+  ...TableBlockAttributes,
 };
 export type Attributes = typeof Attributes;
 
@@ -657,6 +700,10 @@ export type Data<A extends keyof typeof Attributes> = {
     type: "text-size-union";
     value: "default" | "small" | "large";
   };
+  "table-style-union": {
+    type: "table-style-union";
+    value: "default" | "striped";
+  };
   "page-type-union": { type: "page-type-union"; value: "doc" | "canvas" };
   "block-type-union": {
     type: "block-type-union";
@@ -694,7 +741,8 @@ export type Data<A extends keyof typeof Attributes> = {
       // document, positioned on the canvas as a single block.
       | "group"
       // Canvas-only freehand ink.
-      | "drawing";
+      | "drawing"
+      | "table";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";

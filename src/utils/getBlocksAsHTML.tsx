@@ -8,6 +8,36 @@ import { List, parseBlocksToList } from "./parseBlocksToList";
 import { getBlocksWithTypeLocal } from "src/replicache/getBlocks";
 import Katex from "katex";
 import { renderFootnoteDefHTML } from "./renderFootnoteDefHTML";
+import { byTablePosition, mapTableCells } from "src/replicache/table";
+import { DOMSerializer, Slice } from "prosemirror-model";
+import { yDocToProsemirror } from "y-prosemirror";
+import * as Y from "yjs";
+import { toByteArray } from "base64-js";
+import { schema } from "components/Blocks/TextBlock/schema";
+import {
+  stripCommentMarks,
+  stripFootnoteRefs,
+} from "components/Blocks/TextBlock/stripCommentMarks";
+
+function tableCellHTML(value: string) {
+  const doc = new Y.Doc();
+  try {
+    Y.applyUpdate(doc, toByteArray(value));
+    if (!doc.getXmlFragment("prosemirror").length) return "";
+    const content = yDocToProsemirror(schema, doc).firstChild?.content;
+    if (!content) return "";
+    const slice = stripFootnoteRefs(
+      stripCommentMarks(new Slice(content, 0, 0)),
+    );
+    const container = document.createElement("div");
+    container.appendChild(
+      DOMSerializer.fromSchema(schema).serializeFragment(slice.content),
+    );
+    return container.innerHTML;
+  } finally {
+    doc.destroy();
+  }
+}
 
 // Definition HTML for each footnote the block owns, keyed by entity id, so the
 // copied refs carry their content instead of a bare entity reference — see
@@ -76,7 +106,10 @@ async function renderList(l: List, tx: ReadTransaction): Promise<string> {
 async function getAllFacts(
   tx: ReadTransaction,
   entity: string,
+  seen = new Set<string>(),
 ): Promise<Array<Fact<any>>> {
+  if (seen.has(entity)) return [];
+  seen.add(entity);
   let facts = await scanIndex(tx).eav(entity, "");
   let childFacts = (
     await Promise.all(
@@ -86,7 +119,7 @@ async function getAllFacts(
           f.data.type === "ordered-reference" ||
           f.data.type === "spatial-reference"
         ) {
-          return getAllFacts(tx, f.data.value);
+          return getAllFacts(tx, f.data.value, seen);
         }
         return [];
       }),
@@ -111,6 +144,82 @@ const BlockTypeToHTML: {
   signup: async () => null,
   "post-header": async () => null,
   drawing: async () => null,
+  table: async (b, tx) => {
+    const scan = scanIndex(tx);
+    const [rowFacts, columnFacts, [header], [style], [borders]] =
+      await Promise.all([
+        scan.eav(b.entityID, "table/row"),
+        scan.eav(b.entityID, "table/column"),
+        scan.eav(b.entityID, "table/header-row"),
+        scan.eav(b.entityID, "table/style"),
+        scan.eav(b.entityID, "table/borders"),
+      ]);
+    const rows = rowFacts.toSorted(byTablePosition);
+    const columns = await Promise.all(
+      columnFacts.toSorted(byTablePosition).map(async (f) => {
+        const [alignment] = await scan.eav(
+          f.data.value,
+          "table/column/alignment",
+        );
+        return { id: f.data.value, alignment: alignment?.data.value };
+      }),
+    );
+    const hasHeader = !!header && header.data.value === rows[0]?.data.value;
+    const rendered = await Promise.all(
+      rows.map(async (row, i) => {
+        const RowCell = i === 0 && hasHeader ? "th" : "td";
+        const entries = await scan.eav(row.data.value, "table/row/cell");
+        const cellInfo = new Map(
+          await Promise.all(
+            entries.map(async (entry) => {
+              const id = entry.data.value;
+              const [[column], [text]] = await Promise.all([
+                scan.eav(id, "table/cell/column"),
+                scan.eav(id, "block/text"),
+              ]);
+              return [
+                id,
+                { column: column?.data.value, text: text?.data.value },
+              ] as const;
+            }),
+          ),
+        );
+        const cells = mapTableCells(entries, (id) => cellInfo.get(id)?.column);
+        return (
+          <tr key={row.id}>
+            {columns.map(({ id, alignment }) => {
+              const cell = cells.get(id);
+              const text = cell ? cellInfo.get(cell)?.text : undefined;
+              return (
+                <RowCell
+                  key={id}
+                  scope={RowCell === "th" ? "col" : undefined}
+                  align={
+                    alignment === "center" || alignment === "right"
+                      ? alignment
+                      : undefined
+                  }
+                  dangerouslySetInnerHTML={{
+                    __html: text ? tableCellHTML(text) : "",
+                  }}
+                />
+              );
+            })}
+          </tr>
+        );
+      }),
+    );
+    return (
+      <table
+        data-leaflet-table="1"
+        data-style={style?.data.value}
+        data-borders={borders?.data.value}
+      >
+        {hasHeader && <thead>{rendered[0]}</thead>}
+        <tbody>{hasHeader ? rendered.slice(1) : rendered}</tbody>
+      </table>
+    );
+  },
   group: async (b, tx) => {
     let facts = await getAllFacts(tx, b.entityID);
     let html = await renderBlocks(

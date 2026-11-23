@@ -1,8 +1,36 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createElement as h } from "react";
 import { renderEmail } from "./renderEmail";
+import { PostEmail } from "./post";
+
+vi.mock("supabase/serverClient", () => ({ supabaseServerClient: {} }));
 
 describe("renderEmail", () => {
+  it("keeps semantic table headers and wraps cells within the email column", async () => {
+    const html = await renderEmail(
+      PostEmail({
+        blocks: [
+          {
+            block: {
+              $type: "pub.leaflet.blocks.table",
+              headerRow: true,
+              borders: false,
+              columnAlignments: ["left", "right"],
+              rows: [
+                { cells: [{ plaintext: "Item" }, { plaintext: "Cost" }] },
+                { cells: [{ plaintext: "Bolt" }, { plaintext: "$5" }] },
+              ],
+            },
+          },
+        ],
+      }),
+    );
+    expect(html).toContain("table-layout:fixed");
+    expect(html).toContain('scope="col"');
+    expect(html).toContain("word-break:break-word");
+    expect(html).toContain("text-align:right");
+    expect(html).toContain("Bolt");
+  });
   it("drops React's image preload hints and keeps the images", async () => {
     const html = await renderEmail(
       h(

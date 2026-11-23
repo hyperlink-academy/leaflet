@@ -31,6 +31,7 @@ import {
   PubLeafletBlocksSignup,
   PubLeafletBlocksPostHeader,
   PubLeafletBlocksText,
+  PubLeafletBlocksTable,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksWebsite,
   PubLeafletPagesCanvas,
@@ -47,6 +48,12 @@ import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { scanIndexLocal } from "src/replicache/utils";
 import { getBlocksWithTypeLocal } from "src/replicache/getBlocks";
+import {
+  byTablePosition,
+  mapTableCells,
+  tableFactIndex,
+  validTableSize,
+} from "src/replicache/table";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { List, parseBlocksToList } from "src/utils/parseBlocksToList";
 import { Delta, YJSFragmentToString } from "src/utils/yjsFragmentToString";
@@ -159,8 +166,8 @@ export async function processBlocksToPages(opts: {
     return { plaintext, facets };
   };
 
-  const getBlockContent = (b: string) => {
-    const [content] = scan.eav(b, "block/text");
+  const getBlockContent = (b: string, lookup = scan.eav) => {
+    const [content] = lookup(b, "block/text");
     if (!content) return ["", [] as PubLeafletRichtextFacet.Main[]] as const;
     const doc = new Y.Doc();
     const update = base64.toByteArray(content.data.value);
@@ -357,6 +364,48 @@ export async function processBlocksToPages(opts: {
         plaintext: stringValue,
         ...(facets.length > 0 && { facets }),
         ...(textSize && { textSize: textSize.data.value }),
+      };
+      return block;
+    },
+    table: async (b) => {
+      const lookup = tableFactIndex(facts);
+      const rows = lookup(b.entityID, "table/row").toSorted(byTablePosition);
+      const columns = lookup(b.entityID, "table/column").toSorted(
+        byTablePosition,
+      );
+      if (!validTableSize(rows.length, columns.length)) return;
+      const [header] = lookup(b.entityID, "table/header-row");
+      const [style] = lookup(b.entityID, "table/style");
+      const [borders] = lookup(b.entityID, "table/borders");
+      const columnAlignments = columns.map((column) => {
+        const alignment = lookup(column.data.value, "table/column/alignment")[0]
+          ?.data.value;
+        return alignment === "right" || alignment === "center"
+          ? alignment
+          : "left";
+      });
+      const block: $Typed<PubLeafletBlocksTable.Main> = {
+        $type: "pub.leaflet.blocks.table",
+        rows: rows.map((row) => {
+          const cells = mapTableCells(
+            lookup(row.data.value, "table/row/cell"),
+            (cell) => lookup(cell, "table/cell/column")[0]?.data.value,
+          );
+          return {
+            cells: columns.map((column) => {
+              const cell = cells.get(column.data.value);
+              if (!cell) return { plaintext: "" };
+              const [plaintext, facets] = getBlockContent(cell, lookup);
+              return { plaintext, ...(facets.length > 0 && { facets }) };
+            }),
+          };
+        }),
+        ...(header?.data.value === rows[0]?.data.value && { headerRow: true }),
+        ...(style?.data.value === "striped" && { style: "striped" }),
+        ...(borders?.data.value === false && { borders: false }),
+        ...(columnAlignments.some((alignment) => alignment !== "left") && {
+          columnAlignments,
+        }),
       };
       return block;
     },

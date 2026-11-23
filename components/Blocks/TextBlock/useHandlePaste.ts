@@ -13,6 +13,7 @@ import { generateKeyBetween, generateNKeysBetween } from "fractional-indexing";
 import { addImage, prepareImage } from "src/utils/addImage";
 import { BlockProps } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
+import { useUIState } from "src/useUIState";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { v7 } from "uuid";
 import { Replicache } from "replicache";
@@ -32,6 +33,11 @@ import { renderFootnoteDefHTML } from "src/utils/renderFootnoteDefHTML";
 import { scanIndex } from "src/replicache/utils";
 import { groupCanvasBlock } from "src/utils/groupCanvasBlock";
 import { addGalleryImages } from "../ImageGalleryBlock/addGalleryImages";
+import { parseTableClipboard } from "src/utils/paste/tableClipboard";
+import { MAX_TABLE_CELLS } from "src/replicache/table";
+import { useToaster } from "components/Toast";
+import { focusNewTable } from "../TableBlock";
+import { flushPendingTextWrites } from "./useCollabText";
 
 export const useHandlePaste = (
   entityID: string,
@@ -39,6 +45,7 @@ export const useHandlePaste = (
 ) => {
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
+  const toast = useToaster();
   return useCallback(
     (view: EditorView, e: ClipboardEvent) => {
       if (!rep) return;
@@ -100,6 +107,66 @@ export const useHandlePaste = (
         ? generateKeyBetween(null, null)
         : position;
       const pasteNextPosition = groupEntity ? null : nextPosition;
+
+      const spreadsheetText = e.clipboardData.getData(
+        "text/tab-separated-values",
+      );
+      const grid = parseTableClipboard(
+        textHTML,
+        spreadsheetText || text,
+        !!spreadsheetText,
+      );
+      const showTooLarge = () =>
+        toast({
+          type: "error",
+          content: `Tables can have up to ${MAX_TABLE_CELLS.toLocaleString()} cells.`,
+        });
+      const showNormalized = () =>
+        toast({
+          type: "info",
+          content: "Table pasted with formatting or layout adjusted.",
+        });
+      if (grid) {
+        e.preventDefault();
+        if (grid === "too-large") {
+          showTooLarge();
+          return true;
+        }
+        const current = propsRef.current;
+        const empty = !editorState.editor.doc.firstChild?.content.size;
+        const table = empty ? current.entityID : v7();
+        const tableParent = empty
+          ? parent
+          : groupEntity ?? listData?.parent ?? parent;
+        const axis = () => ({ entityID: v7(), factID: v7() });
+        void (async () => {
+          await flushPendingTextWrites();
+          focusNewTable(table);
+          await undoManager.withUndoGroup(async () => {
+            if (!empty) await prepareParent?.();
+            await rep.mutate.createTable({
+              ...grid,
+              parent: tableParent,
+              table,
+              permission_set: entity_set.set,
+              tableFactID: v7(),
+              position: empty
+                ? ""
+                : generateKeyBetween(pastePosition, pasteNextPosition),
+              existingBlock: empty,
+              rows: Array.from({ length: grid.values.length }, axis),
+              columns: Array.from({ length: grid.values[0].length }, axis),
+            });
+          });
+          useUIState
+            .getState()
+            .focusAndSelectBlock({ entityID: table, parent: tableParent });
+          if (grid.normalized) showNormalized();
+        })().catch(() =>
+          toast({ type: "error", content: "Couldn’t paste table." }),
+        );
+        return true;
+      }
 
       let imageFiles = Array.from(e.clipboardData.items)
         .filter((item) => item.kind === "file" && item.type.includes("image"))
@@ -202,6 +269,8 @@ export const useHandlePaste = (
               position: pastePosition,
               nextPosition: pasteNextPosition,
               prepareParent,
+              showTooLarge,
+              showNormalized,
             }),
           );
         }
@@ -302,7 +371,7 @@ export const useHandlePaste = (
       e.stopPropagation();
       return true;
     },
-    [rep, entity_set, entityID, propsRef, undoManager],
+    [rep, entity_set, entityID, propsRef, undoManager, toast],
   );
 };
 
@@ -316,6 +385,8 @@ async function bulkPaste({
   position,
   nextPosition,
   prepareParent,
+  showTooLarge,
+  showNormalized,
 }: {
   children: HTMLElement[];
   rep: Replicache<ReplicacheMutators>;
@@ -328,11 +399,18 @@ async function bulkPaste({
   // Runs before the first block is committed under pasteParent; a paste the
   // active block absorbs whole never needs it.
   prepareParent?: () => Promise<void>;
+  showTooLarge: () => void;
+  showNormalized: () => void;
 }) {
   let result = buildBlocksFromElements(children, {
     parent: pasteParent,
     permission_set: entity_set.set,
   });
+  if (result.tableTooLarge) {
+    showTooLarge();
+    return;
+  }
+  if (result.tableNormalized) showNormalized();
   if (result.blocks.length === 0) return;
 
   // Determine if the first built block should reuse the active block.

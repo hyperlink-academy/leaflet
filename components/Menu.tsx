@@ -170,10 +170,12 @@ export const MenuItem = (props: {
   className?: string;
   onSelect: (e: Event) => void;
   id?: string;
+  disabled?: boolean;
 }) => {
   return (
     <DropdownMenu.Item
       id={props.id}
+      disabled={props.disabled}
       onSelect={(event) => {
         props.onSelect(event);
       }}

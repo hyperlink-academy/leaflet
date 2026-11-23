@@ -27,14 +27,19 @@ import {
 // The plugin is memoized on the (stable) awareness so it's built once, and
 // the overlay element carries the same awareness, so a caller only has to
 // drop `cursorPlugin` into its plugin list and render `overlay`.
-export function useCollabText(entityID: string) {
-  let { yText, awareness } = useYJSValue(entityID);
+type TableText = { generation: string; value?: string | null };
+
+export function useCollabText(entityID: string, tableText?: TableText) {
+  const syncID = tableText?.generation
+    ? `${entityID}:${tableText.generation}`
+    : entityID;
+  let { yText, awareness } = useYJSValue(entityID, tableText);
   let cursorPlugin = useMemo(
-    () => remoteCursorPlugin(awareness, entityID),
-    [awareness, entityID],
+    () => remoteCursorPlugin(awareness, syncID),
+    [awareness, syncID],
   );
-  let overlay = <RemoteCursors entityID={entityID} awareness={awareness} />;
-  return { yText, awareness, cursorPlugin, overlay };
+  let overlay = <RemoteCursors entityID={syncID} awareness={awareness} />;
+  return { yText, awareness, cursorPlugin, overlay, syncID };
 }
 
 // The yjs document behind a collaboratively-edited text entity, wired to its
@@ -69,25 +74,31 @@ export async function flushPendingTextWrites() {
 const recentDocs = new Map<string, Y.Doc>();
 const docMounts = new WeakMap<Y.Doc, number>();
 
-export function useYJSValue(entityID: string) {
+export function useYJSValue(entityID: string, tableText?: TableText) {
+  const tableGeneration = tableText?.generation;
+  const syncID = tableGeneration ? `${entityID}:${tableGeneration}` : entityID;
   const [ydoc] = useState(() => {
     let doc = new Y.Doc();
-    let recent = recentDocs.get(entityID);
+    let recent =
+      tableGeneration === undefined ? recentDocs.get(syncID) : undefined;
     if (recent) Y.applyUpdate(doc, Y.encodeStateAsUpdate(recent));
     return doc;
   });
   useEffect(() => {
-    recentDocs.set(entityID, ydoc);
+    recentDocs.set(syncID, ydoc);
     docMounts.set(ydoc, (docMounts.get(ydoc) ?? 0) + 1);
     return () => {
       docMounts.set(ydoc, docMounts.get(ydoc)! - 1);
       setTimeout(() => {
-        if (docMounts.get(ydoc) === 0 && recentDocs.get(entityID) === ydoc)
-          recentDocs.delete(entityID);
+        if (docMounts.get(ydoc) === 0 && recentDocs.get(syncID) === ydoc)
+          recentDocs.delete(syncID);
       }, 2000);
     };
-  }, [entityID, ydoc]);
-  const docStateFromReplicache = useEntity(entityID, "block/text");
+  }, [syncID, ydoc]);
+  const docStateFromReplicache = useEntity(
+    tableText ? null : entityID,
+    "block/text",
+  );
   let rep = useReplicache();
   let realtime = useYjsRealtime();
   // Outside a YjsRealtimeProvider (read-only contexts) there are never any
@@ -105,7 +116,12 @@ export function useYJSValue(entityID: string) {
   // Content written by a newer schema must never reach the editor's doc (see
   // ./schemaVersion) — leave it unapplied and go stale; the read-only
   // fallback renders the fact directly.
-  const factValue = docStateFromReplicache?.data.value;
+  // A grid paste replaces the cell doc. The generation and value come from
+  // the same subscription so a remounted editor cannot merge in the old
+  // initial block/text snapshot.
+  const factValue = tableText
+    ? tableText.value
+    : docStateFromReplicache?.data.value;
   const factTooNew = useMemo(
     () =>
       !!factValue &&
@@ -116,8 +132,8 @@ export function useYJSValue(entityID: string) {
     if (factTooNew) markClientStale();
   }, [factTooNew]);
 
-  if (docStateFromReplicache && !factTooNew) {
-    const update = base64.toByteArray(docStateFromReplicache.data.value);
+  if (factValue && !factTooNew) {
+    const update = base64.toByteArray(factValue);
     Y.applyUpdate(ydoc, update);
   }
 
@@ -127,8 +143,8 @@ export function useYJSValue(entityID: string) {
   let connection = realtime?.connection ?? null;
   useEffect(() => {
     if (!connection) return;
-    return connection.register(entityID, ydoc);
-  }, [connection, entityID, ydoc]);
+    return connection.register(syncID, ydoc);
+  }, [connection, syncID, ydoc]);
 
   useEffect(() => {
     if (!rep.rep) return;
@@ -139,6 +155,15 @@ export function useYJSValue(entityID: string) {
       if (useStaleClient.getState().stale) return;
       stampDocSchemaVersion(ydoc);
       const update = Y.encodeStateAsUpdate(ydoc);
+      if (tableGeneration !== undefined) {
+        await rep.rep?.mutate.editTableCellText({
+          cell: entityID,
+          generation: tableGeneration,
+          value: base64.fromByteArray(update),
+          ignoreUndo: true,
+        });
+        return;
+      }
       await rep.rep?.mutate.assertFact({
         //These undos are handled above in the Prosemirror context
         ignoreUndo: true,
@@ -173,8 +198,13 @@ export function useYJSValue(entityID: string) {
     yText.observeDeep(f);
     return () => {
       yText.unobserveDeep(f);
-      pendingTextWrites.delete(flushEarly);
+      if (tableGeneration !== undefined && timeout) {
+        pendingTextWrites.delete(flushEarly);
+        void flushEarly();
+      } else {
+        pendingTextWrites.delete(flushEarly);
+      }
     };
-  }, [yText, entityID, rep, ydoc]);
+  }, [yText, entityID, rep, ydoc, tableGeneration]);
   return { yText, awareness };
 }

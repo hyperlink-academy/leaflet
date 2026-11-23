@@ -2,6 +2,7 @@ import {
   PubLeafletBlocksHeader,
   PubLeafletBlocksOrderedList,
   PubLeafletBlocksText,
+  PubLeafletBlocksTable,
   PubLeafletBlocksUnorderedList,
   PubLeafletPagesCanvas,
   PubLeafletPagesLinearDocument,
@@ -49,7 +50,15 @@ function* textBlocks(block: unknown): Generator<PageRecordTextBlock> {
     PubLeafletBlocksHeader.isMain(block)
   )
     yield block as PageRecordTextBlock;
-  else if (
+  else if (PubLeafletBlocksTable.isMain(block)) {
+    for (const row of (block as PubLeafletBlocksTable.Main).rows) {
+      const plaintext = row.cells
+        .map((cell) => cell.plaintext.trim())
+        .filter(Boolean)
+        .join(" | ");
+      if (plaintext) yield { plaintext };
+    }
+  } else if (
     PubLeafletBlocksUnorderedList.isMain(block) ||
     PubLeafletBlocksOrderedList.isMain(block)
   )

@@ -1275,6 +1275,37 @@ const BlockRenderer = ({
     <BlockNotSupported theme={theme} colors={colors} postUrl={postUrl} />
   );
   const handlers: BlockHandlers<React.ReactNode> = {
+    "pub.leaflet.blocks.table": (block) => {
+      const renderRow = (row: (typeof block.rows)[number], key: number, header = false) => (
+        <tr key={key}>
+          {row.cells.map((cell, i) => {
+            const Tag = header ? "th" : "td";
+            const align = block.columnAlignments?.[i];
+            return (
+              <Tag key={i} scope={header ? "col" : undefined} style={{
+                padding: "6px 8px",
+                border: block.borders === false ? undefined : `1px solid ${colors.borderLight}`,
+                verticalAlign: "top",
+                overflowWrap: "anywhere",
+                wordBreak: "break-word",
+                whiteSpace: "pre-wrap",
+                textAlign: align === "center" ? "center" : align === "right" ? "right" : "left",
+                backgroundColor: header || (block.style === "striped" && key % 2 === 1) ? colors.borderLight : undefined,
+              }}>
+                <RichTextSpans plaintext={cell.plaintext} facets={cell.facets} theme={theme} assetsBaseUrl={assetsBaseUrl} />
+              </Tag>
+            );
+          })}
+        </tr>
+      );
+      const header = block.headerRow === true && block.rows[0];
+      return (
+        <table width="100%" style={{ tableLayout: "fixed", borderCollapse: "collapse", margin: BLOCK_MARGIN, color: theme.primary, fontFamily: theme.bodyFont }}>
+          {header && <thead>{renderRow(header, -1, true)}</thead>}
+          <tbody>{(header ? block.rows.slice(1) : block.rows).map((row, i) => renderRow(row, i))}</tbody>
+        </table>
+      );
+    },
     "pub.leaflet.blocks.text": (block) => (
       <Paragraph
         style={{
@@ -2424,6 +2455,8 @@ const MiniBlock = ({
     ));
   const handlers: BlockHandlers<React.ReactNode> = {
     "pub.leaflet.blocks.text": (b) => text(b.plaintext),
+    "pub.leaflet.blocks.table": (b) =>
+      text(b.rows.map((row) => row.cells.map((cell) => cell.plaintext).join(" | ")).join("\n")),
     "pub.leaflet.blocks.header": (b) => {
       const level = (b.level ?? 1) as 1 | 2 | 3;
       return text(b.plaintext, {

@@ -11,6 +11,15 @@ import { clearImageUploadStatus } from "src/utils/imageUploadStatus";
 import { enqueueBlobCleanup } from "src/utils/blobCleanup";
 import { useUIState } from "src/useUIState";
 import {
+  buildTableGraph,
+  tableCellFacts,
+  tableCellID,
+  tableTextFactID,
+  validTableSize,
+  type TableGraphInput,
+  type TableAxisInput,
+} from "./table";
+import {
   isPageLinkDisplay,
   type PageLinkDisplay,
 } from "src/utils/pageLinkDisplay";
@@ -307,6 +316,404 @@ const addBlock: Mutation<{
       data: { type: "boolean", value: args.list.checklist },
     });
   }
+};
+
+type TableAxis = TableAxisInput;
+type TableTarget = { table: string; permission_set: string };
+type TableAxisKind = "row" | "column";
+type TableAlignment = "left" | "center" | "right";
+
+async function tableAxis(
+  table: string,
+  axis: TableAxisKind,
+  ctx: MutationContext,
+) {
+  return (await ctx.scanIndex.eav(table, `table/${axis}`)).toSorted(byPosition);
+}
+
+async function createTableCell(
+  row: string,
+  column: string,
+  permission_set: string,
+  ctx: MutationContext,
+) {
+  const { cell, facts } = tableCellFacts(row, column);
+  await ctx.createEntity({ entityID: cell, permission_set });
+  await assertFact(facts, ctx);
+  return cell;
+}
+
+async function tableRowCells(row: string, ctx: MutationContext) {
+  const entries = (await ctx.scanIndex.eav(row, "table/row/cell")).toSorted(
+    byPosition,
+  );
+  const cells = new Map<string, string>();
+  for (const entry of entries) {
+    const [column] = await ctx.scanIndex.eav(
+      entry.data.value,
+      "table/cell/column",
+    );
+    if (column && !cells.has(column.data.value))
+      cells.set(column.data.value, entry.data.value);
+  }
+  return cells;
+}
+
+async function createTableAxis(
+  target: TableTarget,
+  axis: TableAxisKind,
+  item: TableAxis,
+  position: string,
+  ctx: MutationContext,
+) {
+  await ctx.createEntity({
+    entityID: item.entityID,
+    permission_set: target.permission_set,
+  });
+  await ctx.assertFact({
+    id: item.factID,
+    entity: target.table,
+    attribute: `table/${axis}`,
+    data: { type: "ordered-reference", value: item.entityID, position },
+  });
+}
+
+async function deleteTableRowEntity(row: string, ctx: MutationContext) {
+  for (const cell of await ctx.scanIndex.eav(row, "table/row/cell"))
+    await ctx.deleteEntity(cell.data.value);
+  await ctx.deleteEntity(row);
+}
+
+async function deleteTableDescendants(table: string, ctx: MutationContext) {
+  for (const row of await tableAxis(table, "row", ctx))
+    await deleteTableRowEntity(row.data.value, ctx);
+  for (const column of await tableAxis(table, "column", ctx))
+    await ctx.deleteEntity(column.data.value);
+}
+
+const createTable: Mutation<
+  TableTarget &
+    TableGraphInput & {
+      parent: string;
+      tableFactID: string;
+      position: string;
+      existingBlock?: boolean;
+    }
+> = async (args, ctx) => {
+  if (!validTableSize(args.rows.length, args.columns.length)) return;
+  const entityIDs = [
+    args.table,
+    ...args.rows.map((r) => r.entityID),
+    ...args.columns.map((c) => c.entityID),
+  ];
+  if (new Set(entityIDs).size !== entityIDs.length) return;
+  if (args.existingBlock) {
+    const [type] = await ctx.scanIndex.eav(args.table, "block/type");
+    if (!type || !["text", "heading", "blockquote"].includes(type.data.value))
+      return;
+    await ctx.assertFact({
+      entity: args.table,
+      attribute: "block/type",
+      data: { type: "block-type-union", value: "table" },
+    });
+  } else {
+    await addBlock(
+      {
+        parent: args.parent,
+        permission_set: args.permission_set,
+        newEntityID: args.table,
+        factID: args.tableFactID,
+        type: "table",
+        position: args.position,
+      },
+      ctx,
+    );
+  }
+
+  const graph = buildTableGraph(args);
+  for (const entityID of graph.entities)
+    await ctx.createEntity({ entityID, permission_set: args.permission_set });
+  await assertFact(graph.facts, ctx);
+};
+
+// Inserting or moving between concurrent siblings may encounter identical
+// fractional keys. Reindex only that case, preserving the order by fact id.
+async function writeTableAxisOrder(
+  args: { table: string; axis: TableAxisKind },
+  order: TableAxis[],
+  index: number,
+  positions: Map<string, string>,
+  ctx: MutationContext,
+) {
+  const before = positions.get(order[index - 1]?.factID) ?? null;
+  const after = positions.get(order[index + 1]?.factID) ?? null;
+  const keys =
+    before !== null && before === after
+      ? generateNKeysBetween(null, null, order.length)
+      : null;
+  for (const [i, item] of order.entries()) {
+    if (!keys && i !== index) continue;
+    await ctx.assertFact({
+      id: item.factID,
+      entity: args.table,
+      attribute: `table/${args.axis}`,
+      data: {
+        type: "ordered-reference",
+        value: item.entityID,
+        position: keys?.[i] ?? generateKeyBetween(before, after),
+      },
+    });
+  }
+}
+
+const editTableAxis: Mutation<
+  TableTarget & {
+    axis: TableAxisKind;
+    change:
+      | { type: "add"; item: TableAxis; after?: string }
+      | { type: "delete"; entity: string }
+      | { type: "move"; entity: string; target: string };
+  }
+> = async (args, ctx) => {
+  const { axis, table, change } = args;
+  const entries = await tableAxis(table, axis, ctx);
+  const other = await tableAxis(table, axis === "row" ? "column" : "row", ctx);
+  if (!entries.length || !other.length) return;
+  const [header] =
+    axis === "row" ? await ctx.scanIndex.eav(table, "table/header-row") : [];
+  const order = entries.map((fact) => ({
+    entityID: fact.data.value,
+    factID: fact.id,
+  }));
+  const positions = new Map(
+    entries.map((fact) => [fact.id, fact.data.position]),
+  );
+
+  if (change.type === "add") {
+    if (!validTableSize(entries.length + 1, other.length)) return;
+    const after = change.after
+      ? order.findIndex((item) => item.entityID === change.after)
+      : order.length - 1;
+    if (after < 0) return;
+    await ctx.createEntity({
+      entityID: change.item.entityID,
+      permission_set: args.permission_set,
+    });
+    order.splice(after + 1, 0, change.item);
+    await writeTableAxisOrder(args, order, after + 1, positions, ctx);
+    for (const fact of other) {
+      const pair =
+        axis === "row"
+          ? [change.item.entityID, fact.data.value]
+          : [fact.data.value, change.item.entityID];
+      await createTableCell(pair[0], pair[1], args.permission_set, ctx);
+    }
+    return;
+  }
+
+  const index = order.findIndex((item) => item.entityID === change.entity);
+  if (index < 0) return;
+  if (change.type === "move") {
+    const destination = order.findIndex(
+      (item) => item.entityID === change.target,
+    );
+    if (
+      destination < 0 ||
+      destination === index ||
+      header?.data.value === change.entity ||
+      header?.data.value === change.target
+    )
+      return;
+    const [moving] = order.splice(index, 1);
+    order.splice(destination, 0, moving);
+    await writeTableAxisOrder(args, order, destination, positions, ctx);
+    return;
+  }
+
+  if (entries.length === 1) return;
+  if (axis === "row") {
+    if (header?.data.value === change.entity) {
+      const replacement = order.find(
+        (item) => item.entityID !== change.entity,
+      )!;
+      await ctx.assertFact({
+        id: header.id,
+        entity: table,
+        attribute: "table/header-row",
+        data: { type: "reference", value: replacement.entityID },
+      });
+    }
+    await deleteTableRowEntity(change.entity, ctx);
+  } else {
+    for (const row of other) {
+      for (const entry of await ctx.scanIndex.eav(
+        row.data.value,
+        "table/row/cell",
+      )) {
+        const [column] = await ctx.scanIndex.eav(
+          entry.data.value,
+          "table/cell/column",
+        );
+        if (column?.data.value === change.entity)
+          await ctx.deleteEntity(entry.data.value);
+      }
+    }
+    await ctx.deleteEntity(change.entity);
+  }
+};
+
+const ensureTableCell: Mutation<
+  TableTarget & { row: string; column: string }
+> = async (args, ctx) => {
+  const { table, row, column } = args;
+  if (!(await tableAxis(table, "row", ctx)).some((r) => r.data.value === row))
+    return;
+  if (
+    !(await tableAxis(table, "column", ctx)).some(
+      (c) => c.data.value === column,
+    )
+  )
+    return;
+  if (
+    (await ctx.scanIndex.eav(tableCellID(row, column), "table/cell/column"))
+      .length
+  )
+    return;
+  if ((await tableRowCells(row, ctx)).has(column)) return;
+  await createTableCell(row, column, args.permission_set, ctx);
+};
+
+const pasteTableGrid: Mutation<
+  TableTarget & {
+    row: string;
+    column: string;
+    generation: string;
+    extraRows: TableAxis[];
+    extraColumns: TableAxis[];
+    values: string[][];
+  }
+> = async (args, ctx) => {
+  const rows = (await tableAxis(args.table, "row", ctx)).map(
+    (f) => f.data.value,
+  );
+  const columns = (await tableAxis(args.table, "column", ctx)).map(
+    (f) => f.data.value,
+  );
+  const firstRow = rows.indexOf(args.row);
+  const firstColumn = columns.indexOf(args.column);
+  const width = args.values[0]?.length ?? 0;
+  if (
+    firstRow < 0 ||
+    firstColumn < 0 ||
+    !width ||
+    args.values.some((row) => row.length !== width)
+  )
+    return;
+  const height = Math.max(rows.length, firstRow + args.values.length);
+  const totalWidth = Math.max(columns.length, firstColumn + width);
+  if (!validTableSize(height, totalWidth)) return;
+  if (
+    height - rows.length > args.extraRows.length ||
+    totalWidth - columns.length > args.extraColumns.length
+  )
+    return;
+
+  for (const item of args.extraRows.slice(0, height - rows.length)) {
+    await editTableAxis(
+      { ...args, axis: "row", change: { type: "add", item } },
+      ctx,
+    );
+    rows.push(item.entityID);
+  }
+  for (const item of args.extraColumns.slice(0, totalWidth - columns.length)) {
+    await editTableAxis(
+      { ...args, axis: "column", change: { type: "add", item } },
+      ctx,
+    );
+    columns.push(item.entityID);
+  }
+  for (const [i, row] of args.values.entries()) {
+    const rowID = rows[firstRow + i];
+    const cells = await tableRowCells(rowID, ctx);
+    for (const [j, value] of row.entries()) {
+      const column = columns[firstColumn + j];
+      const cell =
+        cells.get(column) ??
+        (await createTableCell(rowID, column, args.permission_set, ctx));
+      const [previous] = await ctx.scanIndex.eav(cell, "block/text");
+      if (previous) await ctx.retractFact(previous.id);
+      if (value)
+        await ctx.assertFact({
+          id: tableTextFactID(cell, args.generation),
+          entity: cell,
+          attribute: "block/text",
+          data: { type: "text", value },
+        });
+      await ctx.assertFact({
+        id: v5("text-generation", cell),
+        entity: cell,
+        attribute: "table/cell/text-generation",
+        data: { type: "string", value: args.generation },
+      });
+    }
+  }
+};
+
+const editTableCellText: Mutation<{
+  cell: string;
+  generation: string;
+  value: string;
+}> = async (args, ctx) => {
+  const [column] = await ctx.scanIndex.eav(args.cell, "table/cell/column");
+  if (!column) return;
+  const [generation] = await ctx.scanIndex.eav(
+    args.cell,
+    "table/cell/text-generation",
+  );
+  if ((generation?.data.value ?? "") !== args.generation) return;
+  await ctx.assertFact({
+    id: tableTextFactID(args.cell, args.generation),
+    entity: args.cell,
+    attribute: "block/text",
+    data: { type: "text", value: args.value },
+  });
+};
+
+const setTableHeaderRow: Mutation<{ table: string; enabled: boolean }> = async (
+  args,
+  ctx,
+) => {
+  const [existing] = await ctx.scanIndex.eav(args.table, "table/header-row");
+  if (!args.enabled) {
+    if (existing) await ctx.retractFact(existing.id);
+    return;
+  }
+  const [first] = await tableAxis(args.table, "row", ctx);
+  if (first)
+    await ctx.assertFact({
+      id: existing?.id ?? v5("header-row", args.table),
+      entity: args.table,
+      attribute: "table/header-row",
+      data: { type: "reference", value: first.data.value },
+    });
+};
+
+const setTableColumnAlignment: Mutation<{
+  table: string;
+  column: string;
+  alignment: TableAlignment;
+}> = async (args, ctx) => {
+  if (
+    !(await tableAxis(args.table, "column", ctx)).some(
+      (c) => c.data.value === args.column,
+    )
+  )
+    return;
+  await ctx.assertFact({
+    entity: args.column,
+    attribute: "table/column/alignment",
+    data: { type: "text-alignment-type-union", value: args.alignment },
+  });
 };
 
 const addLastBlock: Mutation<{
@@ -740,6 +1147,8 @@ const removeBlock: Mutation<
     let [type] = await ctx.scanIndex.eav(block.blockEntity, "block/type");
     if (type?.data.value === "group")
       await removeDescendants(block.blockEntity, ctx);
+    if (type?.data.value === "table")
+      await deleteTableDescendants(block.blockEntity, ctx);
     if (type?.data.value === "questions")
       for (let answer of await ctx.scanIndex.eav(
         block.blockEntity,
@@ -1622,6 +2031,13 @@ const editEditorComment: Mutation<{
 export const mutations = {
   retractAttribute,
   addBlock,
+  createTable,
+  editTableAxis,
+  ensureTableCell,
+  pasteTableGrid,
+  editTableCellText,
+  setTableHeaderRow,
+  setTableColumnAlignment,
   addCanvasBlock,
   groupCanvasBlock,
   ungroupCanvasBlock,

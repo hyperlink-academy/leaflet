@@ -6,6 +6,7 @@ import {
   resolvePageEntity,
   getPageBlocks,
   getAllFactsForEntities,
+  getTableDescendantFacts,
   blocksToMarkdown,
   extractPlaintext,
 } from "../lib";
@@ -80,6 +81,8 @@ export async function GET(req: NextRequest) {
         ]);
         allFacts = [...allFacts, ...subpageBlockFacts];
       }
+
+      allFacts.push(...await getTableDescendantFacts(tx, allFacts));
 
       // Build subpages list
       for (let b of blocks) {

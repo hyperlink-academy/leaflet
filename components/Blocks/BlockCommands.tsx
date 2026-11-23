@@ -46,6 +46,7 @@ import { ReplySmall } from "components/Icons/ReplySmall";
 import { HelpSmall } from "components/Icons/HelpSmall";
 import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
 import { getPageBlocks } from "src/replicache/getBlocks";
+import { focusNewTable } from "./TableBlock";
 
 type Props = {
   parent: string;
@@ -303,6 +304,46 @@ export const blockCommands: Command[] = [
           props.entityID && focusTextBlock(props.entityID);
         },
         redo: () => {},
+      });
+    },
+  },
+  {
+    name: "Table",
+    icon: <span className="text-base leading-none">▦</span>,
+    type: "block",
+    alternateNames: ["grid", "spreadsheet"],
+    onSelect: async (rep, props, um) => {
+      const table = props.entityID ?? v7();
+      focusNewTable(table);
+      const rows = Array.from({ length: 3 }, () => ({
+        entityID: v7(),
+        factID: v7(),
+      }));
+      const columns = Array.from({ length: 2 }, () => ({
+        entityID: v7(),
+        factID: v7(),
+      }));
+      await um.withUndoGroup(async () => {
+        props.entityID && clearCommandSearchText(props.entityID);
+        await rep.mutate.createTable({
+          parent: props.parent,
+          permission_set: props.entity_set,
+          table,
+          tableFactID: v7(),
+          position: props.entityID
+            ? ""
+            : generateKeyBetween(
+                props.position || null,
+                props.nextPosition || null,
+              ),
+          existingBlock: !!props.entityID,
+          rows,
+          columns,
+        });
+      });
+      useUIState.getState().focusAndSelectBlock({
+        entityID: table,
+        parent: props.parent,
       });
     },
   },

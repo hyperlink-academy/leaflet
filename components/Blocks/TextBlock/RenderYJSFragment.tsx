@@ -34,7 +34,7 @@ export function RenderYJSFragment({
   const update = base64.toByteArray(value);
   applyUpdate(doc, update);
   let [node] = doc.getXmlElement("prosemirror").toArray();
-  if (node.constructor === XmlElement) {
+  if (node?.constructor === XmlElement) {
     switch (node.nodeName as keyof typeof nodes) {
       case "paragraph": {
         let children = node.toArray();

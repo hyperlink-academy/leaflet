@@ -20,6 +20,45 @@ export const PubLeafletBlocksText: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksTable: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.table",
+  defs: {
+    main: {
+      type: "object",
+      required: ["rows"],
+      properties: {
+        rows: { type: "array", items: { type: "ref", ref: "#row" } },
+        headerRow: { type: "boolean" },
+        style: { type: "string", knownValues: ["default", "striped"] },
+        borders: { type: "boolean" },
+        columnAlignments: {
+          type: "array",
+          items: { type: "string", knownValues: ["left", "center", "right"] },
+        },
+      },
+    },
+    row: {
+      type: "object",
+      required: ["cells"],
+      properties: {
+        cells: { type: "array", items: { type: "ref", ref: "#cell" } },
+      },
+    },
+    cell: {
+      type: "object",
+      required: ["plaintext"],
+      properties: {
+        plaintext: { type: "string" },
+        facets: {
+          type: "array",
+          items: { type: "ref", ref: PubLeafletRichTextFacet.id },
+        },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksPage: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.page",
@@ -775,6 +814,7 @@ export const BlockLexicons = [
   PubLeafletBlocksIFrame,
   PubLeafletBlocksHtml,
   PubLeafletBlocksText,
+  PubLeafletBlocksTable,
   PubLeafletBlocksBlockQuote,
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,

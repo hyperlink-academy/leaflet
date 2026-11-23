@@ -11,6 +11,7 @@ import { Block } from "components/Blocks/Block";
 import { parseBlocksToList, List } from "src/utils/parseBlocksToList";
 import { htmlToMarkdown } from "src/htmlMarkdownParsers";
 import { isUuid } from "src/utils/isUuid";
+import { byTablePosition, mapTableCells, validTableSize } from "src/replicache/table";
 
 // --- Auth ---
 
@@ -371,6 +372,27 @@ async function renderBlockToHTML(
       let [value] = factsLookup(allFacts, b.entityID, "block/text");
       return renderYjsToHTML(value?.data.value, "blockquote", a ? { "data-alignment": a } : undefined);
     }
+    case "table": {
+      const rows = factsLookup(allFacts, b.entityID, "table/row").sort(byTablePosition);
+      const columns = factsLookup(allFacts, b.entityID, "table/column").sort(byTablePosition);
+      if (!validTableSize(rows.length, columns.length)) return "";
+      const [header] = factsLookup(allFacts, b.entityID, "table/header-row");
+      const textByCell = new Map(allFacts.filter(f => f.attribute === "block/text").map(f => [f.entity, f.data.value]));
+      const columnByCell = new Map(allFacts.filter(f => f.attribute === "table/cell/column").map(f => [f.entity, f.data.value]));
+      const alignments = columns.map(column => factsLookup(allFacts, column.data.value, "table/column/alignment")[0]?.data.value);
+      const rowHTML = rows.map((row, i) => {
+        const tag = i === 0 && header?.data.value === row.data.value ? "th" : "td";
+        const cells = mapTableCells(factsLookup(allFacts, row.data.value, "table/row/cell"), cell => columnByCell.get(cell));
+        return `<tr>${columns.map((column, j) => {
+          const cell = cells.get(column.data.value);
+          const value = cell ? textByCell.get(cell) : undefined;
+          const align = alignments[j];
+          return `<${tag}${align === "center" || align === "right" ? ` align="${align}"` : ""}>${renderYjsToHTML(value, "p")}</${tag}>`;
+        }).join("")}</tr>`;
+      });
+      const hasHeader = header?.data.value === rows[0].data.value;
+      return `<table>${hasHeader ? `<thead>${rowHTML.shift()}</thead>` : ""}<tbody>${rowHTML.join("")}</tbody></table>`;
+    }
     case "code": {
       let [code] = factsLookup(allFacts, b.entityID, "block/code");
       let [lang] = factsLookup(allFacts, b.entityID, "block/code-language");
@@ -474,6 +496,19 @@ async function blocksToHTML(
     }
   }
   return result;
+}
+
+// Fetch the two owned levels of a table in batches, alongside the top-level
+// block facts already fetched by the document endpoint.
+export async function getTableDescendantFacts(
+  tx: PgTransaction<any, any, any>,
+  allFacts: FactRow[],
+) {
+  const axes = allFacts.filter(f => f.attribute === "table/row" || f.attribute === "table/column");
+  if (!axes.length) return [];
+  const axisFacts = await getAllFactsForEntities(tx, [...new Set(axes.map(f => f.data.value as string))]);
+  const cells = axisFacts.filter(f => f.attribute === "table/row/cell");
+  return [...axisFacts, ...await getAllFactsForEntities(tx, [...new Set(cells.map(f => f.data.value as string))])];
 }
 
 // --- Blocks-to-markdown ---

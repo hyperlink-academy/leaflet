@@ -11,6 +11,8 @@ import { multiBlockSchema, schema } from "components/Blocks/TextBlock/schema";
 import type { Fact } from "src/replicache";
 import type { FactInput } from "src/replicache/mutations";
 import type { FilterAttributes } from "src/replicache/attributes";
+import { buildTableGraph } from "src/replicache/table";
+import { parseTableElement } from "./tableClipboard";
 import {
   mergeAndNestFlattenedLists,
   normalizePastedHTML,
@@ -38,6 +40,8 @@ export type BuildResult = {
   blocks: BuiltBlock[];
   extraEntities: Array<{ entityID: string; permission_set: string }>;
   imageTasks: ImageRefetchTask[];
+  tableNormalized?: boolean;
+  tableTooLarge?: boolean;
 };
 
 const emptyBuildResult = (): BuildResult => ({
@@ -50,6 +54,8 @@ function mergeInto(target: BuildResult, source: BuildResult) {
   target.blocks.push(...source.blocks);
   target.extraEntities.push(...source.extraEntities);
   target.imageTasks.push(...source.imageTasks);
+  if (source.tableNormalized) target.tableNormalized = true;
+  if (source.tableTooLarge) target.tableTooLarge = true;
 }
 
 // Parse a clipboard text/html payload into the block-level elements the block
@@ -96,6 +102,38 @@ function buildBlockFromHTML(
 ): BuildResult {
   const { parent, permission_set, listStyle } = opts;
   const result = emptyBuildResult();
+
+  if (child.tagName === "TABLE") {
+    const grid = parseTableElement(child as HTMLTableElement);
+    if (grid === "too-large") return { ...result, tableTooLarge: true };
+    if (!grid) return result;
+    const entityID = v7();
+    const axis = () => ({ entityID: v7(), factID: v7() });
+    const graph = buildTableGraph({
+      ...grid,
+      table: entityID,
+      rows: Array.from({ length: grid.values.length }, axis),
+      columns: Array.from({ length: grid.values[0].length }, axis),
+    });
+    result.blocks.push({
+      entityID,
+      parent,
+      type: "table",
+      facts: [
+        {
+          entity: entityID,
+          attribute: "block/type",
+          data: { type: "block-type-union", value: "table" },
+        },
+        ...graph.facts,
+      ],
+    });
+    result.extraEntities.push(
+      ...graph.entities.map((entityID) => ({ entityID, permission_set })),
+    );
+    if (grid.normalized) result.tableNormalized = true;
+    return result;
+  }
 
   if (child.tagName === "UL" || child.tagName === "OL") {
     const childListStyle = child.tagName === "OL" ? "ordered" : "unordered";
@@ -550,6 +588,7 @@ function encodeYJSDoc(doc: ProsemirrorNode): string {
 // so a hyperlink in flowing prose parses as an inline link mark instead of
 // splitting the paragraph and becoming its own (async) link block.
 const BLOCK_FLATTEN_TAGS = new Set([
+  "TABLE",
   "BLOCKQUOTE",
   "P",
   "PRE",

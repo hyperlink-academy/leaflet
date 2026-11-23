@@ -2067,6 +2067,71 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksTable: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.table',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['rows'],
+        properties: {
+          rows: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.blocks.table#row',
+            },
+          },
+          headerRow: {
+            type: 'boolean',
+          },
+          style: {
+            type: 'string',
+            knownValues: ['default', 'striped'],
+          },
+          borders: {
+            type: 'boolean',
+          },
+          columnAlignments: {
+            type: 'array',
+            items: {
+              type: 'string',
+              knownValues: ['left', 'center', 'right'],
+            },
+          },
+        },
+      },
+      row: {
+        type: 'object',
+        required: ['cells'],
+        properties: {
+          cells: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.blocks.table#cell',
+            },
+          },
+        },
+      },
+      cell: {
+        type: 'object',
+        required: ['plaintext'],
+        properties: {
+          plaintext: {
+            type: 'string',
+          },
+          facets: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.richtext.facet',
+            },
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksText: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.text',
@@ -2759,6 +2824,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.iframe',
               'lex:pub.leaflet.blocks.html',
               'lex:pub.leaflet.blocks.text',
+              'lex:pub.leaflet.blocks.table',
               'lex:pub.leaflet.blocks.blockquote',
               'lex:pub.leaflet.blocks.header',
               'lex:pub.leaflet.blocks.image',
@@ -2897,6 +2963,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.iframe',
               'lex:pub.leaflet.blocks.html',
               'lex:pub.leaflet.blocks.text',
+              'lex:pub.leaflet.blocks.table',
               'lex:pub.leaflet.blocks.blockquote',
               'lex:pub.leaflet.blocks.header',
               'lex:pub.leaflet.blocks.image',
@@ -3946,6 +4013,7 @@ export const ids = {
   PubLeafletBlocksStandardSitePost: 'pub.leaflet.blocks.standardSitePost',
   PubLeafletBlocksStandardSitePublication:
     'pub.leaflet.blocks.standardSitePublication',
+  PubLeafletBlocksTable: 'pub.leaflet.blocks.table',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
   PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
   PubLeafletBlocksWebsite: 'pub.leaflet.blocks.website',

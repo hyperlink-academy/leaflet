@@ -30,7 +30,7 @@ describe("text/plain", () => {
     [
       "a GFM table parses as a table, not literal pipes",
       "| a | b |\n| - | - |\n| 1 | 2 |",
-      ["text: a | b", "text: 1 | 2"],
+      ["table: "],
     ],
     [
       "nested lists keep their depth and style",

@@ -764,7 +764,7 @@ export const CanvasBackgroundPattern = (props: {
 // is the body, like an image that opens its lightbox, is marked
 // data-block-body and moves the block like the rest of it.
 const BODY_CONTROLS =
-  "button:not([data-block-body]), input, textarea, select, iframe, [data-draggable]";
+  "button:not([data-block-body]), input, textarea, select, iframe, [data-draggable], [data-table-block]";
 // Inline nodes that act on a click.
 const TEXT_CONTROLS = "a, .mention, .footnote-ref, .comment-anchor";
 // A group's other blocks and list markers are picked up to reorder them.

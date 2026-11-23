@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import { processBlocksToPages } from "./factsToPagesRecord";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
+import { buildTableGraph, tableCellID } from "src/replicache/table";
+import { createYjsText } from "./createYjsText";
+import { v7 } from "uuid";
+import { PubLeafletBlocksTable } from "lexicons/api";
 
 let n = 0;
 const fact = (f: Omit<Fact<Attribute>, "id">) =>
@@ -20,6 +24,58 @@ const child = (parent: string, value: string, position: string) =>
   });
 
 describe("processBlocksToPages", () => {
+  it("publishes table cells in column order and pads a missing intersection", async () => {
+    const table = v7();
+    const axis = () => ({ entityID: v7(), factID: v7() });
+    const rows = [axis(), axis()];
+    const columns = [axis(), axis()];
+    const graph = buildTableGraph({
+      table,
+      rows,
+      columns,
+      style: "striped",
+      borders: false,
+      alignments: ["left", "right"],
+      values: [
+        [createYjsText("Name"), createYjsText("Price")],
+        [createYjsText("Bolt"), ""],
+      ],
+    });
+    const missing = tableCellID(rows[1].entityID, columns[1].entityID);
+    const { pages } = await processBlocksToPages({
+      facts: [
+        fact({
+          entity: "root",
+          attribute: "root/page",
+          data: { type: "ordered-reference", value: "page", position: "a0" },
+        }),
+        child("page", table, "a0"),
+        block(table, "table"),
+        ...graph.facts
+          .filter(
+            (f) =>
+              f.entity !== missing &&
+              (!("value" in f.data) || f.data.value !== missing),
+          )
+          .map((f) => ({ id: v7(), ...f })),
+      ],
+      root_entity: "root",
+      hooks: { uploadImage: async () => undefined, uploadPoll: null },
+    });
+    const published = pages[0].blocks[0].block;
+    expect(PubLeafletBlocksTable.validateMain(published).success).toBe(true);
+    expect(published).toEqual({
+      $type: "pub.leaflet.blocks.table",
+      headerRow: true,
+      style: "striped",
+      borders: false,
+      columnAlignments: ["left", "right"],
+      rows: [
+        { cells: [{ plaintext: "Name" }, { plaintext: "Price" }] },
+        { cells: [{ plaintext: "Bolt" }, { plaintext: "" }] },
+      ],
+    });
+  });
   it("publishes only the theme colors a page overrides", async () => {
     let facts = [
       fact({

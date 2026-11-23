@@ -172,8 +172,7 @@ describe("Microsoft Word (desktop)", () => {
       "  ul-li: Except in March",
       "h2: Next steps",
       "text: See the plan for details.",
-      "text: Region | Growth",
-      "text: North | 12%",
+      "table: ",
     ]);
   });
 
@@ -460,9 +459,9 @@ describe("structural edge cases", () => {
       ["ul-li: Top", "  ol-li: One"],
     ],
     [
-      "a table row becomes one block, not one block per cell",
+      "a table stays one native block",
       `<table><tr><th>Name</th><th>Qty</th></tr><tr><td>Bolt</td><td>4</td></tr></table>`,
-      ["text: Name | Qty", "text: Bolt | 4"],
+      ["table: "],
     ],
     [
       "empty paragraphs are preserved as empty text blocks",

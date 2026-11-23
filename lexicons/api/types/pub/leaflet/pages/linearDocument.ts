@@ -13,6 +13,7 @@ import type * as PubLeafletThemePage from '../theme/page'
 import type * as PubLeafletBlocksIframe from '../blocks/iframe'
 import type * as PubLeafletBlocksHtml from '../blocks/html'
 import type * as PubLeafletBlocksText from '../blocks/text'
+import type * as PubLeafletBlocksTable from '../blocks/table'
 import type * as PubLeafletBlocksBlockquote from '../blocks/blockquote'
 import type * as PubLeafletBlocksHeader from '../blocks/header'
 import type * as PubLeafletBlocksImage from '../blocks/image'
@@ -66,6 +67,7 @@ export interface Block {
     | $Typed<PubLeafletBlocksIframe.Main>
     | $Typed<PubLeafletBlocksHtml.Main>
     | $Typed<PubLeafletBlocksText.Main>
+    | $Typed<PubLeafletBlocksTable.Main>
     | $Typed<PubLeafletBlocksBlockquote.Main>
     | $Typed<PubLeafletBlocksHeader.Main>
     | $Typed<PubLeafletBlocksImage.Main>

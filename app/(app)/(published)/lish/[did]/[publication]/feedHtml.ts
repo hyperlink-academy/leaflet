@@ -91,6 +91,19 @@ function createFeedRenderContext(
   const renderers: BlockHandlers<string> = {
     "pub.leaflet.blocks.text": (b) =>
       `<p>${renderRichText(b.plaintext, b.facets, ctx)}</p>`,
+    "pub.leaflet.blocks.table": (b) => {
+      const row = (value: (typeof b.rows)[number], header: boolean, striped = false) => {
+        const tag = header ? "th" : "td";
+        return `<tr>${value.cells.map((cell, i) => {
+          const alignment = b.columnAlignments?.[i];
+          const align = alignment === "center" || alignment === "right" ? alignment : "left";
+          return `<${tag}${header ? ' scope="col"' : ""} style="text-align:${align};padding:4px 8px${b.borders !== false ? ";border:1px solid #aaa" : ""}${header || striped ? ";background-color:rgba(128,128,128,.15)" : ""}">${renderRichText(cell.plaintext, cell.facets, ctx)}</${tag}>`;
+        }).join("")}</tr>`;
+      };
+      const header = b.headerRow === true && b.rows[0];
+      const body = header ? b.rows.slice(1) : b.rows;
+      return `<table style="border-collapse:collapse">${header ? `<thead>${row(header, true)}</thead>` : ""}<tbody>${body.map((value, i) => row(value, false, b.style === "striped" && i % 2 === 1)).join("")}</tbody></table>`;
+    },
     "pub.leaflet.blocks.header": (b) => {
       const level = Math.min(Math.max(b.level || 1, 1), 6);
       return `<h${level}>${renderRichText(b.plaintext, b.facets, ctx)}</h${level}>`;
@@ -167,6 +180,8 @@ export function blocksToPlainText(
 const richTextPlain = (b: { plaintext: string }) => b.plaintext.trim();
 const plainTextExtractors: BlockHandlers<string> = {
   "pub.leaflet.blocks.text": richTextPlain,
+  "pub.leaflet.blocks.table": (b) =>
+    b.rows.map((row) => row.cells.map((cell) => cell.plaintext).join("\t")).join("\n"),
   "pub.leaflet.blocks.header": richTextPlain,
   "pub.leaflet.blocks.blockquote": richTextPlain,
   "pub.leaflet.blocks.code": richTextPlain,

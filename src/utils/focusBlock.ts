@@ -20,6 +20,13 @@ export function focusBlock(
     document.getElementById(elementId.block(block.entityID).container),
     false,
   );
+  if (block.type === "table") {
+    document
+      .getElementById(elementId.block(block.entityID).container)
+      ?.querySelector<HTMLElement>("[data-table-block]")
+      ?.focus({ preventScroll: true });
+    return true;
+  }
   if (block.type === "math" || block.type === "code") {
     let el = document.getElementById(
       elementId.block(block.entityID).input,

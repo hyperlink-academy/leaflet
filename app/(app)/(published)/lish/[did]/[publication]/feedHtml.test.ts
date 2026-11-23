@@ -15,6 +15,25 @@ const BASE = "https://example.leaflet.pub";
 const render = (blocks: any[]) => blocksToFeedHtml(blocks, DID, BASE);
 
 describe("blocksToFeedHtml", () => {
+  test("renders table headers and rich cells in HTML and preserves rows in plain text", () => {
+    const blocks = [{
+      block: {
+        $type: "pub.leaflet.blocks.table",
+        headerRow: true,
+        columnAlignments: ["left", "right"],
+        rows: [
+          { cells: [{ plaintext: "Item" }, { plaintext: "Cost" }] },
+          { cells: [{ plaintext: "<Bolt>" }, { plaintext: "$5", facets: [facet(0, 2, { $type: "pub.leaflet.richtext.facet#bold" })] }] },
+        ],
+      },
+    }];
+    const html = render(blocks);
+    expect(html).toContain('<thead><tr><th scope="col"');
+    expect(html).toContain('text-align:right');
+    expect(html).toContain('&lt;Bolt&gt;');
+    expect(html).toContain('<b>$5</b>');
+    expect(blocksToPlainText(blocks)).toBe("Item\tCost\n<Bolt>\t$5");
+  });
   test("plain paragraph with no facets", () => {
     expect(render([text("hello world")])).toBe("<p>hello world</p>");
   });
