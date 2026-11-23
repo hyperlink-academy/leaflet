@@ -23,6 +23,15 @@ export function isActiveMembersDelimiter(
   );
 }
 
+// Whether the page has a delimiter at all, released or not. For deciding
+// whether a record is one of ours whose full copy we keep, which stays true
+// after a public wider release.
+export function pageContainsMembersDelimiter(page: unknown): boolean {
+  return !!findDelimiterBlock(
+    (page as { blocks?: unknown } | null | undefined)?.blocks,
+  );
+}
+
 export function pageHasMembersDelimiter(
   page: unknown,
   now: number = Date.now(),

@@ -306,7 +306,8 @@ export async function broadcastPostEmail(
     // Written to each event's metadata; must include the key
     // loadUnsentSubscribers dedupes on.
     eventMetadata: Record<string, string>;
-    // Set for the wider-release send of an early-access post.
+    // Set for the wider-release send of an early-access post; shown to the
+    // recipients who get the full post.
     widerReleaseNote?: { upgradeUrl: string };
   },
 ) {
@@ -480,7 +481,8 @@ export async function broadcastPostEmail(
           unsubscribeUrl: UNSUB_PLACEHOLDER,
           manageUrl: MANAGE_PLACEHOLDER,
           membersUpsell: group.upsell ? membersUpsell : undefined,
-          widerReleaseNote: args.widerReleaseNote,
+          // Only for readers the release reached, not the cut-off preview.
+          widerReleaseNote: group.upsell ? undefined : args.widerReleaseNote,
         }),
       );
     });

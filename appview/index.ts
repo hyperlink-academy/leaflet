@@ -37,7 +37,10 @@ import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
 import { inngest } from "app/api/inngest/client";
 import { stripThemeWithoutType } from "src/utils/stripThemeWithoutType";
-import { pageHasMembersDelimiter } from "src/membership";
+import {
+  pageContainsMembersDelimiter,
+  pageHasMembersDelimiter,
+} from "src/membership";
 import { MAIN_SITE_URL } from "src/utils/customDomain";
 import { tombstoneComment } from "src/comments/tombstoneComment";
 import {
@@ -230,7 +233,8 @@ async function isGatedLeafletManagedDoc(
   isPublicationDoc: boolean,
   firstPage: unknown,
 ): Promise<boolean> {
-  if (!isPublicationDoc || !pageHasMembersDelimiter(firstPage)) return false;
+  if (!isPublicationDoc || !pageContainsMembersDelimiter(firstPage))
+    return false;
   const [{ data: managed }, { data: existing }] = await Promise.all([
     supabase
       .from("leaflets_in_publications")

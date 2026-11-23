@@ -9,6 +9,7 @@ import {
 import { truncateDocumentRecordForPDS } from "src/membership";
 import { supabaseServerClient } from "supabase/serverClient";
 import { resolveBlobLinks, type JsonBlob } from "src/utils/resolveBlobLinks";
+import { uploadBlobFromUrl } from "src/utils/documentRecordForPDS";
 import type { Json } from "supabase/database.types";
 
 // Batch size to avoid Inngest payload limits and PDS rate limits
@@ -117,20 +118,6 @@ export const write_records_to_pds = inngest.createFunction(
     };
   },
 );
-
-async function uploadBlobFromUrl(
-  agent: AtpBaseClient,
-  url: string,
-): Promise<JsonBlob> {
-  const res = await fetch(url);
-  if (res.status !== 200)
-    throw new Error(`Fetching blob ${url} failed: HTTP ${res.status}`);
-  const binary = await res.blob();
-  const { data } = await agent.com.atproto.repo.uploadBlob(binary, {
-    headers: { "Content-Type": binary.type },
-  });
-  return data.blob.toJSON() as JsonBlob;
-}
 
 // Our indexed copy of a record we just changed the blob refs of. The appview
 // re-indexes from the firehose too, but only for the collections it follows.

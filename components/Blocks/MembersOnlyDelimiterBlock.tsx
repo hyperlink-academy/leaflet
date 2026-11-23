@@ -175,7 +175,7 @@ function TierSelector(props: {
       asChild
       side="top"
       align="center"
-      className="sm:w-full w-sm min-w-0 p-0!"
+      className="w-full sm:w-sm min-w-0 p-0!"
       trigger={
         <button
           type="button"

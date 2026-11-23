@@ -29,12 +29,11 @@ import {
   makePublishUploadHooks,
   PublishImageError,
 } from "src/utils/publishHelpers";
-import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
+import { documentRecordForPDS } from "src/utils/documentRecordForPDS";
 import { makeGatedImageStore } from "src/utils/gatedDocumentImages";
 import {
   getFirstPageMembersDelimiter,
   pageHasMembersDelimiter,
-  truncateDocumentRecordForPDS,
 } from "src/membership";
 import {
   getDocumentPages,
@@ -490,10 +489,7 @@ async function publish({
     };
     record = siteRecord;
 
-    recordForPDS = await maybeOffloadPagesToBlob(
-      truncateDocumentRecordForPDS(siteRecord),
-      agent,
-    );
+    recordForPDS = await documentRecordForPDS(siteRecord, agent);
   } else {
     // pub.leaflet.document format (legacy)
     record = {
@@ -517,7 +513,7 @@ async function publish({
       pages,
       publishedAt: resolvedPublishedAt,
     } satisfies PubLeafletDocument.Record;
-    recordForPDS = truncateDocumentRecordForPDS(record);
+    recordForPDS = await documentRecordForPDS(record, agent);
   }
 
   let { data: result } = await agent.com.atproto.repo.putRecord({
@@ -715,14 +711,25 @@ async function publish({
     typeof widerReleaseAt === "string" &&
     widerReleaseAt !== previousWiderReleaseAt
   ) {
-    await inngest.send({
-      name: "post/wider_release.scheduled",
-      data: {
-        publication_uri,
+    // The post is already live, so a failure to schedule is logged rather
+    // than reported as a failed publish. The gate itself still widens on
+    // time; only the cache refresh, PDS copy and release emails are missed.
+    try {
+      await inngest.send({
+        name: "post/wider_release.scheduled",
+        data: {
+          publication_uri,
+          document_uri: result.uri,
+          wider_release_at: widerReleaseAt,
+        },
+      });
+    } catch (e) {
+      console.error("[publish] scheduling wider release failed", {
         document_uri: result.uri,
         wider_release_at: widerReleaseAt,
-      },
-    });
+        error: e,
+      });
+    }
   }
 
   // Runs after the documents/join-row writes above so the re-render reads the

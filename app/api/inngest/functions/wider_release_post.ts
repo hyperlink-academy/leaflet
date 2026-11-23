@@ -7,6 +7,9 @@ import {
 } from "src/utils/normalizeRecords";
 import { getBylineDids, hasExplicitByline } from "src/utils/byline";
 import { revalidateDocumentPaths } from "src/utils/revalidatePublication";
+import { restoreOAuthSession } from "src/atproto-oauth";
+import { AtpBaseClient } from "lexicons/api";
+import { documentRecordForPDS } from "src/utils/documentRecordForPDS";
 import {
   BROADCAST_PUBLICATION_COLUMNS,
   broadcastPostEmail,
@@ -83,32 +86,47 @@ export const wider_release_post = inngest.createFunction(
       await revalidateDocumentPaths(document_uri);
     });
 
-    // Only a post that was emailed when it was published gets a follow-up.
-    const sender = resolveBroadcastSender(loaded.pub);
-    if (!sender.ok || loaded.sendStatus !== "sent")
-      return { emailed: 0, reason: sender.ok ? "not_emailed" : sender.error };
-
     const widerReleaseTime = new Date(wider_release_at).getTime();
     const { blocks, pages, rootCanvas } = emailBodyFromPages(docPages);
     const firstPageBlocks = rootCanvas?.blocks ?? blocks;
+    const liftedForEveryone = !pageHasMembersDelimiter(
+      { blocks: firstPageBlocks },
+      widerReleaseTime,
+    );
+
+    // Until now the PDS copy stopped at the delimiter. A failure here (say
+    // the owner's session has lapsed) mustn't hold up the emails; the next
+    // publish writes the full copy too.
+    const pds = liftedForEveryone
+      ? await run("write-full-pds-copy", () =>
+          writeFullPdsCopy(document_uri, loaded.doc?.data),
+        )
+      : null;
+
+    // Only a post that was emailed when it was published gets a follow-up.
+    const sender = resolveBroadcastSender(loaded.pub);
+    if (!sender.ok || loaded.sendStatus !== "sent")
+      return {
+        pds,
+        emailed: 0,
+        reason: sender.ok ? "not_emailed" : sender.error,
+      };
+
     const before = getMembersDelimiterGatePolicy(
       firstPageBlocks,
       widerReleaseTime - 1,
     );
     // Every recipient is a subscriber, so a subscriber gate already reached
     // all of them at publish.
-    if (before?.audience === "subscribers") return { emailed: 0 };
-    const liftedForEveryone = !pageHasMembersDelimiter(
-      { blocks: firstPageBlocks },
-      widerReleaseTime,
-    );
-    const after = getMembersDelimiterGatePolicy(
-      firstPageBlocks,
-      widerReleaseTime,
-    );
+    if (before?.audience === "subscribers") return { pds, emailed: 0 };
 
     const authorDid = new AtUri(document_uri).host;
-    const recipients = await run("snapshot-newly-entitled", async () => {
+    // Everyone early access left out gets their first email for the post
+    // now: the full post with the wider-release note if the release reached
+    // them, otherwise the cut-off preview and join box, as a gated post's
+    // email would have been. broadcastPostEmail sorts them by the gate as it
+    // stands after the release.
+    const recipients = await run("snapshot-left-out", async () => {
       // Anyone the publish-time send already reached is skipped too, so a
       // release that had passed by first publish can't email them twice.
       const [subs, notSentAtPublish] = await Promise.all([
@@ -132,15 +150,9 @@ export const wider_release_post = inngest.createFunction(
         hadAccess.identityIds,
         hadAccess.emails,
       );
-      const hasAccess =
-        liftedForEveryone || after?.audience === "subscribers"
-          ? () => true
-          : await loadEntitledReaders(publication_uri, authorDid, after).then(
-              (r) => subscriberMatcher(r.identityIds, r.emails),
-            );
-      return candidates.filter((s) => !hadAccessMatch(s) && hasAccess(s));
+      return candidates.filter((s) => !hadAccessMatch(s));
     });
-    if (recipients.length === 0) return { emailed: 0 };
+    if (recipients.length === 0) return { pds, emailed: 0 };
 
     const pubRecord = sender.value.pubRecord;
     const postTitle = docRecord?.title || "(untitled)";
@@ -182,6 +194,34 @@ export const wider_release_post = inngest.createFunction(
       },
     });
 
-    return { emailed: recipients.length };
+    return { pds, emailed: recipients.length };
   },
 );
+
+async function writeFullPdsCopy(
+  documentUri: string,
+  data: unknown,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const uri = new AtUri(documentUri);
+    const record = data as { $type?: unknown } | null;
+    if (!record || typeof record.$type !== "string")
+      return { ok: false, error: "no_record" };
+    const session = await restoreOAuthSession(uri.host);
+    if (!session.ok) return { ok: false, error: session.error.message };
+    const agent = new AtpBaseClient(
+      session.value.fetchHandler.bind(session.value),
+    );
+    await agent.com.atproto.repo.putRecord({
+      repo: uri.host,
+      collection: uri.collection,
+      rkey: uri.rkey,
+      record: await documentRecordForPDS(record as { $type: string }, agent),
+      validate: false,
+    });
+    return { ok: true };
+  } catch (e) {
+    console.error("[wider_release_post] PDS write failed", documentUri, e);
+    return { ok: false, error: String(e).slice(0, 500) };
+  }
+}

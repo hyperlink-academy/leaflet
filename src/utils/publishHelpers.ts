@@ -71,6 +71,7 @@ export function makePublishUploadHooks(
         // draft asset's lifetime beats a dropped block.
         const url = (await opts.gatedImages.ensureImage(src)) ?? src;
         return {
+          $type: "blob",
           ref: { $link: url },
           mimeType: "image/*",
           size: 0,
