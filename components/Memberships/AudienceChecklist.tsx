@@ -1,7 +1,7 @@
 "use client";
 import { Checkbox } from "components/Checkbox";
 import { formatPrice } from "components/Memberships/TierGrid";
-import type { GatePolicy } from "src/membership";
+import type { AudiencePolicy, GatePolicy } from "src/membership";
 
 export type AudienceChecklistTier = {
   id: string;
@@ -9,18 +9,31 @@ export type AudienceChecklistTier = {
   monthly_price_cents: number;
 };
 
-export function AudienceChecklist(props: {
-  tiers: AudienceChecklistTier[];
-  value: GatePolicy;
-  onChange: (value: GatePolicy) => void;
-}) {
+type ChecklistProps =
+  | {
+      tiers: AudienceChecklistTier[];
+      value: GatePolicy;
+      onChange: (value: GatePolicy) => void;
+      allowPublic?: false;
+    }
+  | {
+      tiers: AudienceChecklistTier[];
+      value: AudiencePolicy;
+      onChange: (value: AudiencePolicy) => void;
+      // Adds an "Everyone" option above subscribers.
+      allowPublic: true;
+    };
+
+export function AudienceChecklist(props: ChecklistProps) {
   let { tiers, value } = props;
+  let onChange = props.onChange as (value: AudiencePolicy) => void;
   let allTierIds = tiers.map((t) => t.id);
   let selectedTiers =
     value.audience === "tiers"
       ? value.tierIds.filter((id) => allTierIds.includes(id))
       : allTierIds;
-  let subscribers = value.audience === "subscribers";
+  let everyone = value.audience === "public";
+  let subscribers = everyone || value.audience === "subscribers";
   let paid =
     subscribers ||
     value.audience === "paid" ||
@@ -28,7 +41,7 @@ export function AudienceChecklist(props: {
 
   let selectTiers = (ids: string[]) => {
     if (ids.length === 0) return;
-    props.onChange(
+    onChange(
       ids.length === allTierIds.length
         ? { audience: "paid" }
         : { audience: "tiers", tierIds: ids },
@@ -38,13 +51,24 @@ export function AudienceChecklist(props: {
   let singleTier = tiers.length === 1 ? tiers[0] : null;
   return (
     <div className="flex flex-col gap-1">
+      {props.allowPublic && (
+        <Checkbox
+          small
+          checked={everyone}
+          onChange={() =>
+            onChange({ audience: everyone ? "subscribers" : "public" })
+          }
+        >
+          Everyone
+        </Checkbox>
+      )}
       <Checkbox
         small
         checked={subscribers}
         onChange={() => {
           // Without tiers, paid members would leave no one
           if (subscribers && tiers.length === 0) return;
-          props.onChange({ audience: subscribers ? "paid" : "subscribers" });
+          onChange({ audience: subscribers ? "paid" : "subscribers" });
         }}
       >
         All free and paid subscribers
@@ -54,7 +78,7 @@ export function AudienceChecklist(props: {
           small
           checked={paid}
           onChange={() => {
-            if (!paid || subscribers) props.onChange({ audience: "paid" });
+            if (!paid || subscribers) onChange({ audience: "paid" });
           }}
         >
           {singleTier ? <TierLabel tier={singleTier} /> : "Paid members"}

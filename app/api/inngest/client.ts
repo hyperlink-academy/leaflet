@@ -73,16 +73,13 @@ export const events = {
     "stripe/customer.subscription.deleted",
     { schema: staticSchema<{ subscriptionId: string }>() },
   ),
-  stripeInvoicePaymentSucceeded: eventType(
-    "stripe/invoice.payment.succeeded",
-    {
-      schema: staticSchema<{
-        invoiceId: string;
-        subscriptionId: string;
-        customerId: string;
-      }>(),
-    },
-  ),
+  stripeInvoicePaymentSucceeded: eventType("stripe/invoice.payment.succeeded", {
+    schema: staticSchema<{
+      invoiceId: string;
+      subscriptionId: string;
+      customerId: string;
+    }>(),
+  }),
   stripeInvoicePaymentFailed: eventType("stripe/invoice.payment.failed", {
     schema: staticSchema<{
       invoiceId: string;
@@ -104,12 +101,18 @@ export const events = {
     { schema: staticSchema<{ email_post_id: string; revision: number }>() },
   ),
   // `revision` works as it does for an email post's send.
-  postScheduledPublishRequested: eventType(
-    "post/scheduled-publish.requested",
-    {
-      schema: staticSchema<{ scheduled_post_id: string; revision: number }>(),
-    },
-  ),
+  postScheduledPublishRequested: eventType("post/scheduled-publish.requested", {
+    schema: staticSchema<{ scheduled_post_id: string; revision: number }>(),
+  }),
+  // `wider_release_at` is the gate's wider-release time when it was scheduled; a run whose
+  // time no longer matches the published record exits without acting.
+  postWiderReleaseScheduled: eventType("post/wider_release.scheduled", {
+    schema: staticSchema<{
+      publication_uri: string;
+      document_uri: string;
+      wider_release_at: string;
+    }>(),
+  }),
   newsletterSubscriberJoined: eventType("newsletter/subscriber.joined", {
     schema: staticSchema<{ publication_uri: string; identity_id: string }>(),
   }),
@@ -121,6 +124,5 @@ export const events = {
 export const inngest = new Inngest({
   id: "leaflet",
   isDev:
-    process.env.INNGEST_DEV === "1" ||
-    process.env.NODE_ENV === "development",
+    process.env.INNGEST_DEV === "1" || process.env.NODE_ENV === "development",
 });

@@ -2,12 +2,20 @@ import { useIsBlockSelected } from "src/useUIState";
 import { LockTiny } from "components/Icons/LockTiny";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { BlockProps } from "./Block";
-import { useEntity } from "src/replicache";
+import { useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { Popover } from "components/Popover";
 import { AudienceChecklist } from "components/Memberships/AudienceChecklist";
-import type { GatePolicy } from "src/membership";
+import {
+  WIDER_RELEASE_DELAYS,
+  isWiderReleaseDelay,
+  widerReleaseAudience,
+  type AudiencePolicy,
+  type GatePolicy,
+  type WiderReleaseDelay,
+} from "src/membership";
+import { ToggleGroup } from "components/ToggleGroup";
 import { useSetGatePolicy } from "components/Memberships/useSetGatePolicy";
 
 export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
@@ -17,6 +25,10 @@ export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
 
   let audienceFact = useEntity(props.entityID, "block/members-only-audience");
   let tierFacts = useEntity(props.entityID, "block/members-only-tier");
+  let earlyAccess = isWiderReleaseDelay(
+    useEntity(props.entityID, "block/members-only-wider-release-timeline")?.data
+      .value,
+  );
 
   let membershipsEnabled =
     !!pub?.publications?.publication_membership_settings?.enabled;
@@ -52,7 +64,9 @@ export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
       <hr className="grow min-w-4" />
       <div className="flex items-center gap-2 min-w-0 font-bold">
         <LockTiny className="shrink-0" />
-        <span className="w-max shrink-0">Unlocked for</span>
+        <span className="w-max shrink-0">
+          {earlyAccess ? "Early access for" : "Unlocked for"}
+        </span>
         {permissions.write ? (
           <TierSelector
             entityID={props.entityID}
@@ -101,6 +115,7 @@ function TierSelector(props: {
   tiers: Tier[];
   policy: GatePolicy;
 }) {
+  let { rep } = useReplicache();
   let { setAudience } = useSetGatePolicy(
     props.entityID,
     "block/members-only-audience",
@@ -112,12 +127,55 @@ function TierSelector(props: {
       policy.audience === "tiers" ? policy.tierIds : [],
     );
 
+  let widerReleaseTimelineFact = useEntity(
+    props.entityID,
+    "block/members-only-wider-release-timeline",
+  );
+  let widerReleaseAudienceFact = useEntity(
+    props.entityID,
+    "block/members-only-wider-release-audience",
+  );
+  let widerReleaseTimeline = widerReleaseTimelineFact?.data.value;
+  let mode: "unlock" | "early-access" = isWiderReleaseDelay(
+    widerReleaseTimeline,
+  )
+    ? "early-access"
+    : "unlock";
+
+  let setWiderReleaseTimeline = (delay: WiderReleaseDelay) =>
+    rep?.mutate.assertFact({
+      entity: props.entityID,
+      attribute: "block/members-only-wider-release-timeline",
+      data: { type: "string", value: delay },
+    });
+
+  // Switching back to unlock keeps the wider-release audience fact, so
+  // returning to early access restores the earlier choice.
+  let setMode = (next: typeof mode) => {
+    if (!rep || next === mode) return;
+    if (next === "early-access") setWiderReleaseTimeline("week");
+    else if (widerReleaseTimelineFact)
+      rep.mutate.retractFact({ factID: widerReleaseTimelineFact.id });
+  };
+
+  // With no paid tiers, subscribers are the only audience — unless an older
+  // gate is still set to paid members, which needs a way back.
+  let showGateChecklist =
+    props.tiers.length > 0 || props.policy.audience !== "subscribers";
+  let gateChecklist = (
+    <AudienceChecklist
+      tiers={props.tiers}
+      value={props.policy}
+      onChange={setPolicy}
+    />
+  );
+
   return (
     <Popover
       asChild
       side="top"
       align="center"
-      className="max-w-full w-xs min-w-0"
+      className="sm:w-full w-sm min-w-0 p-0!"
       trigger={
         <button
           type="button"
@@ -133,21 +191,131 @@ function TierSelector(props: {
         </button>
       }
     >
-      <div className="flex flex-col gap-2 text-primary font-normal">
-        {/* With no paid tiers, subscribers are the only audience — unless an
-            older gate is still set to paid members, which needs a way back. */}
-        {(props.tiers.length > 0 ||
-          props.policy.audience !== "subscribers") && (
+      <div className="flex flex-col gap-3 text-primary font-normal min-h-0 overflow-y-auto p-3">
+        <div className="font-bold">Gated Content Options</div>
+        <div className="flex flex-col gap-1">
+          <ToggleGroup
+            fullWidth
+            background="page"
+            className="-mx-1"
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: "unlock", label: "Unlock Content" },
+              { value: "early-access", label: "Early Access" },
+            ]}
+          />
+          <div className="text-sm text-tertiary leading-snug">
+            {mode === "unlock"
+              ? "Show gated content to subscribers or members."
+              : "Show gated content to subscribers or members as soon as you publish. After some time, release it to a wider audience."}
+          </div>
+        </div>
+        {mode === "unlock" ? (
+          showGateChecklist && (
+            <>
+              <hr />
+              <ChecklistSection label="Unlock this post for">
+                {gateChecklist}
+              </ChecklistSection>
+            </>
+          )
+        ) : (
           <>
-            <div className="text-tertiary text-sm font-bold">Unlocked for…</div>
-            <AudienceChecklist
+            <hr />
+
+            <label className="flex items-center justify-between gap-2">
+              <div className="font-bold">Early Access Timeframe</div>
+              <select
+                className="input-with-border text-primary py-0.5 shrink-0 text-center"
+                value={widerReleaseTimeline}
+                onChange={(e) => {
+                  if (isWiderReleaseDelay(e.target.value))
+                    setWiderReleaseTimeline(e.target.value);
+                }}
+              >
+                {WIDER_RELEASE_DELAYS.map((d) => (
+                  <option key={d.value} value={d.value}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <hr />
+
+            {showGateChecklist && (
+              <ChecklistSection label="Early access for…">
+                {gateChecklist}
+              </ChecklistSection>
+            )}
+            <hr />
+
+            <WiderReleaseChecklist
               tiers={props.tiers}
-              value={props.policy}
-              onChange={setPolicy}
+              policy={props.policy}
+              delayLabel={
+                WIDER_RELEASE_DELAYS.find(
+                  (d) => d.value === widerReleaseTimeline,
+                )?.label
+              }
+              widerRelease={
+                widerReleaseAudienceFact?.data.value ?? { audience: "public" }
+              }
+              onChange={(value) =>
+                rep?.mutate.assertFact({
+                  entity: props.entityID,
+                  attribute: "block/members-only-wider-release-audience",
+                  data: { type: "audience-union", value },
+                })
+              }
             />
           </>
         )}
       </div>
     </Popover>
+  );
+}
+
+function ChecklistSection(props: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="font-bold">{props.label}</div>
+      {props.children}
+    </div>
+  );
+}
+
+function WiderReleaseChecklist(props: {
+  tiers: Tier[];
+  policy: GatePolicy;
+  delayLabel: string | undefined;
+  // Replicache hands back fact values deeply readonly.
+  widerRelease: {
+    audience: AudiencePolicy["audience"];
+    tierIds?: readonly string[];
+  };
+  onChange: (value: AudiencePolicy) => void;
+}) {
+  let widerRelease: AudiencePolicy =
+    props.widerRelease.audience === "tiers"
+      ? {
+          audience: "tiers",
+          tierIds: (props.widerRelease.tierIds ?? []).filter((id) =>
+            props.tiers.some((t) => t.id === id),
+          ),
+        }
+      : { audience: props.widerRelease.audience };
+
+  return (
+    <ChecklistSection label={`After ${props.delayLabel}, release for…`}>
+      {/* The wider release adds to the early-access audience, so everyone
+          the gate already admits shows as included. */}
+      <AudienceChecklist
+        allowPublic
+        tiers={props.tiers}
+        value={widerReleaseAudience(props.policy, widerRelease)}
+        onChange={props.onChange}
+      />
+    </ChecklistSection>
   );
 }

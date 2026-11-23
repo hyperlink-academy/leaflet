@@ -32,10 +32,12 @@ import {
 import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
 import { makeGatedImageStore } from "src/utils/gatedDocumentImages";
 import {
+  getFirstPageMembersDelimiter,
   pageHasMembersDelimiter,
   truncateDocumentRecordForPDS,
 } from "src/membership";
 import {
+  getDocumentPages,
   normalizeDocumentRecord,
   type NormalizedDocument,
 } from "src/utils/normalizeRecords";
@@ -293,16 +295,25 @@ async function publish({
     ? makeGatedImageStore({ did: credentialSession.did!, rkey })
     : undefined;
 
+  const normalizedDoc = normalizeDocumentRecord(draft?.documents?.data);
+  // Feeds and sort orders choke on unparseable dates, so only accept a
+  // publishedAt that parses.
+  const isValidDate = (v: string | undefined) =>
+    !!v && !isNaN(new Date(v).getTime());
+  const resolvedPublishedAt =
+    [publishedAt, normalizedDoc?.publishedAt].find(isValidDate) ||
+    new Date().toISOString();
+
   let { pages } = await processBlocksToPages({
     facts,
     root_entity,
+    publishedAt: resolvedPublishedAt,
     hooks: makePublishUploadHooks(agent, credentialSession.did!, {
       gatedImages,
     }),
   });
 
   let existingRecord: Partial<SiteStandardDocument.Record> = {};
-  const normalizedDoc = normalizeDocumentRecord(draft?.documents?.data);
   if (normalizedDoc) {
     // When reading existing data, use normalized format to extract fields
     // The theme is preserved in NormalizedDocument for backward compatibility
@@ -429,13 +440,13 @@ async function publish({
     description !== undefined ? description : existingRecord.description;
   const resolvedTags = tags !== undefined ? tags : existingRecord.tags;
   const resolvedCoverImage = coverImageBlob ?? existingRecord.coverImage;
-  // Feeds and sort orders choke on unparseable dates, so only accept a
-  // publishedAt that parses.
-  const isValidDate = (v: string | undefined) =>
-    !!v && !isNaN(new Date(v).getTime());
-  const resolvedPublishedAt =
-    [publishedAt, existingRecord.publishedAt].find(isValidDate) ||
-    new Date().toISOString();
+  const widerReleaseAt = publication_uri
+    ? getFirstPageMembersDelimiter(pages)?.widerReleaseAt
+    : undefined;
+  const previousWiderReleaseAt = normalizedDoc
+    ? getFirstPageMembersDelimiter(getDocumentPages(normalizedDoc))
+        ?.widerReleaseAt
+    : undefined;
 
   // Create record based on the document type
   let record: PubLeafletDocument.Record | SiteStandardDocument.Record;
@@ -694,6 +705,24 @@ async function publish({
         });
       }
     }
+  }
+
+  // Only a new or changed wider-release time is scheduled: republishing an unchanged
+  // post must not queue a second wider-release email, and a run whose time no longer
+  // matches the record bails when it wakes.
+  if (
+    publication_uri &&
+    typeof widerReleaseAt === "string" &&
+    widerReleaseAt !== previousWiderReleaseAt
+  ) {
+    await inngest.send({
+      name: "post/wider_release.scheduled",
+      data: {
+        publication_uri,
+        document_uri: result.uri,
+        wider_release_at: widerReleaseAt,
+      },
+    });
   }
 
   // Runs after the documents/join-row writes above so the re-render reads the

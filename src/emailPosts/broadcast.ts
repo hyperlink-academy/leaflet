@@ -25,10 +25,12 @@ import { prepareEmailRenderImages } from "src/emailRender/render";
 import {
   getMembersDelimiterGatePolicy,
   isActiveMembership,
+  isEarlyAccessPending,
   isEntitledToGatedPost,
   membershipUnlocksGatedPost,
   pageHasMembersDelimiter,
   truncateBlocksAtMembersDelimiter,
+  type GatePolicy,
 } from "src/membership";
 
 // Postmark's /email/batch caps a call at 500 messages AND 50 MB of payload;
@@ -174,7 +176,7 @@ export async function emailAuthorName(
 // A subscriber row can predate the reader's identity link, so readers are
 // matched on identity id or on the identity's email address. Takes arrays so
 // a step can return them.
-function subscriberMatcher(identityIds: string[], emails: string[]) {
+export function subscriberMatcher(identityIds: string[], emails: string[]) {
   const ids = new Set(identityIds);
   const lowered = new Set(emails.map((e) => e.toLowerCase()));
   return (s: Pick<Subscriber, "identity_id" | "email">) =>
@@ -231,10 +233,61 @@ export async function loadPaidMembers(publicationUri: string) {
   );
 }
 
+// Who can read past a gate: active members it admits plus the publication
+// owner and confirmed contributors. Arrays so a step can return them.
+export async function loadEntitledReaders(
+  publicationUri: string,
+  authorDid: string,
+  gatePolicy: GatePolicy | null,
+): Promise<{ identityIds: string[]; emails: string[] }> {
+  const identityIds = new Set<string>();
+  const emails = new Set<string>();
+  const [{ data: members }, { data: contributors }] = await Promise.all([
+    supabaseServerClient
+      .from("publication_memberships")
+      .select(
+        "identity_id, status, current_period_end, tier, identities(email)",
+      )
+      .eq("publication", publicationUri),
+    supabaseServerClient
+      .from("publication_contributors")
+      .select("contributor_did")
+      .eq("publication", publicationUri)
+      .eq("confirmed", true),
+  ]);
+  for (const m of members ?? []) {
+    const entitledMember = isEntitledToGatedPost({
+      viewerDid: null,
+      ownerDid: null,
+      contributors: [],
+      paidMembership: m,
+      gatePolicy,
+    });
+    if (!entitledMember) continue;
+    identityIds.add(m.identity_id);
+    if (m.identities?.email) emails.add(m.identities.email.toLowerCase());
+  }
+  const dids = [
+    authorDid,
+    ...(contributors ?? []).map((c) => c.contributor_did),
+  ];
+  const { data: identities } = await supabaseServerClient
+    .from("identities")
+    .select("id, email")
+    .in("atp_did", dids);
+  for (const i of identities ?? []) {
+    identityIds.add(i.id);
+    if (i.email) emails.add(i.email.toLowerCase());
+  }
+  return { identityIds: [...identityIds], emails: [...emails] };
+}
+
 // Renders a post email and sends it to `recipients` in Postmark batches,
 // logging a post_sent/send_failed event per recipient. A members-only
 // delimiter splits recipients into those entitled to the full body and those
-// who get the truncated preview with a join upsell.
+// who get the truncated preview with a join upsell — except while the post is
+// in early access, when only the entitled are emailed: everyone else gets
+// their first email for it at the wider release.
 export async function broadcastPostEmail(
   run: RunStep,
   args: {
@@ -253,6 +306,8 @@ export async function broadcastPostEmail(
     // Written to each event's metadata; must include the key
     // loadUnsentSubscribers dedupes on.
     eventMetadata: Record<string, string>;
+    // Set for the wider-release send of an early-access post.
+    widerReleaseNote?: { upgradeUrl: string };
   },
 ) {
   const { publicationUri, authorDid, blocks } = args;
@@ -266,6 +321,7 @@ export async function broadcastPostEmail(
   // Every recipient is already a subscriber, so a subscriber gate can send
   // the full body to the whole list. Invalid policies remain gated.
   const gated = hasDelimiter && gatePolicy?.audience !== "subscribers";
+  const earlyAccess = isEarlyAccessPending(firstPageBlocks);
   const previewBlocks = gated
     ? truncateBlocksAtMembersDelimiter(blocks)
     : blocks;
@@ -312,57 +368,12 @@ export async function broadcastPostEmail(
     }),
   );
 
-  // For a gated post, collect who is entitled to the full body: active
-  // members plus the publication owner and confirmed contributors.
+  // For a gated post, collect who is entitled to the full body.
   const entitled = !gated
     ? { identityIds: [] as string[], emails: [] as string[] }
-    : await run("load-entitled-members", async () => {
-        const identityIds = new Set<string>();
-        const emails = new Set<string>();
-        const [{ data: members }, { data: contributors }] = await Promise.all([
-          supabaseServerClient
-            .from("publication_memberships")
-            .select(
-              "identity_id, status, current_period_end, tier, identities(email)",
-            )
-            .eq("publication", publicationUri),
-          supabaseServerClient
-            .from("publication_contributors")
-            .select("contributor_did")
-            .eq("publication", publicationUri)
-            .eq("confirmed", true),
-        ]);
-        for (const m of members ?? []) {
-          const entitledMember = isEntitledToGatedPost({
-            viewerDid: null,
-            ownerDid: null,
-            contributors: [],
-            paidMembership: m,
-            gatePolicy,
-          });
-          if (!entitledMember) continue;
-          identityIds.add(m.identity_id);
-          if (m.identities?.email) {
-            emails.add(m.identities.email.toLowerCase());
-          }
-        }
-        const dids = [
-          authorDid,
-          ...(contributors ?? []).map((c) => c.contributor_did),
-        ];
-        const { data: identities } = await supabaseServerClient
-          .from("identities")
-          .select("id, email")
-          .in("atp_did", dids);
-        for (const i of identities ?? []) {
-          identityIds.add(i.id);
-          if (i.email) emails.add(i.email.toLowerCase());
-        }
-        return {
-          identityIds: [...identityIds],
-          emails: [...emails],
-        };
-      });
+    : await run("load-entitled-members", () =>
+        loadEntitledReaders(publicationUri, authorDid, gatePolicy),
+      );
   const subscriberIsEntitled = subscriberMatcher(
     entitled.identityIds,
     entitled.emails,
@@ -380,7 +391,9 @@ export async function broadcastPostEmail(
               Object.entries(renderImages).filter(([id]) => id !== "root"),
             ),
             upsell: true,
-            recipients: args.recipients.filter((s) => !subscriberIsEntitled(s)),
+            recipients: earlyAccess
+              ? []
+              : args.recipients.filter((s) => !subscriberIsEntitled(s)),
           },
           {
             key: "full",
@@ -467,6 +480,7 @@ export async function broadcastPostEmail(
           unsubscribeUrl: UNSUB_PLACEHOLDER,
           manageUrl: MANAGE_PLACEHOLDER,
           membersUpsell: group.upsell ? membersUpsell : undefined,
+          widerReleaseNote: args.widerReleaseNote,
         }),
       );
     });
