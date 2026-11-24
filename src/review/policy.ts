@@ -2,7 +2,7 @@ import type { ProposedStatus, SignalValue } from "./types";
 
 // Bump when a rule or threshold changes, so decisions in review_events can be
 // told apart by the policy that made them.
-export const POLICY_VERSION = 2;
+export const POLICY_VERSION = 3;
 
 // While this is "dry-run" every decision is a proposal: recorded, shown at
 // /admin/review, and read by nothing that changes what a visitor sees.
@@ -16,7 +16,6 @@ export type Rule = {
   // Costly signals to compute before the rules are read again from the top.
   run?: string[];
   then?: ProposedStatus;
-  escalate?: boolean;
 };
 
 const num = (v: Values, id: string) =>
@@ -40,8 +39,7 @@ export const RULES: Rule[] = [
     when: (v) =>
       num(v, "links.farm_accounts") >= 2 &&
       v["account.profile"] !== "established",
-    then: "held",
-    escalate: true,
+    then: "needs_review",
   },
   {
     id: "link-ring",
@@ -49,8 +47,7 @@ export const RULES: Rule[] = [
       num(v, "links.shared_domains") >= 3 &&
       num(v, "links.single_target_share") >= 0.8 &&
       v["account.profile"] === "empty",
-    then: "held",
-    escalate: true,
+    then: "needs_review",
   },
   {
     id: "established-author",
@@ -71,5 +68,5 @@ export const RULES: Rule[] = [
     when: (v) => v["content.llm"] === "legit",
     then: "cleared",
   },
-  { id: "llm-unsure", when: () => true, then: "pending", escalate: true },
+  { id: "llm-unsure", when: () => true, then: "needs_review" },
 ];

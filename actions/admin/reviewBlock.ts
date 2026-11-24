@@ -113,23 +113,17 @@ export async function unblockAccount(args: { did: string }) {
   return asAdmin("reviewBlock", () => setBlocked([args.did], false, {}));
 }
 
-// Blocks every account the policy flagged that is devoted to this site and
-// has at least one other throwaway account devoted to it too: the whole of
-// one operator's farm in one decision.
+// Blocks every account the policy flagged with a link-farm or known-spam-site
+// reason about this site: the whole of one operator's farm in one decision.
 export async function blockSite(args: { domain: string }) {
   return asAdmin("reviewBlock", async () => {
     let { rows } = await pool.query(
-      `with latest as (
-         select distinct on (subject_id) subject_id,
-           evidence->>'domain' as domain, (value #>> '{}')::int as peers
-         from review_events
-         where kind = 'account' and type = 'signal' and name = 'links.farm_accounts'
-         order by subject_id, at desc
-       )
-       select s.id from review_subjects s
-       join latest l on l.subject_id = s.id
-       where s.kind = 'account' and l.domain = $1 and l.peers > 0
-         and s.proposed_status in ('spam', 'held')`,
+      `select s.id from review_subjects s
+       where s.kind = 'account' and s.proposed_status in ('spam', 'needs_review')
+         and exists (
+           select 1 from jsonb_array_elements(s.reasons) r
+           where r->>'code' in ('link_farm', 'known_spam_site')
+             and r->>'site' = $1)`,
       [args.domain],
     );
     return setBlocked(

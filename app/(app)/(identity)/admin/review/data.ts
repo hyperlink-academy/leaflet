@@ -1,4 +1,5 @@
-import type { Queryable } from "src/review/types";
+import type { Queryable, Reason } from "src/review/types";
+import { REASON_LABELS } from "src/review/reasons";
 
 export const PAGE_SIZE = 20;
 const CLUSTER_LIMIT = 40;
@@ -13,6 +14,8 @@ export type Summary = {
   review: number;
   spam: number;
   blocked: number;
+  // Waiting for the policy to finish, not for a person.
+  unjudged: number;
   lastRun: string | null;
 };
 
@@ -21,8 +24,7 @@ export type Week = {
   current: boolean;
   total: number;
   spam: number;
-  held: number;
-  pending: number;
+  review: number;
 };
 
 export type Cluster = {
@@ -57,6 +59,7 @@ export type Account = {
   blocked: boolean;
   blockedOn: string | null;
   posts: Post[];
+  reasons: Reason[];
   signals: Signals;
 };
 
@@ -73,8 +76,7 @@ export type Health = {
   days: {
     day: string;
     cleared: number;
-    pending: number;
-    held: number;
+    review: number;
     spam: number;
     blocks: number;
     unblocks: number;
@@ -86,6 +88,10 @@ export type ReviewData = {
   weeks: Week[];
   clusters: Cluster[];
   view: View;
+  // The reason the queue is narrowed to, and how many accounts in this view
+  // carry each reason.
+  reason: string | null;
+  reasonCounts: { code: string; accounts: number }[];
   search: string;
   page: number;
   pages: number;
@@ -115,8 +121,8 @@ const newestPosts = (account: string, limit: number) => `
 
 const VIEWS: Record<View, { where: string; order: string }> = {
   review: {
-    where: "s.needs_human and s.enforced_status is null",
-    order: "(s.proposed_status = 'held') desc, s.first_seen desc nulls last",
+    where: "s.proposed_status = 'needs_review' and s.enforced_status is null",
+    order: "s.first_seen desc nulls last",
   },
   spam: {
     where: "s.proposed_status = 'spam' and s.enforced_status is null",
@@ -130,7 +136,7 @@ const VIEWS: Record<View, { where: string; order: string }> = {
 
 export async function loadReview(
   db: Queryable,
-  opts: { view: View; search: string; page: number },
+  opts: { view: View; search: string; page: number; reason?: string },
 ): Promise<ReviewData> {
   let rows = async <T>(text: string, params: unknown[] = []) =>
     (await db.query(text, params)).rows as T[];
@@ -143,6 +149,12 @@ export async function loadReview(
         order: "s.first_seen desc nulls last",
       }
     : VIEWS[opts.view];
+  // Only a known code reaches the SQL text.
+  let reason =
+    !search && opts.reason && opts.reason in REASON_LABELS ? opts.reason : null;
+  let where = reason
+    ? `${filter.where} and s.reasons @> '[{"code": "${reason}"}]'::jsonb`
+    : filter.where;
 
   let [
     [summary],
@@ -160,6 +172,7 @@ export async function loadReview(
          count(*) filter (where ${VIEWS.review.where})::int as review,
          count(*) filter (where ${VIEWS.spam.where})::int as spam,
          count(*) filter (where ${VIEWS.blocked.where})::int as blocked,
+         count(*) filter (where s.proposed_status = 'unjudged')::int as unjudged,
          to_char(max(s.evaluated_at), 'YYYY-MM-DD HH24:MI') as "lastRun"
        from review_subjects s where s.kind = 'account'`,
     ),
@@ -168,8 +181,7 @@ export async function loadReview(
          w = date_trunc('week', now()) as current,
          count(*)::int as total,
          count(*) filter (where proposed_status = 'spam')::int as spam,
-         count(*) filter (where proposed_status = 'held')::int as held,
-         count(*) filter (where proposed_status = 'pending')::int as pending
+         count(*) filter (where proposed_status = 'needs_review')::int as review
        from (
          select date_trunc('week', first_seen) as w, proposed_status
          from review_subjects
@@ -180,19 +192,14 @@ export async function loadReview(
     // Membership mirrors blockSite in actions/admin/reviewBlock.ts, so the
     // count on a block button is the number of accounts the block hits.
     rows<Omit<Cluster, "examples"> & { exampleIds: string[] }>(
-      `with latest as (
-         select distinct on (subject_id) subject_id,
-           evidence->>'domain' as domain, (value #>> '{}')::int as peers
-         from review_events
-         where kind = 'account' and type = 'signal' and name = 'links.farm_accounts'
-         order by subject_id, at desc
-       ), members as (
-         select l.domain, s.id, s.first_seen, s.enforced_status is not null as blocked,
+      `with members as (
+         select distinct r->>'site' as domain, s.id, s.first_seen,
+           s.enforced_status is not null as blocked,
            coalesce((s.stats->>'documents')::int, 0) as documents
-         from latest l
-         join review_subjects s on s.kind = 'account' and s.id = l.subject_id
-         where l.domain is not null and l.peers > 0
-           and s.proposed_status in ('spam', 'held')
+         from review_subjects s, jsonb_array_elements(s.reasons) r
+         where s.kind = 'account' and s.proposed_status in ('spam', 'needs_review')
+           and r->>'code' in ('link_farm', 'known_spam_site')
+           and r->>'site' is not null
        )
        select domain,
          count(*) filter (where not blocked)::int as accounts,
@@ -215,13 +222,13 @@ export async function loadReview(
          select s.*, count(*) over ()::int as matching,
            row_number() over (order by ${filter.order}, s.id) as position
          from review_subjects s
-         where s.kind = 'account' and ${filter.where}
+         where s.kind = 'account' and ${where}
          order by position limit $1 offset $2
        )
        select s.id, s.label, s.stats, s.matching,
          to_char(s.first_seen, 'YYYY-MM-DD') as "firstSeen",
          s.proposed_status as "proposedStatus", s.proposed_by as "proposedBy",
-         s.human_label as "humanLabel",
+         s.human_label as "humanLabel", s.reasons,
          s.enforced_status is not null as blocked,
          to_char(s.enforced_at, 'YYYY-MM-DD') as "blockedOn",
          (${newestPosts("s.id", 3)}) as posts,
@@ -255,7 +262,7 @@ export async function loadReview(
        from review_subjects
        where kind = 'account' and (
          (human_label = 'spam' and proposed_status = 'cleared')
-         or (human_label = 'legit' and proposed_status in ('spam', 'held')))
+         or (human_label = 'legit' and proposed_status = 'spam'))
        order by first_seen desc nulls last limit 20`,
     ),
     // An account evaluated several times in a day counts once, by its last
@@ -263,8 +270,7 @@ export async function loadReview(
     rows<Omit<Health["days"][number], "blocks" | "unblocks">>(
       `select to_char(day, 'YYYY-MM-DD') as day,
          count(*) filter (where status = 'cleared')::int as cleared,
-         count(*) filter (where status = 'pending')::int as pending,
-         count(*) filter (where status = 'held')::int as held,
+         count(*) filter (where status in ('needs_review', 'pending', 'held'))::int as review,
          count(*) filter (where status = 'spam')::int as spam
        from (
          select distinct on (date_trunc('day', at), subject_id)
@@ -287,12 +293,10 @@ export async function loadReview(
   let accounts: Account[] = accountRows.map(({ matching, ...a }) => a);
   let matching = accountRows[0]?.matching ?? 0;
 
-  let partnerIds = accounts.flatMap((a) => {
-    let partners = a.signals["links.shared_domains"]?.evidence?.partners;
-    let first = Array.isArray(partners) ? partners[0]?.did : null;
-    return typeof first === "string" ? [first] : [];
-  });
-  let [exampleRows, partnerRows] = await Promise.all([
+  let partnerIds = accounts.flatMap((a) =>
+    a.reasons.flatMap((r) => r.account ?? []),
+  );
+  let [exampleRows, partnerRows, reasonCounts] = await Promise.all([
     rows<{ id: string; handle: string | null; posts: Post[] }>(
       `select s.id, s.label->>'handle' as handle,
          (${newestPosts("s.id", 1)}) as posts
@@ -303,6 +307,12 @@ export async function loadReview(
       `select id, label->>'handle' as handle from review_subjects
        where kind = 'account' and id = any($1) and label->>'handle' is not null`,
       [partnerIds],
+    ),
+    rows<{ code: string; accounts: number }>(
+      `select r->>'code' as code, count(*)::int as accounts
+       from review_subjects s, jsonb_array_elements(s.reasons) r
+       where s.kind = 'account' and ${VIEWS[opts.view].where}
+       group by 1 order by 2 desc`,
     ),
   ]);
   let examples = new Map(exampleRows.map((e) => [e.id, e]));
@@ -315,8 +325,7 @@ export async function loadReview(
       ...(days.get(h.day) ?? {
         day: h.day,
         cleared: 0,
-        pending: 0,
-        held: 0,
+        review: 0,
         spam: 0,
       }),
       blocks: h.blocks,
@@ -334,6 +343,8 @@ export async function loadReview(
       }),
     })),
     view: opts.view,
+    reason,
+    reasonCounts,
     search,
     page,
     pages: Math.max(1, Math.ceil(matching / PAGE_SIZE)),

@@ -10,6 +10,7 @@ import type {
 } from "./data";
 import { BlockAccountButton, BlockSiteButton } from "./BlockButtons";
 import { QueueKeys } from "./QueueKeys";
+import { REASON_LABELS } from "src/review/reasons";
 
 const CLUSTERS_SHOWN = 8;
 
@@ -24,26 +25,9 @@ const cell = "py-1 pl-3 tabular-nums text-right whitespace-nowrap";
 
 const STATUS: Record<string, string> = {
   cleared: "Cleared",
-  pending: "Unsure",
-  held: "Held",
+  needs_review: "Needs review",
+  unjudged: "Not judged yet",
   spam: "Proposed spam",
-};
-
-// Plain-words versions of the rules in src/review/policy.ts, keyed by rule id.
-const RULES: Record<string, string> = {
-  "known-spam-site":
-    "Devoted to a site that accounts an admin marked as spam are devoted to.",
-  "link-farm":
-    "Empty account in a link farm: five or more other throwaway accounts are devoted to the same site.",
-  "link-farm-small":
-    "Possible small link farm: a few other throwaway accounts are devoted to the same site.",
-  "link-ring":
-    "Possible link ring: an empty account whose posts each carry one backlink, sharing several uncommon link targets with another account.",
-  "established-author": "Established Bluesky account with ordinary links.",
-  "content-check": "Waiting for the model to read its posts.",
-  "llm-spam": "The model read its posts and judged them spam.",
-  "llm-legit": "The model read its posts and judged them legitimate.",
-  "llm-unsure": "The model read its posts and couldn't tell.",
 };
 
 function ExternalLink(props: {
@@ -111,12 +95,12 @@ function Trend(props: { weeks: Week[] }) {
           <th className="font-normal text-left py-1">Week of</th>
           <th />
           <th className={`font-normal ${cell}`}>New accounts</th>
-          <th className={`font-normal ${cell}`}>Spam or held</th>
+          <th className={`font-normal ${cell}`}>Proposed spam</th>
         </tr>
       </thead>
       <tbody>
         {props.weeks.map((w) => {
-          let flagged = w.spam + w.held;
+          let flagged = w.spam;
           return (
             <tr key={w.week} className="border-t border-border-light">
               <td className="py-1 whitespace-nowrap">
@@ -216,62 +200,6 @@ function signal(account: Account, name: string) {
   };
 }
 
-// What the signals in src/review/signals/ found, as sentences.
-function findings(account: Account, handles: Record<string, string>) {
-  let out: React.ReactNode[] = [];
-  let farm = signal(account, "links.farm_accounts");
-  let known = signal(account, "links.spam_domains");
-  let single = signal(account, "links.single_target_share");
-  let shared = signal(account, "links.shared_domains");
-  let burst = signal(account, "publish.burst");
-  let profile = signal(account, "account.profile");
-
-  if (farm.evidence.domain)
-    out.push(
-      <>
-        At least half its posts link to <b>{farm.evidence.domain}</b>
-        {farm.count > 0
-          ? `, and ${plural(farm.count, "other throwaway account")} ${farm.count === 1 ? "does" : "do"} the same.`
-          : "; no other throwaway account does the same."}
-      </>,
-    );
-  if (known.count > 0)
-    out.push(
-      `${plural(known.count, "account")} devoted to ${known.evidence.domain} ${known.count === 1 ? "was" : "were"} marked as spam by an admin.`,
-    );
-  if (single.evidence.singleTarget && single.evidence.documents) {
-    let targets = (single.evidence.targets ?? [])
-      .slice(0, 4)
-      .map((t) => `${t.domain} (${t.documents})`);
-    out.push(
-      `${num(single.evidence.singleTarget)} of ${plural(single.evidence.documents, "post")} link to exactly one site: ${targets.join(", ")}${(single.evidence.targets ?? []).length > 4 ? " and others" : ""}.`,
-    );
-  }
-  let partner = shared.evidence.partners?.[0];
-  if (partner && partner.shared >= 2)
-    out.push(
-      <>
-        Shares {partner.shared} uncommon link targets with{" "}
-        <ExternalLink href={`/p/${partner.did}`}>
-          {handles[partner.did] ?? "another account"}
-        </ExternalLink>
-        : {partner.domains.slice(0, 4).join(", ")}
-        {partner.domains.length > 4 && " and others"}.
-      </>,
-    );
-  if (burst.count >= 3)
-    out.push(
-      `Published ${burst.count} posts within one hour${burst.evidence.hourStarting ? ` on ${burst.evidence.hourStarting.slice(0, 10)}` : ""}.`,
-    );
-  if (typeof profile.value === "string") {
-    let p = profile.evidence;
-    out.push(
-      `Bluesky account looks ${profile.value}: ${plural(p.followers ?? 0, "follower")}, ${plural(p.posts ?? 0, "Bluesky post")}, ${p.ageDays == null ? "age unknown" : `${plural(p.ageDays, "day")} old`}, ${p.hasBio ? "has a bio" : "no bio"}.`,
-    );
-  } else out.push("Its Bluesky profile could not be loaded.");
-  return out;
-}
-
 function AccountCard(props: {
   account: Account;
   handles: Record<string, string>;
@@ -279,7 +207,6 @@ function AccountCard(props: {
   let a = props.account;
   let name = a.label.handle ?? a.id;
   let documents = a.stats.documents ?? 0;
-  let model = signal(a, "content.llm");
   let site = signal(a, "links.farm_accounts").evidence.domain;
   return (
     <div
@@ -308,25 +235,30 @@ function AccountCard(props: {
       </div>
 
       <div className="flex flex-col gap-0.5">
-        <div className="font-bold">
-          {(a.proposedBy && RULES[a.proposedBy]) ??
-            a.proposedBy ??
-            "Not judged yet."}
-        </div>
-        {typeof model.value === "string" && model.evidence.reason && (
-          <div className="text-secondary">
-            Model says {model.value}
-            {model.evidence.category &&
-              model.evidence.category !== "none" &&
-              ` (${model.evidence.category.replaceAll("_", " ")})`}
-            : {model.evidence.reason}
-          </div>
+        {a.reasons.length === 0 && (
+          <div className="text-secondary">No reasons on file yet.</div>
         )}
-        <ul className="list-disc pl-5 text-secondary">
-          {findings(a, props.handles).map((f, i) => (
-            <li key={i}>{f}</li>
+        <ul className="list-disc pl-5">
+          {a.reasons.map((r, i) => (
+            <li key={r.code} className={i === 0 ? "" : "text-secondary"}>
+              <span className="text-tertiary">
+                {REASON_LABELS[r.code] ?? r.code}:
+              </span>{" "}
+              {r.text}
+              {r.account && (
+                <>
+                  {" "}
+                  <ExternalLink href={`/p/${r.account}`}>
+                    {props.handles[r.account] ?? "See that account"}
+                  </ExternalLink>
+                </>
+              )}
+            </li>
           ))}
         </ul>
+        {a.proposedBy && (
+          <div className="text-tertiary">Decided by rule {a.proposedBy}</div>
+        )}
       </div>
 
       {a.posts.length > 0 && (
@@ -436,12 +368,7 @@ function PolicyHealth(props: { health: Health; accounts: number }) {
               key={`${r.status}/${r.rule}`}
               className="border-t border-border-light align-top"
             >
-              <td className="py-1">
-                {r.rule ?? "not judged"}
-                {r.rule && RULES[r.rule] && (
-                  <div className="text-tertiary">{RULES[r.rule]}</div>
-                )}
-              </td>
+              <td className="py-1">{r.rule ?? "not judged"}</td>
               <td className={cell}>{STATUS[r.status] ?? r.status}</td>
               <td className={cell}>{num(r.accounts)}</td>
               <td className={cell}>{percent(r.accounts, props.accounts)}</td>
@@ -456,8 +383,7 @@ function PolicyHealth(props: { health: Health; accounts: number }) {
           head={[
             "Day",
             "Cleared",
-            "Unsure",
-            "Held",
+            "Needs review",
             "Proposed spam",
             "Blocked",
             "Unblocked",
@@ -467,8 +393,7 @@ function PolicyHealth(props: { health: Health; accounts: number }) {
             <tr key={d.day} className="border-t border-border-light">
               <td className="py-1 tabular-nums">{d.day}</td>
               <td className={cell}>{num(d.cleared)}</td>
-              <td className={cell}>{num(d.pending)}</td>
-              <td className={cell}>{num(d.held)}</td>
+              <td className={cell}>{num(d.review)}</td>
               <td className={cell}>{num(d.spam)}</td>
               <td className={cell}>{num(d.blocks)}</td>
               <td className={cell}>{num(d.unblocks)}</td>
@@ -482,7 +407,7 @@ function PolicyHealth(props: { health: Health; accounts: number }) {
 
 const VIEW_HELP: Record<View, string> = {
   review:
-    "The policy couldn't decide these. Held accounts first, then the ones the model was unsure about, newest first.",
+    "The policy couldn't decide these, newest first. Each lists every reason it was flagged; pick a reason to work through one kind at a time.",
   spam: "Proposed as spam and not blocked. Most belong to a link farm above.",
   blocked: "Blocked accounts, most recent first.",
 };
@@ -497,17 +422,20 @@ export function ReviewView(props: {
   let farmAccounts = d.clusters.reduce((n, c) => n + c.accounts, 0);
   let smaller = d.clusters.slice(CLUSTERS_SHOWN);
 
-  let href = (o: { view?: View; page?: number }) => {
+  let href = (o: { view?: View; page?: number; reason?: string | null }) => {
     let params = new URLSearchParams();
     let view = o.view ?? d.view;
     if (view !== "review") params.set("view", view);
+    // A reason filter survives paging, and is dropped on changing view.
+    let reason = o.reason === undefined && !o.view ? d.reason : o.reason;
+    if (reason) params.set("reason", reason);
     if (d.search && !o.view) params.set("q", d.search);
     if (o.page && o.page > 1) params.set("page", String(o.page));
     let query = params.toString();
     return `/admin/review${query ? `?${query}` : ""}#accounts`;
   };
   let tabs: [View, string, number][] = [
-    ["review", "Needs a person", d.summary.review],
+    ["review", "Needs review", d.summary.review],
     ["spam", "Proposed spam", d.summary.spam],
     ["blocked", "Blocked", d.summary.blocked],
   ];
@@ -529,6 +457,8 @@ export function ReviewView(props: {
             <span className="text-tertiary">
               Policy v{props.policyVersion} · {num(d.summary.accounts)} accounts
               {d.summary.lastRun && ` · last run ${d.summary.lastRun} UTC`}
+              {d.summary.unjudged > 0 &&
+                ` · ${num(d.summary.unjudged)} not judged yet (waiting on the model)`}
             </span>
           </div>
         </div>
@@ -536,11 +466,9 @@ export function ReviewView(props: {
           <Tile
             href="#trend"
             big={
-              thisWeek
-                ? `${num(thisWeek.spam + thisWeek.held)} of ${num(thisWeek.total)}`
-                : "0"
+              thisWeek ? `${num(thisWeek.spam)} of ${num(thisWeek.total)}` : "0"
             }
-            small="new accounts this week flagged as spam"
+            small="new accounts this week proposed as spam"
           />
           <Tile
             href="#farms"
@@ -550,7 +478,7 @@ export function ReviewView(props: {
           <Tile
             href="#accounts"
             big={num(d.summary.review)}
-            small="accounts need a person"
+            small="accounts need review"
           />
         </div>
       </div>
@@ -621,6 +549,33 @@ export function ReviewView(props: {
             ? `${plural(d.matching, "account")} matching “${d.search}”, whatever the policy proposed.`
             : VIEW_HELP[d.view]}
         </div>
+        {!d.search && d.reasonCounts.length > 0 && (
+          <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+            <span className="text-tertiary">Why:</span>
+            {d.reason ? (
+              <Link href={href({ reason: null })} className={link}>
+                Any reason
+              </Link>
+            ) : (
+              <span className="font-bold">Any reason</span>
+            )}
+            {d.reasonCounts.map((r) =>
+              r.code === d.reason ? (
+                <span key={r.code} className="font-bold">
+                  {REASON_LABELS[r.code] ?? r.code} ({num(r.accounts)})
+                </span>
+              ) : (
+                <Link
+                  key={r.code}
+                  href={href({ reason: r.code })}
+                  className={link}
+                >
+                  {REASON_LABELS[r.code] ?? r.code} ({num(r.accounts)})
+                </Link>
+              ),
+            )}
+          </div>
+        )}
         <QueueKeys />
         {d.accounts.length === 0 && (
           <div className="text-sm text-tertiary">Nothing here.</div>

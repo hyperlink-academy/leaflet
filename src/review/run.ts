@@ -1,8 +1,10 @@
 import { RULES, POLICY_VERSION, REVIEW_MODE } from "./policy";
+import { explain } from "./reasons";
 import { SIGNALS, SIGNALS_BY_ID } from "./signals";
 import type {
   AccountBundle,
   Decision,
+  ProposedStatus,
   Queryable,
   SignalContext,
   SignalResult,
@@ -14,32 +16,38 @@ export type Review = {
   decision: Decision;
 };
 
-// What the rules say about a set of signal values: a decision, or the costly
-// signals a rule wants before it can be read. Pure, so a policy change can be
-// replayed over the values already in review_events.
+// What the rules say about a set of signal values: a status and the rule that
+// set it, or the costly signals a rule wants before it can be read. Pure, so
+// a policy change can be replayed over the values already in review_events.
 export function decide(
   values: Record<string, SignalValue | undefined>,
-): { decision: Decision } | { rule: string; missing: string[] } {
+):
+  | { status: ProposedStatus; rule: string }
+  | { rule: string; missing: string[] } {
   let rule = RULES.find((r) => r.when(values));
-  if (!rule)
-    return {
-      decision: { status: "pending", rule: "no-rule", needsHuman: true },
-    };
+  if (!rule) return { status: "needs_review", rule: "no-rule" };
   let missing = (rule.run ?? []).filter((id) => !(id in values));
   if (missing.length > 0) return { rule: rule.id, missing };
+  return { status: rule.then ?? "needs_review", rule: rule.id };
+}
+
+// The decision for signals already computed. A subject that still wants a
+// costly signal is unjudged under that rule's name: it is waiting for the
+// policy, not for a person, and that is also how a backfill counts what the
+// costly signal would have to cover.
+export function decideFrom(signals: Record<string, SignalResult>): Decision {
+  let outcome = decide(
+    Object.fromEntries(Object.entries(signals).map(([id, r]) => [id, r.value])),
+  );
   return {
-    decision: {
-      status: rule.then ?? "pending",
-      rule: rule.id,
-      needsHuman: !!rule.escalate,
-    },
+    status: "status" in outcome ? outcome.status : "unjudged",
+    rule: outcome.rule,
+    reasons: explain(signals),
   };
 }
 
 // Cheap signals, then the rules; a rule that asks for a costly signal gets it
-// computed and the rules are read again. With costly signals off, a subject
-// that reaches such a rule stays pending under that rule's name, which is
-// also how a backfill counts what the costly signal would have to cover.
+// computed and the rules are read again.
 export async function reviewAccount(
   account: AccountBundle,
   ctx: SignalContext,
@@ -56,12 +64,8 @@ export async function reviewAccount(
         Object.entries(signals).map(([id, r]) => [id, r.value]),
       ),
     );
-    if ("decision" in outcome) return { signals, decision: outcome.decision };
-    if (!opts.costly)
-      return {
-        signals,
-        decision: { status: "pending", rule: outcome.rule, needsHuman: false },
-      };
+    if ("status" in outcome || !opts.costly)
+      return { signals, decision: decideFrom(signals) };
     for (let id of outcome.missing) {
       let signal = SIGNALS_BY_ID[id];
       if (!signal)
@@ -155,7 +159,7 @@ export async function saveReview(
       name: review.decision.rule,
       version: POLICY_VERSION,
       value: review.decision.status,
-      evidence: { needsHuman: review.decision.needsHuman },
+      evidence: { reasons: review.decision.reasons },
     },
   ];
   await db.query(
@@ -168,14 +172,14 @@ export async function saveReview(
   await db.query(
     `update review_subjects set
        proposed_status = $2, proposed_by = $3, policy_version = $4,
-       needs_human = $5, evaluated_at = now()
+       reasons = $5::jsonb, evaluated_at = now()
      where kind = 'account' and id = $1`,
     [
       account.did,
       review.decision.status,
       review.decision.rule,
       POLICY_VERSION,
-      review.decision.needsHuman,
+      JSON.stringify(review.decision.reasons),
     ],
   );
 }

@@ -10,8 +10,9 @@ import {
 
 // The review system's pass over one account, requested whenever the account
 // publishes. Debounced so a burst of posts is judged once, together. The
-// costly content.llm signal runs only with REVIEW_LLM=1; without it an
-// account the cheap signals can't settle is recorded as pending.
+// costly content.llm signal runs unless REVIEW_LLM=0. If it is off or the
+// model call fails, an account the cheap signals can't settle is recorded as
+// unjudged, so its cheap signals are kept and the next review finishes it.
 export const review_account = inngest.createFunction(
   {
     id: "review_account",
@@ -26,11 +27,13 @@ export const review_account = inngest.createFunction(
       account.profile = (await fetchProfiles([did])).get(did) ?? null;
       await saveLinks(pool, account);
       await saveSubject(pool, account);
-      const review = await reviewAccount(
-        account,
-        { db: pool, now: new Date() },
-        { costly: process.env.REVIEW_LLM === "1" },
-      );
+      const ctx = { db: pool, now: new Date() };
+      const review = await reviewAccount(account, ctx, {
+        costly: process.env.REVIEW_LLM !== "0",
+      }).catch((e) => {
+        console.error("[review] model signal failed:", did, e);
+        return reviewAccount(account, ctx, { costly: false });
+      });
       await saveReview(pool, account, review, `${cause}-${event.id}`);
       return review.decision;
     });

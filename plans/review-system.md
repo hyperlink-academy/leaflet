@@ -208,6 +208,14 @@ log are the labelled set everything else is measured against.
 
 ### As built (2026-11-24)
 
+Statuses are `cleared`, `needs_review` and `spam`: what to do with an account.
+Why is separate: `src/review/reasons.ts` works out every reason that applies
+from the signals, independent of which rule matched, and stores the list on
+`review_subjects.reasons` (code, sentence, and the site or account it is
+about). The admin queue filters by reason and block-by-site selects by it.
+`npm run review-backfill -- --sink=… --replay` re-decides every account from
+logged signal values after a rule or reason changes, at no signal cost.
+
 The policy runs in dry-run: `review_subjects.proposed_status` is advice and
 nothing reads it. The one enforced state is `enforced_status = 'spam'`, set by
 an admin's block from `/admin/review` (one account, or every flagged account

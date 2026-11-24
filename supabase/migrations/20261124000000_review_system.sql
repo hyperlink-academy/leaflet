@@ -23,10 +23,10 @@ create table "public"."review_subjects" (
     "label" jsonb not null default '{}'::jsonb,
     "stats" jsonb not null default '{}'::jsonb,
     "first_seen" timestamp with time zone,
-    "proposed_status" text not null default 'pending',
+    "proposed_status" text not null default 'unjudged',
     "proposed_by" text,
     "policy_version" integer,
-    "needs_human" boolean not null default false,
+    "reasons" jsonb not null default '[]'::jsonb,
     "human_label" text,
     "evaluated_at" timestamp with time zone not null default now(),
     -- The one part that is enforced: an admin's block. Null for everything
@@ -38,7 +38,7 @@ create table "public"."review_subjects" (
     constraint review_subjects_enforced_status_check
         check (enforced_status in ('spam')),
     constraint review_subjects_status_check
-        check (proposed_status in ('pending', 'cleared', 'held', 'spam')),
+        check (proposed_status in ('cleared', 'needs_review', 'spam', 'unjudged')),
     constraint review_subjects_human_label_check
         check (human_label in ('spam', 'legit'))
 );

@@ -11,7 +11,12 @@ export const metadata = {
 };
 
 export default async function ReviewSystemPage(props: {
-  searchParams: Promise<{ view?: string; q?: string; page?: string }>;
+  searchParams: Promise<{
+    view?: string;
+    q?: string;
+    page?: string;
+    reason?: string;
+  }>;
 }) {
   let identity = await getIdentityData();
   // 404 rather than a login/denied screen so the route stays invisible to
@@ -26,6 +31,7 @@ export default async function ReviewSystemPage(props: {
   let data = await loadReview(pool, {
     view,
     search: typeof params.q === "string" ? params.q : "",
+    reason: typeof params.reason === "string" ? params.reason : undefined,
     page: Number.parseInt(params.page ?? "", 10) || 1,
   });
 

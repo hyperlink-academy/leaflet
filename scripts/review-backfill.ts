@@ -1,6 +1,7 @@
 import { Pool } from "pg";
 import { fetchProfiles, listAccounts, loadAccounts } from "src/review/load";
 import {
+  decideFrom,
   reviewAccount,
   saveLinks,
   saveReview,
@@ -22,12 +23,18 @@ import type { AccountBundle, Queryable } from "src/review/types";
  *
  *   npm run review-backfill -- --sink=LOCAL_DB_URL [--source=DB_URL] [--llm]
  *       [--limit=N] [--dids=did:plc:a,did:plc:b] [--no-profiles]
+ *   npm run review-backfill -- --sink=LOCAL_DB_URL --replay
  *
  * --source / --sink name environment variables holding connection strings.
  * The source is only ever read, inside read-only transactions. Without --llm
  * the costly content.llm signal is not called: accounts that need it stay
- * pending under the content-check rule and the run prints what calling it
+ * unjudged under the content-check rule and the run prints what calling it
  * would cost.
+ *
+ * --replay reads nothing from the source and calls no signal: it re-decides
+ * every account in the sink from the signal values already logged there, so
+ * a change to the rules or the reasons can be seen without paying for the
+ * signals again.
  */
 
 const arg = (name: string) =>
@@ -44,7 +51,7 @@ if (!sinkVar) {
   console.error("--sink=<ENV_VAR> is required (e.g. --sink=LOCAL_DB_URL).");
   process.exit(1);
 }
-for (let v of [sourceVar, sinkVar])
+for (let v of flag("replay") ? [sinkVar] : [sourceVar, sinkVar])
   if (!process.env[v]) {
     console.error(`${v} is not set.`);
     process.exit(1);
@@ -85,7 +92,67 @@ function pct(n: number, d: number) {
   return d === 0 ? "-" : `${((100 * n) / d).toFixed(1)}%`;
 }
 
+// Re-decides every account from its newest logged value of each signal.
+// Names with a colon are one-off comparison runs, not signals of the policy.
+async function replay() {
+  let run = `replay-${new Date().toISOString()}`;
+  let { rows } = await sink.query(
+    `select s.id, s.proposed_status as before,
+       (select jsonb_object_agg(l.name, jsonb_build_object('value', l.value, 'evidence', l.evidence))
+        from (select distinct on (name) name, value, evidence from review_events
+              where kind = 'account' and subject_id = s.id and type = 'signal'
+                and name not like '%:%'
+              order by name, at desc) l) as signals
+     from review_subjects s where s.kind = 'account' order by s.id`,
+  );
+  console.log(
+    `[${run}] mode=${REVIEW_MODE} policy=v${POLICY_VERSION} accounts=${rows.length} sink=${sinkVar}`,
+  );
+  let moved = new Map<string, number>();
+  let reasons = new Map<string, number>();
+  for (let row of rows) {
+    let decision = decideFrom(row.signals ?? {});
+    await sink.query(
+      `insert into review_events (run, mode, kind, subject_id, type, name, version, value, evidence)
+       values ($1, $2, 'account', $3, 'decision', $4, $5, $6::jsonb, $7::jsonb)`,
+      [
+        run,
+        REVIEW_MODE,
+        row.id,
+        decision.rule,
+        POLICY_VERSION,
+        JSON.stringify(decision.status),
+        JSON.stringify({ reasons: decision.reasons }),
+      ],
+    );
+    await sink.query(
+      `update review_subjects set proposed_status = $2, proposed_by = $3,
+         policy_version = $4, reasons = $5::jsonb, evaluated_at = now()
+       where kind = 'account' and id = $1`,
+      [
+        row.id,
+        decision.status,
+        decision.rule,
+        POLICY_VERSION,
+        JSON.stringify(decision.reasons),
+      ],
+    );
+    let key = `${row.before} -> ${decision.status} (${decision.rule})`;
+    moved.set(key, (moved.get(key) ?? 0) + 1);
+    if (decision.status !== "cleared")
+      for (let r of decision.reasons)
+        reasons.set(r.code, (reasons.get(r.code) ?? 0) + 1);
+  }
+  console.log("\nbefore -> after (rule)");
+  for (let [k, n] of [...moved.entries()].sort((a, b) => b[1] - a[1]))
+    console.log(`  ${String(n).padStart(5)}  ${k}`);
+  console.log("\nreasons on accounts that are not cleared");
+  for (let [k, n] of [...reasons.entries()].sort((a, b) => b[1] - a[1]))
+    console.log(`  ${String(n).padStart(5)}  ${k}`);
+}
+
 async function main() {
+  if (flag("replay")) return replay();
   let run = `backfill-${new Date().toISOString()}`;
   let now = new Date();
   let today = now.toISOString().slice(0, 10);

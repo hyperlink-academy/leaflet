@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import ring from "./fixtures/backlinkRing.json";
 import { extractLinks, toReviewDocument } from "./content";
-import { decide } from "./run";
+import { decide, decideFrom } from "./run";
+import { explain } from "./reasons";
 import { linksSingleTarget } from "./signals/linksSingleTarget";
 import { publishBurst } from "./signals/publishBurst";
 import type { AccountBundle } from "./types";
@@ -76,25 +77,27 @@ describe("policy", () => {
   const empty = { "account.profile": "empty", "links.single_target_share": 1 };
 
   it("proposes spam for an account devoted to an admin-flagged site", () => {
-    expect(decide({ ...empty, "links.spam_domains": 1 })).toMatchObject({
-      decision: { status: "spam", rule: "known-spam-site" },
+    expect(decide({ ...empty, "links.spam_domains": 1 })).toEqual({
+      status: "spam",
+      rule: "known-spam-site",
     });
   });
 
-  it("holds the backlink ring for a person", () => {
-    expect(decide({ ...empty, "links.shared_domains": 3 })).toMatchObject({
-      decision: { status: "held", rule: "link-ring", needsHuman: true },
+  it("sends the backlink ring to a person", () => {
+    expect(decide({ ...empty, "links.shared_domains": 3 })).toEqual({
+      status: "needs_review",
+      rule: "link-ring",
     });
   });
 
-  it("does not hold an established writer who shares link targets", () => {
+  it("clears an established writer who shares link targets", () => {
     expect(
       decide({
         "account.profile": "established",
         "links.single_target_share": 0.2,
         "links.shared_domains": 4,
       }),
-    ).toMatchObject({ decision: { status: "cleared" } });
+    ).toMatchObject({ status: "cleared" });
   });
 
   it("asks for the costly signal when the cheap ones don't settle it", () => {
@@ -104,6 +107,52 @@ describe("policy", () => {
     });
     expect(
       decide({ "account.profile": "thin", "content.llm": "legit" }),
-    ).toMatchObject({ decision: { status: "cleared", rule: "llm-legit" } });
+    ).toEqual({ status: "cleared", rule: "llm-legit" });
+  });
+});
+
+describe("reasons", () => {
+  const farm = {
+    "account.profile": {
+      value: "empty",
+      evidence: { followers: 0, posts: 5 },
+    },
+    "publish.burst": { value: 5 },
+    "links.single_target_share": {
+      value: 1,
+      evidence: { singleTarget: 5, documents: 5 },
+    },
+    "links.farm_accounts": {
+      value: 99,
+      evidence: { domain: "certsland.com" },
+    },
+  };
+
+  it("lists every reason that applies, strongest first", () => {
+    expect(explain(farm).map((r) => r.code)).toEqual([
+      "link_farm",
+      "backlink_posts",
+      "burst",
+      "empty_profile",
+    ]);
+  });
+
+  it("names the site a farm reason is about", () => {
+    expect(explain(farm)[0]).toMatchObject({ site: "certsland.com" });
+  });
+
+  it("a decision carries its reasons whatever rule matched", () => {
+    let decision = decideFrom(farm);
+    expect(decision).toMatchObject({ status: "spam", rule: "link-farm" });
+    expect(decision.reasons.length).toBe(4);
+  });
+
+  it("an account still waiting on the model is unjudged, not in the queue", () => {
+    let decision = decideFrom({ "account.profile": { value: "thin" } });
+    expect(decision).toMatchObject({
+      status: "unjudged",
+      rule: "content-check",
+    });
+    expect(decision.reasons).toEqual([]);
   });
 });

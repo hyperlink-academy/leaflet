@@ -2495,7 +2495,7 @@ export type Database = {
           id: string
           kind: string
           label: Json
-          needs_human: boolean
+          reasons: Json
           policy_version: number | null
           proposed_by: string | null
           proposed_status: string
@@ -2511,7 +2511,7 @@ export type Database = {
           id: string
           kind: string
           label?: Json
-          needs_human?: boolean
+          reasons?: Json
           policy_version?: number | null
           proposed_by?: string | null
           proposed_status?: string
@@ -2527,7 +2527,7 @@ export type Database = {
           id?: string
           kind?: string
           label?: Json
-          needs_human?: boolean
+          reasons?: Json
           policy_version?: number | null
           proposed_by?: string | null
           proposed_status?: string

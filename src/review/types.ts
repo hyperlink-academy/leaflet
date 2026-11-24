@@ -70,10 +70,20 @@ export type Signal = {
   ) => Promise<SignalResult>;
 };
 
-export type ProposedStatus = "pending" | "cleared" | "held" | "spam";
+// What to do with an account: nothing, look, block, or wait for the policy
+// to finish judging it. Why is a separate list: see reasons.ts.
+export type ProposedStatus = "cleared" | "needs_review" | "spam" | "unjudged";
+
+export type Reason = {
+  code: string;
+  text: string;
+  // The site or the other account the reason is about, when there is one.
+  site?: string;
+  account?: string;
+};
 
 export type Decision = {
   status: ProposedStatus;
   rule: string;
-  needsHuman: boolean;
+  reasons: Reason[];
 };
