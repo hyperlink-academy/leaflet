@@ -336,11 +336,12 @@ async function handleEvent(evt: Event) {
   )
     return;
   // Deletes still go through, so a blocked account can take its own records
-  // down. Bluesky posts are skipped: every post on the network arrives here,
-  // and asking about each author would be a query per poster.
+  // down. Bluesky's own records are skipped: every post and profile edit on
+  // the network arrives here, and asking about each author would be a query
+  // per account.
   if (
     evt.event !== "delete" &&
-    evt.collection !== "app.bsky.feed.post" &&
+    !evt.collection.startsWith("app.bsky.") &&
     (await isBlockedAccount(evt.did))
   )
     return;

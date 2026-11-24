@@ -27,8 +27,9 @@ export async function blockedAmong(dids: string[]): Promise<Set<string>> {
   return new Set((data ?? []).map((r) => r.id));
 }
 
-// Memoized for a minute per account, for callers that ask about the same
-// account again and again (the appview sees every record an account writes).
+// Memoized for a minute per account, for the appview, which asks about the
+// same account for every record it writes. Page renders must not use this: a
+// stale "not blocked" there gets baked into a page cached for an hour.
 export async function isBlockedAccount(did: string): Promise<boolean> {
   let now = Date.now();
   let known = memo.get(did);

@@ -1,5 +1,6 @@
 import { AtUri } from "@atproto/syntax";
 import { supabaseServerClient } from "supabase/serverClient";
+import { blockedAmong } from "src/review/blocked";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 import { isMainSiteHost } from "src/utils/customDomain";
@@ -33,6 +34,8 @@ export async function GET(
   let params = await props.params;
   let did = decodeURIComponent(params.did);
   let publication_name = decodeURIComponent(params.publication);
+  if ((await blockedAmong([did])).has(did))
+    return new Response(null, { status: 404 });
 
   let { data: publications } = await supabaseServerClient
     .from("publications")

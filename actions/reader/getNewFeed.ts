@@ -6,7 +6,25 @@ import { enrichDocumentToPost } from "src/utils/enrichPost";
 import { dropHeld } from "src/publicationReview/held";
 import type { Cursor, Post } from "./getReaderFeed";
 
+// A page can come back with every row held back (a spam farm's burst). The
+// reader treats an empty first page as an empty feed, so keep walking until a
+// post survives.
+const EMPTY_PAGES_SKIPPED = 8;
+
 export async function getNewFeed(
+  cursor?: Cursor | null,
+): Promise<{ posts: Post[]; nextCursor: Cursor | null }> {
+  let page = await newFeedPage(cursor);
+  for (
+    let skipped = 0;
+    page.posts.length === 0 && page.nextCursor && skipped < EMPTY_PAGES_SKIPPED;
+    skipped++
+  )
+    page = await newFeedPage(page.nextCursor);
+  return page;
+}
+
+async function newFeedPage(
   cursor?: Cursor | null,
 ): Promise<{ posts: Post[]; nextCursor: Cursor | null }> {
   // plan-checked: this is the global discover feed, so the newest-first walk

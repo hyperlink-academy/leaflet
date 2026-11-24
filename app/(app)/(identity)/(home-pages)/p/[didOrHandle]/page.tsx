@@ -1,6 +1,5 @@
 import { notFound, redirect } from "next/navigation";
 import { idResolver } from "src/identity";
-import { isBlockedAccount } from "src/review/blocked";
 import { getProfilePosts } from "./getProfilePosts";
 import { ProfilePostsContent } from "./PostsContent";
 
@@ -17,8 +16,6 @@ export default async function ProfilePostsPage(props: {
     // indexable URL instead of one per handle spelling.
     redirect(`/p/${encodeURIComponent(resolved)}`);
   }
-
-  if (await isBlockedAccount(didOrHandle)) notFound();
 
   const { posts, nextCursor } = await getProfilePosts(didOrHandle);
 
