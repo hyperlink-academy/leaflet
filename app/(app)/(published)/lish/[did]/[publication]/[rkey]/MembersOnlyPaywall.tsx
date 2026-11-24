@@ -59,11 +59,6 @@ export const MembersOnlyPaywall = () => {
     ? Math.min(...paidUnlockingTiers.map((t) => t.monthly_price_cents))
     : null;
 
-  let namedTiers =
-    paidUnlockingTiers.length < tiers.length
-      ? paidUnlockingTiers.map((t) => t.name)
-      : [];
-
   let needsUpgrade =
     viewer.membership?.kind === "paid" &&
     !membershipUnlocksGatedPost(viewer.membership, gatePolicy);
@@ -112,9 +107,7 @@ export const MembersOnlyPaywall = () => {
             ) : (
               startingPriceCents !== null && (
                 <p>
-                  {needsUpgrade && namedTiers.length > 0
-                    ? `Available starting from ${formatPrice(startingPriceCents)}/month`
-                    : `Memberships start at ${formatPrice(startingPriceCents)}/month`}
+                  {`Available starting from ${formatPrice(startingPriceCents)}/month`}
                 </p>
               )
             )}
