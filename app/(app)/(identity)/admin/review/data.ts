@@ -58,6 +58,7 @@ export type Account = {
   humanLabel: string | null;
   blocked: boolean;
   blockedOn: string | null;
+  blockedByPolicy: boolean;
   posts: Post[];
   reasons: Reason[];
   signals: Signals;
@@ -230,7 +231,9 @@ export async function loadReview(
          s.proposed_status as "proposedStatus", s.proposed_by as "proposedBy",
          s.human_label as "humanLabel", s.reasons,
          s.enforced_status is not null as blocked,
-         to_char(s.enforced_at, 'YYYY-MM-DD') as "blockedOn",
+         case when s.enforced_status is not null
+           then to_char(s.enforced_at, 'YYYY-MM-DD') end as "blockedOn",
+         s.enforced_status is not null and s.enforced_by is null as "blockedByPolicy",
          (${newestPosts("s.id", 3)}) as posts,
          (select coalesce(jsonb_object_agg(e.name,
             jsonb_build_object('value', e.value, 'evidence', e.evidence)), '{}'::jsonb)

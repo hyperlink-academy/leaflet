@@ -1,43 +1,18 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { AtUri } from "@atproto/api";
 import { getAuthIdentity } from "src/auth";
 import { asAdmin } from "src/admin/asAdmin";
 import { pool } from "supabase/pool";
 import { forgetBlockedMemo } from "src/review/blocked";
 import { POLICY_VERSION } from "src/review/policy";
-import { revalidateAllPublicationPaths } from "src/utils/revalidatePublication";
-
-const REVALIDATE_CHUNK = 10;
-
-// Cached pages of a blocked account otherwise keep serving until they expire.
-async function dropCachedPages(dids: string[]) {
-  let [docs, pubs] = await Promise.all([
-    pool.query(`select uri from documents where identity_did = any($1)`, [
-      dids,
-    ]),
-    pool.query(
-      `select uri, name from publications where identity_did = any($1)`,
-      [dids],
-    ),
-  ]);
-  for (let did of dids) revalidatePath(`/p/${did}`, "layout");
-  for (let row of docs.rows) {
-    let uri = new AtUri(row.uri);
-    revalidatePath(`/p/${uri.host}/${uri.rkey}`);
-  }
-  for (let i = 0; i < pubs.rows.length; i += REVALIDATE_CHUNK)
-    await Promise.all(
-      pubs.rows
-        .slice(i, i + REVALIDATE_CHUNK)
-        .map((row) => revalidateAllPublicationPaths(row.uri, [row.name])),
-    );
-}
+import { dropCachedPages } from "src/review/dropCachedPages";
 
 // The block and its log entry land together or not at all. Dropping cached
 // pages runs for every account asked about, changed or not, so pressing the
-// button again finishes a cache drop that failed the first time.
+// button again finishes a cache drop that failed the first time. The
+// admin's decision is also kept as a label: a block marks the account as
+// spam for the signals that learn from labels, and an unblock marks it as
+// fine, which is what stops the policy from blocking it again.
 async function setBlocked(
   requested: string[],
   blocked: boolean,
@@ -53,19 +28,21 @@ async function setBlocked(
     await client.query("begin");
     let { rows } = blocked
       ? await client.query(
-          `insert into review_subjects (kind, id, enforced_status, enforced_at, enforced_by)
-           select 'account', did, 'spam', now(), $2 from unnest($1::text[]) as did
+          `insert into review_subjects (kind, id, enforced_status, enforced_at, enforced_by, human_label)
+           select 'account', did, 'spam', now(), $2, 'spam' from unnest($1::text[]) as did
            on conflict (kind, id) do update set
              enforced_status = excluded.enforced_status,
              enforced_at = excluded.enforced_at,
-             enforced_by = excluded.enforced_by
+             enforced_by = excluded.enforced_by,
+             human_label = 'spam'
            where review_subjects.enforced_status is null
            returning id`,
           [dids, by],
         )
       : await client.query(
           `update review_subjects
-           set enforced_status = null, enforced_at = now(), enforced_by = $2
+           set enforced_status = null, enforced_at = now(), enforced_by = $2,
+             human_label = 'legit'
            where kind = 'account' and id = any($1) and enforced_status is not null
            returning id`,
           [dids, by],
@@ -95,7 +72,7 @@ async function setBlocked(
 
   forgetBlockedMemo(dids);
   try {
-    await dropCachedPages(dids);
+    await dropCachedPages(pool, dids);
   } catch (e) {
     console.error("[admin/reviewBlock] cache drop failed:", e);
     throw new Error(

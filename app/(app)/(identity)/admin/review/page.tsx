@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getIdentityData } from "actions/getIdentityData";
 import { isAdminIdentity } from "src/adminAllowlist";
 import { pool } from "supabase/pool";
-import { POLICY_VERSION, REVIEW_MODE } from "src/review/policy";
+import { AUTO_BLOCK, POLICY_VERSION, RULES } from "src/review/policy";
 import { loadReview, type View } from "./data";
 import { ReviewView } from "./ReviewView";
 
@@ -39,7 +39,8 @@ export default async function ReviewSystemPage(props: {
     <ReviewView
       data={data}
       policyVersion={POLICY_VERSION}
-      dryRun={REVIEW_MODE === "dry-run"}
+      autoBlock={AUTO_BLOCK}
+      autoBlockRules={RULES.filter((r) => r.autoBlock).map((r) => r.id)}
     />
   );
 }

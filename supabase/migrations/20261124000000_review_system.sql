@@ -59,7 +59,7 @@ create table "public"."review_events" (
     "version" integer not null,
     "value" jsonb,
     "evidence" jsonb,
-    constraint review_events_type_check check (type in ('signal', 'decision', 'human')),
+    constraint review_events_type_check check (type in ('signal', 'decision', 'human', 'enforcement')),
     constraint review_events_mode_check check (mode in ('dry-run', 'live'))
 );
 create index review_events_subject_idx on public.review_events using btree (kind, subject_id, at desc);

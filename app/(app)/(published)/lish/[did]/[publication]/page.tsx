@@ -19,6 +19,7 @@ import {
 } from "components/ThemeManager/PublicationThemeProvider";
 import { JsonLd } from "components/JsonLd";
 import { getPublicationURL } from "src/utils/getPublicationURL";
+import { BLOCKED_METADATA, blockedAmong } from "src/review/blocked";
 
 // On-demand ISR: rendered on first request, then served from the CDN and
 // re-rendered in the background. The empty generateStaticParams is what opts a
@@ -37,6 +38,7 @@ export async function generateMetadata(props: {
   let params = await props.params;
   let did = decodeURIComponent(params.did);
   if (!did || !params.publication) return {};
+  if ((await blockedAmong([did])).has(did)) return BLOCKED_METADATA;
 
   // Same fetcher the page body uses, so the two share one query.
   let publication = await fetchPublicationForPage(

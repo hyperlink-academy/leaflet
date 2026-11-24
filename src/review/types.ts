@@ -86,4 +86,6 @@ export type Decision = {
   status: ProposedStatus;
   rule: string;
   reasons: Reason[];
+  // The rule that matched is allowed to block on its own.
+  block: boolean;
 };

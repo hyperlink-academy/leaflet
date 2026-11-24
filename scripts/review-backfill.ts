@@ -1,13 +1,14 @@
 import { Pool } from "pg";
 import { fetchProfiles, listAccounts, loadAccounts } from "src/review/load";
 import {
+  applyAutoBlock,
   decideFrom,
   reviewAccount,
   saveLinks,
   saveReview,
   saveSubject,
 } from "src/review/run";
-import { POLICY_VERSION, REVIEW_MODE } from "src/review/policy";
+import { AUTO_BLOCK, POLICY_VERSION, REVIEW_MODE } from "src/review/policy";
 import {
   describeAccount,
   LLM_MODEL,
@@ -35,6 +36,9 @@ import type { AccountBundle, Queryable } from "src/review/types";
  * every account in the sink from the signal values already logged there, so
  * a change to the rules or the reasons can be seen without paying for the
  * signals again.
+ *
+ * While AUTO_BLOCK is on in src/review/policy.ts, either mode blocks the
+ * accounts whose rule allows it, in the sink.
  */
 
 const arg = (name: string) =>
@@ -88,6 +92,14 @@ const source: Queryable = {
   },
 };
 
+// A script can't clear the app's page cache, so pages of accounts blocked
+// here go on serving until they expire.
+function blockSummary(wouldBlock: number, blocked: number) {
+  return AUTO_BLOCK
+    ? `\nAuto-block is ON: ${blocked} accounts newly blocked (${wouldBlock} matched an auto-block rule). Their cached pages expire within the hour.`
+    : `\nAuto-block is off: ${wouldBlock} accounts matched an auto-block rule and would be blocked with AUTO_BLOCK on in src/review/policy.ts.`;
+}
+
 function pct(n: number, d: number) {
   return d === 0 ? "-" : `${((100 * n) / d).toFixed(1)}%`;
 }
@@ -110,6 +122,8 @@ async function replay() {
   );
   let moved = new Map<string, number>();
   let reasons = new Map<string, number>();
+  let wouldBlock = 0;
+  let blocked = 0;
   for (let row of rows) {
     let decision = decideFrom(row.signals ?? {});
     await sink.query(
@@ -137,6 +151,8 @@ async function replay() {
         JSON.stringify(decision.reasons),
       ],
     );
+    if (decision.block) wouldBlock++;
+    if (await applyAutoBlock(sink, row.id, decision, run)) blocked++;
     let key = `${row.before} -> ${decision.status} (${decision.rule})`;
     moved.set(key, (moved.get(key) ?? 0) + 1);
     if (decision.status !== "cleared")
@@ -146,6 +162,7 @@ async function replay() {
   console.log("\nbefore -> after (rule)");
   for (let [k, n] of [...moved.entries()].sort((a, b) => b[1] - a[1]))
     console.log(`  ${String(n).padStart(5)}  ${k}`);
+  console.log(blockSummary(wouldBlock, blocked));
   console.log("\nreasons on accounts that are not cleared");
   for (let [k, n] of [...reasons.entries()].sort((a, b) => b[1] - a[1]))
     console.log(`  ${String(n).padStart(5)}  ${k}`);
@@ -202,6 +219,8 @@ async function main() {
   let labelled = new Map<string, number>();
   let llmAccounts = 0;
   let llmInputChars = 0;
+  let wouldBlock = 0;
+  let blocked = 0;
   let actualInput = 0;
   let actualOutput = 0;
   let failed = 0;
@@ -217,7 +236,9 @@ async function main() {
       console.error(`\n[review] ${account.did} failed:`, e);
       return;
     }
-    await saveReview(sink, account, review, run);
+    let saved = await saveReview(sink, account, review, run);
+    if (review.decision.block) wouldBlock++;
+    if (saved.blocked) blocked++;
 
     let key = `${review.decision.status} <- ${review.decision.rule}`;
     let row = byRule.get(key) ?? { accounts: 0, documents: 0, publications: 0 };
@@ -282,6 +303,7 @@ async function main() {
       String(r.publications).padStart(6),
     );
 
+  console.log(blockSummary(wouldBlock, blocked));
   console.log("\nAgainst admin decisions (label -> proposal):");
   if (labelled.size === 0) console.log("  no labelled accounts in this run");
   for (let [k, n] of [...labelled.entries()].sort((a, b) => b[1] - a[1]))

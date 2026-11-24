@@ -226,7 +226,8 @@ function AccountCard(props: {
             {STATUS[a.proposedStatus] ?? a.proposedStatus} ·{" "}
             {plural(documents, "post")}
             {a.firstSeen && ` · first posted ${a.firstSeen}`}
-            {a.blockedOn && ` · blocked ${a.blockedOn}`}
+            {a.blockedOn &&
+              ` · blocked ${a.blockedOn} by ${a.blockedByPolicy ? "the policy" : "an admin"}`}
             {a.humanLabel &&
               ` · marked ${a.humanLabel} in the publication queue`}
           </div>
@@ -415,7 +416,8 @@ const VIEW_HELP: Record<View, string> = {
 export function ReviewView(props: {
   data: ReviewData;
   policyVersion: number;
-  dryRun: boolean;
+  autoBlock: boolean;
+  autoBlockRules: string[];
 }) {
   let d = props.data;
   let thisWeek = d.weeks.find((w) => w.current);
@@ -451,9 +453,11 @@ export function ReviewView(props: {
             </Link>
           </div>
           <div className="text-sm text-secondary leading-snug">
-            {props.dryRun
-              ? "The policy only proposes. Nothing happens to an account until you block it: then it can't publish, isn't indexed, and its pages 404."
-              : "Live: the policy's proposals are enforced."}{" "}
+            A blocked account can&apos;t publish, isn&apos;t indexed, and its
+            pages 404. Its owner sees a banner with our contact address.{" "}
+            {props.autoBlock
+              ? `Auto-block is on: the policy blocks on its own for ${props.autoBlockRules.join(" and ")}. Everything else waits for you, and an account you unblock stays unblocked.`
+              : `Auto-block is off, so nothing is blocked until you do it. Turning it on (AUTO_BLOCK in src/review/policy.ts) lets the policy block on its own for ${props.autoBlockRules.join(" and ")}.`}{" "}
             <span className="text-tertiary">
               Policy v{props.policyVersion} · {num(d.summary.accounts)} accounts
               {d.summary.lastRun && ` · last run ${d.summary.lastRun} UTC`}

@@ -13,7 +13,7 @@ import { TID } from "@atproto/common";
 import { supabaseServerClient } from "supabase/serverClient";
 import { requestPublicationReview } from "src/publicationReview/request";
 import { requestAccountReview } from "src/review/request";
-import { blockedAmong } from "src/review/blocked";
+import { blockedAmong, DISPUTE_EMAIL } from "src/review/blocked";
 import { isConfirmedContributor } from "src/contributorPermissions";
 import { scanIndexLocal } from "src/replicache/utils";
 import type { Fact } from "src/replicache";
@@ -256,8 +256,7 @@ async function publish({
       success: false,
       error: {
         type: "publish_failed",
-        message:
-          "Publishing is turned off for this account. If you think that's a mistake, write to contact@leaflet.pub.",
+        message: `Publishing is turned off for this account. If you think that's a mistake, write to ${DISPUTE_EMAIL}.`,
       },
     };
 

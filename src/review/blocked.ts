@@ -1,11 +1,23 @@
 import { supabaseServerClient } from "supabase/serverClient";
 
-// A blocked account is one an admin has confirmed as spam: it can't publish,
-// the appview stops indexing it, its pages 404 and its posts leave the feeds.
-// The review policy's own proposals never block anyone.
+// A blocked account can't publish, the appview stops indexing it, its pages
+// 404 and its posts leave the feeds. Its owner sees a banner in the app. An
+// admin blocks, and so does the policy for the rules allowed to (see
+// applyAutoBlock in run.ts). A proposal on its own blocks nobody.
 //
 // Every lookup fails open. A review-table outage must not take down
 // publishing or empty the feeds.
+
+// Where someone writes to dispute a block. Everything the account's owner
+// sees about it names this: the banner in the app and the publish refusal.
+export const DISPUTE_EMAIL = "contact@leaflet.pub";
+
+// Page metadata for anything a blocked account published. The page is a 404
+// like any other, so its metadata says nothing of the content or the block.
+export const BLOCKED_METADATA = {
+  title: "404",
+  robots: { index: false, follow: false },
+};
 
 const MEMO_MS = 60_000;
 const MEMO_MAX = 5000;

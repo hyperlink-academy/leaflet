@@ -216,7 +216,13 @@ about). The admin queue filters by reason and block-by-site selects by it.
 `npm run review-backfill -- --sink=… --replay` re-decides every account from
 logged signal values after a rule or reason changes, at no signal cost.
 
-The policy runs in dry-run: `review_subjects.proposed_status` is advice and
+Auto-block: a rule marked `autoBlock` in `policy.ts` blocks on its own while
+`AUTO_BLOCK` in the same file is true (today `known-spam-site` and `link-farm`; the model's
+spam verdict is not one). It never blocks an account an admin unblocked, and
+never unblocks. Blocked content 404s; the owner, signed in, sees a banner
+naming contact@leaflet.pub for disputes.
+
+With it false, `review_subjects.proposed_status` is advice and
 nothing reads it. The one enforced state is `enforced_status = 'spam'`, set by
 an admin's block from `/admin/review` (one account, or every flagged account
 devoted to a site). `src/review/blocked.ts` is the only reader, and it is

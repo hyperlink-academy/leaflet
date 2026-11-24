@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import ring from "./fixtures/backlinkRing.json";
 import { extractLinks, toReviewDocument } from "./content";
-import { decide, decideFrom } from "./run";
+import { applyAutoBlock, decide, decideFrom } from "./run";
 import { explain } from "./reasons";
 import { linksSingleTarget } from "./signals/linksSingleTarget";
 import { publishBurst } from "./signals/publishBurst";
@@ -80,6 +80,7 @@ describe("policy", () => {
     expect(decide({ ...empty, "links.spam_domains": 1 })).toEqual({
       status: "spam",
       rule: "known-spam-site",
+      block: true,
     });
   });
 
@@ -87,6 +88,7 @@ describe("policy", () => {
     expect(decide({ ...empty, "links.shared_domains": 3 })).toEqual({
       status: "needs_review",
       rule: "link-ring",
+      block: false,
     });
   });
 
@@ -107,7 +109,68 @@ describe("policy", () => {
     });
     expect(
       decide({ "account.profile": "thin", "content.llm": "legit" }),
-    ).toEqual({ status: "cleared", rule: "llm-legit" });
+    ).toEqual({ status: "cleared", rule: "llm-legit", block: false });
+  });
+
+  it("lets the link rules block on their own, but not the model", () => {
+    expect(
+      decide({ "account.profile": "empty", "links.farm_accounts": 99 }),
+    ).toMatchObject({ rule: "link-farm", block: true });
+    expect(
+      decide({ "account.profile": "thin", "content.llm": "spam" }),
+    ).toEqual({ status: "spam", rule: "llm-spam", block: false });
+  });
+});
+
+describe("auto-block", () => {
+  const decision = {
+    status: "spam" as const,
+    rule: "link-farm",
+    reasons: [],
+    block: true,
+  };
+  // Records the statements sent and answers the update as if it matched.
+  const fakeDb = () => {
+    let sent: string[] = [];
+    return {
+      sent,
+      query: async (text: string) => {
+        sent.push(text);
+        return { rows: text.includes("update review_subjects") ? [{}] : [] };
+      },
+    };
+  };
+
+  it("does nothing while the switch is off", async () => {
+    let db = fakeDb();
+    expect(await applyAutoBlock(db, "did:plc:x", decision, "run", false)).toBe(
+      false,
+    );
+    expect(db.sent).toEqual([]);
+  });
+
+  it("does nothing for a rule that may not block", async () => {
+    let db = fakeDb();
+    expect(
+      await applyAutoBlock(
+        db,
+        "did:plc:x",
+        { ...decision, block: false },
+        "r",
+        true,
+      ),
+    ).toBe(false);
+    expect(db.sent).toEqual([]);
+  });
+
+  it("blocks and logs it, skipping accounts an admin cleared", async () => {
+    let db = fakeDb();
+    expect(await applyAutoBlock(db, "did:plc:x", decision, "run", true)).toBe(
+      true,
+    );
+    expect(db.sent[0]).toContain("human_label is distinct from 'legit'");
+    expect(db.sent[0]).toContain("enforced_status is null");
+    expect(db.sent[1]).toContain("'enforcement', 'block'");
   });
 });
 

@@ -4,9 +4,11 @@ import type { ProposedStatus, SignalValue } from "./types";
 // told apart by the policy that made them.
 export const POLICY_VERSION = 3;
 
-// While this is "dry-run" every decision is a proposal: recorded, shown at
-// /admin/review, and read by nothing that changes what a visitor sees.
-export const REVIEW_MODE: "dry-run" | "live" = "dry-run";
+// Whether rules marked autoBlock block an account on their own. Set to false
+// and every decision is only a proposal: recorded, shown at /admin/review,
+// and read by nothing that changes what a visitor sees.
+export const AUTO_BLOCK: boolean = true;
+export const REVIEW_MODE = AUTO_BLOCK ? "live" : "dry-run";
 
 type Values = Record<string, SignalValue | undefined>;
 
@@ -16,6 +18,9 @@ export type Rule = {
   // Costly signals to compute before the rules are read again from the top.
   run?: string[];
   then?: ProposedStatus;
+  // Only for rules that rest on evidence a person could check at a glance.
+  // A rule that proposes spam without this still waits for an admin.
+  autoBlock?: boolean;
 };
 
 const num = (v: Values, id: string) =>
@@ -27,12 +32,14 @@ export const RULES: Rule[] = [
     id: "known-spam-site",
     when: (v) => num(v, "links.spam_domains") >= 1,
     then: "spam",
+    autoBlock: true,
   },
   {
     id: "link-farm",
     when: (v) =>
       num(v, "links.farm_accounts") >= 5 && v["account.profile"] === "empty",
     then: "spam",
+    autoBlock: true,
   },
   {
     id: "link-farm-small",

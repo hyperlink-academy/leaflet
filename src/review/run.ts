@@ -1,4 +1,4 @@
-import { RULES, POLICY_VERSION, REVIEW_MODE } from "./policy";
+import { RULES, POLICY_VERSION, AUTO_BLOCK, REVIEW_MODE } from "./policy";
 import { explain } from "./reasons";
 import { SIGNALS, SIGNALS_BY_ID } from "./signals";
 import type {
@@ -22,13 +22,18 @@ export type Review = {
 export function decide(
   values: Record<string, SignalValue | undefined>,
 ):
-  | { status: ProposedStatus; rule: string }
+  | { status: ProposedStatus; rule: string; block: boolean }
   | { rule: string; missing: string[] } {
   let rule = RULES.find((r) => r.when(values));
-  if (!rule) return { status: "needs_review", rule: "no-rule" };
+  if (!rule) return { status: "needs_review", rule: "no-rule", block: false };
   let missing = (rule.run ?? []).filter((id) => !(id in values));
   if (missing.length > 0) return { rule: rule.id, missing };
-  return { status: rule.then ?? "needs_review", rule: rule.id };
+  let status = rule.then ?? "needs_review";
+  return {
+    status,
+    rule: rule.id,
+    block: status === "spam" && !!rule.autoBlock,
+  };
 }
 
 // The decision for signals already computed. A subject that still wants a
@@ -43,6 +48,7 @@ export function decideFrom(signals: Record<string, SignalResult>): Decision {
     status: "status" in outcome ? outcome.status : "unjudged",
     rule: outcome.rule,
     reasons: explain(signals),
+    block: "status" in outcome && outcome.block,
   };
 }
 
@@ -129,7 +135,8 @@ export async function saveSubject(db: Queryable, account: AccountBundle) {
      values ('account', $1, $2, $3, $4, $5)
      on conflict (kind, id) do update set
        label = excluded.label, stats = excluded.stats,
-       first_seen = excluded.first_seen, human_label = excluded.human_label`,
+       first_seen = excluded.first_seen,
+       human_label = coalesce(review_subjects.human_label, excluded.human_label)`,
     [
       account.did,
       JSON.stringify(label),
@@ -159,7 +166,10 @@ export async function saveReview(
       name: review.decision.rule,
       version: POLICY_VERSION,
       value: review.decision.status,
-      evidence: { reasons: review.decision.reasons },
+      evidence: {
+        reasons: review.decision.reasons,
+        block: review.decision.block,
+      },
     },
   ];
   await db.query(
@@ -182,4 +192,36 @@ export async function saveReview(
       JSON.stringify(review.decision.reasons),
     ],
   );
+  return {
+    blocked: await applyAutoBlock(db, account.did, review.decision, run),
+  };
+}
+
+// Blocks the account if its rule may and AUTO_BLOCK is on. Never touches an
+// account that is already blocked, and never one an admin has said is fine,
+// so an unblock sticks through every later review. The policy does not
+// unblock: only a person does.
+export async function applyAutoBlock(
+  db: Queryable,
+  did: string,
+  decision: Decision,
+  run: string,
+  enabled = AUTO_BLOCK,
+): Promise<boolean> {
+  if (!decision.block || !enabled) return false;
+  let { rows } = await db.query(
+    `update review_subjects
+     set enforced_status = 'spam', enforced_at = now(), enforced_by = null
+     where kind = 'account' and id = $1 and enforced_status is null
+       and human_label is distinct from 'legit'
+     returning id`,
+    [did],
+  );
+  if (rows.length === 0) return false;
+  await db.query(
+    `insert into review_events (run, mode, kind, subject_id, type, name, version, value, evidence)
+     values ($1, 'live', 'account', $2, 'enforcement', 'block', $3, '"spam"'::jsonb, $4::jsonb)`,
+    [run, did, POLICY_VERSION, JSON.stringify({ rule: decision.rule })],
+  );
+  return true;
 }

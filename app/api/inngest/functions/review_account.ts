@@ -1,6 +1,8 @@
 import { inngest, events } from "../client";
 import { pool } from "supabase/pool";
 import { fetchProfiles, loadAccounts } from "src/review/load";
+import { forgetBlockedMemo } from "src/review/blocked";
+import { dropCachedPages } from "src/review/dropCachedPages";
 import {
   reviewAccount,
   saveLinks,
@@ -34,8 +36,19 @@ export const review_account = inngest.createFunction(
         console.error("[review] model signal failed:", did, e);
         return reviewAccount(account, ctx, { costly: false });
       });
-      await saveReview(pool, account, review, `${cause}-${event.id}`);
-      return review.decision;
+      const { blocked } = await saveReview(
+        pool,
+        account,
+        review,
+        `${cause}-${event.id}`,
+      );
+      if (blocked) {
+        forgetBlockedMemo([did]);
+        await dropCachedPages(pool, [did]).catch((e) =>
+          console.error("[review] cache drop failed:", did, e),
+        );
+      }
+      return { ...review.decision, blocked };
     });
   },
 );

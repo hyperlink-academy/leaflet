@@ -12,7 +12,7 @@ import {
   type Subscriber,
 } from "src/emailPosts/broadcast";
 import type { EmailPostAudience, EmailPostRow } from "src/emailPosts/types";
-import { authorOf, blockedAmong } from "src/review/blocked";
+import { authorOf, blockedAmong, DISPUTE_EMAIL } from "src/review/blocked";
 
 // Confirmed subscribers (or one reader's subscription, given `identityId`) in
 // the email's audience it hasn't reached yet. "Free" means subscribers
@@ -43,7 +43,9 @@ export async function sendEmailPost(
     ),
   );
   if (blocked.size > 0)
-    return { error: "Sending is turned off for this account." };
+    return {
+      error: `Sending is turned off for this account. If you think that's a mistake, write to ${DISPUTE_EMAIL}.`,
+    };
 
   const pub = await run("load-publication", async () => {
     const { data } = await supabaseServerClient

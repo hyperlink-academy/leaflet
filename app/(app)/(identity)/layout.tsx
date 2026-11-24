@@ -7,6 +7,7 @@ import { RouteUIStateManager } from "components/RouteUIStateManger";
 import { SubscriptionSuccessModal } from "components/SubscriptionSuccessModal";
 import { SubscribeConfirmationModal } from "components/Subscribe/SubscribeConfirmationModal";
 import { RecommendConfirmationToast } from "components/Interactions/RecommendConfirmationToast";
+import { AccountBlockedBanner } from "components/AccountBlockedBanner";
 
 // Identity-bearing surfaces (dashboard, publish flow, account flows): rendered
 // per-request with the viewer's identity so chrome and theme are correct on
@@ -50,6 +51,9 @@ async function IdentityLayoutInner({
     <IdentityProviderServer>
       <RequestHeadersProvider language={acceptLanguage} timezone={ipTimezone}>
         {children}
+        <Suspense>
+          <AccountBlockedBanner />
+        </Suspense>
         <Suspense>
           <SubscriptionSuccessModal />
           <SubscribeConfirmationModal />
