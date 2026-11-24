@@ -4,6 +4,7 @@ import { DidResolver, MemoryCache } from "@atproto/identity";
 import { parseReqNsid, verifyJwt } from "@atproto/xrpc-server";
 import { supabaseServerClient } from "supabase/serverClient";
 import { inngest } from "app/api/inngest/client";
+import { dropHeld } from "src/publicationReview/held";
 import { AtUri } from "@atproto/api";
 import { wikipedia } from "../mentions/services/wikipedia";
 import { pokemon } from "../mentions/services/pokemon";
@@ -165,7 +166,17 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
 
     let { data, error } = await query;
     if (error) console.error("all-leaflets skeleton query error:", error);
-    return c.json(skeletonResponse(data || [], cursor));
+    let rows = data || [];
+    let response = skeletonResponse(
+      await dropHeld(rows, (d) =>
+        d.documents_in_publications.map((p) => p.publications?.uri),
+      ),
+      cursor,
+    );
+    // From the last row fetched, so a page whose tail was held back advances.
+    let last = rows[rows.length - 1];
+    if (last) response.cursor = `${last.sort_date}::${last.uri}`;
+    return c.json(response);
   }
 
   let isFollowsFeed = feedAtURI.rkey === "bsky-follows-leaflets";

@@ -3,6 +3,7 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
 import { enrichDocumentToPost } from "src/utils/enrichPost";
+import { dropHeld } from "src/publicationReview/held";
 import type { Cursor, Post } from "./getReaderFeed";
 
 export async function getNewFeed(
@@ -43,19 +44,20 @@ export async function getNewFeed(
 
   let { data: rawFeed, error } = await query;
 
-  const feed = deduplicateByUriOrdered(rawFeed || []);
+  const feed = await dropHeld(deduplicateByUriOrdered(rawFeed || []), (d) =>
+    d.documents_in_publications.map((p) => p.publications.uri),
+  );
 
   let posts = (
     await Promise.all(feed.map((post) => enrichDocumentToPost(post as any)))
   ).filter((post): post is Post => post !== null);
 
-  const nextCursor =
-    posts.length > 0
-      ? {
-          timestamp: posts[posts.length - 1].documents.sort_date,
-          uri: posts[posts.length - 1].documents.uri,
-        }
-      : null;
+  // From the last row fetched, not the last post shown, so a page whose tail
+  // (or whole) was held back still advances.
+  const last = rawFeed?.[rawFeed.length - 1];
+  const nextCursor = last?.sort_date
+    ? { timestamp: last.sort_date, uri: last.uri }
+    : null;
 
   return {
     posts,

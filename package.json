@@ -35,6 +35,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "@atproto/api": "^0.16.9",
     "@atproto/common": "^0.4.8",
     "@atproto/identity": "^0.4.6",

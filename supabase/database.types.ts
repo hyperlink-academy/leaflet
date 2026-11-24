@@ -2125,6 +2125,10 @@ export type Database = {
       }
       publication_reviews: {
         Row: {
+          classified_at: string | null
+          classifier_category: string | null
+          classifier_reason: string | null
+          classifier_verdict: string | null
           publication: string
           queued_at: string
           reviewed_at: string | null
@@ -2132,6 +2136,10 @@ export type Database = {
           spam: boolean
         }
         Insert: {
+          classified_at?: string | null
+          classifier_category?: string | null
+          classifier_reason?: string | null
+          classifier_verdict?: string | null
           publication: string
           queued_at?: string
           reviewed_at?: string | null
@@ -2139,6 +2147,10 @@ export type Database = {
           spam?: boolean
         }
         Update: {
+          classified_at?: string | null
+          classifier_category?: string | null
+          classifier_reason?: string | null
+          classifier_verdict?: string | null
           publication?: string
           queued_at?: string
           reviewed_at?: string | null

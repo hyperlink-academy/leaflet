@@ -783,6 +783,10 @@ export const publication_reviews = pgTable("publication_reviews", {
 	reviewed_at: timestamp("reviewed_at", { withTimezone: true, mode: 'string' }),
 	reviewed_by: uuid("reviewed_by").references(() => identities.id, { onDelete: "set null" } ),
 	spam: boolean("spam").default(false).notNull(),
+	classifier_verdict: text("classifier_verdict"),
+	classifier_category: text("classifier_category"),
+	classifier_reason: text("classifier_reason"),
+	classified_at: timestamp("classified_at", { withTimezone: true, mode: 'string' }),
 },
 (table) => {
 	return {

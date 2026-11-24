@@ -11,6 +11,7 @@ import {
 } from "lexicons/api";
 import { TID } from "@atproto/common";
 import { supabaseServerClient } from "supabase/serverClient";
+import { requestPublicationReview } from "src/publicationReview/request";
 import { isConfirmedContributor } from "src/contributorPermissions";
 import { scanIndexLocal } from "src/replicache/utils";
 import type { Fact } from "src/replicache";
@@ -695,6 +696,8 @@ async function publish({
       }
     }
   }
+
+  if (publication_uri) await requestPublicationReview(publication_uri);
 
   // Runs after the documents/join-row writes above so the re-render reads the
   // record this publish just wrote — including the title and description that
