@@ -46,8 +46,11 @@ export function LeafletFooter(props: { entityID: string }) {
   let blockType = useEntity(focusedBlock?.entityID || null, "block/type")?.data
     .value;
   let addingToHome = useAddToHomeParam();
-  const editingTable = useEditorStates(s =>
-    blockType === "table" && !!focusedBlock && !!s.editorStates[focusedBlock.entityID]?.view
+  const editingTable = useEditorStates(
+    (s) =>
+      blockType === "table" &&
+      !!focusedBlock &&
+      !!s.editorStates[focusedBlock.entityID]?.view,
   );
   let isOnHome =
     addingToHome ||
@@ -89,7 +92,8 @@ export function LeafletFooter(props: { entityID: string }) {
           />
         </FooterLayout>
       ) : focusedBlock &&
-        (focusedBlock.entityType === "footnote" || (focusedBlock.entityType === "block" && editingTable)) &&
+        (focusedBlock.entityType === "footnote" ||
+          (focusedBlock.entityType === "block" && editingTable)) &&
         entity_set.permissions.write ? (
         <FooterLayout
           onMouseDown={(e) => {
@@ -97,7 +101,11 @@ export function LeafletFooter(props: { entityID: string }) {
           }}
         >
           <FootnoteToolbar
-            pageID={editingTable ? pageOfParent(focusedBlock.parent) : focusedBlock.parent}
+            pageID={
+              editingTable
+                ? pageOfParent(focusedBlock.parent)
+                : focusedBlock.parent
+            }
             tableCell={editingTable}
           />
         </FooterLayout>

@@ -24,9 +24,13 @@ export function DesktopPageFooter(props: { pageID: string }) {
   let isFootnoteFocused =
     focusedEntity?.entityType === "footnote" &&
     focusedEntity.parent === props.pageID;
-  const editingTable = useEditorStates(s =>
-    blockType === "table" && !!focusedEntity && !!s.editorStates[focusedEntity.entityID]?.view
-  ) && pageOfParent(focusedBlockParentID) === props.pageID;
+  const editingTable =
+    useEditorStates(
+      (s) =>
+        blockType === "table" &&
+        !!focusedEntity &&
+        !!s.editorStates[focusedEntity.entityID]?.view,
+    ) && pageOfParent(focusedBlockParentID) === props.pageID;
 
   return (
     <Media

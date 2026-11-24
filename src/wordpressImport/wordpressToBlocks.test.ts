@@ -190,8 +190,12 @@ describe("wordpressHtmlToBlocks: block editor", () => {
     expect(fact(r.blocks[0], "button/url")?.value).toBe(
       "https://shop.example.com",
     );
-    expect(r.blocks[1].facts.some(f => f.attribute === "table/row/cell")).toBe(true);
-    expect(r.blocks[1].facts.some(f => f.attribute === "block/text")).toBe(true);
+    expect(
+      r.blocks[1].facts.some((f) => f.attribute === "table/row/cell"),
+    ).toBe(true);
+    expect(r.blocks[1].facts.some((f) => f.attribute === "block/text")).toBe(
+      true,
+    );
   });
 
   test("footnotes become footnotes", () => {
