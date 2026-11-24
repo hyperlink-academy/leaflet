@@ -496,7 +496,13 @@ const editTableAxis: Mutation<
   TableTarget & {
     axis: TableAxisKind;
     change:
-      | { type: "add"; item: TableAxis; after?: string }
+      | {
+          type: "add";
+          item: TableAxis;
+          before?: string;
+          after?: string;
+          duplicate?: string;
+        }
       | { type: "delete"; entity: string }
       | { type: "move"; entity: string; target: string };
   }
@@ -518,10 +524,16 @@ const editTableAxis: Mutation<
 
   if (change.type === "add") {
     if (!validTableSize(entries.length + 1, other.length)) return;
-    const after = change.after
-      ? order.findIndex((item) => item.entityID === change.after)
+    const anchor = change.duplicate ?? change.before ?? change.after;
+    const anchorIndex = anchor
+      ? order.findIndex((item) => item.entityID === anchor)
       : order.length - 1;
-    if (after < 0) return;
+    if (anchorIndex < 0) return;
+    const index = anchorIndex + (change.before ? 0 : 1);
+    if (index === 0 && header?.data.value === order[0].entityID) return;
+    const source = change.duplicate;
+    const sourceRow =
+      source && axis === "row" ? await tableRowCells(source, ctx) : null;
     if (ctx.prefetch) {
       const additions = other.map((fact) =>
         axis === "row"
@@ -537,14 +549,43 @@ const editTableAxis: Mutation<
       entityID: change.item.entityID,
       permission_set: args.permission_set,
     });
-    order.splice(after + 1, 0, change.item);
-    await writeTableAxisOrder(args, order, after + 1, positions, ctx);
+    order.splice(index, 0, change.item);
+    await writeTableAxisOrder(args, order, index, positions, ctx);
+    if (source && axis === "column") {
+      const [alignment] = await ctx.scanIndex.eav(
+        source,
+        "table/column/alignment",
+      );
+      if (alignment)
+        await ctx.assertFact({
+          entity: change.item.entityID,
+          attribute: "table/column/alignment",
+          data: alignment.data,
+        });
+    }
     for (const fact of other) {
       const pair =
         axis === "row"
           ? [change.item.entityID, fact.data.value]
           : [fact.data.value, change.item.entityID];
-      await createTableCell(pair[0], pair[1], args.permission_set, ctx);
+      const cell = await createTableCell(
+        pair[0],
+        pair[1],
+        args.permission_set,
+        ctx,
+      );
+      const original = sourceRow
+        ? sourceRow.get(fact.data.value)
+        : source && (await tableRowCells(fact.data.value, ctx)).get(source);
+      if (!original) continue;
+      const [text] = await ctx.scanIndex.eav(original, "block/text");
+      if (text)
+        await ctx.assertFact({
+          id: tableTextFactID(cell),
+          entity: cell,
+          attribute: "block/text",
+          data: text.data,
+        });
     }
     return;
   }

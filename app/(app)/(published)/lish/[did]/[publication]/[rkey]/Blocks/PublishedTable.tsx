@@ -38,7 +38,7 @@ export function PublishedTable(props: {
           scope={headerRow ? "col" : undefined}
           data-index={[...props.index, rowIndex, columnIndex].join(".")}
           data-page-id={props.pageId}
-          className={`min-w-[6em] max-w-[24em] border border-border-light px-2 py-1.5 align-top wrap-anywhere whitespace-pre-wrap ${
+          className={`min-w-[6em] max-w-[24em] px-2 py-1.5 align-top wrap-anywhere whitespace-pre-wrap ${
             alignment === "right"
               ? "text-right"
               : alignment === "center"
@@ -62,15 +62,9 @@ export function PublishedTable(props: {
       aria-label="Table"
     >
       <table
-        className={`w-full table-auto border-collapse ${
-          props.block.borders === false
-            ? "[&_td]:border-transparent [&_th]:border-transparent"
-            : ""
-        } ${
-          props.block.style === "striped"
-            ? "[&_tbody_tr:nth-child(even)]:bg-bg-light"
-            : ""
-        }`}
+        className="leaflet-table w-full table-auto"
+        data-bordered={props.block.borders !== false}
+        data-striped={props.block.style === "striped"}
       >
         {header && first && (
           <thead>

@@ -21,7 +21,7 @@ import { useReplicache } from "src/replicache";
 import { MAX_TABLE_CELLS, validTableSize } from "src/replicache/table";
 import { scanIndex } from "src/replicache/utils";
 import { useTableSnapshot, type CellSnapshot } from "./useTableSnapshot";
-import { BlockTableSmall } from "components/Icons/BlockTableSmall";
+import { SettingsTriggerButton } from "../SettingsTriggerButton";
 import { focusBlock } from "src/utils/focusBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useUIState } from "src/useUIState";
@@ -42,6 +42,10 @@ import { TableCellEditor, type Navigation } from "./TableCellEditor";
 
 type Address = { row: string; column: string; caret?: "start" | "end" };
 type Axis = "row" | "column";
+type AxisTarget = { axis: Axis; entity: string };
+type DropEdge = "top" | "bottom" | "left" | "right";
+const menuClass =
+  "min-w-44 max-h-(--radix-dropdown-menu-content-available-height) overflow-y-auto";
 const newAxis = () => ({ entityID: v7(), factID: v7() });
 const pendingFocus = new Set<string>();
 
@@ -65,6 +69,7 @@ function TableCell(props: {
   active: boolean;
   alignment?: string;
   rowHandle?: React.ReactNode;
+  dropEdge?: DropEdge;
   editable: boolean;
   editorRef: React.RefObject<EditorView | null>;
   activate: () => void;
@@ -76,7 +81,8 @@ function TableCell(props: {
   return (
     <Tag
       scope={props.header ? "col" : undefined}
-      className={`relative min-w-[6em] max-w-[24em] border border-border-light px-2 py-1.5 align-top wrap-anywhere whitespace-pre-wrap ${props.rowHandle ? "pr-7" : ""} ${props.header ? "font-semibold bg-bg-light" : ""} ${props.active ? "outline outline-accent-contrast outline-offset-[-2px]" : ""}`}
+      data-drop-edge={props.dropEdge}
+      className={`relative min-w-[6em] max-w-[24em] px-2 py-1.5 align-top wrap-anywhere whitespace-pre-wrap ${props.header ? "font-semibold bg-bg-light" : ""} ${props.active ? "outline outline-accent-contrast outline-offset-[-2px]" : ""}`}
       style={{
         textAlign:
           props.alignment === "right" || props.alignment === "center"
@@ -97,6 +103,10 @@ function TableCell(props: {
         e.stopPropagation();
         flushSync(props.activate);
       }}
+      onMouseDown={(e) => {
+        // A text selection that starts in a cell belongs to its editor.
+        if (props.editable && !e.shiftKey) e.stopPropagation();
+      }}
       onClick={(e) => {
         if (
           props.editable &&
@@ -115,7 +125,7 @@ function TableCell(props: {
         </div>
       )}
       {props.rowHandle && (
-        <div className="absolute top-1 right-1">{props.rowHandle}</div>
+        <div className="absolute top-0.5 right-full">{props.rowHandle}</div>
       )}
       {cell && props.active && props.editable ? (
         <TableCellEditor
@@ -172,7 +182,25 @@ export function TableBlock(
     context && rows.includes(context.row) ? context.row : rows[0];
   const contextColumn =
     context && columns.includes(context.column) ? context.column : columns[0];
-  const alignment = alignments[columns.indexOf(contextColumn)] ?? "left";
+  const [dragged, setDragged] = useState<AxisTarget | null>(null);
+  const [destination, setDestination] = useState<AxisTarget | null>(null);
+  const dragEntries = dragged?.axis === "row" ? rows : columns;
+  const dropEdge =
+    dragged && destination && dragged.entity !== destination.entity
+      ? dragEntries.indexOf(dragged.entity) <
+        dragEntries.indexOf(destination.entity)
+        ? dragged.axis === "row"
+          ? "bottom"
+          : "right"
+        : dragged.axis === "row"
+          ? "top"
+          : "left"
+      : undefined;
+
+  function clearDrag() {
+    setDragged(null);
+    setDestination(null);
+  }
   const target = { table, permission_set: set };
 
   function activate(address: Address) {
@@ -250,9 +278,9 @@ export function TableBlock(
     });
   async function add(
     axis: Axis,
-    after?: string,
-    focusNew = false,
+    anchor?: string,
     focusColumn = columns[0],
+    placement: "after" | "before" | "duplicate" = "after",
   ) {
     if (!rep) return;
     if (
@@ -270,26 +298,23 @@ export function TableBlock(
       rep.mutate.editTableAxis({
         ...target,
         axis,
-        change: { type: "add", item, after },
+        change: { type: "add", item, [placement]: anchor },
       }),
     );
-    if (focusNew) {
-      const added = await rep.query(async (tx) =>
-        (await scanIndex(tx).eav(table, `table/${axis}`)).some(
-          (fact) => fact.data.value === item.entityID,
-        ),
-      );
-      if (added)
-        setPendingCell({
-          row: axis === "row" ? item.entityID : contextRow,
-          column: axis === "column" ? item.entityID : focusColumn,
-        });
-    }
+    const added = await rep.query(async (tx) =>
+      (await scanIndex(tx).eav(table, `table/${axis}`)).some(
+        (fact) => fact.data.value === item.entityID,
+      ),
+    );
+    if (added)
+      setPendingCell({
+        row: axis === "row" ? item.entityID : contextRow,
+        column: axis === "column" ? item.entityID : focusColumn,
+      });
   }
 
-  async function remove(axis: Axis) {
+  async function remove(axis: Axis, entity: string) {
     if (!rep) return;
-    const entity = axis === "row" ? contextRow : contextColumn;
     const entries = axis === "row" ? rows : columns;
     const i = entries.indexOf(entity);
     if (i < 0 || entries.length === 1) return;
@@ -329,7 +354,7 @@ export function TableBlock(
     if (direction === "Enter") {
       const row = rows[activeRow + 1];
       if (row) activate({ row, column: columns[activeColumn] });
-      else void add("row", undefined, true, columns[activeColumn]);
+      else void add("row", undefined, columns[activeColumn]);
       return true;
     }
     if (direction === "ArrowUp" || direction === "ArrowDown") {
@@ -348,7 +373,7 @@ export function TableBlock(
       activeRow * columns.length + activeColumn + (backward ? -1 : 1);
     if (index < 0) return direction === "ArrowLeft" && exitToNeighbor(true);
     if (index >= rows.length * columns.length) {
-      if (direction === "Tab") void add("row", undefined, true);
+      if (direction === "Tab") void add("row");
       else return exitToNeighbor(false);
       return true;
     }
@@ -406,9 +431,8 @@ export function TableBlock(
       });
   }
 
-  const shift = (axis: Axis, offset: number) => {
+  const shift = (axis: Axis, entity: string, offset: number) => {
     const entries = axis === "row" ? rows : columns;
-    const entity = axis === "row" ? contextRow : contextColumn;
     const from = entries.indexOf(entity);
     const destination = from + offset;
     const first = axis === "row" && header ? 1 : 0;
@@ -418,6 +442,88 @@ export function TableBlock(
       onSelect: () => void move(axis, entity, entries[destination]),
     };
   };
+
+  function axisHandle(axis: Axis, entity: string, index: number) {
+    const isRow = axis === "row";
+    const entries = isRow ? rows : columns;
+    const pinned = isRow && header && index === 0;
+    const addBeside = (placement: "before" | "after" | "duplicate") =>
+      void add(axis, entity, contextColumn, placement);
+    return (
+      <AxisHandle
+        axis={axis}
+        entity={entity}
+        label={`${isRow ? "Row" : "Column"} ${index + 1} options`}
+        pinned={pinned}
+      >
+        <MenuItem disabled={pinned} onSelect={() => addBeside("before")}>
+          {isRow ? "Add row above" : "Add column to the left"}
+        </MenuItem>
+        <MenuItem onSelect={() => addBeside("after")}>
+          {isRow ? "Add row below" : "Add column to the right"}
+        </MenuItem>
+        <MenuItem {...shift(axis, entity, -1)}>
+          {isRow ? "Move row up" : "Move column left"}
+        </MenuItem>
+        <MenuItem {...shift(axis, entity, 1)}>
+          {isRow ? "Move row down" : "Move column right"}
+        </MenuItem>
+        {!isRow && (
+          <>
+            <MenuSeparator />
+            <RadioMenuGroup
+              value={alignments[index] ?? "left"}
+              onValueChange={(alignment) => {
+                if (
+                  !rep ||
+                  (alignment !== "left" &&
+                    alignment !== "center" &&
+                    alignment !== "right")
+                )
+                  return;
+                void undoManager.withUndoGroup(() =>
+                  rep.mutate.setTableColumnAlignment({
+                    table,
+                    column: entity,
+                    alignment,
+                  }),
+                );
+              }}
+            >
+              <RadioMenuItem
+                value="left"
+                selected={alignments[index] === "left"}
+              >
+                Align left
+              </RadioMenuItem>
+              <RadioMenuItem
+                value="center"
+                selected={alignments[index] === "center"}
+              >
+                Align center
+              </RadioMenuItem>
+              <RadioMenuItem
+                value="right"
+                selected={alignments[index] === "right"}
+              >
+                Align right
+              </RadioMenuItem>
+            </RadioMenuGroup>
+          </>
+        )}
+        <MenuSeparator />
+        <MenuItem onSelect={() => addBeside("duplicate")}>
+          {isRow ? "Duplicate row" : "Duplicate column"}
+        </MenuItem>
+        <MenuItem
+          disabled={entries.length <= 1}
+          onSelect={() => void remove(axis, entity)}
+        >
+          {isRow ? "Delete row" : "Delete column"}
+        </MenuItem>
+      </AxisHandle>
+    );
+  }
 
   const renderRow = (row: string, rowIndex: number, headerRow: boolean) => (
     <TableRow
@@ -433,14 +539,17 @@ export function TableBlock(
       currentColumn={active?.row === row ? active.column : undefined}
       caret={active?.row === row ? active.caret : undefined}
       rowHandle={
-        editable && selected && !headerRow ? (
-          <AxisHandle
-            axis="row"
-            entity={row}
-            label={`Drag row ${rowIndex + 1}`}
-          />
-        ) : undefined
+        editable && selected ? axisHandle("row", row, rowIndex) : undefined
       }
+      dropEdge={
+        destination?.axis === "row" && destination.entity === row
+          ? dropEdge
+          : undefined
+      }
+      dropColumn={
+        destination?.axis === "column" ? destination.entity : undefined
+      }
+      columnDropEdge={destination?.axis === "column" ? dropEdge : undefined}
       editorRef={editorRef}
       navigate={navigate}
       paste={(grid) => void paste(grid)}
@@ -453,13 +562,7 @@ export function TableBlock(
       }}
       columnHandle={
         rowIndex === 0 && editable && selected
-          ? (column, i) => (
-              <AxisHandle
-                axis="column"
-                entity={column}
-                label={`Drag column ${i + 1}`}
-              />
-            )
+          ? (column, i) => axisHandle("column", column, i)
           : undefined
       }
     />
@@ -470,13 +573,94 @@ export function TableBlock(
       isSelected={selected && !props.preview}
       areYouSure={props.areYouSure}
       setAreYouSure={props.setAreYouSure}
-      className="min-w-0 p-0! border-transparent!"
+      className="min-w-0 p-0! border-transparent! overflow-visible!"
+      extraOptions={
+        editable &&
+        rep && (
+          <Menu
+            align="end"
+            className={menuClass}
+            asChild
+            trigger={
+              <SettingsTriggerButton
+                type="button"
+                aria-label="Table options"
+                title="Table options"
+                onClick={(e) => e.stopPropagation()}
+              />
+            }
+          >
+            <div className="px-2 text-xs text-tertiary">Edit table</div>
+            <MenuItem
+              onSelect={() => void add("row", contextRow, contextColumn)}
+            >
+              Add row
+            </MenuItem>
+            <MenuItem onSelect={() => void add("column", contextColumn)}>
+              Add column
+            </MenuItem>
+            <MenuItem
+              onSelect={() =>
+                void copySelection(rep, [props]).catch(() =>
+                  toast({ type: "error", content: "Couldn’t copy table." }),
+                )
+              }
+            >
+              Copy table
+            </MenuItem>
+            <MenuSeparator />
+            <div className="px-2 text-xs text-tertiary">Style</div>
+            <CheckboxMenuItem
+              checked={header}
+              onSelect={() =>
+                void undoManager.withUndoGroup(() =>
+                  rep.mutate.setTableHeaderRow({ table, enabled: !header }),
+                )
+              }
+            >
+              Header row
+            </CheckboxMenuItem>
+            <CheckboxMenuItem
+              checked={borders}
+              onSelect={() =>
+                void undoManager.withUndoGroup(() =>
+                  rep.mutate.assertFact({
+                    entity: table,
+                    attribute: "table/borders",
+                    data: { type: "boolean", value: !borders },
+                  }),
+                )
+              }
+            >
+              Borders
+            </CheckboxMenuItem>
+            <CheckboxMenuItem
+              checked={striped}
+              onSelect={() =>
+                void undoManager.withUndoGroup(() =>
+                  rep.mutate.assertFact({
+                    entity: table,
+                    attribute: "table/style",
+                    data: {
+                      type: "table-style-union",
+                      value: striped ? "default" : "striped",
+                    },
+                  }),
+                )
+              }
+            >
+              Striped rows
+            </CheckboxMenuItem>
+          </Menu>
+        )
+      }
     >
       <div
         className="w-full min-w-0"
         ref={frame}
         tabIndex={editable ? 0 : undefined}
         data-table-block
+        data-table-axis-dragging={dragged ? "" : undefined}
         onFocus={(e) => {
           if (editable && e.target === e.currentTarget)
             useUIState.getState().focusAndSelectBlock(props);
@@ -506,160 +690,44 @@ export function TableBlock(
           }
         }}
       >
-        {editable && selected && (
-          <div className="absolute right-1 top-0 z-10 rounded border border-border-light bg-bg-page shadow-sm">
-            {rep && (
-              <Menu
-                align="start"
-                className="min-w-44 max-h-(--radix-dropdown-menu-content-available-height) overflow-y-auto"
-                onOpenChange={(open) => {
-                  if (open) useUIState.getState().focusAndSelectBlock(props);
-                }}
-                asChild
-                trigger={
-                  <button
-                    type="button"
-                    aria-label="Table options"
-                    title="Table options"
-                  >
-                    <BlockTableSmall />
-                  </button>
-                }
-              >
-                <MenuItem onSelect={() => void add("row", contextRow, true)}>
-                  Add row
-                </MenuItem>
-                <MenuItem
-                  onSelect={() => void add("column", contextColumn, true)}
-                >
-                  Add column
-                </MenuItem>
-                <MenuItem
-                  disabled={rows.length <= 1}
-                  onSelect={() => void remove("row")}
-                >
-                  Delete row
-                </MenuItem>
-                <MenuItem
-                  disabled={columns.length <= 1}
-                  onSelect={() => void remove("column")}
-                >
-                  Delete column
-                </MenuItem>
-                <MenuItem {...shift("row", -1)}>Move row up</MenuItem>
-                <MenuItem {...shift("row", 1)}>Move row down</MenuItem>
-                <MenuItem {...shift("column", -1)}>Move column left</MenuItem>
-                <MenuItem {...shift("column", 1)}>Move column right</MenuItem>
-                <MenuSeparator />
-                <CheckboxMenuItem
-                  checked={header}
-                  onSelect={() =>
-                    void undoManager.withUndoGroup(() =>
-                      rep.mutate.setTableHeaderRow({ table, enabled: !header }),
-                    )
-                  }
-                >
-                  Header row
-                </CheckboxMenuItem>
-                <CheckboxMenuItem
-                  checked={borders}
-                  onSelect={() =>
-                    void undoManager.withUndoGroup(() =>
-                      rep.mutate.assertFact({
-                        entity: table,
-                        attribute: "table/borders",
-                        data: { type: "boolean", value: !borders },
-                      }),
-                    )
-                  }
-                >
-                  Borders
-                </CheckboxMenuItem>
-                <CheckboxMenuItem
-                  checked={striped}
-                  onSelect={() =>
-                    void undoManager.withUndoGroup(() =>
-                      rep.mutate.assertFact({
-                        entity: table,
-                        attribute: "table/style",
-                        data: {
-                          type: "table-style-union",
-                          value: striped ? "default" : "striped",
-                        },
-                      }),
-                    )
-                  }
-                >
-                  Striped rows
-                </CheckboxMenuItem>
-                <MenuSeparator />
-                <div className="px-2 text-xs text-tertiary">
-                  Column {columns.indexOf(contextColumn) + 1} alignment
-                </div>
-                <RadioMenuGroup
-                  value={alignment}
-                  onValueChange={(value) => {
-                    if (
-                      value !== "left" &&
-                      value !== "center" &&
-                      value !== "right"
-                    )
-                      return;
-                    void undoManager.withUndoGroup(() =>
-                      rep.mutate.setTableColumnAlignment({
-                        table,
-                        column: contextColumn,
-                        alignment: value,
-                      }),
-                    );
-                  }}
-                >
-                  <RadioMenuItem selected={alignment === "left"} value="left">
-                    Left
-                  </RadioMenuItem>
-                  <RadioMenuItem
-                    selected={alignment === "center"}
-                    value="center"
-                  >
-                    Center
-                  </RadioMenuItem>
-                  <RadioMenuItem selected={alignment === "right"} value="right">
-                    Right
-                  </RadioMenuItem>
-                </RadioMenuGroup>
-                <MenuSeparator />
-                <MenuItem
-                  onSelect={() =>
-                    void copySelection(rep, [props]).catch(() =>
-                      toast({ type: "error", content: "Couldn’t copy table." }),
-                    )
-                  }
-                >
-                  Copy table
-                </MenuItem>
-              </Menu>
-            )}
-          </div>
-        )}
         <div
-          className={`overflow-x-auto overscroll-x-contain ${editable ? "pt-5" : ""}`}
+          className={`overflow-x-auto overscroll-x-contain ${editable ? "-ml-5 pl-5 pt-6" : ""}`}
           onWheel={(e) => {
             if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) e.stopPropagation();
           }}
         >
           <DndContext
             sensors={sensors}
-            collisionDetection={(args) =>
-              closestCenter({
+            collisionDetection={(args) => {
+              const bounds = frame.current?.getBoundingClientRect();
+              const pointer = args.pointerCoordinates;
+              if (
+                pointer &&
+                bounds &&
+                (pointer.x < bounds.left - 20 ||
+                  pointer.x > bounds.right ||
+                  pointer.y < bounds.top ||
+                  pointer.y > bounds.bottom)
+              )
+                return [];
+              return closestCenter({
                 ...args,
                 droppableContainers: args.droppableContainers.filter(
                   (target) =>
                     target.data.current?.axis ===
                     args.active.data.current?.axis,
                 ),
-              })
+              });
+            }}
+            onDragStart={({ active }) =>
+              setDragged(active.data.current as AxisTarget)
             }
+            onDragOver={({ over }) =>
+              setDestination((over?.data.current as AxisTarget) ?? null)
+            }
+            onDragCancel={clearDrag}
             onDragEnd={({ active, over }) => {
+              clearDrag();
               const from = active.data.current;
               const to = over?.data.current;
               if (from && to && from.axis === to.axis)
@@ -667,7 +735,9 @@ export function TableBlock(
             }}
           >
             <table
-              className={`w-full table-auto border-collapse ${borders ? "" : "[&_td]:border-transparent [&_th]:border-transparent"} ${striped ? "[&_tbody_tr:nth-child(even)]:bg-bg-light" : ""}`}
+              className="leaflet-table w-full table-auto"
+              data-bordered={borders}
+              data-striped={striped}
             >
               {header && <thead>{renderRow(rows[0], 0, true)}</thead>}
               <tbody>
@@ -693,6 +763,9 @@ function TableRow(props: {
   alignments: readonly string[];
   header: boolean;
   rowHandle?: React.ReactNode;
+  dropEdge?: DropEdge;
+  dropColumn?: string;
+  columnDropEdge?: DropEdge;
   editable: boolean;
   currentColumn?: string;
   caret?: Address["caret"];
@@ -729,6 +802,10 @@ function TableRow(props: {
           label={`Row ${props.rowIndex + 1}, column ${i + 1}`}
           alignment={props.alignments[i]}
           rowHandle={i === 0 ? props.rowHandle : undefined}
+          dropEdge={
+            props.dropEdge ??
+            (column === props.dropColumn ? props.columnDropEdge : undefined)
+          }
           header={props.header}
           active={currentColumn === column}
           caret={currentColumn === column ? props.caret : undefined}
@@ -747,30 +824,58 @@ function AxisHandle({
   axis,
   entity,
   label,
-}: {
-  axis: Axis;
-  entity: string;
+  pinned,
+  children,
+}: AxisTarget & {
   label: string;
+  pinned: boolean;
+  children: React.ReactNode;
 }) {
+  const [open, setOpen] = useState(false);
   const id = `${axis}:${entity}`;
   const data = { axis, entity };
-  const drag = useDraggable({ id, data });
-  const target = useDroppable({ id, data });
+  const drag = useDraggable({ id, data, disabled: pinned });
+  const target = useDroppable({ id, data, disabled: pinned });
   return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      data-draggable="table-axis"
-      ref={(node) => {
-        drag.setNodeRef(node);
-        target.setNodeRef(node);
-      }}
-      {...drag.attributes}
-      {...drag.listeners}
-      className={`touch-none cursor-grab rounded px-1 ${target.isOver ? "bg-bg-accent text-accent-contrast" : "text-tertiary hover:text-primary"}`}
+    <Menu
+      open={open}
+      onOpenChange={setOpen}
+      asChild
+      align="start"
+      className={menuClass}
+      trigger={
+        <button
+          type="button"
+          title={label}
+          aria-label={label}
+          data-draggable="table-axis"
+          ref={(node) => {
+            drag.setNodeRef(node);
+            target.setNodeRef(node);
+          }}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            drag.listeners?.onPointerDown?.(e);
+            // The menu opens on click so a press can start a drag.
+            e.preventDefault();
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen(true);
+          }}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen(true);
+          }}
+          className={`relative z-10 flex size-5 items-center justify-center touch-none rounded text-tertiary hover:bg-bg-light hover:text-primary ${pinned ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"}`}
+        >
+          ⠿
+        </button>
+      }
     >
-      ⠿
-    </button>
+      {children}
+    </Menu>
   );
 }

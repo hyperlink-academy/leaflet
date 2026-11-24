@@ -1504,3 +1504,86 @@ body > iframe[src*="js.stripe.com"] {
     );
   }
 }
+
+.leaflet-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  --table-line: transparent;
+}
+
+.leaflet-table[data-bordered="true"] {
+  --table-line: var(--color-border-light);
+}
+
+.leaflet-table tr > :is(td, th) {
+  border-right: 1px solid var(--table-line);
+  border-bottom: 1px solid var(--table-line);
+}
+
+.leaflet-table tr > :first-child {
+  border-left: 1px solid var(--table-line);
+}
+
+.leaflet-table > :first-child > tr:first-child > * {
+  border-top: 1px solid var(--table-line);
+}
+
+.leaflet-table > :first-child > tr:first-child > :first-child {
+  border-top-left-radius: 0.375rem;
+}
+
+.leaflet-table > :first-child > tr:first-child > :last-child {
+  border-top-right-radius: 0.375rem;
+}
+
+.leaflet-table > :last-child > tr:last-child > :first-child {
+  border-bottom-left-radius: 0.375rem;
+}
+
+.leaflet-table > :last-child > tr:last-child > :last-child {
+  border-bottom-right-radius: 0.375rem;
+}
+
+.leaflet-table[data-striped="true"] > tbody > tr:nth-child(even) > td {
+  background-color: var(--color-bg-light);
+}
+
+.leaflet-table [data-drop-edge]::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+  background-color: rgb(var(--accent-contrast));
+}
+
+.leaflet-table [data-drop-edge="top"]::after,
+.leaflet-table [data-drop-edge="bottom"]::after {
+  inset-inline: -1px;
+  height: 2px;
+}
+
+.leaflet-table [data-drop-edge="left"]::after,
+.leaflet-table [data-drop-edge="right"]::after {
+  inset-block: -1px;
+  width: 2px;
+}
+
+.leaflet-table [data-drop-edge="top"]::after {
+  top: -1px;
+}
+
+.leaflet-table [data-drop-edge="bottom"]::after {
+  bottom: -1px;
+}
+
+.leaflet-table [data-drop-edge="left"]::after {
+  left: -1px;
+}
+
+.leaflet-table [data-drop-edge="right"]::after {
+  right: -1px;
+}
+
+body:has([data-table-axis-dragging]) * {
+  cursor: grabbing !important;
+}

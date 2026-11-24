@@ -241,6 +241,104 @@ describe.skipIf(!dbAvailable)("server-side text merging", () => {
     }
   }, 30_000);
 
+  test("inserts before an axis and duplicates current cell text and alignment", async () => {
+    const { set, entity: parent, token, token_rights } = await seedEntity();
+    const table = randomUUID();
+    const axis = () => ({ entityID: randomUUID(), factID: randomUUID() });
+    const row = axis();
+    const column = axis();
+    const first = axis();
+    const copiedRow = axis();
+    const copiedColumn = axis();
+    const value = createYjsText("copied");
+    const target = { table, permission_set: set };
+    try {
+      await db.transaction(async (tx) => {
+        const { getContext, flush } = cachedServerMutationContext(
+          tx as any,
+          token,
+          token_rights,
+          null,
+          parent,
+        );
+        const ctx = getContext("table-edit", 1);
+        await mutations.createTable(
+          {
+            ...target,
+            parent,
+            tableFactID: randomUUID(),
+            position: "a0",
+            rows: [row],
+            columns: [column],
+            values: [[value]],
+            header: false,
+          },
+          ctx,
+        );
+        await mutations.setTableColumnAlignment(
+          { table, column: column.entityID, alignment: "right" },
+          ctx,
+        );
+        await mutations.editTableAxis(
+          {
+            ...target,
+            axis: "row",
+            change: { type: "add", item: first, before: row.entityID },
+          },
+          ctx,
+        );
+        await mutations.editTableAxis(
+          {
+            ...target,
+            axis: "row",
+            change: { type: "add", item: copiedRow, duplicate: row.entityID },
+          },
+          ctx,
+        );
+        await mutations.editTableAxis(
+          {
+            ...target,
+            axis: "column",
+            change: {
+              type: "add",
+              item: copiedColumn,
+              duplicate: column.entityID,
+            },
+          },
+          ctx,
+        );
+        await flush();
+      });
+      const order = await pool.query(
+        `select data->>'value' as value from facts
+         where entity = $1 and attribute = 'table/row'
+         order by (data->>'position') collate "C"`,
+        [table],
+      );
+      expect(order.rows.map(({ value }) => value)).toEqual(
+        [first, row, copiedRow].map(({ entityID }) => entityID),
+      );
+      expect(
+        await factValue(tableCellID(copiedRow.entityID, column.entityID)),
+      ).toBe(value);
+      expect(
+        await factValue(tableCellID(copiedRow.entityID, copiedColumn.entityID)),
+      ).toBe(value);
+      expect(
+        await factValue(tableCellID(first.entityID, copiedColumn.entityID)),
+      ).toBeUndefined();
+      const alignment = await pool.query(
+        `select data->>'value' as value from facts
+         where entity = $1 and attribute = 'table/column/alignment'`,
+        [copiedColumn.entityID],
+      );
+      expect(alignment.rows[0]?.value).toBe("right");
+    } finally {
+      await pool.query('delete from entities where "set" = $1', [set]);
+      await pool.query("delete from entity_sets where id = $1", [set]);
+    }
+  });
+
   test("flushes a bulk write whose facts exceed one statement's bind limit", async () => {
     const { set, entity: table, token, token_rights } = await seedEntity();
     const axis = () => ({ entityID: randomUUID(), factID: randomUUID() });

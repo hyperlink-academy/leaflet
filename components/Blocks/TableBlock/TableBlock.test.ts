@@ -6,8 +6,15 @@ import { useUIState } from "src/useUIState";
 import { TableBlock } from "./index";
 
 vi.mock("../Block", () => ({
-  BlockLayout: ({ children }: { children: ReactNode }) =>
-    h("div", null, children),
+  BlockLayout: ({
+    children,
+    extraOptions,
+    isSelected,
+  }: {
+    children: ReactNode;
+    extraOptions?: ReactNode;
+    isSelected: boolean;
+  }) => h("div", null, children, isSelected ? extraOptions : null),
 }));
 vi.mock("components/EntitySetProvider", () => ({
   useEntitySetContext: () => ({ permissions: { write: true }, set: "set" }),
@@ -110,6 +117,16 @@ test("the first pointer press edits its cell and Enter stays in the same column"
     });
     expect(activeLabel()).toBe("Row 1, column 2");
     expect(node.querySelector('[aria-label="Table options"]')).not.toBeNull();
+    const blockMouseDown = vi.fn();
+    document.body.addEventListener("mousedown", blockMouseDown);
+    const editor = document.activeElement!;
+    editor.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    expect(blockMouseDown).not.toHaveBeenCalled();
+    editor.dispatchEvent(
+      new MouseEvent("mousedown", { bubbles: true, shiftKey: true }),
+    );
+    expect(blockMouseDown).toHaveBeenCalledTimes(1);
+    document.body.removeEventListener("mousedown", blockMouseDown);
     await act(async () => {
       document.activeElement!.dispatchEvent(
         new KeyboardEvent("keydown", {
