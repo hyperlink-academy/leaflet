@@ -12,11 +12,13 @@ import { getDocumentURL } from "src/utils/getPublicationURL";
 import { getDocumentPages } from "src/utils/normalizeRecords";
 import {
   buildMembershipTiers,
+  getDocumentWiderRelease,
   getGatedPostPolicy,
   postHasMembersDelimiter,
   truncatePagesAtMembersDelimiter,
   type GatePolicy,
   type MembershipTiers,
+  type WiderRelease,
 } from "src/membership";
 import {
   projectDocumentRowForClient,
@@ -110,10 +112,12 @@ export const getPostPageData = cache(async function getPostPageData(
     gated: boolean;
     tiers: MembershipTiers;
     gatePolicy: GatePolicy | null;
+    widerRelease: WiderRelease | null;
   } = {
     gated: false,
     tiers: membershipTiers,
     gatePolicy: null,
+    widerRelease: null,
   };
   if (postHasMembersDelimiter(normalizedDocument)) {
     const gatePolicy = getGatedPostPolicy(normalizedDocument);
@@ -126,6 +130,7 @@ export const getPostPageData = cache(async function getPostPageData(
       gated: true,
       tiers: membershipTiers,
       gatePolicy,
+      widerRelease: getDocumentWiderRelease(normalizedDocument),
     };
   }
 

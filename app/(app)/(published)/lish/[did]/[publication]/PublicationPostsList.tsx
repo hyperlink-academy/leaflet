@@ -14,7 +14,10 @@ import { LocalizedDate } from "./LocalizedDate";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { getFirstParagraph } from "src/utils/getFirstParagraph";
 import { postsListFilterSearch } from "src/utils/postsListPagination";
-import { getGatedPostPolicy } from "src/membership";
+import {
+  getDocumentWiderRelease,
+  getGatedPostPolicy,
+} from "src/membership";
 import { blobRefToSrc, COVER_THUMBNAIL_WIDTH } from "src/utils/blobRefToSrc";
 import { useContributorProfiles } from "src/hooks/useContributorProfiles";
 import {
@@ -171,6 +174,9 @@ export function PublicationPostsList({
             const gatePolicy = post.membersOnly
               ? getGatedPostPolicy(doc_record)
               : null;
+            const widerRelease = post.membersOnly
+              ? getDocumentWiderRelease(doc_record)
+              : null;
 
             const isHighlightedFirst = highlightFirstPost && index === 0;
             const Variant = isHighlightedFirst
@@ -201,6 +207,7 @@ export function PublicationPostsList({
                     membersOnly={post.membersOnly}
                     publicationUri={publication.uri}
                     gatePolicy={gatePolicy}
+                    widerRelease={widerRelease}
                     title={doc_record.title}
                     description={
                       doc_record.description || getFirstParagraph(doc_record)
@@ -226,6 +233,7 @@ export function PublicationPostsList({
                     membersOnly={post.membersOnly}
                     publicationUri={publication.uri}
                     gatePolicy={gatePolicy}
+                    widerRelease={widerRelease}
                     title={doc_record.title}
                     author={authorByUri.get(post.uri)}
                     date={date}
@@ -244,6 +252,7 @@ export function PublicationPostsList({
                   membersOnly={post.membersOnly}
                   publicationUri={publication.uri}
                   gatePolicy={gatePolicy}
+                    widerRelease={widerRelease}
                   title={doc_record.title}
                   description={
                     doc_record.description || getFirstParagraph(doc_record)

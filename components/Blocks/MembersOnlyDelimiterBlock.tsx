@@ -9,6 +9,7 @@ import { Popover } from "components/Popover";
 import { AudienceChecklist } from "components/Memberships/AudienceChecklist";
 import {
   WIDER_RELEASE_DELAYS,
+  getDocumentWiderRelease,
   isWiderReleaseDelay,
   widerReleaseAudience,
   type AudiencePolicy,
@@ -121,6 +122,14 @@ function TierSelector(props: {
     "block/members-only-audience",
     "block/members-only-tier",
   );
+  // Once the published post's wider release has passed, its gate can't be
+  // changed back; publish keeps the release as it was.
+  let { normalizedDocument } = useLeafletPublicationData();
+  let publishedRelease = getDocumentWiderRelease(normalizedDocument);
+  let pastRelease =
+    publishedRelease && new Date(publishedRelease.at).getTime() <= Date.now()
+      ? publishedRelease
+      : null;
   let setPolicy = (policy: GatePolicy) =>
     setAudience(
       policy.audience,
@@ -193,87 +202,114 @@ function TierSelector(props: {
     >
       <div className="flex flex-col gap-3 text-primary font-normal min-h-0 overflow-y-auto p-3">
         <div className="font-bold">Gated Content Options</div>
-        <div className="flex flex-col gap-1">
-          <ToggleGroup
-            fullWidth
-            background="page"
-            className="-mx-1"
-            value={mode}
-            onChange={setMode}
-            options={[
-              { value: "unlock", label: "Unlock Content" },
-              { value: "early-access", label: "Early Access" },
-            ]}
-          />
-          <div className="text-sm text-tertiary leading-snug">
-            {mode === "unlock"
-              ? "Show gated content to subscribers or members."
-              : "Show gated content to subscribers or members as soon as you publish. After some time, release it to a wider audience."}
+        {pastRelease ? (
+          <div className="light-container px-3 py-2 text-secondary">
+            This post was released to{" "}
+            {releaseAudienceLabel(pastRelease.audience, props.tiers)} on{" "}
+            {new Date(pastRelease.at).toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+            .
           </div>
-        </div>
-        {mode === "unlock" ? (
-          showGateChecklist && (
-            <>
-              <hr />
-              <ChecklistSection label="Unlock this post for">
-                {gateChecklist}
-              </ChecklistSection>
-            </>
-          )
         ) : (
           <>
-            <hr />
+            <div className="flex flex-col gap-1">
+              <ToggleGroup
+                fullWidth
+                background="page"
+                className="-mx-1"
+                value={mode}
+                onChange={setMode}
+                options={[
+                  { value: "unlock", label: "Unlock Content" },
+                  { value: "early-access", label: "Early Access" },
+                ]}
+              />
+              <div className="text-sm text-tertiary leading-snug">
+                {mode === "unlock"
+                  ? "Show gated content to subscribers or members."
+                  : "Show gated content to subscribers or members as soon as you publish. After some time, release it to a wider audience."}
+              </div>
+            </div>
+            {mode === "unlock" ? (
+              showGateChecklist && (
+                <>
+                  <hr />
+                  <ChecklistSection label="Unlock this post for">
+                    {gateChecklist}
+                  </ChecklistSection>
+                </>
+              )
+            ) : (
+              <>
+                <hr />
 
-            <label className="flex items-center justify-between gap-2">
-              <div className="font-bold">Early Access Timeframe</div>
-              <select
-                className="input-with-border text-primary py-0.5 shrink-0 text-center"
-                value={widerReleaseTimeline}
-                onChange={(e) => {
-                  if (isWiderReleaseDelay(e.target.value))
-                    setWiderReleaseTimeline(e.target.value);
-                }}
-              >
-                {WIDER_RELEASE_DELAYS.map((d) => (
-                  <option key={d.value} value={d.value}>
-                    {d.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <hr />
+                <label className="flex items-center justify-between gap-2">
+                  <div className="font-bold">Early Access Timeframe</div>
+                  <select
+                    className="input-with-border text-primary py-0.5 shrink-0 text-center"
+                    value={widerReleaseTimeline}
+                    onChange={(e) => {
+                      if (isWiderReleaseDelay(e.target.value))
+                        setWiderReleaseTimeline(e.target.value);
+                    }}
+                  >
+                    {WIDER_RELEASE_DELAYS.map((d) => (
+                      <option key={d.value} value={d.value}>
+                        {d.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <hr />
 
-            {showGateChecklist && (
-              <ChecklistSection label="Early access for…">
-                {gateChecklist}
-              </ChecklistSection>
+                {showGateChecklist && (
+                  <ChecklistSection label="Early access for…">
+                    {gateChecklist}
+                  </ChecklistSection>
+                )}
+                <hr />
+
+                <WiderReleaseChecklist
+                  tiers={props.tiers}
+                  policy={props.policy}
+                  delayLabel={
+                    WIDER_RELEASE_DELAYS.find(
+                      (d) => d.value === widerReleaseTimeline,
+                    )?.label
+                  }
+                  widerRelease={
+                    widerReleaseAudienceFact?.data.value ?? {
+                      audience: "public",
+                    }
+                  }
+                  onChange={(value) =>
+                    rep?.mutate.assertFact({
+                      entity: props.entityID,
+                      attribute: "block/members-only-wider-release-audience",
+                      data: { type: "audience-union", value },
+                    })
+                  }
+                />
+              </>
             )}
-            <hr />
-
-            <WiderReleaseChecklist
-              tiers={props.tiers}
-              policy={props.policy}
-              delayLabel={
-                WIDER_RELEASE_DELAYS.find(
-                  (d) => d.value === widerReleaseTimeline,
-                )?.label
-              }
-              widerRelease={
-                widerReleaseAudienceFact?.data.value ?? { audience: "public" }
-              }
-              onChange={(value) =>
-                rep?.mutate.assertFact({
-                  entity: props.entityID,
-                  attribute: "block/members-only-wider-release-audience",
-                  data: { type: "audience-union", value },
-                })
-              }
-            />
           </>
         )}
       </div>
     </Popover>
   );
+}
+
+function releaseAudienceLabel(audience: AudiencePolicy, tiers: Tier[]) {
+  if (audience.audience === "public") return "everyone";
+  if (audience.audience === "subscribers") return "all subscribers";
+  if (audience.audience === "paid") return "all paid members";
+  const names = tiers
+    .filter((t) => audience.tierIds.includes(t.id))
+    .map((t) => t.name);
+  return names.length > 0 ? names.join(", ") : "selected tiers";
 }
 
 function ChecklistSection(props: { label: string; children: React.ReactNode }) {

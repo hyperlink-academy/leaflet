@@ -439,12 +439,24 @@ async function publish({
     description !== undefined ? description : existingRecord.description;
   const resolvedTags = tags !== undefined ? tags : existingRecord.tags;
   const resolvedCoverImage = coverImageBlob ?? existingRecord.coverImage;
-  const widerReleaseAt = publication_uri
-    ? getFirstPageMembersDelimiter(pages)?.widerReleaseAt
-    : undefined;
-  const previousWiderReleaseAt = normalizedDoc
+  const previousDelimiter = normalizedDoc
     ? getFirstPageMembersDelimiter(getDocumentPages(normalizedDoc))
-        ?.widerReleaseAt
+    : null;
+  const previousWiderReleaseAt = previousDelimiter?.widerReleaseAt;
+  // A release that has happened can't be undone: readers it reached keep
+  // access, so the gate keeps its released audience whatever the draft says.
+  const delimiter = getFirstPageMembersDelimiter(pages);
+  if (
+    delimiter &&
+    previousDelimiter &&
+    typeof previousWiderReleaseAt === "string" &&
+    new Date(previousWiderReleaseAt).getTime() <= Date.now()
+  ) {
+    delimiter.widerReleaseAt = previousWiderReleaseAt;
+    delimiter.widerReleaseAudience = previousDelimiter.widerReleaseAudience;
+  }
+  const widerReleaseAt = publication_uri
+    ? delimiter?.widerReleaseAt
     : undefined;
 
   // Create record based on the document type

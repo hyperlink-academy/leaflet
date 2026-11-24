@@ -186,6 +186,56 @@ export function getFirstPageMembersDelimiter(
   );
 }
 
+export type WiderRelease = { at: string; audience: AudiencePolicy };
+
+// A post's early-access gate: when it widens and to whom. Callers compare
+// `at` with the current time to tell early access from a past release.
+export function getDocumentWiderRelease(
+  doc: NormalizedDocument | null | undefined,
+): WiderRelease | null {
+  const block = getFirstPageMembersDelimiter(
+    doc ? getDocumentPages(doc) : undefined,
+  );
+  const audience = getWiderReleasePolicy(block);
+  return block && audience
+    ? { at: block.widerReleaseAt as string, audience }
+    : null;
+}
+
+export function isWiderReleasePending(
+  release: WiderRelease | null | undefined,
+  now: number = Date.now(),
+): release is WiderRelease {
+  if (!release) return false;
+  const at = new Date(release.at).getTime();
+  return !isNaN(at) && at > now;
+}
+
+// Whether a post still in early access will open to this reader at its wider
+// release.
+export function widerReleaseReaches(
+  membership: ResolvedPublicationMembership | null | undefined,
+  gatePolicy: GatePolicy | null | undefined,
+  release: WiderRelease | null | undefined,
+  now: number = Date.now(),
+): release is WiderRelease {
+  if (!isWiderReleasePending(release, now) || !gatePolicy) return false;
+  if (release.audience.audience === "public") return true;
+  return membershipUnlocksGatedPost(
+    membership,
+    widerReleaseAudience(gatePolicy, release.audience),
+  );
+}
+
+// "3 days" until `at`, rounding a part-day up so the last day reads "1 day".
+export function daysUntilLabel(at: string, now: number = Date.now()): string {
+  const days = Math.max(
+    1,
+    Math.ceil((new Date(at).getTime() - now) / (24 * 60 * 60 * 1000)),
+  );
+  return days === 1 ? "1 day" : `${days} days`;
+}
+
 // Whether a delimiter's wider release is still ahead: the post is in early
 // access.
 export function isEarlyAccessPending(

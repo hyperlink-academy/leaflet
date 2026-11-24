@@ -1,5 +1,5 @@
 import React from "react";
-import type { GatePolicy } from "src/membership";
+import type { GatePolicy, WiderRelease } from "src/membership";
 
 export type CommonProps = {
   href?: string;
@@ -16,6 +16,8 @@ export type CommonProps = {
   membersOnly?: boolean;
   publicationUri?: string;
   gatePolicy?: GatePolicy | null;
+  // Set while the post is in early access, for the badge's release countdown.
+  widerRelease?: WiderRelease | null;
 };
 
 export type LargeProps = CommonProps & {

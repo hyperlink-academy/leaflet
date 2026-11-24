@@ -1,5 +1,8 @@
 import { describe, expect, test } from "vitest";
 import {
+  daysUntilLabel,
+  isWiderReleasePending,
+  widerReleaseReaches,
   getMembersDelimiterGatePolicy,
   getWiderReleasePolicy,
   isEarlyAccessPending,
@@ -157,5 +160,52 @@ describe("early access gating", () => {
         { audience: "tiers", tierIds: ["b", "a"] },
       ),
     ).toEqual({ audience: "tiers", tierIds: ["a", "b"] });
+  });
+});
+
+describe("release countdown", () => {
+  const now = new Date("2026-02-01T00:00:00.000Z").getTime();
+  const release = (at: string) => ({
+    at,
+    audience: { audience: "public" as const },
+  });
+
+  test("rounds part-days up and never says 0", () => {
+    expect(daysUntilLabel("2026-02-08T00:00:00.000Z", now)).toBe("7 days");
+    expect(daysUntilLabel("2026-02-07T01:00:00.000Z", now)).toBe("7 days");
+    expect(daysUntilLabel("2026-02-01T01:00:00.000Z", now)).toBe("1 day");
+  });
+
+  test("is pending only before the release", () => {
+    expect(
+      isWiderReleasePending(release("2026-02-02T00:00:00.000Z"), now),
+    ).toBe(true);
+    expect(
+      isWiderReleasePending(release("2026-02-01T00:00:00.000Z"), now),
+    ).toBe(false);
+    expect(isWiderReleasePending(null, now)).toBe(false);
+  });
+});
+
+describe("widerReleaseReaches", () => {
+  const now = new Date("2026-02-01T00:00:00.000Z").getTime();
+  const at = "2026-02-08T00:00:00.000Z";
+  const free = { kind: "free" as const };
+  const tierB = { kind: "paid" as const, tierId: "b" };
+  const gate = { audience: "tiers" as const, tierIds: ["a"] };
+
+  test("reaches readers the widened audience admits", () => {
+    const toPaid = { at, audience: { audience: "paid" as const } };
+    expect(widerReleaseReaches(tierB, gate, toPaid, now)).toBe(true);
+    expect(widerReleaseReaches(free, gate, toPaid, now)).toBe(false);
+    expect(widerReleaseReaches(null, gate, toPaid, now)).toBe(false);
+  });
+
+  test("a public release reaches everyone, but only while pending", () => {
+    const toPublic = { at, audience: { audience: "public" as const } };
+    expect(widerReleaseReaches(null, gate, toPublic, now)).toBe(true);
+    expect(
+      widerReleaseReaches(null, gate, toPublic, new Date(at).getTime()),
+    ).toBe(false);
   });
 });
