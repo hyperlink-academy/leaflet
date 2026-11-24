@@ -41,6 +41,35 @@ describe("table clipboard", () => {
     expect(parseTableClipboard(html, plain)).toBeNull();
   });
 
+  const markdownTable = "| Plan | Price |\n| --- | ---: |\n| Basic | $5 |";
+  const editorHtml =
+    '<div><span style="color: blue">| Plan | Price |</span><br>| --- | ---: |<br>| Basic | $5 |</div>';
+
+  test("recovers a standalone GFM table from a code editor's plain text", () => {
+    const result = parseTableClipboard(editorHtml, markdownTable);
+    expect(result).toMatchObject({
+      header: true,
+      alignments: ["left", "right"],
+    });
+    if (!result || result === "too-large") throw new Error("Expected a grid");
+    expect(result.values.map((row) => row.map(plaintext))).toEqual([
+      ["Plan", "Price"],
+      ["Basic", "$5"],
+    ]);
+  });
+
+  test.each(["Intro", "---", "```md"])(
+    "leaves mixed Markdown on the normal paste path (%s)",
+    (prefix) => {
+      expect(
+        parseTableClipboard(
+          `<div>${prefix}</div>${editorHtml}`,
+          `${prefix}\n\n${markdownTable}${prefix === "```md" ? "\n```" : ""}`,
+        ),
+      ).toBeNull();
+    },
+  );
+
   test("accepts a single TSV row only when the clipboard identifies it", () => {
     const result = parseTableClipboard("", "Name\tvalue", true);
     expect(result).toMatchObject({ normalized: false });

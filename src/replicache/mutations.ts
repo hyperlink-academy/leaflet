@@ -16,7 +16,6 @@ import {
   tableCellID,
   tableTextFactID,
   validTableSize,
-  MAX_TABLE_CELLS,
   type TableGraphInput,
   type TableAxisInput,
 } from "./table";
@@ -321,17 +320,7 @@ const addBlock: Mutation<{
 };
 
 type TableAxis = TableAxisInput;
-type TableTarget = {
-  table: string;
-  permission_set: string;
-  cellLimitVersion?: 1;
-};
-
-// Redispatched/queued mutations from before the cap changed were allowed to
-// contain 5,000 cells. Let those finish under the original bound; new editors
-// send the current version and use the smaller limit.
-const tableCellLimit = (args: TableTarget) =>
-  args.cellLimitVersion === undefined ? 5_000 : MAX_TABLE_CELLS;
+type TableTarget = { table: string; permission_set: string };
 type TableAxisKind = "row" | "column";
 type TableAlignment = "left" | "center" | "right";
 
@@ -430,10 +419,7 @@ const createTable: Mutation<
       existingBlock?: boolean;
     }
 > = async (args, ctx) => {
-  if (
-    !validTableSize(args.rows.length, args.columns.length, tableCellLimit(args))
-  )
-    return;
+  if (!validTableSize(args.rows.length, args.columns.length)) return;
   const entityIDs = [
     args.table,
     ...args.rows.map((r) => r.entityID),
@@ -531,8 +517,7 @@ const editTableAxis: Mutation<
   );
 
   if (change.type === "add") {
-    if (!validTableSize(entries.length + 1, other.length, tableCellLimit(args)))
-      return;
+    if (!validTableSize(entries.length + 1, other.length)) return;
     const after = change.after
       ? order.findIndex((item) => item.entityID === change.after)
       : order.length - 1;
@@ -665,10 +650,9 @@ const pasteTableGrid: Mutation<
     return;
   const height = Math.max(rows.length, firstRow + args.values.length);
   const totalWidth = Math.max(columns.length, firstColumn + width);
-  if (!validTableSize(args.values.length, width, tableCellLimit(args))) return;
+  if (!validTableSize(args.values.length, width)) return;
   const expands = height !== rows.length || totalWidth !== columns.length;
-  if (expands && !validTableSize(height, totalWidth, tableCellLimit(args)))
-    return;
+  if (expands && !validTableSize(height, totalWidth)) return;
   if (
     height - rows.length > args.extraRows.length ||
     totalWidth - columns.length > args.extraColumns.length

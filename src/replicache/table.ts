@@ -7,12 +7,8 @@ import type { DeepReadonly } from "replicache";
 
 export const MAX_TABLE_CELLS = 1_000;
 
-export function validTableSize(
-  rows: number,
-  columns: number,
-  limit = MAX_TABLE_CELLS,
-) {
-  return rows > 0 && columns > 0 && rows * columns <= limit;
+export function validTableSize(rows: number, columns: number) {
+  return rows > 0 && columns > 0 && rows * columns <= MAX_TABLE_CELLS;
 }
 
 // The intersection is deterministic on both Replicache replicas. A missing

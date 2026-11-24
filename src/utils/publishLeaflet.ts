@@ -716,7 +716,6 @@ async function createMentionNotifications(
   const mentionedPublications = new Map<string, string>(); // Map of DID -> publication URI
   const mentionedDocuments = new Map<string, string>(); // Map of DID -> document URI
   const embeddedBskyPosts = new Map<string, string>(); // Map of author DID -> post URI
-  const checkedAtMentions = new Set<string>();
 
   // Extract pages from either format
   let pages: PubLeafletContent.Main["pages"] | undefined;
@@ -747,9 +746,11 @@ async function createMentionNotifications(
       }
     }
 
-    const textBlocks = PubLeafletBlocksText.isMain(block) ? [block]
-      : PubLeafletBlocksTable.isMain(block) ? block.rows.flatMap(row => row.cells)
-      : [];
+    const textBlocks = PubLeafletBlocksText.isMain(block)
+      ? [block]
+      : PubLeafletBlocksTable.isMain(block)
+        ? block.rows.flatMap((row) => row.cells)
+        : [];
     for (const textBlock of textBlocks) {
       if (textBlock.facets) {
         for (const facet of textBlock.facets) {
@@ -762,8 +763,6 @@ async function createMentionNotifications(
             }
             // Check for AT URI mentions (publications and documents)
             if (PubLeafletRichtextFacet.isAtMention(feature)) {
-              if (checkedAtMentions.has(feature.atURI)) continue;
-              checkedAtMentions.add(feature.atURI);
               const uri = new AtUri(feature.atURI);
 
               if (isPublicationCollection(uri.collection)) {

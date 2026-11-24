@@ -146,7 +146,6 @@ export const useHandlePaste = (
             if (!empty) await prepareParent?.();
             await rep.mutate.createTable({
               ...grid,
-              cellLimitVersion: 1,
               parent: tableParent,
               table,
               permission_set: entity_set.set,

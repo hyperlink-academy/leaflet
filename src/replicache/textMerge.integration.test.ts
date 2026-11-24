@@ -6,7 +6,7 @@ import * as Y from "yjs";
 import * as base64 from "base64-js";
 import type { PermissionToken } from ".";
 import { mutations } from "./mutations";
-import { MAX_TABLE_CELLS, tableCellID } from "./table";
+import { buildTableGraph, MAX_TABLE_CELLS, tableCellID } from "./table";
 import { createYjsText } from "src/utils/createYjsText";
 
 // These tests run against the local supabase stack (`supabase start`), like
@@ -170,7 +170,7 @@ describe.skipIf(!dbAvailable)("server-side text merging", () => {
         await mutate(getContext("table-client", 1));
         await flush();
       });
-    const target = { table, permission_set: set, cellLimitVersion: 1 as const };
+    const target = { table, permission_set: set };
     try {
       await push((ctx) =>
         mutations.createTable(
@@ -241,60 +241,41 @@ describe.skipIf(!dbAvailable)("server-side text merging", () => {
     }
   }, 30_000);
 
-  test("replays a queued 5,000-cell paste whose facts exceed one statement's bind limit", async () => {
-    const { set, entity: parent, token, token_rights } = await seedEntity();
-    const table = randomUUID();
+  test("flushes a bulk write whose facts exceed one statement's bind limit", async () => {
+    const { set, entity: table, token, token_rights } = await seedEntity();
     const axis = () => ({ entityID: randomUUID(), factID: randomUUID() });
     const rows = Array.from({ length: 500 }, axis);
     const columns = Array.from({ length: 10 }, axis);
     const value = createYjsText("saved");
-    const target = { table, permission_set: set };
-    const push = (
-      mutate: (
-        ctx: Parameters<typeof mutations.createTable>[1],
-      ) => Promise<void>,
-    ) =>
-      db.transaction(async (tx) => {
+    // Exercise the shared fact writer independently of the 1,000-cell
+    // editor cap. Five bind parameters per fact would overflow one insert.
+    const graph = buildTableGraph({
+      table,
+      rows,
+      columns,
+      values: rows.map(() => columns.map(() => value)),
+    });
+    expect(graph.facts.length * 5).toBeGreaterThan(65_535);
+    try {
+      await db.transaction(async (tx) => {
         const { getContext, flush } = cachedServerMutationContext(
           tx as any,
           token,
           token_rights,
           null,
-          parent,
+          table,
         );
-        await mutate(getContext("legacy-paste", 1));
+        const ctx = getContext("bulk-write", 1);
+        await mutations.createEntity(
+          graph.entities.map((entityID) => ({
+            entityID,
+            permission_set: set,
+          })),
+          ctx,
+        );
+        await mutations.assertFact(graph.facts, ctx);
         await flush();
       });
-    try {
-      await push((ctx) =>
-        mutations.createTable(
-          {
-            ...target,
-            parent,
-            tableFactID: randomUUID(),
-            position: "a0",
-            rows: [rows[0]],
-            columns: [columns[0]],
-          },
-          ctx,
-        ),
-      );
-      // The original mutation didn't send a limit version. Each filled cell
-      // creates several facts, well beyond one statement's bind limit.
-      await push((ctx) =>
-        mutations.pasteTableGrid(
-          {
-            ...target,
-            row: rows[0].entityID,
-            column: columns[0].entityID,
-            generation: randomUUID(),
-            extraRows: rows.slice(1),
-            extraColumns: columns.slice(1),
-            values: rows.map(() => columns.map(() => value)),
-          },
-          ctx,
-        ),
-      );
       expect(
         await factValue(
           tableCellID(rows.at(-1)!.entityID, columns.at(-1)!.entityID),

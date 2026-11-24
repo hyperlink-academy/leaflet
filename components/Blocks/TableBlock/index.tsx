@@ -173,7 +173,7 @@ export function TableBlock(
   const contextColumn =
     context && columns.includes(context.column) ? context.column : columns[0];
   const alignment = alignments[columns.indexOf(contextColumn)] ?? "left";
-  const target = { table, permission_set: set, cellLimitVersion: 1 as const };
+  const target = { table, permission_set: set };
 
   function activate(address: Address) {
     if (!rep || !editable) return;

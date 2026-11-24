@@ -327,7 +327,6 @@ export const blockCommands: Command[] = [
       await um.withUndoGroup(async () => {
         props.entityID && clearCommandSearchText(props.entityID);
         await rep.mutate.createTable({
-          cellLimitVersion: 1,
           parent: props.parent,
           permission_set: props.entity_set,
           table,

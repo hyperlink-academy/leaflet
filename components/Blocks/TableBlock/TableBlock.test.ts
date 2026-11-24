@@ -101,8 +101,7 @@ test("the first pointer press edits its cell and Enter stays in the same column"
     const firstRowSecondCell = node.querySelectorAll("th")[1];
     await act(async () => {
       firstRowSecondCell.dispatchEvent(
-        new PointerEvent("pointerdown", {
-          pointerType: "mouse",
+        new MouseEvent("pointerdown", {
           button: 0,
           bubbles: true,
           cancelable: true,

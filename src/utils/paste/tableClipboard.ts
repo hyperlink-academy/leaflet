@@ -243,8 +243,9 @@ export function parseTableClipboard(
   text: string,
   explicitTSV = false,
 ): TableImport {
-  const tableOnly = (markup: string) => {
-    const body = new DOMParser().parseFromString(markup, "text/html").body;
+  const parseBody = (markup: string) =>
+    new DOMParser().parseFromString(markup, "text/html").body;
+  const tableOnly = (body: HTMLElement) => {
     const tables = body.querySelectorAll("table");
     const table = tables[0];
     if (
@@ -262,15 +263,24 @@ export function parseTableClipboard(
     }
     return null;
   };
-  if (html.trim()) {
-    if (/<table[\s>]/i.test(html)) return tableOnly(html);
-    return null;
+  if (/<table[\s>]/i.test(html)) {
+    const body = parseBody(html);
+    if (body.querySelector("table")) return tableOnly(body);
   }
   if (!explicitTSV && /<table[\s>]/i.test(text)) return null;
   if (!explicitTSV && text.includes("|")) {
-    const markdown = tableOnly(markdownToHtml(text));
-    if (markdown) return markdown;
+    // Code editors often supply syntax-highlighted HTML alongside Markdown.
+    // Recover a standalone GFM table from the plain text in that case.
+    const body = parseBody(markdownToHtml(text));
+    if (
+      body.children.length === 1 &&
+      body.firstElementChild?.matches("table") &&
+      body.firstElementChild.querySelector("thead")
+    )
+      return tableOnly(body);
   }
+  // Non-table HTML still wins over inferred delimiter-separated text.
+  if (html.trim()) return null;
   const tsv = explicitTSV || text.includes("\t");
   if (!text || (!tsv && (!text.includes(",") || !text.includes('"'))))
     return null;

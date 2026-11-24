@@ -7,7 +7,7 @@
 - Publish a compact ATProto snapshot with rich-text plaintext/facets per cell, header/style/border/alignment metadata, and no local entity or Yjs identifiers.
 - Ship document and canvas support together. Canvas tables keep readable column minimums and scroll horizontally inside their normal resizable canvas block.
 - Keep v1 text-focused: inline marks and links work; comments, footnotes, nested blocks, merged cells, sorting, range selection, and manual resizing do not.
-- Cap new editor table creation and expansion at 1,000 cells. Replay already-queued mutations under the earlier limit.
+- Cap table creation and expansion at 1,000 cells.
 
 ## Expected behavior
 
@@ -21,7 +21,7 @@
 - Arrow keys move within cell text first, then across cell boundaries and into neighboring blocks. Escape selects the table first, then returns focus to the page. With the table selected, Enter adds a block below and F2 enters a cell.
 - Deleting a focused row or column moves focus to the same logical position in the next available row/column, then the previous one as fallback.
 - A Markdown or HTML table pasted into an empty text block replaces it; from nonempty text it is inserted after the current block.
-- Explicit TSV parses as a grid. Inferred TSV or quoted CSV needs at least two rows and columns of consistent width. Rich HTML is only treated as a grid if it contains a table. Pasted grids overwrite from the focused cell and expand the table if needed.
+- Explicit TSV parses as a grid. Inferred TSV or quoted CSV needs at least two rows and columns of consistent width. A standalone Markdown table is recognized even if the clipboard also includes syntax-highlighted HTML. Pasted grids overwrite from the focused cell and expand the table if needed.
 - Pasted cell markup keeps supported semantic marks, links, and line breaks; arbitrary fonts/colors are stripped, nested block boundaries become line breaks, and row/column spans are flattened.
 - Show a concise toast only when an import is normalized or rejected.
 - Any operation that would exceed 1,000 cells is refused with a clear explanation. A grid paste and all resulting expansion undo as one action.
