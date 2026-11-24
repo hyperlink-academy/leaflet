@@ -2,8 +2,27 @@
 import { act, createElement as h, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, test, vi } from "vitest";
+import { Doc } from "yjs";
+import {
+  applyAwarenessUpdate,
+  Awareness,
+  encodeAwarenessUpdate,
+} from "y-protocols/awareness";
 import { useUIState } from "src/useUIState";
 import { TableBlock } from "./index";
+
+let awareness: Awareness | undefined;
+const block = {
+  pageType: "doc",
+  entityID: "table",
+  factID: "fact",
+  parent: "page",
+  position: "a0",
+  nextPosition: null,
+  type: "table",
+  previousBlock: null,
+  nextBlock: null,
+} as const;
 
 vi.mock("../Block", () => ({
   BlockLayout: ({
@@ -15,6 +34,10 @@ vi.mock("../Block", () => ({
     extraOptions?: ReactNode;
     isSelected: boolean;
   }) => h("div", null, children, isSelected ? extraOptions : null),
+}));
+vi.mock("../SettingsTriggerButton", () => ({
+  SettingsTriggerButton: (props: React.ComponentProps<"button">) =>
+    h("button", props),
 }));
 vi.mock("components/EntitySetProvider", () => ({
   useEntitySetContext: () => ({ permissions: { write: true }, set: "set" }),
@@ -37,6 +60,9 @@ vi.mock("../TextBlock/RenderYJSFragment", () => ({
 vi.mock("../TextBlock/useCollabText", () => ({
   flushPendingTextWrites: async () => {},
 }));
+vi.mock("src/yjsRealtime", () => ({
+  useYjsRealtime: () => (awareness ? { awareness } : null),
+}));
 vi.mock("src/utils/copySelection", () => ({ copySelection: async () => {} }));
 vi.mock("./useTableSnapshot", () => {
   const cols = ["a", "b"];
@@ -45,7 +71,14 @@ vi.mock("./useTableSnapshot", () => {
     rows.map((row) => [
       row,
       Object.fromEntries(
-        cols.map((col) => [col, { id: row + col, text: null, generation: "" }]),
+        cols.map((col) => [
+          col,
+          {
+            id: row + col,
+            text: null,
+            generation: row === "second" && col === "b" ? "pasted" : "",
+          },
+        ]),
       ),
     ]),
   );
@@ -89,21 +122,7 @@ test("the first pointer press edits its cell and Enter stays in the same column"
   const activeLabel = () => document.activeElement?.getAttribute("aria-label");
   try {
     useUIState.setState({ focusedEntity: null, selectedBlocks: [] });
-    await act(async () =>
-      root.render(
-        h(TableBlock, {
-          pageType: "doc",
-          entityID: "table",
-          factID: "fact",
-          parent: "page",
-          position: "a0",
-          nextPosition: null,
-          type: "table",
-          previousBlock: null,
-          nextBlock: null,
-        }),
-      ),
-    );
+    await act(async () => root.render(h(TableBlock, block)));
     expect(node.querySelector('[aria-label="Table options"]')).toBeNull();
     const firstRowSecondCell = node.querySelectorAll("th")[1];
     await act(async () => {
@@ -141,6 +160,55 @@ test("the first pointer press edits its cell and Enter stays in the same column"
     await act(async () => root.unmount());
     useUIState.setState({ focusedEntity: null, selectedBlocks: [] });
     node.remove();
+    vi.unstubAllGlobals();
+  }
+});
+
+test("outlines a peer's inactive cell until the peer moves or leaves", async () => {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  const node = document.createElement("div");
+  const root = createRoot(node);
+  const local = new Awareness(new Doc());
+  const peer = new Awareness(new Doc());
+  awareness = local;
+  const receive = () =>
+    applyAwarenessUpdate(
+      local,
+      encodeAwarenessUpdate(peer, [peer.clientID]),
+      "peer",
+    );
+  try {
+    local.setLocalStateField("cursor", { entityID: "firsta" });
+    await act(async () => root.render(h(TableBlock, block)));
+    const [first, second] = node.querySelectorAll("th");
+    const pasted = node.querySelectorAll("td")[1];
+    expect(first.style.boxShadow).toBe("");
+    await act(async () => {
+      peer.setLocalState({ cursor: { entityID: "firstb" }, user: { hue: 45 } });
+      receive();
+    });
+    expect(second.style.boxShadow).toContain("inset");
+    await act(async () => {
+      peer.setLocalStateField("cursor", { entityID: "secondb" });
+      receive();
+    });
+    expect(second.style.boxShadow).toBe("");
+    expect(pasted.style.boxShadow).toBe("");
+    await act(async () => {
+      peer.setLocalStateField("cursor", { entityID: "secondb:pasted" });
+      receive();
+    });
+    expect(pasted.style.boxShadow).toContain("inset");
+    await act(async () => {
+      peer.setLocalState(null);
+      receive();
+    });
+    expect(pasted.style.boxShadow).toBe("");
+  } finally {
+    await act(async () => root.unmount());
+    awareness = undefined;
+    local.doc.destroy();
+    peer.doc.destroy();
     vi.unstubAllGlobals();
   }
 });

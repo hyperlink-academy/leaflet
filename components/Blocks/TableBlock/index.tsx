@@ -14,11 +14,16 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { RenderYJSFragment } from "../TextBlock/RenderYJSFragment";
+import { cursorColors } from "../TextBlock/collabCursor";
 import { useStaleClient } from "../TextBlock/schemaVersion";
 import { flushPendingTextWrites } from "../TextBlock/useCollabText";
 import { BlockLayout, type BlockProps } from "../Block";
 import { useReplicache } from "src/replicache";
-import { MAX_TABLE_CELLS, validTableSize } from "src/replicache/table";
+import {
+  MAX_TABLE_CELLS,
+  tableCellSyncID,
+  validTableSize,
+} from "src/replicache/table";
 import { scanIndex } from "src/replicache/utils";
 import { useTableSnapshot, type CellSnapshot } from "./useTableSnapshot";
 import { SettingsTriggerButton } from "../SettingsTriggerButton";
@@ -39,6 +44,7 @@ import { pageOfParent } from "src/utils/blockGroups";
 import { copySelection } from "src/utils/copySelection";
 import type { TableGrid } from "src/utils/paste/tableClipboard";
 import { TableCellEditor, type Navigation } from "./TableCellEditor";
+import { useTablePresence } from "./useTablePresence";
 
 type Address = { row: string; column: string; caret?: "start" | "end" };
 type Axis = "row" | "column";
@@ -70,6 +76,7 @@ function TableCell(props: {
   alignment?: string;
   rowHandle?: React.ReactNode;
   dropEdge?: DropEdge;
+  remoteHue?: number;
   editable: boolean;
   editorRef: React.RefObject<EditorView | null>;
   activate: () => void;
@@ -82,8 +89,12 @@ function TableCell(props: {
     <Tag
       scope={props.header ? "col" : undefined}
       data-drop-edge={props.dropEdge}
-      className={`relative min-w-[6em] max-w-[24em] px-2 py-1.5 align-top wrap-anywhere whitespace-pre-wrap ${props.header ? "font-semibold bg-bg-light" : ""} ${props.active ? "outline outline-accent-contrast outline-offset-[-2px]" : ""}`}
+      className={`relative min-w-[6em] max-w-[24em] px-2 py-1.5 align-top wrap-break-word whitespace-pre-wrap ${props.header ? "font-semibold bg-bg-light" : ""} ${props.active ? "outline outline-accent-contrast outline-offset-[-2px]" : ""}`}
       style={{
+        boxShadow:
+          !props.active && props.remoteHue !== undefined
+            ? `inset 0 0 0 2px ${cursorColors(props.remoteHue).color}`
+            : undefined,
         textAlign:
           props.alignment === "right" || props.alignment === "center"
             ? props.alignment
@@ -159,6 +170,7 @@ export function TableBlock(
   const table = props.entityID;
   const { rows, columns, cells, alignments, header, striped, borders, loaded } =
     useTableSnapshot(table);
+  const presence = useTablePresence(cells, !props.preview);
   const stale = useStaleClient((s) => s.stale);
   const { permissions, set } = useEntitySetContext();
   const { rep, undoManager } = useReplicache();
@@ -530,6 +542,7 @@ export function TableBlock(
       key={row}
       table={table}
       cells={cells[row] ?? {}}
+      presence={presence}
       loaded={loaded}
       rowIndex={rowIndex}
       columns={columns}
@@ -740,11 +753,13 @@ export function TableBlock(
               data-striped={striped}
             >
               {header && <thead>{renderRow(rows[0], 0, true)}</thead>}
-              <tbody>
-                {rows
-                  .slice(header ? 1 : 0)
-                  .map((row, i) => renderRow(row, i + Number(header), false))}
-              </tbody>
+              {rows.length > Number(header) && (
+                <tbody>
+                  {rows
+                    .slice(Number(header))
+                    .map((row, i) => renderRow(row, i + Number(header), false))}
+                </tbody>
+              )}
             </table>
           </DndContext>
         </div>
@@ -756,6 +771,7 @@ export function TableBlock(
 function TableRow(props: {
   table: string;
   cells: Record<string, CellSnapshot>;
+  presence?: ReadonlyMap<string, number>;
   loaded: boolean;
   columnHandle?: (column: string, index: number) => React.ReactNode;
   rowIndex: number;
@@ -798,6 +814,12 @@ function TableRow(props: {
           key={column}
           table={props.table}
           cell={cells[column]}
+          remoteHue={
+            cells[column] &&
+            props.presence?.get(
+              tableCellSyncID(cells[column].id, cells[column].generation),
+            )
+          }
           columnHandle={props.columnHandle?.(column, i)}
           label={`Row ${props.rowIndex + 1}, column ${i + 1}`}
           alignment={props.alignments[i]}

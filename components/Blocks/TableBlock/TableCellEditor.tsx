@@ -240,6 +240,12 @@ export function TableCellEditor(props: {
     undoManager,
     syncID,
   ]);
+  useLayoutEffect(() => {
+    const view = props.editorRef.current;
+    if (view && view.dom.getAttribute("aria-label") !== props.label)
+      view.setProps({ attributes: { "aria-label": props.label } });
+  }, [props.editorRef, props.label]);
+
   return (
     <div className="relative min-h-5">
       {overlay}

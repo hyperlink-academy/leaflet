@@ -3,6 +3,7 @@ import * as Y from "yjs";
 import { Awareness } from "y-protocols/awareness";
 import * as base64 from "base64-js";
 import { useEntity, useReplicache } from "src/replicache";
+import { tableCellSyncID } from "src/replicache/table";
 import { useYjsRealtime, YjsRealtimeConnection } from "src/yjsRealtime";
 import { remoteCursorPlugin } from "./remoteCursorPlugin";
 import { RemoteCursors } from "./RemoteCursors";
@@ -30,9 +31,7 @@ import {
 type TableText = { generation: string; value?: string | null };
 
 export function useCollabText(entityID: string, tableText?: TableText) {
-  const syncID = tableText?.generation
-    ? `${entityID}:${tableText.generation}`
-    : entityID;
+  const syncID = tableCellSyncID(entityID, tableText?.generation);
   let { yText, awareness } = useYJSValue(entityID, tableText);
   let cursorPlugin = useMemo(
     () => remoteCursorPlugin(awareness, syncID),
@@ -76,7 +75,7 @@ const docMounts = new WeakMap<Y.Doc, number>();
 
 export function useYJSValue(entityID: string, tableText?: TableText) {
   const tableGeneration = tableText?.generation;
-  const syncID = tableGeneration ? `${entityID}:${tableGeneration}` : entityID;
+  const syncID = tableCellSyncID(entityID, tableGeneration);
   const [ydoc] = useState(() => {
     let doc = new Y.Doc();
     let recent =

@@ -39,6 +39,7 @@ export function Blocks(props: {
     [pageBlocks, zoomedBlock],
   );
   let { rep } = useReplicache();
+  let { permissions } = useEntitySetContext();
   let foldedBlocks = useFoldedBlocks();
   let foldableParentSet = useMemo(() => foldableParents(blocks), [blocks]);
   // Folds on ancestors outside the zoomed view don't hide anything inside it.
@@ -111,6 +112,13 @@ export function Blocks(props: {
   let { footnotes } = useFootnoteContext();
 
   let [areFootnotes, setAreFootnotes] = useState(false);
+  // The first non-text block's controls extend 25px above the block.
+  let firstBlock = visibleBlocks[0];
+  let reserveOptionsSpace =
+    !props.preview &&
+    permissions.write &&
+    firstBlock &&
+    !isTextBlock[firstBlock.type];
 
   useEffect(() => {
     setAreFootnotes(footnotes.length > 0);
@@ -126,7 +134,7 @@ export function Blocks(props: {
       // collapse out through the container's top edge.
       // A group is sized to its blocks, so the two-line placeholder's hint
       // would hang out below it.
-      className={`blocks w-full flow-root outline-hidden ${props.group ? `h-fit ${canvasBlockEdges} [&_.placeholderHint]:hidden` : `pt-2 sm:pt-3 ${areFootnotes ? "h-fit" : "min-h-full"}`}`}
+      className={`blocks w-full flow-root outline-hidden ${props.group ? `h-fit ${canvasBlockEdges} [&_.placeholderHint]:hidden` : `${reserveOptionsSpace ? "pt-7" : "pt-2 sm:pt-3"} ${areFootnotes ? "h-fit" : "min-h-full"}`}`}
     >
       {visibleBlocks.map((f, index, arr) => {
         let nextBlock = arr[index + 1];

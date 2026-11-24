@@ -45,27 +45,34 @@ test("cell keyboard bindings navigate without splitting the document and undo te
   document.body.appendChild(container);
   const root = createRoot(container);
   const editorRef: { current: EditorView | null } = { current: null };
+  const value = createYjsText("before");
   const visited: Navigation[] = [];
   const onNavigate = (direction: Navigation) => {
     visited.push(direction);
     return true;
   };
-  try {
-    await act(async () =>
+  const renderCell = (label: string) =>
+    act(async () =>
       root.render(
         createElement(TableCellEditor, {
           cell: "cell-1",
           generation: "",
-          value: createYjsText("before"),
-          label: "Row 1, column 1",
+          value,
+          label,
           editorRef,
           onNavigate,
           onPaste: () => {},
         }),
       ),
     );
+  try {
+    await renderCell("Row 1, column 1");
     const view = editorRef.current!;
     expect(view.state.doc.textContent).toBe("before");
+    expect(view.dom.getAttribute("aria-label")).toBe("Row 1, column 1");
+    await renderCell("Row 2, column 1");
+    expect(editorRef.current).toBe(view);
+    expect(view.dom.getAttribute("aria-label")).toBe("Row 2, column 1");
 
     await act(async () => {
       for (const [key, shiftKey] of [

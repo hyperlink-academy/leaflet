@@ -21,6 +21,10 @@ export function tableTextFactID(cell: string, generation = "") {
   return v5(`text:${generation}`, cell);
 }
 
+export function tableCellSyncID(cell: string, generation = "") {
+  return generation ? `${cell}:${generation}` : cell;
+}
+
 // Copies and snapshots can re-key every entity, so the stored column
 // reference is authoritative. The derived ID is only used for missing cells.
 export function mapTableCells(
