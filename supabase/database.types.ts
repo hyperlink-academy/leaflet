@@ -2459,7 +2459,7 @@ export type Database = {
         Insert: {
           at?: string
           evidence?: Json | null
-          id?: number
+          id?: never
           kind: string
           mode?: string
           name: string
@@ -2472,7 +2472,7 @@ export type Database = {
         Update: {
           at?: string
           evidence?: Json | null
-          id?: number
+          id?: never
           kind?: string
           mode?: string
           name?: string
@@ -2495,10 +2495,10 @@ export type Database = {
           id: string
           kind: string
           label: Json
-          reasons: Json
           policy_version: number | null
           proposed_by: string | null
           proposed_status: string
+          reasons: Json
           stats: Json
         }
         Insert: {
@@ -2511,10 +2511,10 @@ export type Database = {
           id: string
           kind: string
           label?: Json
-          reasons?: Json
           policy_version?: number | null
           proposed_by?: string | null
           proposed_status?: string
+          reasons?: Json
           stats?: Json
         }
         Update: {
@@ -2527,10 +2527,10 @@ export type Database = {
           id?: string
           kind?: string
           label?: Json
-          reasons?: Json
           policy_version?: number | null
           proposed_by?: string | null
           proposed_status?: string
+          reasons?: Json
           stats?: Json
         }
         Relationships: [
