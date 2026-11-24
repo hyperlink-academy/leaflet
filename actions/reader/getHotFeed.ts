@@ -86,8 +86,10 @@ export async function getHotFeed(): Promise<{ posts: Post[] }> {
     if (doc) orderedDocs.push(doc);
   }
 
-  const visibleDocs = await dropHeld(orderedDocs, (d) =>
-    d.documents_in_publications.map((p) => p.publications?.uri),
+  const visibleDocs = await dropHeld(
+    orderedDocs,
+    (d) => d.documents_in_publications.map((p) => p.publications?.uri),
+    (d) => d.uri,
   );
 
   // Enrich into Post[]

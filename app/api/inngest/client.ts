@@ -113,6 +113,9 @@ export const events = {
   publicationReviewRequested: eventType("publication/review.requested", {
     schema: staticSchema<{ publication_uri: string }>(),
   }),
+  reviewAccountTouched: eventType("review/account.touched", {
+    schema: staticSchema<{ did: string; cause: string }>(),
+  }),
   newsletterSubscriberJoined: eventType("newsletter/subscriber.joined", {
     schema: staticSchema<{ publication_uri: string; identity_id: string }>(),
   }),

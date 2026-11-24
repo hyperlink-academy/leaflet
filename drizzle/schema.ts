@@ -116,6 +116,20 @@ export const document_comment_author_moderation = pgTable("document_comment_auth
 	}
 });
 
+export const document_links = pgTable("document_links", {
+	document: text("document").notNull(),
+	author_did: text("author_did").notNull(),
+	domain: text("domain").notNull(),
+	url: text("url").notNull(),
+},
+(table) => {
+	return {
+		domain_idx: index("document_links_domain_idx").on(table.domain, table.author_did),
+		author_idx: index("document_links_author_idx").on(table.author_did),
+		document_links_pkey: primaryKey({ columns: [table.document, table.url], name: "document_links_pkey"}),
+	}
+});
+
 export const document_mentions_in_bsky = pgTable("document_mentions_in_bsky", {
 	document: text("document").notNull().references(() => documents.uri, { onDelete: "cascade" } ),
 	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
@@ -883,6 +897,51 @@ export const reply_drafts = pgTable("reply_drafts", {
 (table) => {
 	return {
 		subject_idx: index("reply_drafts_subject_idx").on(table.subject),
+	}
+});
+
+export const review_events = pgTable("review_events", {
+	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
+	id: bigint("id", { mode: "number" }).primaryKey().notNull(),
+	at: timestamp("at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	run: text("run").notNull(),
+	mode: text("mode").default('dry-run').notNull(),
+	kind: text("kind").notNull(),
+	subject_id: text("subject_id").notNull(),
+	type: text("type").notNull(),
+	name: text("name").notNull(),
+	version: integer("version").notNull(),
+	value: jsonb("value"),
+	evidence: jsonb("evidence"),
+},
+(table) => {
+	return {
+		subject_idx: index("review_events_subject_idx").on(table.kind, table.subject_id, table.at),
+		name_idx: index("review_events_name_idx").on(table.type, table.name, table.at),
+	}
+});
+
+export const review_subjects = pgTable("review_subjects", {
+	kind: text("kind").notNull(),
+	id: text("id").notNull(),
+	label: jsonb("label").default({}).notNull(),
+	stats: jsonb("stats").default({}).notNull(),
+	first_seen: timestamp("first_seen", { withTimezone: true, mode: 'string' }),
+	proposed_status: text("proposed_status").default('pending').notNull(),
+	proposed_by: text("proposed_by"),
+	policy_version: integer("policy_version"),
+	needs_human: boolean("needs_human").default(false).notNull(),
+	human_label: text("human_label"),
+	evaluated_at: timestamp("evaluated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	enforced_status: text("enforced_status"),
+	enforced_at: timestamp("enforced_at", { withTimezone: true, mode: 'string' }),
+	enforced_by: uuid("enforced_by").references(() => identities.id, { onDelete: "set null" } ),
+},
+(table) => {
+	return {
+		status_idx: index("review_subjects_status_idx").on(table.proposed_status, table.evaluated_at),
+		enforced_idx: index("review_subjects_enforced_idx").on(table.id),
+		review_subjects_pkey: primaryKey({ columns: [table.kind, table.id], name: "review_subjects_pkey"}),
 	}
 });
 

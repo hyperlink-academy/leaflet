@@ -44,8 +44,10 @@ export async function getNewFeed(
 
   let { data: rawFeed, error } = await query;
 
-  const feed = await dropHeld(deduplicateByUriOrdered(rawFeed || []), (d) =>
-    d.documents_in_publications.map((p) => p.publications.uri),
+  const feed = await dropHeld(
+    deduplicateByUriOrdered(rawFeed || []),
+    (d) => d.documents_in_publications.map((p) => p.publications.uri),
+    (d) => d.uri,
   );
 
   let posts = (

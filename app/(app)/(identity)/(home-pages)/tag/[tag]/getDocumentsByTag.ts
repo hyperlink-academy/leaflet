@@ -66,7 +66,11 @@ export async function getDocumentsByTag(
 }
 
 function dropHeldPosts(posts: Post[]) {
-  return dropHeld(posts, (p) => [p.publication?.uri]);
+  return dropHeld(
+    posts,
+    (p) => [p.publication?.uri],
+    (p) => p.documents.uri,
+  );
 }
 
 // Every post in a publication carrying a tag, ranked by trending.

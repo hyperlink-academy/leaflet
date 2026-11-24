@@ -168,8 +168,10 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
     if (error) console.error("all-leaflets skeleton query error:", error);
     let rows = data || [];
     let response = skeletonResponse(
-      await dropHeld(rows, (d) =>
-        d.documents_in_publications.map((p) => p.publications?.uri),
+      await dropHeld(
+        rows,
+        (d) => d.documents_in_publications.map((p) => p.publications?.uri),
+        (d) => d.uri,
       ),
       cursor,
     );

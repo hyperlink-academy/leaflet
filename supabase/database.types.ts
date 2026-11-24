@@ -341,6 +341,27 @@ export type Database = {
           },
         ]
       }
+      document_links: {
+        Row: {
+          author_did: string
+          document: string
+          domain: string
+          url: string
+        }
+        Insert: {
+          author_did: string
+          document: string
+          domain: string
+          url: string
+        }
+        Update: {
+          author_did?: string
+          document?: string
+          domain?: string
+          url?: string
+        }
+        Relationships: []
+      }
       document_mentions_in_bsky: {
         Row: {
           document: string
@@ -2418,6 +2439,107 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "documents"
             referencedColumns: ["uri"]
+          },
+        ]
+      }
+      review_events: {
+        Row: {
+          at: string
+          evidence: Json | null
+          id: number
+          kind: string
+          mode: string
+          name: string
+          run: string
+          subject_id: string
+          type: string
+          value: Json | null
+          version: number
+        }
+        Insert: {
+          at?: string
+          evidence?: Json | null
+          id?: number
+          kind: string
+          mode?: string
+          name: string
+          run: string
+          subject_id: string
+          type: string
+          value?: Json | null
+          version: number
+        }
+        Update: {
+          at?: string
+          evidence?: Json | null
+          id?: number
+          kind?: string
+          mode?: string
+          name?: string
+          run?: string
+          subject_id?: string
+          type?: string
+          value?: Json | null
+          version?: number
+        }
+        Relationships: []
+      }
+      review_subjects: {
+        Row: {
+          enforced_at: string | null
+          enforced_by: string | null
+          enforced_status: string | null
+          evaluated_at: string
+          first_seen: string | null
+          human_label: string | null
+          id: string
+          kind: string
+          label: Json
+          needs_human: boolean
+          policy_version: number | null
+          proposed_by: string | null
+          proposed_status: string
+          stats: Json
+        }
+        Insert: {
+          enforced_at?: string | null
+          enforced_by?: string | null
+          enforced_status?: string | null
+          evaluated_at?: string
+          first_seen?: string | null
+          human_label?: string | null
+          id: string
+          kind: string
+          label?: Json
+          needs_human?: boolean
+          policy_version?: number | null
+          proposed_by?: string | null
+          proposed_status?: string
+          stats?: Json
+        }
+        Update: {
+          enforced_at?: string | null
+          enforced_by?: string | null
+          enforced_status?: string | null
+          evaluated_at?: string
+          first_seen?: string | null
+          human_label?: string | null
+          id?: string
+          kind?: string
+          label?: Json
+          needs_human?: boolean
+          policy_version?: number | null
+          proposed_by?: string | null
+          proposed_status?: string
+          stats?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_subjects_enforced_by_fkey"
+            columns: ["enforced_by"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
           },
         ]
       }
