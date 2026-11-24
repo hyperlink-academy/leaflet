@@ -25,11 +25,88 @@ export function cachedServerMutationContext(
   options?: { trustedAuthorWrites?: boolean },
 ) {
   let trustedAuthorWrites = options?.trustedAuthorWrites ?? false;
-  let writeCache: WriteCacheEntry[] = [];
+  let writeCache = new Map<string, WriteCacheEntry>();
+  let writtenKeys = new Map<string, Set<string>>();
+  const keyFor = (entity: string, attribute: string) =>
+    `${entity}-${attribute}`;
+  const rememberWrite = (write: WriteCacheEntry) => {
+    writeCache.set(write.fact.id, write);
+    if (write.type === "put") {
+      const key = keyFor(write.fact.entity, write.fact.attribute);
+      const ids = writtenKeys.get(key) ?? new Set<string>();
+      ids.add(write.fact.id);
+      writtenKeys.set(key, ids);
+    }
+  };
   let eavCache = new Map<string, DeepReadonly<Fact<Attribute>>[]>();
+  const loadedEntities = new Set<string>();
+  const idCache = new Map<string, DeepReadonly<Fact<Attribute>> | undefined>();
   let permissionsCache: { [key: string]: boolean } = {};
-  let entitiesCache: { set: string; id: string }[] = [];
-  let deleteEntitiesCache: string[] = [];
+  let entitiesCache = new Map<string, { set: string; id: string }>();
+  let deleteEntitiesCache = new Set<string>();
+  const selectFacts = () =>
+    tx
+      .select({
+        id: facts.id,
+        data: facts.data,
+        entity: facts.entity,
+        attribute: facts.attribute,
+        author_did: facts.author_did,
+      })
+      .from(facts);
+  const mayWrite = (set: string) =>
+    token_rights.some((right) => right.entity_set === set && right.write);
+  const prefetch: NonNullable<MutationContext["prefetch"]> = async (
+    entityIDs,
+    factIDs = [],
+  ) => {
+    if (entityIDs.length + factIDs.length > 5_000) {
+      for (const group of batches([...new Set(entityIDs)]))
+        await prefetch(group);
+      for (const group of batches([...new Set(factIDs)]))
+        await prefetch([], group);
+      return;
+    }
+    const keys = [...new Set(entityIDs)].filter(
+      (id) => !loadedEntities.has(id),
+    );
+    const ids = [...new Set(factIDs)].filter(
+      (id) => !idCache.has(id) && !writeCache.has(id),
+    );
+    if (keys.length || ids.length) {
+      const rows = (await selectFacts().where(
+        driz.or(
+          keys.length ? driz.inArray(facts.entity, keys) : undefined,
+          ids.length ? driz.inArray(facts.id, ids) : undefined,
+        ),
+      )) as DeepReadonly<Fact<Attribute>>[];
+      for (const id of keys) loadedEntities.add(id);
+      const requestedEntities = new Set(keys);
+      for (const id of ids) idCache.set(id, undefined);
+      const loaded = new Map<string, DeepReadonly<Fact<Attribute>>[]>();
+      for (const fact of rows) {
+        idCache.set(fact.id, fact);
+        if (!requestedEntities.has(fact.entity)) continue;
+        const key = keyFor(fact.entity, fact.attribute);
+        const bucket = loaded.get(key) ?? [];
+        bucket.push(fact);
+        loaded.set(key, bucket);
+      }
+      for (const [key, bucket] of loaded) eavCache.set(key, bucket);
+    }
+    const permissionIDs = keys.filter(
+      (id) => !entitiesCache.has(id) && permissionsCache[id] === undefined,
+    );
+    if (permissionIDs.length) {
+      const permissions = await tx
+        .select({ id: entities.id, set: entities.set })
+        .from(entities)
+        .where(driz.inArray(entities.id, permissionIDs));
+      for (const id of permissionIDs) permissionsCache[id] = false;
+      for (const item of permissions)
+        permissionsCache[item.id] = mayWrite(item.set);
+    }
+  };
   // Text facts store the full encoded yjs doc state, so a write from a client
   // whose doc is behind (stale initial state, long-offline tab) would silently
   // delete newer content if it simply replaced the row. Every updated text
@@ -48,11 +125,12 @@ export function cachedServerMutationContext(
 
   const scanIndex = {
     async eav<A extends Attribute>(entity: string, attribute: A) {
-      if (deleteEntitiesCache.includes(entity)) return [];
+      if (deleteEntitiesCache.has(entity)) return [];
       let cacheKey = `${entity}-${attribute}`;
       // The cache holds raw DB rows only; writeCache is merged in fresh on
       // every read so buffered puts aren't appended twice.
       let dbFacts = eavCache.get(cacheKey) as DeepReadonly<Fact<A>>[];
+      if (!dbFacts && loadedEntities.has(entity)) dbFacts = [];
       if (!dbFacts) {
         dbFacts = (await tx
           .select({
@@ -70,49 +148,44 @@ export function cachedServerMutationContext(
             ),
           )) as DeepReadonly<Fact<A>>[];
         eavCache.set(cacheKey, dbFacts as DeepReadonly<Fact<Attribute>>[]);
+        for (const fact of dbFacts)
+          idCache.set(fact.id, fact as DeepReadonly<Fact<Attribute>>);
       }
       // Any writeCache entry supersedes the stored row with the same id:
       // updates reuse fact ids, so masking only dels would return both the
       // stale DB row and its buffered replacement.
-      let base = dbFacts.filter(
-        (f) => !writeCache.find((wc) => wc.fact.id === f.id),
+      let base = dbFacts.filter((f) => !writeCache.has(f.id));
+      const newlyWrittenFacts = [...(writtenKeys.get(cacheKey) ?? [])].flatMap(
+        (id) => {
+          const write = writeCache.get(id);
+          return write?.type === "put" &&
+            write.fact.entity === entity &&
+            write.fact.attribute === attribute
+            ? [write.fact]
+            : [];
+        },
       );
-      let newlyWrittenFacts = writeCache.filter(
-        (f) =>
-          f.type === "put" &&
-          f.fact.attribute === attribute &&
-          f.fact.entity === entity,
-      );
-      return [
-        ...base,
-        ...newlyWrittenFacts.map((f) => f.fact as Fact<A>),
-      ].filter(
+      return [...base, ...newlyWrittenFacts].filter(
         (f) =>
           !(
             (f.data.type === "reference" ||
               f.data.type === "ordered-reference" ||
               f.data.type === "spatial-reference") &&
-            deleteEntitiesCache.includes(f.data.value)
+            deleteEntitiesCache.has(f.data.value)
           ),
       ) as DeepReadonly<Fact<A>>[];
     },
     async id(factID: string) {
-      let cached = writeCache.find((wc) => wc.fact.id === factID);
+      let cached = writeCache.get(factID);
       if (cached)
         return cached.type === "del"
           ? undefined
           : (cached.fact as DeepReadonly<Fact<Attribute>>);
-      let [row] = await tx
-        .select({
-          id: facts.id,
-          data: facts.data,
-          entity: facts.entity,
-          attribute: facts.attribute,
-          author_did: facts.author_did,
-        })
-        .from(facts)
-        .where(driz.eq(facts.id, factID));
-      return row as DeepReadonly<Fact<Attribute>> | undefined;
+      if (idCache.has(factID)) return idCache.get(factID);
+      const [row] = await selectFacts().where(driz.eq(facts.id, factID));
+      const fact = row as DeepReadonly<Fact<Attribute>> | undefined;
+      idCache.set(factID, fact);
+      return fact;
     },
   };
 
@@ -121,6 +194,7 @@ export function cachedServerMutationContext(
       checkPermission: (entity: string) => Promise<boolean>;
     } = {
       scanIndex,
+      prefetch,
       permission_token_id,
       rootEntity,
       sessionDid,
@@ -128,8 +202,8 @@ export function cachedServerMutationContext(
         return cb({ supabase: supabaseServerClient });
       },
       async checkPermission(entity: string) {
-        if (deleteEntitiesCache.includes(entity)) return false;
-        let cachedEntity = entitiesCache.find((e) => e.id === entity);
+        if (deleteEntitiesCache.has(entity)) return false;
+        let cachedEntity = entitiesCache.get(entity);
         if (cachedEntity) {
           return !!token_rights.find(
             (r) => r.entity_set === cachedEntity?.set && r.write === true,
@@ -159,20 +233,22 @@ export function cachedServerMutationContext(
         ) {
           return false;
         }
-        if (!entitiesCache.find((e) => e.id === entityID))
-          entitiesCache.push({ set: permission_set, id: entityID });
-        deleteEntitiesCache = deleteEntitiesCache.filter((e) => e !== entityID);
+        if (!entitiesCache.has(entityID))
+          entitiesCache.set(entityID, { set: permission_set, id: entityID });
+        deleteEntitiesCache.delete(entityID);
         return true;
       },
       async deleteEntity(entity) {
         if (!(await this.checkPermission(entity))) return;
-        deleteEntitiesCache.push(entity);
-        entitiesCache = entitiesCache.filter((e) => e.id !== entity);
-        writeCache = writeCache.filter(
-          (f) =>
-            f.type !== "put" ||
-            (f.fact.entity !== entity && f.fact.data.value !== entity),
-        );
+        deleteEntitiesCache.add(entity);
+        entitiesCache.delete(entity);
+        for (const [id, entry] of writeCache) {
+          if (
+            entry.type === "put" &&
+            (entry.fact.entity === entity || entry.fact.data.value === entity)
+          )
+            writeCache.delete(id);
+        }
         for (let key of Object.keys(textAttributeWriteCache)) {
           if (key.startsWith(`${entity}-`)) delete textAttributeWriteCache[key];
         }
@@ -219,8 +295,7 @@ export function cachedServerMutationContext(
           tracked.byClient[clientID] = (data as TextData).value;
         }
 
-        writeCache = writeCache.filter((f) => f.fact.id !== id);
-        writeCache.push({
+        rememberWrite({
           type: "put",
           fact: {
             id: id,
@@ -244,8 +319,7 @@ export function cachedServerMutationContext(
         delete textAttributeWriteCache[
           `${existing.entity}-${existing.attribute}`
         ];
-        writeCache = writeCache.filter((f) => f.fact.id !== factID);
-        writeCache.push({ type: "del", fact: { id: factID } });
+        rememberWrite({ type: "del", fact: { id: factID } });
       },
     };
     return ctx;
@@ -255,13 +329,15 @@ export function cachedServerMutationContext(
   // permissionsCache hold only what's in the database, so they're unaffected.
   let checkpoint = () => {
     let saved = {
-      writeCache: [...writeCache],
-      entitiesCache: [...entitiesCache],
-      deleteEntitiesCache: [...deleteEntitiesCache],
+      writeCache: new Map(writeCache),
+      entitiesCache: new Map(entitiesCache),
+      deleteEntitiesCache: new Set(deleteEntitiesCache),
       textAttributeWriteCache: structuredClone(textAttributeWriteCache),
     };
     return () => {
-      writeCache = saved.writeCache;
+      writeCache = new Map();
+      writtenKeys = new Map();
+      for (const write of saved.writeCache.values()) rememberWrite(write);
       entitiesCache = saved.entitiesCache;
       deleteEntitiesCache = saved.deleteEntitiesCache;
       textAttributeWriteCache = saved.textAttributeWriteCache;
@@ -277,16 +353,17 @@ export function cachedServerMutationContext(
 
     // Insert entities
     let entityInsertStart = performance.now();
-    if (entitiesCache.length > 0)
+    const entityWrites = [...entitiesCache.values()];
+    for (const batch of batches(entityWrites))
       await tx
         .insert(entities)
-        .values(entitiesCache.map((e) => ({ set: e.set, id: e.id })))
+        .values(batch)
         .onConflictDoNothing({ target: entities.id });
     timeInsertingEntities = performance.now() - entityInsertStart;
 
     // Process fact writes
     let factWritesStart = performance.now();
-    let factWrites = writeCache.flatMap((f) =>
+    let factWrites = [...writeCache.values()].flatMap((f) =>
       f.type === "del" ? [] : [f.fact],
     );
     for (let fact of factWrites) {
@@ -308,11 +385,11 @@ export function cachedServerMutationContext(
         );
       }
     }
-    if (factWrites.length > 0) {
+    for (const batch of batches(factWrites)) {
       await tx
         .insert(facts)
         .values(
-          factWrites.map((f) => ({
+          batch.map((f) => ({
             id: f.id,
             entity: f.entity,
             data: driz.sql`${f.data}::jsonb`,
@@ -335,44 +412,39 @@ export function cachedServerMutationContext(
 
     // Delete entities
     let entityDeleteStart = performance.now();
-    if (deleteEntitiesCache.length > 0)
-      await tx
-        .delete(entities)
-        .where(driz.inArray(entities.id, deleteEntitiesCache));
+    const entityDeletes = [...deleteEntitiesCache];
+    for (const batch of batches(entityDeletes))
+      await tx.delete(entities).where(driz.inArray(entities.id, batch));
     timeDeletingEntities = performance.now() - entityDeleteStart;
 
     // Delete facts
     let factDeleteStart = performance.now();
-    let factDeletes = writeCache.flatMap((f) =>
+    let factDeletes = [...writeCache.values()].flatMap((f) =>
       f.type === "put" ? [] : [f.fact.id],
     );
-    if (factDeletes.length > 0 || deleteEntitiesCache.length > 0) {
-      const conditions = [];
-      if (factDeletes.length > 0) {
-        conditions.push(driz.inArray(facts.id, factDeletes));
-      }
-      if (deleteEntitiesCache.length > 0) {
-        conditions.push(
+    for (const batch of batches(factDeletes))
+      await tx.delete(facts).where(driz.inArray(facts.id, batch));
+    for (const batch of batches(entityDeletes))
+      await tx
+        .delete(facts)
+        .where(
           driz.and(
             driz.sql`(data->>'type' = 'ordered-reference' or data->>'type' = 'reference' or data->>'type' = 'spatial-reference')`,
-            driz.inArray(driz.sql`data->>'value'`, deleteEntitiesCache),
+            driz.inArray(driz.sql`data->>'value'`, batch),
           ),
         );
-      }
-      if (conditions.length > 0) {
-        await tx.delete(facts).where(driz.or(...conditions));
-      }
-    }
     timeDeletingFacts = performance.now() - factDeleteStart;
 
     // Cache cleanup
     let cacheCleanupStart = performance.now();
-    writeCache = [];
+    writeCache.clear();
+    writtenKeys.clear();
     eavCache.clear();
+    loadedEntities.clear();
+    idCache.clear();
     permissionsCache = {};
-    entitiesCache = [];
-    permissionsCache = {};
-    deleteEntitiesCache = [];
+    entitiesCache.clear();
+    deleteEntitiesCache.clear();
     textAttributeWriteCache = {};
     timeCacheCleanup = performance.now() - cacheCleanupStart;
 
@@ -380,9 +452,9 @@ export function cachedServerMutationContext(
     console.log(`
 Flush Performance Breakdown (${totalFlushTime.toFixed(2)}ms):
 ==========================================
-Entity Insertions (${entitiesCache.length} entities):     ${timeInsertingEntities.toFixed(2)}ms
+Entity Insertions (${entityWrites.length} entities):     ${timeInsertingEntities.toFixed(2)}ms
 Fact Processing (${factWrites.length} facts):             ${timeProcessingFactWrites.toFixed(2)}ms
-Entity Deletions (${deleteEntitiesCache.length} entities): ${timeDeletingEntities.toFixed(2)}ms
+Entity Deletions (${entityDeletes.length} entities): ${timeDeletingEntities.toFixed(2)}ms
 Fact Deletions:                                           ${timeDeletingFacts.toFixed(2)}ms
 Cache Cleanup:                                             ${timeCacheCleanup.toFixed(2)}ms
     `);
@@ -393,4 +465,11 @@ Cache Cleanup:                                             ${timeCacheCleanup.to
     checkpoint,
     flush,
   };
+}
+
+// Keep parameter counts and statement sizes bounded within the push transaction.
+function* batches<T>(items: T[]) {
+  const batchSize = 1_000;
+  for (let start = 0; start < items.length; start += batchSize)
+    yield items.slice(start, start + batchSize);
 }

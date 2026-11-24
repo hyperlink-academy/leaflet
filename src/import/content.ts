@@ -115,14 +115,12 @@ export function contentBuilder(parent: string) {
     images: [],
   };
   let pending = "";
-  const flush = () => {
-    if (!pending) return;
+  const appendHtml = (markup: string) => {
     const result = withDomGlobals(() =>
       // Only the ids of extra entities are used; they join the leaflet's
       // entity set on insert.
-      buildBlocksFromPasteHTML(pending, { parent, permission_set: "" }),
+      buildBlocksFromPasteHTML(markup, { parent, permission_set: "" }),
     );
-    pending = "";
     content.blocks.push(...result.blocks);
     content.extraEntities.push(...result.extraEntities.map((e) => e.entityID));
     content.images.push(
@@ -133,6 +131,12 @@ export function contentBuilder(parent: string) {
         height: null,
       })),
     );
+    return result.blocks.length > 0;
+  };
+  const flush = () => {
+    if (!pending) return;
+    appendHtml(pending);
+    pending = "";
   };
   const card = (c: Card): string => {
     flush();
@@ -143,6 +147,12 @@ export function contentBuilder(parent: string) {
   return {
     html(html: string) {
       pending += html;
+    },
+    table(markup: string) {
+      flush();
+      // Preserve oversized or empty source tables as HTML rather than dropping them.
+      if (!appendHtml(markup))
+        card({ type: "html", facts: [stringFact("embed/html", markup)] });
     },
     card,
     image(image: ImportImage) {

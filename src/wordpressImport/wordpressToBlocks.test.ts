@@ -185,14 +185,13 @@ describe("wordpressHtmlToBlocks: block editor", () => {
     const r = convert(
       `<div class="wp-block-buttons"><div class="wp-block-button"><a class="wp-block-button__link" href="https://shop.example.com">Buy</a></div></div><figure class="wp-block-table"><table><tbody><tr><td>a</td></tr></tbody></table></figure>`,
     );
-    expect(outline(r.blocks)).toEqual(["button", "html"]);
+    expect(outline(r.blocks)).toEqual(["button", "table"]);
     expect(fact(r.blocks[0], "button/text")?.value).toBe("Buy");
     expect(fact(r.blocks[0], "button/url")?.value).toBe(
       "https://shop.example.com",
     );
-    expect(fact(r.blocks[1], "embed/html")?.value).toBe(
-      "<table><tbody><tr><td>a</td></tr></tbody></table>",
-    );
+    expect(r.blocks[1].facts.some(f => f.attribute === "table/row/cell")).toBe(true);
+    expect(r.blocks[1].facts.some(f => f.attribute === "block/text")).toBe(true);
   });
 
   test("footnotes become footnotes", () => {

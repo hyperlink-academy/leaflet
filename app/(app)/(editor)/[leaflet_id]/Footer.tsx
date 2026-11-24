@@ -1,5 +1,7 @@
 "use client";
 import { useUIState } from "src/useUIState";
+import { useEditorStates } from "src/state/useEditorState";
+import { pageOfParent } from "src/utils/blockGroups";
 import { FooterLayout } from "components/ActionBar/Footer";
 import { Media } from "components/Media";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
@@ -44,6 +46,9 @@ export function LeafletFooter(props: { entityID: string }) {
   let blockType = useEntity(focusedBlock?.entityID || null, "block/type")?.data
     .value;
   let addingToHome = useAddToHomeParam();
+  const editingTable = useEditorStates(s =>
+    blockType === "table" && !!focusedBlock && !!s.editorStates[focusedBlock.entityID]?.view
+  );
   let isOnHome =
     addingToHome ||
     (identity
@@ -84,14 +89,17 @@ export function LeafletFooter(props: { entityID: string }) {
           />
         </FooterLayout>
       ) : focusedBlock &&
-        focusedBlock.entityType === "footnote" &&
+        (focusedBlock.entityType === "footnote" || (focusedBlock.entityType === "block" && editingTable)) &&
         entity_set.permissions.write ? (
         <FooterLayout
           onMouseDown={(e) => {
             if (e.currentTarget === e.target) e.preventDefault();
           }}
         >
-          <FootnoteToolbar pageID={focusedBlock.parent} />
+          <FootnoteToolbar
+            pageID={editingTable ? pageOfParent(focusedBlock.parent) : focusedBlock.parent}
+            tableCell={editingTable}
+          />
         </FooterLayout>
       ) : entity_set.permissions.write ? (
         <FooterLayout>

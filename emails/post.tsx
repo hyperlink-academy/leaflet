@@ -1276,6 +1276,14 @@ const BlockRenderer = ({
   );
   const handlers: BlockHandlers<React.ReactNode> = {
     "pub.leaflet.blocks.table": (block) => {
+      // Fixed layout remains predictable in email clients. Give short columns
+      // less of the available width without letting long values set the width.
+      const weights: number[] = [];
+      for (const row of block.rows) {
+        for (const [i, cell] of row.cells.entries())
+          weights[i] = Math.max(weights[i] ?? 8, Math.min(24, cell.plaintext.length));
+      }
+      const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
       const renderRow = (row: (typeof block.rows)[number], key: number, header = false) => (
         <tr key={key}>
           {row.cells.map((cell, i) => {
@@ -1284,6 +1292,7 @@ const BlockRenderer = ({
             return (
               <Tag key={i} scope={header ? "col" : undefined} style={{
                 padding: "6px 8px",
+                width: `${(100 * weights[i]) / totalWeight}%`,
                 border: block.borders === false ? undefined : `1px solid ${colors.borderLight}`,
                 verticalAlign: "top",
                 overflowWrap: "anywhere",

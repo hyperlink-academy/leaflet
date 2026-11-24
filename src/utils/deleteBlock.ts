@@ -6,12 +6,14 @@ import { getPageBlocks } from "src/replicache/getBlocks";
 import { focusBlock } from "src/utils/focusBlock";
 import { UndoManager } from "src/undoManager";
 import { pageOfParent } from "src/utils/blockGroups";
+import { flushPendingTextWrites } from "components/Blocks/TextBlock/useCollabText";
 
 export async function deleteBlock(
   entities: string[],
   rep: Replicache<ReplicacheMutators>,
   undoManager?: UndoManager,
 ) {
+  await flushPendingTextWrites();
   // get what pagess we need to close as a result of deleting this block
   let pagesToClose = [] as string[];
 

@@ -8,6 +8,7 @@ import { useEntitySetContext } from "./EntitySetProvider";
 import { focusBlock } from "src/utils/focusBlock";
 import { hasBlockToolbar } from "app/(app)/(editor)/[leaflet_id]/Footer";
 import { useEntity } from "src/replicache";
+import { useEditorStates } from "src/state/useEditorState";
 
 export function DesktopPageFooter(props: { pageID: string }) {
   let focusedEntity = useUIState((s) => s.focusedEntity);
@@ -23,6 +24,9 @@ export function DesktopPageFooter(props: { pageID: string }) {
   let isFootnoteFocused =
     focusedEntity?.entityType === "footnote" &&
     focusedEntity.parent === props.pageID;
+  const editingTable = useEditorStates(s =>
+    blockType === "table" && !!focusedEntity && !!s.editorStates[focusedEntity.entityID]?.view
+  ) && pageOfParent(focusedBlockParentID) === props.pageID;
 
   return (
     <Media
@@ -47,14 +51,14 @@ export function DesktopPageFooter(props: { pageID: string }) {
             />
           </div>
         )}
-      {isFootnoteFocused && entity_set.permissions.write && (
+      {(isFootnoteFocused || editingTable) && entity_set.permissions.write && (
         <div
           className="pointer-events-auto w-fit mx-auto py-1 px-3 h-9 bg-bg-page border border-border rounded-full shadow-sm"
           onMouseDown={(e) => {
             if (e.currentTarget === e.target) e.preventDefault();
           }}
         >
-          <FootnoteToolbar pageID={props.pageID} />
+          <FootnoteToolbar pageID={props.pageID} tableCell={editingTable} />
         </div>
       )}
     </Media>

@@ -16,6 +16,7 @@ import {
   tableCellID,
   tableTextFactID,
   validTableSize,
+  MAX_TABLE_CELLS,
   type TableGraphInput,
   type TableAxisInput,
 } from "./table";
@@ -55,6 +56,7 @@ export type MutationContext = {
     ) => Promise<DeepReadonly<Fact<A>[]>>;
   };
   deleteEntity: (entity: string) => Promise<void>;
+  prefetch?: (entityIDs: string[], factIDs?: string[]) => Promise<void>;
   assertFact: <A extends Attribute>(f: AssertFactInput<A>) => Promise<void>;
   retractFact: (id: string) => Promise<void>;
   runOnServer(
@@ -319,9 +321,36 @@ const addBlock: Mutation<{
 };
 
 type TableAxis = TableAxisInput;
-type TableTarget = { table: string; permission_set: string };
+type TableTarget = {
+  table: string;
+  permission_set: string;
+  cellLimitVersion?: 1;
+};
+
+// Redispatched/queued mutations from before the cap changed were allowed to
+// contain 5,000 cells. Let those finish under the original bound; new editors
+// send the current version and use the smaller limit.
+const tableCellLimit = (args: TableTarget) =>
+  args.cellLimitVersion === undefined ? 5_000 : MAX_TABLE_CELLS;
 type TableAxisKind = "row" | "column";
 type TableAlignment = "left" | "center" | "right";
+
+async function prefetchTable(table: string, ctx: MutationContext) {
+  if (!ctx.prefetch) return;
+  await ctx.prefetch([table]);
+  const rows = await ctx.scanIndex.eav(table, "table/row");
+  const columns = await ctx.scanIndex.eav(table, "table/column");
+  await ctx.prefetch([...rows, ...columns].map((ref) => ref.data.value));
+  const cellIDs: string[] = [];
+  for (const row of rows) {
+    for (const cell of await ctx.scanIndex.eav(
+      row.data.value,
+      "table/row/cell",
+    ))
+      cellIDs.push(cell.data.value);
+  }
+  await ctx.prefetch(cellIDs);
+}
 
 async function tableAxis(
   table: string,
@@ -385,6 +414,7 @@ async function deleteTableRowEntity(row: string, ctx: MutationContext) {
 }
 
 async function deleteTableDescendants(table: string, ctx: MutationContext) {
+  await prefetchTable(table, ctx);
   for (const row of await tableAxis(table, "row", ctx))
     await deleteTableRowEntity(row.data.value, ctx);
   for (const column of await tableAxis(table, "column", ctx))
@@ -400,13 +430,24 @@ const createTable: Mutation<
       existingBlock?: boolean;
     }
 > = async (args, ctx) => {
-  if (!validTableSize(args.rows.length, args.columns.length)) return;
+  if (
+    !validTableSize(args.rows.length, args.columns.length, tableCellLimit(args))
+  )
+    return;
   const entityIDs = [
     args.table,
     ...args.rows.map((r) => r.entityID),
     ...args.columns.map((c) => c.entityID),
   ];
   if (new Set(entityIDs).size !== entityIDs.length) return;
+  const graph = buildTableGraph(args);
+  await ctx.prefetch?.(
+    [args.parent, args.table, ...graph.entities],
+    [
+      args.tableFactID,
+      ...graph.facts.flatMap((fact) => (fact.id ? [fact.id] : [])),
+    ],
+  );
   if (args.existingBlock) {
     const [type] = await ctx.scanIndex.eav(args.table, "block/type");
     if (!type || !["text", "heading", "blockquote"].includes(type.data.value))
@@ -430,7 +471,6 @@ const createTable: Mutation<
     );
   }
 
-  const graph = buildTableGraph(args);
   for (const entityID of graph.entities)
     await ctx.createEntity({ entityID, permission_set: args.permission_set });
   await assertFact(graph.facts, ctx);
@@ -476,6 +516,7 @@ const editTableAxis: Mutation<
   }
 > = async (args, ctx) => {
   const { axis, table, change } = args;
+  await prefetchTable(table, ctx);
   const entries = await tableAxis(table, axis, ctx);
   const other = await tableAxis(table, axis === "row" ? "column" : "row", ctx);
   if (!entries.length || !other.length) return;
@@ -490,11 +531,23 @@ const editTableAxis: Mutation<
   );
 
   if (change.type === "add") {
-    if (!validTableSize(entries.length + 1, other.length)) return;
+    if (!validTableSize(entries.length + 1, other.length, tableCellLimit(args)))
+      return;
     const after = change.after
       ? order.findIndex((item) => item.entityID === change.after)
       : order.length - 1;
     if (after < 0) return;
+    if (ctx.prefetch) {
+      const additions = other.map((fact) =>
+        axis === "row"
+          ? tableCellFacts(change.item.entityID, fact.data.value)
+          : tableCellFacts(fact.data.value, change.item.entityID),
+      );
+      await ctx.prefetch(
+        [change.item.entityID, ...additions.map((item) => item.cell)],
+        [change.item.factID, ...additions.map((item) => item.facts[0].id)],
+      );
+    }
     await ctx.createEntity({
       entityID: change.item.entityID,
       permission_set: args.permission_set,
@@ -593,6 +646,7 @@ const pasteTableGrid: Mutation<
     values: string[][];
   }
 > = async (args, ctx) => {
+  await prefetchTable(args.table, ctx);
   const rows = (await tableAxis(args.table, "row", ctx)).map(
     (f) => f.data.value,
   );
@@ -611,36 +665,72 @@ const pasteTableGrid: Mutation<
     return;
   const height = Math.max(rows.length, firstRow + args.values.length);
   const totalWidth = Math.max(columns.length, firstColumn + width);
-  if (!validTableSize(height, totalWidth)) return;
+  if (!validTableSize(args.values.length, width, tableCellLimit(args))) return;
+  const expands = height !== rows.length || totalWidth !== columns.length;
+  if (expands && !validTableSize(height, totalWidth, tableCellLimit(args)))
+    return;
   if (
     height - rows.length > args.extraRows.length ||
     totalWidth - columns.length > args.extraColumns.length
   )
     return;
 
-  for (const item of args.extraRows.slice(0, height - rows.length)) {
-    await editTableAxis(
-      { ...args, axis: "row", change: { type: "add", item } },
-      ctx,
+  const newRows = args.extraRows.slice(0, height - rows.length);
+  const newColumns = args.extraColumns.slice(0, totalWidth - columns.length);
+  const additions = [...newRows, ...newColumns];
+  const rowIDs = [...rows, ...newRows.map((row) => row.entityID)];
+  const columnIDs = [
+    ...columns,
+    ...newColumns.map((column) => column.entityID),
+  ];
+  if (
+    new Set([args.table, ...rowIDs, ...columnIDs]).size !==
+    1 + height + totalWidth
+  )
+    return;
+  const cellLookups = ctx.prefetch
+    ? rowIDs.flatMap((row) =>
+        columnIDs.map((column) => tableCellFacts(row, column)),
+      )
+    : [];
+  await ctx.prefetch?.(
+    [
+      ...additions.map((item) => item.entityID),
+      ...cellLookups.map((item) => item.cell),
+    ],
+    [
+      ...additions.map((item) => item.factID),
+      ...cellLookups.map((item) => item.facts[0].id),
+    ],
+  );
+  async function append(axis: TableAxisKind, items: TableAxis[]) {
+    const last = (await tableAxis(args.table, axis, ctx)).at(-1);
+    const keys = generateNKeysBetween(
+      last?.data.position ?? null,
+      null,
+      items.length,
     );
-    rows.push(item.entityID);
+    for (const [i, item] of items.entries())
+      await createTableAxis(args, axis, item, keys[i], ctx);
   }
-  for (const item of args.extraColumns.slice(0, totalWidth - columns.length)) {
-    await editTableAxis(
-      { ...args, axis: "column", change: { type: "add", item } },
-      ctx,
-    );
-    columns.push(item.entityID);
-  }
+  if (newRows.length) await append("row", newRows);
+  if (newColumns.length) await append("column", newColumns);
+  for (const row of newRows)
+    for (const column of columnIDs)
+      await createTableCell(row.entityID, column, args.permission_set, ctx);
+  for (const row of rows)
+    for (const column of newColumns)
+      await createTableCell(row, column.entityID, args.permission_set, ctx);
   for (const [i, row] of args.values.entries()) {
-    const rowID = rows[firstRow + i];
+    const rowID = rowIDs[firstRow + i];
     const cells = await tableRowCells(rowID, ctx);
     for (const [j, value] of row.entries()) {
-      const column = columns[firstColumn + j];
+      const column = columnIDs[firstColumn + j];
       const cell =
         cells.get(column) ??
         (await createTableCell(rowID, column, args.permission_set, ctx));
       const [previous] = await ctx.scanIndex.eav(cell, "block/text");
+      // Retraction is intentional: asserting block/text merges Yjs documents.
       if (previous) await ctx.retractFact(previous.id);
       if (value)
         await ctx.assertFact({
@@ -670,6 +760,7 @@ const editTableCellText: Mutation<{
     args.cell,
     "table/cell/text-generation",
   );
+  // A grid paste replaces the cell. Ignore writes from peers still editing the replaced generation.
   if ((generation?.data.value ?? "") !== args.generation) return;
   await ctx.assertFact({
     id: tableTextFactID(args.cell, args.generation),
@@ -1210,7 +1301,13 @@ const assertFact: Mutation<FactInput | Array<FactInput>> = async (
   args,
   ctx,
 ) => {
-  for (let f of [args].flat()) {
+  const batch = Array.isArray(args) ? args : [args];
+  if (batch.length > 100)
+    await ctx.prefetch?.(
+      batch.map((f) => f.entity),
+      batch.flatMap((f) => (f.id ? [f.id] : [])),
+    );
+  for (const f of batch) {
     await ctx.assertFact(f);
   }
 };

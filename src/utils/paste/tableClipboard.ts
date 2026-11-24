@@ -262,11 +262,11 @@ export function parseTableClipboard(
     }
     return null;
   };
-  if (/<table[\s>]/i.test(html || text)) {
-    const htmlResult = tableOnly(html || text);
-    if (htmlResult) return htmlResult;
-    if (html.includes("<table")) return null;
+  if (html.trim()) {
+    if (/<table[\s>]/i.test(html)) return tableOnly(html);
+    return null;
   }
+  if (!explicitTSV && /<table[\s>]/i.test(text)) return null;
   if (!explicitTSV && text.includes("|")) {
     const markdown = tableOnly(markdownToHtml(text));
     if (markdown) return markdown;
@@ -279,8 +279,14 @@ export function parseTableClipboard(
   const { rows, sawQuote } = parsed;
   const width = rows.reduce((largest, row) => Math.max(largest, row.length), 0);
   const ragged = rows.some((row) => row.length !== width);
-  if (!tsv && (!sawQuote || rows.length < 2 || width < 2 || ragged))
+  if (
+    !explicitTSV &&
+    (rows.length < 2 || width < 2 || ragged || (!tsv && !sawQuote))
+  )
     return null;
+  // Leading empty columns are common in source indentation. Spreadsheet
+  // transfers with intentional empty columns can provide the explicit MIME.
+  if (tsv && !explicitTSV && rows.every((row) => row[0] === "")) return null;
   if (!validTableSize(rows.length, width)) return "too-large";
   return {
     values: rows.map((row) =>

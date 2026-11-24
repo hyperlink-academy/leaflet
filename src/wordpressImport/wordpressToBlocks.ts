@@ -472,8 +472,10 @@ export function wordpressHtmlToBlocks(
     if (el.matches(IMAGE)) return image(el);
     if (el.matches("iframe")) return iframeEmbed(el);
     if (el.matches(".wp-block-buttons")) return buttons(el);
-    if (el.matches("figure.wp-block-table")) {
-      rawHtml(el.querySelector("table") ?? el);
+    if (el.matches("table, figure.wp-block-table")) {
+      const table = el.matches("table") ? el : el.querySelector("table");
+      if (!table) return rawHtml(el);
+      builder.table(table.outerHTML);
       return builder.html(caption(el.querySelector("figcaption")?.innerHTML));
     }
     return rawHtml(el);

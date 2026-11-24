@@ -5,6 +5,9 @@ import { randomUUID } from "node:crypto";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import type { PermissionToken } from ".";
+import { mutations } from "./mutations";
+import { MAX_TABLE_CELLS, tableCellID } from "./table";
+import { createYjsText } from "src/utils/createYjsText";
 
 // These tests run against the local supabase stack (`supabase start`), like
 // the pull integration tests: server-side text merging is exercised through
@@ -136,6 +139,177 @@ async function runPush(
 }
 
 describe.skipIf(!dbAvailable)("server-side text merging", () => {
+  test("saves a table expanded to the cell cap, then deletes a column", async () => {
+    const { set, entity: parent, token, token_rights } = await seedEntity();
+    const table = randomUUID();
+    const axis = () => ({ entityID: randomUUID(), factID: randomUUID() });
+    const row = axis();
+    const column = axis();
+    const columns = 10;
+    const rows = MAX_TABLE_CELLS / columns;
+    const extraRows = Array.from({ length: rows - 1 }, axis);
+    const extraColumns = Array.from({ length: columns - 1 }, axis);
+    const last = tableCellID(
+      extraRows.at(-1)!.entityID,
+      extraColumns.at(-1)!.entityID,
+    );
+    const value = createYjsText("persisted");
+    const push = (
+      mutate: (
+        ctx: Parameters<typeof mutations.createTable>[1],
+      ) => Promise<void>,
+    ) =>
+      db.transaction(async (tx) => {
+        const { getContext, flush } = cachedServerMutationContext(
+          tx as any,
+          token,
+          token_rights,
+          null,
+          parent,
+        );
+        await mutate(getContext("table-client", 1));
+        await flush();
+      });
+    const target = { table, permission_set: set, cellLimitVersion: 1 as const };
+    try {
+      await push((ctx) =>
+        mutations.createTable(
+          {
+            ...target,
+            parent,
+            tableFactID: randomUUID(),
+            position: "a0",
+            rows: [row],
+            columns: [column],
+          },
+          ctx,
+        ),
+      );
+      await push((ctx) =>
+        mutations.pasteTableGrid(
+          {
+            ...target,
+            row: row.entityID,
+            column: column.entityID,
+            generation: randomUUID(),
+            extraRows,
+            extraColumns,
+            values: Array.from({ length: rows }, () =>
+              Array(columns).fill(value),
+            ),
+          },
+          ctx,
+        ),
+      );
+      const cellCount = async () =>
+        Number(
+          (
+            await pool.query(
+              `select count(*) from facts where attribute = 'table/cell/column' and entity in (select id from entities where "set" = $1)`,
+              [set],
+            )
+          ).rows[0].count,
+        );
+      expect(await cellCount()).toBe(MAX_TABLE_CELLS);
+      expect(await factValue(last)).toBe(value);
+      await push((ctx) =>
+        mutations.editTableAxis(
+          {
+            ...target,
+            axis: "row",
+            change: { type: "add", item: axis() },
+          },
+          ctx,
+        ),
+      );
+      expect(await cellCount()).toBe(MAX_TABLE_CELLS);
+      await push((ctx) =>
+        mutations.editTableAxis(
+          {
+            ...target,
+            axis: "column",
+            change: { type: "delete", entity: extraColumns.at(-1)!.entityID },
+          },
+          ctx,
+        ),
+      );
+      expect(await cellCount()).toBe(MAX_TABLE_CELLS - rows);
+      expect(await factValue(last)).toBeUndefined();
+    } finally {
+      await pool.query('delete from entities where "set" = $1', [set]);
+      await pool.query("delete from entity_sets where id = $1", [set]);
+    }
+  }, 30_000);
+
+  test("replays a queued 5,000-cell paste whose facts exceed one statement's bind limit", async () => {
+    const { set, entity: parent, token, token_rights } = await seedEntity();
+    const table = randomUUID();
+    const axis = () => ({ entityID: randomUUID(), factID: randomUUID() });
+    const rows = Array.from({ length: 500 }, axis);
+    const columns = Array.from({ length: 10 }, axis);
+    const value = createYjsText("saved");
+    const target = { table, permission_set: set };
+    const push = (
+      mutate: (
+        ctx: Parameters<typeof mutations.createTable>[1],
+      ) => Promise<void>,
+    ) =>
+      db.transaction(async (tx) => {
+        const { getContext, flush } = cachedServerMutationContext(
+          tx as any,
+          token,
+          token_rights,
+          null,
+          parent,
+        );
+        await mutate(getContext("legacy-paste", 1));
+        await flush();
+      });
+    try {
+      await push((ctx) =>
+        mutations.createTable(
+          {
+            ...target,
+            parent,
+            tableFactID: randomUUID(),
+            position: "a0",
+            rows: [rows[0]],
+            columns: [columns[0]],
+          },
+          ctx,
+        ),
+      );
+      // The original mutation didn't send a limit version. Each filled cell
+      // creates several facts, well beyond one statement's bind limit.
+      await push((ctx) =>
+        mutations.pasteTableGrid(
+          {
+            ...target,
+            row: rows[0].entityID,
+            column: columns[0].entityID,
+            generation: randomUUID(),
+            extraRows: rows.slice(1),
+            extraColumns: columns.slice(1),
+            values: rows.map(() => columns.map(() => value)),
+          },
+          ctx,
+        ),
+      );
+      expect(
+        await factValue(
+          tableCellID(rows.at(-1)!.entityID, columns.at(-1)!.entityID),
+        ),
+      ).toBe(value);
+      const count = await pool.query(
+        `select count(*) from facts where attribute = 'table/cell/column' and entity in (select id from entities where "set" = $1)`,
+        [set],
+      );
+      expect(Number(count.rows[0].count)).toBe(5_000);
+    } finally {
+      await pool.query('delete from entities where "set" = $1', [set]);
+      await pool.query("delete from entity_sets where id = $1", [set]);
+    }
+  }, 30_000);
   test("a stale full-state write cannot delete newer content", async () => {
     let { entity, token, token_rights } = await seedEntity();
     let [early, final] = history("early state. ", "hours of work. ");
@@ -161,9 +335,7 @@ describe.skipIf(!dbAvailable)("server-side text merging", () => {
     let { entity, token, token_rights } = await seedEntity();
     let [v1, v2] = history("one ", "two ");
 
-    await runPush(token, token_rights, [
-      { clientID: "a", value: v2, entity },
-    ]);
+    await runPush(token, token_rights, [{ clientID: "a", value: v2, entity }]);
 
     // A second client diverges from v1 (never saw "two") and adds its own text.
     let doc = new Y.Doc();

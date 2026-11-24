@@ -1,11 +1,11 @@
 import { PubLeafletBlocksTable } from "lexicons/api";
-import { TextBlockCore } from "./TextBlockCore";
-import { TABLE_MIN_COLUMN_WIDTH } from "src/replicache/table";
+import { TextBlock } from "./TextBlock";
 
 export function PublishedTable(props: {
   block: PubLeafletBlocksTable.Main;
   index: number[];
   preview?: boolean;
+  pageId?: string;
   footnoteIndexMap?: Map<string, number>;
 }) {
   const header = props.block.headerRow === true;
@@ -15,11 +15,12 @@ export function PublishedTable(props: {
     row: number,
     column: number,
   ) => (
-    <TextBlockCore
+    <TextBlock
       plaintext={value.plaintext}
       facets={value.facets}
       index={[...props.index, row, column]}
       preview={props.preview}
+      pageId={props.pageId}
       footnoteIndexMap={props.footnoteIndexMap}
     />
   );
@@ -35,7 +36,9 @@ export function PublishedTable(props: {
         <Tag
           key={columnIndex}
           scope={headerRow ? "col" : undefined}
-          className={`border border-border-light px-2 py-1.5 align-top wrap-anywhere whitespace-pre-wrap ${
+          data-index={[...props.index, rowIndex, columnIndex].join(".")}
+          data-page-id={props.pageId}
+          className={`min-w-[6em] max-w-[24em] border border-border-light px-2 py-1.5 align-top wrap-anywhere whitespace-pre-wrap ${
             alignment === "right"
               ? "text-right"
               : alignment === "center"
@@ -50,10 +53,6 @@ export function PublishedTable(props: {
 
   const first = props.block.rows[0];
   const body = header ? props.block.rows.slice(1) : props.block.rows;
-  const columns = props.block.rows.reduce(
-    (width, row) => Math.max(width, row.cells.length),
-    0,
-  );
   return (
     <div
       className="w-full min-w-0 overflow-x-auto"
@@ -63,8 +62,7 @@ export function PublishedTable(props: {
       aria-label="Table"
     >
       <table
-        style={{ minWidth: columns * TABLE_MIN_COLUMN_WIDTH }}
-        className={`w-full table-fixed border-collapse ${
+        className={`w-full table-auto border-collapse ${
           props.block.borders === false
             ? "[&_td]:border-transparent [&_th]:border-transparent"
             : ""

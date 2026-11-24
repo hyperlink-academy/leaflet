@@ -11,6 +11,7 @@ import {
   PubLeafletBlocksHeader,
   PubLeafletPagesLinearDocument,
   PubLeafletBlocksCode,
+  PubLeafletBlocksTable,
 } from "lexicons/api";
 import {
   pageBlocksInOrder,
@@ -20,6 +21,7 @@ import { useDocument } from "contexts/DocumentContext";
 import { useLeafletContent } from "contexts/LeafletContentContext";
 import {
   decodeQuotePosition,
+  compareQuoteBlockPaths,
   getDocumentUrls,
   matchDocumentUrl,
   QuotePosition,
@@ -274,6 +276,31 @@ function extractQuotedBlocks(
   const result: PubLeafletPagesLinearDocument.Block[] = [];
 
   blocks.forEach(({ block, index: blockPath }) => {
+    if (PubLeafletBlocksTable.isMain(block.block)) {
+      const inside = (path: number[]) =>
+        path.length === blockPath.length + 2 &&
+        blockPath.every((part, i) => path[i] === part);
+      if (
+        !inside(quotePosition.start.block) &&
+        !inside(quotePosition.end.block)
+      ) {
+        if (isBlockInRange(blockPath, quotePosition)) result.push(block);
+        return;
+      }
+      for (const [r, row] of block.block.rows.entries()) {
+        for (const [c, cell] of row.cells.entries()) {
+          const path = [...blockPath, r, c];
+          if (!isBlockInRange(path, quotePosition)) continue;
+          const quoted = trimTextBlock(
+            { block: { ...cell, $type: "pub.leaflet.blocks.text" } },
+            path,
+            quotePosition,
+          );
+          if (quoted) result.push(quoted);
+        }
+      }
+      return;
+    }
     // Handle different block types
     if (PubLeafletBlocksUnorderedList.isMain(block.block)) {
       // For lists, recursively extract quoted items
@@ -364,21 +391,10 @@ function isBlockInRange(
   const { start, end } = quotePosition;
 
   // Compare paths lexicographically
-  const isAfterStart = compareBlockPaths(blockPath, start.block) >= 0;
-  const isBeforeEnd = compareBlockPaths(blockPath, end.block) <= 0;
+  const isAfterStart = compareQuoteBlockPaths(blockPath, start.block) >= 0;
+  const isBeforeEnd = compareQuoteBlockPaths(blockPath, end.block) <= 0;
 
   return isAfterStart && isBeforeEnd;
-}
-
-function compareBlockPaths(path1: number[], path2: number[]): number {
-  const minLength = Math.min(path1.length, path2.length);
-
-  for (let i = 0; i < minLength; i++) {
-    if (path1[i] < path2[i]) return -1;
-    if (path1[i] > path2[i]) return 1;
-  }
-
-  return path1.length - path2.length;
 }
 
 function trimTextBlock(
@@ -411,6 +427,12 @@ function trimTextBlock(
   // Extract the quoted portion
   const quotedText = block.block.plaintext.substring(startOffset, endOffset);
   if (!quotedText) return null;
+  const encoder = new TextEncoder();
+  const startByte = encoder.encode(
+    block.block.plaintext.slice(0, startOffset),
+  ).length;
+  const quotedBytes = encoder.encode(quotedText).length;
+  const endByte = startByte + quotedBytes;
 
   // Adjust facets to the new text range
   let adjustedFacets;
@@ -426,7 +448,7 @@ function trimTextBlock(
             const facetEnd = facet.index.byteEnd;
 
             // Skip facets outside the quoted range
-            if (facetEnd <= startOffset || facetStart >= endOffset) {
+            if (facetEnd <= startByte || facetStart >= endByte) {
               return null;
             }
 
@@ -434,8 +456,8 @@ function trimTextBlock(
             return {
               ...facet,
               index: {
-                byteStart: Math.max(0, facetStart - startOffset),
-                byteEnd: Math.min(quotedText.length, facetEnd - startOffset),
+                byteStart: Math.max(0, facetStart - startByte),
+                byteEnd: Math.min(quotedBytes, facetEnd - startByte),
               },
             };
           })

@@ -854,6 +854,7 @@ export let Block = ({
         <PublishedTable
           block={block}
           index={index}
+          pageId={pageId}
           preview={preview}
           footnoteIndexMap={footnoteIndexMap}
         />

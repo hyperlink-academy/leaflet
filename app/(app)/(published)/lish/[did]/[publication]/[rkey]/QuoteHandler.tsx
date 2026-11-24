@@ -199,16 +199,14 @@ function calculateOffsetFromDataParent(
   selectionOffset: number,
   dataParentElement: Element,
 ): number {
-  // If the selection is directly in the data parent, return the offset as-is
-  if (selectionNode === dataParentElement) {
-    return selectionOffset;
-  }
-
   // Create a range from the start of the data parent to the selection point
   const range = document.createRange();
   range.setStart(dataParentElement, 0);
   range.setEnd(selectionNode, selectionOffset);
 
-  // Get the text content of this range, which gives us the offset from the data parent
-  return range.toString().length;
+  if (!dataParentElement.matches("td,th")) return range.toString().length;
+  // Table cell plaintext includes newlines at hard breaks.
+  const fragment = range.cloneContents();
+  for (const br of fragment.querySelectorAll("br")) br.replaceWith("\n");
+  return fragment.textContent?.length ?? 0;
 }

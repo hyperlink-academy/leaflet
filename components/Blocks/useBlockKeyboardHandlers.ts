@@ -165,10 +165,12 @@ async function Backspace({ e, props, rep, areYouSure, setAreYouSure }: Args) {
     props.type === "embedded-canvas" ||
     props.type === "mailbox" ||
     props.type === "rsvp" ||
-    props.type === "poll"
+    props.type === "poll" ||
+    props.type === "table"
   ) {
     // ...and areYouSure state is false, set it to true
     if (!areYouSure) {
+      e.preventDefault();
       setAreYouSure(true);
       debounced = window.setTimeout(() => {
         debounced = null;

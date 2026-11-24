@@ -14,7 +14,7 @@ import { ToolbarPageTypeProvider } from ".";
 
 type FootnoteToolbarState = "default" | "link" | "highlight";
 
-export const FootnoteToolbar = (props: { pageID: string }) => {
+export const FootnoteToolbar = (props: { pageID: string; tableCell?: boolean }) => {
   let [toolbarState, setToolbarState] =
     useState<FootnoteToolbarState>("default");
 
@@ -42,7 +42,7 @@ export const FootnoteToolbar = (props: { pageID: string }) => {
       >
         <div className="toolbarOptions flex gap-1 sm:gap-[6px] items-center grow">
           {toolbarState === "default" ? (
-            <FootnoteTextToolbar setToolbarState={setToolbarState} />
+            <FootnoteTextToolbar setToolbarState={setToolbarState} tableCell={props.tableCell} />
           ) : toolbarState === "highlight" ? (
             <HighlightToolbar
               pageID={props.pageID}

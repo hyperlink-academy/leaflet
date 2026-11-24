@@ -47,6 +47,7 @@ import { HelpSmall } from "components/Icons/HelpSmall";
 import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
 import { getPageBlocks } from "src/replicache/getBlocks";
 import { focusNewTable } from "./TableBlock";
+import { BlockTableSmall } from "components/Icons/BlockTableSmall";
 
 type Props = {
   parent: string;
@@ -309,7 +310,7 @@ export const blockCommands: Command[] = [
   },
   {
     name: "Table",
-    icon: <span className="text-base leading-none">▦</span>,
+    icon: <BlockTableSmall />,
     type: "block",
     alternateNames: ["grid", "spreadsheet"],
     onSelect: async (rep, props, um) => {
@@ -326,6 +327,7 @@ export const blockCommands: Command[] = [
       await um.withUndoGroup(async () => {
         props.entityID && clearCommandSearchText(props.entityID);
         await rep.mutate.createTable({
+          cellLimitVersion: 1,
           parent: props.parent,
           permission_set: props.entity_set,
           table,

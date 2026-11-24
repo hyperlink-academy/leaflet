@@ -7,7 +7,7 @@
 - Publish a compact ATProto snapshot with rich-text plaintext/facets per cell, header/style/border/alignment metadata, and no local entity or Yjs identifiers.
 - Ship document and canvas support together. Canvas tables keep readable column minimums and scroll horizontally inside their normal resizable canvas block.
 - Keep v1 text-focused: inline marks and links work; comments, footnotes, nested blocks, merged cells, sorting, range selection, and manual resizing do not.
-- Cap all table creation and expansion paths at 5,000 cells. Keep the guardrail centralized so it can be revised later.
+- Cap new editor table creation and expansion at 1,000 cells. Replay already-queued mutations under the earlier limit.
 
 ## Expected behavior
 
@@ -17,22 +17,22 @@
 - Add/delete row and column commands retain at least a 1×1 table. New columns are left aligned; a Tab-created row is always a body row.
 - Row reorder keeps the header row pinned and reorders only body rows; column reorder changes stable column order. Both ship with drag handles plus Move row up/down and Move column left/right menu actions.
 - The focused cell is editable with the existing inline formatting vocabulary except comments and footnotes. Other cells render read-only until focused.
-- `Tab` and `Shift+Tab` move forward/backward through cells. Tab from the final cell appends a body row and focuses its first cell. Enter advances to the next cell; Shift+Enter inserts an in-cell line break.
-- Arrow keys retain normal rich-text behavior inside a cell. Escape selects the table first, then returns focus to the page.
+- `Tab` and `Shift+Tab` move forward/backward through cells. Tab from the final cell appends a body row and focuses its first cell. Enter moves down in the same column and appends a row when used in the last row. Shift+Enter inserts an in-cell line break.
+- Arrow keys move within cell text first, then across cell boundaries and into neighboring blocks. Escape selects the table first, then returns focus to the page. With the table selected, Enter adds a block below and F2 enters a cell.
 - Deleting a focused row or column moves focus to the same logical position in the next available row/column, then the previous one as fallback.
 - A Markdown or HTML table pasted into an empty text block replaces it; from nonempty text it is inserted after the current block.
-- TSV always parses as a grid. CSV only parses when it has multiple rows and a consistent quoted-CSV width greater than one. Pasted grids overwrite from the focused cell and expand the table if needed.
+- Explicit TSV parses as a grid. Inferred TSV or quoted CSV needs at least two rows and columns of consistent width. Rich HTML is only treated as a grid if it contains a table. Pasted grids overwrite from the focused cell and expand the table if needed.
 - Pasted cell markup keeps supported semantic marks, links, and line breaks; arbitrary fonts/colors are stripped, nested block boundaries become line breaks, and row/column spans are flattened.
 - Show a concise toast only when an import is normalized or rejected.
-- Any operation that would exceed 5,000 cells is refused with a clear explanation. A grid paste and all resulting expansion undo as one action.
-- Copy table and block-level copy write semantic HTML carrying scoped Leaflet table metadata, GFM in `text/plain`, and TSV. Ordinary in-cell selection keeps normal text copy behavior.
-- Reader output uses semantic `<table>`, `<thead>`, `<tbody>`, `<th scope="col">`, and `<td>`. It preserves table style, borders, and column alignment on web, email, and feeds; web/canvas readers scroll horizontally rather than shrinking content below readable width, while email uses a width-constrained fixed-layout table with wrapping cells.
+- Any operation that would exceed 1,000 cells is refused with a clear explanation. A grid paste and all resulting expansion undo as one action.
+- Copy table and block-level copy write semantic HTML carrying scoped Leaflet table metadata, GFM in `text/plain`, and TSV. Copying text inside a cell preserves its inline formatting.
+- Reader output uses semantic `<table>`, `<thead>`, `<tbody>`, `<th scope="col">`, and `<td>`. It preserves table style, borders, and column alignment on web, email, and feeds; web/canvas readers scroll horizontally rather than shrinking content below readable width, while email uses a width-constrained fixed-layout table with content-weighted columns and wrapping cells.
 - Published cell links follow existing Leaflet reader behavior: a safe new-tab link.
 
 ## Implementation plan
 
 - Extend `src/replicache/attributes.ts` with the `table` block type and typed table, row, column, cell, header, style, border, alignment, and column-reference facts. Prefer named, cardinality-safe facts over arrays coupled to positional indexes.
-- Extend `src/replicache/mutations.ts` with dedicated, atomic table operations: create default table; add/delete/reorder row; add/delete/reorder column; set header/style/border/alignment; and paste/resize grid. Each mutation must validate the 1×1/5,000-cell/rectangular invariants, create or remove descendant cells safely, and participate in one undo group.
+- Extend `src/replicache/mutations.ts` with dedicated, atomic table operations: create default table; add/delete/reorder row; add/delete/reorder column; set header/style/border/alignment; and paste/resize grid. Each mutation must validate the 1×1/1,000-cell/rectangular invariants, create or remove descendant cells safely, and participate in one undo group.
 - Extend descendant cleanup in `src/replicache/mutations.ts` so removing a table recursively removes rows, columns, cells, and their facts rather than relying on `card/block`-only traversal.
 - Add table-aware materialization helpers near `src/replicache/getBlocks.ts` or a focused `src/replicache/table.ts` module. They should sort stable row/column references, map cells by column, repair deterministic missing cells after concurrent structural operations, and expose a rectangular editor view model.
 - Add `components/Blocks/TableBlock/` for editor presentation, including a horizontal scroll frame, theme-token styling, semantic row/cell layout, canvas sizing behavior, lazy cell rendering, and first-row header treatment.
@@ -71,13 +71,13 @@
    - Result: tables behave consistently across every currently supported publication surface.
 
 5. **Post-core enhancements**
-   - Reassess the 5,000-cell cap, header columns, sorting, manual resizing, range selection, and nested content only after production usage validates the core model.
+   - Reassess the 1,000-cell cap, header columns, sorting, manual resizing, range selection, and nested content only after production usage validates the core model.
 
 ## Testing strategy
 
-- Add unit tests for table fact ordering, rectangular invariant repair, 1×1 minimum, 5,000-cell limit, cascaded deletion, concurrent add/delete resolution, and undo/redo of every structural mutation.
+- Add unit tests for table fact ordering, rectangular invariant repair, 1×1 minimum, 1,000-cell limit, cascaded deletion, concurrent add/delete resolution, and undo/redo of every structural mutation.
 - Add Yjs/ProseMirror tests for rich formatting, link facets, lazy focused-cell editor hydration, Enter/Shift+Enter, Tab/Shift+Tab, Escape, and focus recovery after deletion.
-- Extend `src/utils/paste/htmlToBlocks.test.ts` and `markdownPaste.test.ts` with GFM, semantic HTML, Excel/Google Sheets HTML, TSV, quoted CSV, spans, multiline cells, malformed grids, 5,000-cell boundary cases, and external styling removal.
+- Extend `src/utils/paste/htmlToBlocks.test.ts` and `markdownPaste.test.ts` with GFM, semantic HTML, Excel/Google Sheets HTML, TSV, quoted CSV, spans, multiline cells, malformed grids, 1,000-cell boundary cases, and external styling removal.
 - Add copy round-trip tests to `src/utils/getBlocksAsHTML.tsx`/`copySelection.ts` coverage: Leaflet metadata, semantic HTML degradation, GFM output, TSV output, links, marks, pipes/newlines, and plain-text fallback.
 - Extend `src/utils/factsToPagesRecord.test.ts`, `src/utils/blockDispatch.test.ts`, feed HTML tests, email render tests, and AI Markdown/text extraction tests with table fixtures and every appearance/alignment/header permutation.
 - Add component-level or browser interaction coverage for document and canvas editing, desktop drag and keyboard/menu reordering, mobile menu use, touch horizontal scrolling, keyboard-only structural operations, reader text selection/copy, focus rings, and screen-reader table semantics.
@@ -85,5 +85,5 @@
 
 ## Open questions
 
-- The 5,000-cell cap is intentionally conservative; collect real usage/performance data before raising, softening, or replacing it.
+- The 1,000-cell creation and expansion cap is conservative. Revisit it after measuring hosted push latency and large-table editing. Previously saved larger tables can still publish.
 - Header columns remain a deferred semantic feature. Adding `headerColumn` later should render body-row first cells as `<th scope="row">` and needs a defined Markdown fallback.

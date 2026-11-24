@@ -21,10 +21,16 @@ export function focusBlock(
     false,
   );
   if (block.type === "table") {
-    document
+    const table = document
       .getElementById(elementId.block(block.entityID).container)
-      ?.querySelector<HTMLElement>("[data-table-block]")
-      ?.focus({ preventScroll: true });
+      ?.querySelector<HTMLElement>("[data-table-block]");
+    if (position.type === "top" || position.type === "bottom") {
+      table?.dispatchEvent(
+        new CustomEvent("leaflet:focus-table-cell", {
+          detail: position.type === "top" ? "first" : "last",
+        }),
+      );
+    } else table?.focus({ preventScroll: true });
     return true;
   }
   if (block.type === "math" || block.type === "code") {

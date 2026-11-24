@@ -52,7 +52,6 @@ import {
   byTablePosition,
   mapTableCells,
   tableFactIndex,
-  validTableSize,
 } from "src/replicache/table";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { List, parseBlocksToList } from "src/utils/parseBlocksToList";
@@ -166,11 +165,15 @@ export async function processBlocksToPages(opts: {
     return { plaintext, facets };
   };
 
-  const getBlockContent = (b: string, lookup = scan.eav) => {
-    const [content] = lookup(b, "block/text");
-    if (!content) return ["", [] as PubLeafletRichtextFacet.Main[]] as const;
+  const getBlockContent = (
+    b: string,
+    getValue = (entity: string) =>
+      scan.eav(entity, "block/text")[0]?.data.value,
+  ) => {
+    const value = getValue(b);
+    if (!value) return ["", [] as PubLeafletRichtextFacet.Main[]] as const;
     const doc = new Y.Doc();
-    const update = base64.toByteArray(content.data.value);
+    const update = base64.toByteArray(value);
     Y.applyUpdate(doc, update);
     const nodes = doc.getXmlElement("prosemirror").toArray();
     const stringValue = YJSFragmentToString(nodes[0]);
@@ -373,7 +376,7 @@ export async function processBlocksToPages(opts: {
       const columns = lookup(b.entityID, "table/column").toSorted(
         byTablePosition,
       );
-      if (!validTableSize(rows.length, columns.length)) return;
+      if (!rows.length || !columns.length) return;
       const [header] = lookup(b.entityID, "table/header-row");
       const [style] = lookup(b.entityID, "table/style");
       const [borders] = lookup(b.entityID, "table/borders");
@@ -395,7 +398,10 @@ export async function processBlocksToPages(opts: {
             cells: columns.map((column) => {
               const cell = cells.get(column.data.value);
               if (!cell) return { plaintext: "" };
-              const [plaintext, facets] = getBlockContent(cell, lookup);
+              const [plaintext, facets] = getBlockContent(
+                cell,
+                (entity) => lookup(entity, "block/text")[0]?.data.value,
+              );
               return { plaintext, ...(facets.length > 0 && { facets }) };
             }),
           };

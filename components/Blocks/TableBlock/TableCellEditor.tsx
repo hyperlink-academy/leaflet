@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef } from "react";
-import { EditorState } from "prosemirror-state";
+import { EditorState, TextSelection } from "prosemirror-state";
 import { Slice } from "prosemirror-model";
 import { EditorView } from "prosemirror-view";
 import { baseKeymap, toggleMark } from "prosemirror-commands";
@@ -11,6 +11,12 @@ import { UndoManager as YUndoManager, encodeStateAsUpdate } from "yjs";
 import { fromByteArray } from "base64-js";
 import { useReplicache } from "src/replicache";
 import { useEditorStates } from "src/state/useEditorState";
+import { formattingKeymap } from "src/utils/prosemirror/formattingKeymap";
+import { useUIState } from "src/useUIState";
+import {
+  stripCommentMarks,
+  stripFootnoteRefs,
+} from "../TextBlock/stripCommentMarks";
 import {
   parseTableClipboard,
   tableCellDocument,
@@ -24,10 +30,20 @@ import {
 } from "../TextBlock/schemaVersion";
 import { useCollabText } from "../TextBlock/useCollabText";
 
-export type Navigation = "Tab" | "Shift-Tab" | "Enter" | "Escape";
+export type Navigation =
+  | "Tab"
+  | "Shift-Tab"
+  | "Enter"
+  | "Escape"
+  | "ArrowLeft"
+  | "ArrowRight"
+  | "ArrowUp"
+  | "ArrowDown";
 
 export function TableCellEditor(props: {
   cell: string;
+  table?: string;
+  caret?: "start" | "end";
   generation: string;
   value?: string | null;
   label: string;
@@ -77,6 +93,13 @@ export function TableCellEditor(props: {
       );
     };
     history.on("stack-item-added", record);
+    const arrow =
+      (direction: "left" | "right" | "up" | "down", key: Navigation) =>
+      (state: EditorState, _dispatch: unknown, view?: EditorView) =>
+        !!view &&
+        state.selection.empty &&
+        view.endOfTextblock(direction, state) &&
+        latest.current.onNavigate(key);
     const state = EditorState.create({
       schema,
       plugins: [
@@ -95,10 +118,16 @@ export function TableCellEditor(props: {
             );
             return true;
           },
-          "Mod-b": toggleMark(schema.marks.strong),
-          "Mod-i": toggleMark(schema.marks.em),
-          "Mod-u": toggleMark(schema.marks.underline),
+          ...formattingKeymap(schema.marks),
+          "Ctrl-Meta-h": (...args) =>
+            toggleMark(schema.marks.highlight, {
+              color: useUIState.getState().lastUsedHighlight,
+            })(...args),
           "Mod-`": toggleMark(schema.marks.code),
+          ArrowLeft: arrow("left", "ArrowLeft"),
+          ArrowRight: arrow("right", "ArrowRight"),
+          ArrowUp: arrow("up", "ArrowUp"),
+          ArrowDown: arrow("down", "ArrowDown"),
         }),
         keymap(baseKeymap),
         autolink({
@@ -112,6 +141,7 @@ export function TableCellEditor(props: {
       { mount: mount.current },
       {
         state,
+        transformCopied: (slice) => stripFootnoteRefs(stripCommentMarks(slice)),
         attributes: { "aria-label": latest.current.label },
         dispatchTransaction(this: EditorView, transaction) {
           this.updateState(this.state.apply(transaction));
@@ -157,17 +187,15 @@ export function TableCellEditor(props: {
             event.preventDefault();
             return true;
           },
-          copy(view, event) {
-            const { from, to, empty } = view.state.selection;
-            if (empty || !event.clipboardData) return false;
-            const plain = view.state.doc.textBetween(from, to, "\n", (node) =>
+        },
+        clipboardTextSerializer(slice) {
+          return slice.content.textBetween(
+            0,
+            slice.content.size,
+            "\n",
+            (node) =>
               node.type.name === "hard_break" ? "\n" : node.attrs.text ?? "",
-            );
-            event.clipboardData.setData("text/plain", plain);
-            event.preventDefault();
-            event.stopPropagation();
-            return true;
-          },
+          );
         },
       },
     );
@@ -176,11 +204,16 @@ export function TableCellEditor(props: {
         editorStates: {
           ...state.editorStates,
           [syncID]: { view, editor: view.state },
+          ...(props.table && { [props.table]: { view, editor: view.state } }),
         },
       }));
     }
     updateEditorState(view);
     props.editorRef.current = view;
+    if (latest.current.caret === "end")
+      view.dispatch(
+        view.state.tr.setSelection(TextSelection.atEnd(view.state.doc)),
+      );
     view.focus();
     view.dom.scrollIntoView?.({ block: "nearest", inline: "nearest" });
     return () => {
@@ -190,6 +223,8 @@ export function TableCellEditor(props: {
       useEditorStates.setState((state) => {
         if (state.editorStates[syncID]?.view !== view) return state;
         const { [syncID]: _, ...editorStates } = state.editorStates;
+        if (props.table && editorStates[props.table]?.view === view)
+          delete editorStates[props.table];
         return { editorStates };
       });
       view.destroy();
@@ -198,6 +233,7 @@ export function TableCellEditor(props: {
     yText,
     cursorPlugin,
     props.cell,
+    props.table,
     props.generation,
     props.editorRef,
     rep,

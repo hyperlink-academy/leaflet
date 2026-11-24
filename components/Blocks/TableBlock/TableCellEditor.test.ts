@@ -85,6 +85,24 @@ test("cell keyboard bindings navigate without splitting the document and undo te
     });
     expect(visited).toEqual(["Tab", "Shift-Tab", "Enter", "Escape"]);
     expect(view.state.doc.childCount).toBe(1);
+    const edge = vi.spyOn(view, "endOfTextblock").mockReturnValue(false);
+    const arrowUp = () =>
+      view.dom.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "ArrowUp",
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    await act(async () => {
+      arrowUp();
+    });
+    expect(visited.at(-1)).toBe("Escape");
+    edge.mockReturnValue(true);
+    await act(async () => {
+      arrowUp();
+    });
+    expect(visited.at(-1)).toBe("ArrowUp");
 
     await act(async () => {
       view.dispatch(view.state.tr.insertText("!", 7));

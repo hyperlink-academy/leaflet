@@ -1,26 +1,28 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import type { EditorView } from "prosemirror-view";
-import { toggleMark } from "prosemirror-commands";
 import { v7 } from "uuid";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 import { RenderYJSFragment } from "../TextBlock/RenderYJSFragment";
-import { schema } from "../TextBlock/schema";
 import { useStaleClient } from "../TextBlock/schemaVersion";
 import { flushPendingTextWrites } from "../TextBlock/useCollabText";
 import { BlockLayout, type BlockProps } from "../Block";
-import { useEntity, useReplicache } from "src/replicache";
-import {
-  byTablePosition,
-  MAX_TABLE_CELLS,
-  mapTableCells,
-  TABLE_MIN_COLUMN_WIDTH,
-  tableFactIndex,
-  validTableSize,
-} from "src/replicache/table";
+import { useReplicache } from "src/replicache";
+import { MAX_TABLE_CELLS, validTableSize } from "src/replicache/table";
 import { scanIndex } from "src/replicache/utils";
-import { useSubscribe } from "src/replicache/useSubscribe";
+import { useTableSnapshot, type CellSnapshot } from "./useTableSnapshot";
+import { BlockTableSmall } from "components/Icons/BlockTableSmall";
+import { focusBlock } from "src/utils/focusBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useUIState } from "src/useUIState";
 import { useToaster } from "components/Toast";
@@ -38,7 +40,7 @@ import { copySelection } from "src/utils/copySelection";
 import type { TableGrid } from "src/utils/paste/tableClipboard";
 import { TableCellEditor, type Navigation } from "./TableCellEditor";
 
-type Address = { row: string; column: string };
+type Address = { row: string; column: string; caret?: "start" | "end" };
 type Axis = "row" | "column";
 const newAxis = () => ({ entityID: v7(), factID: v7() });
 const pendingFocus = new Set<string>();
@@ -47,17 +49,17 @@ export function focusNewTable(table: string) {
   pendingFocus.add(table);
 }
 
-const inlineMarks = [
-  ["Bold", "strong"],
-  ["Italic", "em"],
-  ["Underline", "underline"],
-  ["Strikethrough", "strikethrough"],
-  ["Code", "code"],
-  ["Highlight", "highlight"],
-] as const;
+const CellText = memo(function CellText({ value }: { value: string }) {
+  return (
+    <RenderYJSFragment value={value} wrapper={null} renderComments={false} />
+  );
+});
 
 function TableCell(props: {
-  cell: string | null;
+  cell?: CellSnapshot;
+  table: string;
+  caret?: Address["caret"];
+  columnHandle?: React.ReactNode;
   label: string;
   header: boolean;
   active: boolean;
@@ -69,49 +71,22 @@ function TableCell(props: {
   navigate: (direction: Navigation) => boolean;
   paste: (grid: TableGrid | "too-large") => void;
 }) {
-  const { cell } = props;
-  const { rep, initialFacts } = useReplicache();
-  const local = useMemo(() => tableFactIndex(initialFacts), [initialFacts]);
-  const content = useSubscribe(
-    rep,
-    async (tx) => {
-      if (!cell || !(await tx.get("initialized"))) return null;
-      const scan = scanIndex(tx);
-      const [[text], [generation]] = await Promise.all([
-        scan.eav(cell, "block/text"),
-        scan.eav(cell, "table/cell/text-generation"),
-      ]);
-      return {
-        text: text?.data.value ?? null,
-        generation: generation?.data.value ?? "",
-      };
-    },
-    { default: null, dependencies: [cell] },
-  );
-  const text = content
-    ? content.text
-    : cell
-      ? local(cell, "block/text")[0]?.data.value
-      : undefined;
-  const generation =
-    content?.generation ??
-    (cell
-      ? local(cell, "table/cell/text-generation")[0]?.data.value
-      : undefined) ??
-    "";
+  const { id: cell, text, generation = "" } = props.cell ?? {};
   const Tag = props.header ? "th" : "td";
   return (
     <Tag
       scope={props.header ? "col" : undefined}
-      className={`relative border border-border-light px-2 py-1.5 align-top wrap-anywhere whitespace-pre-wrap ${props.rowHandle ? "pr-7" : ""} ${props.header ? "font-semibold bg-bg-light" : ""} ${props.active ? "outline outline-accent-contrast outline-offset-[-2px]" : ""}`}
+      className={`relative min-w-[6em] max-w-[24em] border border-border-light px-2 py-1.5 align-top wrap-anywhere whitespace-pre-wrap ${props.rowHandle ? "pr-7" : ""} ${props.header ? "font-semibold bg-bg-light" : ""} ${props.active ? "outline outline-accent-contrast outline-offset-[-2px]" : ""}`}
       style={{
         textAlign:
           props.alignment === "right" || props.alignment === "center"
             ? props.alignment
             : "left",
       }}
-      onClick={(e) => {
+      onPointerDown={(e) => {
         if (
+          e.button !== 0 ||
+          e.pointerType === "touch" ||
           !props.editable ||
           e.shiftKey ||
           props.active ||
@@ -119,9 +94,26 @@ function TableCell(props: {
         )
           return;
         e.preventDefault();
+        e.stopPropagation();
         flushSync(props.activate);
       }}
+      onClick={(e) => {
+        if (
+          props.editable &&
+          !props.active &&
+          !e.shiftKey &&
+          !(e.target as Element).closest("button")
+        ) {
+          e.preventDefault();
+          flushSync(props.activate);
+        }
+      }}
     >
+      {props.columnHandle && (
+        <div className="absolute -top-5 left-1/2 -translate-x-1/2">
+          {props.columnHandle}
+        </div>
+      )}
       {props.rowHandle && (
         <div className="absolute top-1 right-1">{props.rowHandle}</div>
       )}
@@ -129,6 +121,8 @@ function TableCell(props: {
         <TableCellEditor
           key={generation}
           cell={cell}
+          table={props.table}
+          caret={props.caret}
           generation={generation}
           value={text}
           label={props.label}
@@ -137,7 +131,7 @@ function TableCell(props: {
           editorRef={props.editorRef}
         />
       ) : text ? (
-        <RenderYJSFragment value={text} wrapper={null} renderComments={false} />
+        <CellText value={text} />
       ) : (
         <span aria-hidden>&nbsp;</span>
       )}
@@ -153,24 +147,17 @@ export function TableBlock(
   },
 ) {
   const table = props.entityID;
-  const rows = useEntity(table, "table/row")
-    .toSorted(byTablePosition)
-    .map((f) => f.data.value);
-  const columns = useEntity(table, "table/column")
-    .toSorted(byTablePosition)
-    .map((f) => f.data.value);
-  const header =
-    useEntity(table, "table/header-row")?.data.value === rows[0] && !!rows[0];
-  const striped = useEntity(table, "table/style")?.data.value === "striped";
-  const borders = useEntity(table, "table/borders")?.data.value !== false;
+  const { rows, columns, cells, alignments, header, striped, borders, loaded } =
+    useTableSnapshot(table);
   const stale = useStaleClient((s) => s.stale);
   const { permissions, set } = useEntitySetContext();
   const { rep, undoManager } = useReplicache();
   const [active, setActive] = useState<Address | null>(null);
   const [pendingCell, setPendingCell] = useState<Address | null>(null);
   const [context, setContext] = useState<Address | null>(null);
-  const [linkOpen, setLinkOpen] = useState(false);
-  const [drag, setDrag] = useState<{ axis: Axis; entity: string } | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  );
   const editorRef = useRef<EditorView | null>(null);
   const frame = useRef<HTMLDivElement>(null);
   const toast = useToaster();
@@ -185,10 +172,8 @@ export function TableBlock(
     context && rows.includes(context.row) ? context.row : rows[0];
   const contextColumn =
     context && columns.includes(context.column) ? context.column : columns[0];
-  const alignment =
-    useEntity(contextColumn ?? null, "table/column/alignment")?.data.value ??
-    "left";
-  const target = { table, permission_set: set };
+  const alignment = alignments[columns.indexOf(contextColumn)] ?? "left";
+  const target = { table, permission_set: set, cellLimitVersion: 1 as const };
 
   function activate(address: Address) {
     if (!rep || !editable) return;
@@ -211,6 +196,21 @@ export function TableBlock(
   }, [editable, selected, rep, rows[0], columns[0], table]);
 
   useEffect(() => {
+    const element = frame.current;
+    if (!element) return;
+    const focusCell = (event: Event) => {
+      const last = (event as CustomEvent).detail === "last";
+      const row = last ? rows.at(-1) : rows[0];
+      const column = last ? columns.at(-1) : columns[0];
+      if (row && column)
+        activate({ row, column, caret: last ? "end" : "start" });
+    };
+    element.addEventListener("leaflet:focus-table-cell", focusCell);
+    return () =>
+      element.removeEventListener("leaflet:focus-table-cell", focusCell);
+  }, [rows, columns, editable, rep, props.parent, table]);
+
+  useEffect(() => {
     if (
       !selected ||
       !pendingCell ||
@@ -226,7 +226,6 @@ export function TableBlock(
     if (!selected || !editable) {
       setActive(null);
       setPendingCell(null);
-      setLinkOpen(false);
     }
   }, [selected, editable]);
 
@@ -249,7 +248,12 @@ export function TableBlock(
       type: "error",
       content: `Tables can have up to ${MAX_TABLE_CELLS.toLocaleString()} cells.`,
     });
-  async function add(axis: Axis, after?: string, focusNew = false) {
+  async function add(
+    axis: Axis,
+    after?: string,
+    focusNew = false,
+    focusColumn = columns[0],
+  ) {
     if (!rep) return;
     if (
       !validTableSize(
@@ -278,7 +282,7 @@ export function TableBlock(
       if (added)
         setPendingCell({
           row: axis === "row" ? item.entityID : contextRow,
-          column: axis === "column" ? item.entityID : columns[0],
+          column: axis === "column" ? item.entityID : focusColumn,
         });
     }
   }
@@ -318,23 +322,50 @@ export function TableBlock(
   function navigate(direction: Navigation) {
     if (direction === "Escape") {
       setActive(null);
-      setLinkOpen(false);
       frame.current?.focus();
       return true;
     }
     if (activeRow < 0 || activeColumn < 0) return false;
+    if (direction === "Enter") {
+      const row = rows[activeRow + 1];
+      if (row) activate({ row, column: columns[activeColumn] });
+      else void add("row", undefined, true, columns[activeColumn]);
+      return true;
+    }
+    if (direction === "ArrowUp" || direction === "ArrowDown") {
+      const row = rows[activeRow + (direction === "ArrowUp" ? -1 : 1)];
+      if (row)
+        activate({
+          row,
+          column: columns[activeColumn],
+          caret: direction === "ArrowUp" ? "end" : "start",
+        });
+      else return exitToNeighbor(direction === "ArrowUp");
+      return true;
+    }
+    const backward = direction === "Shift-Tab" || direction === "ArrowLeft";
     const index =
-      activeRow * columns.length +
-      activeColumn +
-      (direction === "Shift-Tab" ? -1 : 1);
-    if (index < 0) return false;
+      activeRow * columns.length + activeColumn + (backward ? -1 : 1);
+    if (index < 0) return direction === "ArrowLeft" && exitToNeighbor(true);
     if (index >= rows.length * columns.length) {
       if (direction === "Tab") void add("row", undefined, true);
+      else return exitToNeighbor(false);
       return true;
     }
     void activate({
       row: rows[Math.floor(index / columns.length)],
       column: columns[index % columns.length],
+      caret: direction === "ArrowLeft" ? "end" : "start",
+    });
+    return true;
+  }
+
+  function exitToNeighbor(previous: boolean) {
+    const block = previous ? props.previousBlock : props.nextBlock;
+    if (!block) return false;
+    focusBlock(block, {
+      type: previous ? "bottom" : "top",
+      left: editorRef.current?.dom.getBoundingClientRect().left ?? 0,
     });
     return true;
   }
@@ -351,6 +382,7 @@ export function TableBlock(
       activeColumn + grid.values[0].length - columns.length,
     );
     if (
+      (extraRows || extraColumns) &&
       !validTableSize(rows.length + extraRows, columns.length + extraColumns)
     ) {
       overLimit();
@@ -374,43 +406,6 @@ export function TableBlock(
       });
   }
 
-  const reorderHandle = (axis: Axis, entity: string, label: string) => (
-    <button
-      type="button"
-      draggable
-      data-draggable="table-axis"
-      title={label}
-      aria-label={label}
-      className="cursor-grab px-1 text-tertiary hover:text-primary"
-      onDragStart={(e) => {
-        e.stopPropagation();
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("application/x-leaflet-table-axis", entity);
-        setDrag({ axis, entity });
-      }}
-      onDragEnd={() => setDrag(null)}
-    >
-      ⠿
-    </button>
-  );
-
-  const dropOn = (axis: Axis, entity: string) => ({
-    onDragOver(e: React.DragEvent) {
-      if (drag?.axis !== axis) return;
-      e.preventDefault();
-      e.stopPropagation();
-      e.dataTransfer.dropEffect = "move";
-    },
-    onDrop(e: React.DragEvent) {
-      if (drag?.axis !== axis) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const moving = drag.entity;
-      setDrag(null);
-      void move(axis, moving, entity);
-    },
-  });
-
   const shift = (axis: Axis, offset: number) => {
     const entries = axis === "row" ? rows : columns;
     const entity = axis === "row" ? contextRow : contextColumn;
@@ -424,44 +419,27 @@ export function TableBlock(
     };
   };
 
-  const columnValues = useSubscribe(
-    rep,
-    async (tx) => {
-      if (!(await tx.get("initialized"))) return null;
-      return Object.fromEntries(
-        await Promise.all(
-          columns.map(async (column) => [
-            column,
-            (await scanIndex(tx).eav(column, "table/column/alignment"))[0]?.data
-              .value ?? "left",
-          ]),
-        ),
-      );
-    },
-    { default: null, dependencies: [columns.join(",")] },
-  );
-  const { initialFacts } = useReplicache();
-  const local = useMemo(() => tableFactIndex(initialFacts), [initialFacts]);
-  const resolvedAlignments = columns.map(
-    (column) =>
-      columnValues?.[column] ??
-      local(column, "table/column/alignment")[0]?.data.value ??
-      "left",
-  );
   const renderRow = (row: string, rowIndex: number, headerRow: boolean) => (
     <TableRow
       key={row}
-      row={row}
+      table={table}
+      cells={cells[row] ?? {}}
+      loaded={loaded}
       rowIndex={rowIndex}
       columns={columns}
-      alignments={resolvedAlignments}
+      alignments={alignments}
       header={headerRow}
       editable={editable}
       currentColumn={active?.row === row ? active.column : undefined}
+      caret={active?.row === row ? active.caret : undefined}
       rowHandle={
-        editable && selected && !headerRow
-          ? reorderHandle("row", row, `Drag row ${rowIndex + 1}`)
-          : undefined
+        editable && selected && !headerRow ? (
+          <AxisHandle
+            axis="row"
+            entity={row}
+            label={`Drag row ${rowIndex + 1}`}
+          />
+        ) : undefined
       }
       editorRef={editorRef}
       navigate={navigate}
@@ -473,7 +451,17 @@ export function TableBlock(
             rep.mutate.ensureTableCell({ ...target, row, column }),
           );
       }}
-      drop={dropOn("row", row)}
+      columnHandle={
+        rowIndex === 0 && editable && selected
+          ? (column, i) => (
+              <AxisHandle
+                axis="column"
+                entity={column}
+                label={`Drag column ${i + 1}`}
+              />
+            )
+          : undefined
+      }
     />
   );
 
@@ -489,8 +477,17 @@ export function TableBlock(
         ref={frame}
         tabIndex={editable ? 0 : undefined}
         data-table-block
+        onFocus={(e) => {
+          if (editable && e.target === e.currentTarget)
+            useUIState.getState().focusAndSelectBlock(props);
+        }}
         onBlur={(e) => {
-          if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget))
+          if (
+            e.relatedTarget &&
+            (e.currentTarget.contains(e.relatedTarget) ||
+              (e.relatedTarget instanceof Element &&
+                e.relatedTarget.closest(".toolbar")))
+          )
             return;
           if (!e.relatedTarget) return; // A cell can remount on grid paste.
           setActive(null);
@@ -503,14 +500,14 @@ export function TableBlock(
             useUIState.getState().setSelectedBlocks([]);
             void focusPage(pageOfParent(props.parent), rep);
             frame.current?.blur();
-          } else if (e.key === "Enter" && rows[0] && columns[0]) {
+          } else if (e.key === "F2" && rows[0] && columns[0]) {
             e.preventDefault();
             void activate({ row: contextRow, column: contextColumn });
           }
         }}
       >
-        {editable && (
-          <div className="relative flex flex-wrap items-center gap-2 py-1 text-sm [&_button]:rounded [&_button]:px-1 [&_button]:hover:bg-bg-light [&_button:disabled]:opacity-40">
+        {editable && selected && (
+          <div className="absolute right-1 top-0 z-10 rounded border border-border-light bg-bg-page shadow-sm">
             {rep && (
               <Menu
                 align="start"
@@ -518,7 +515,16 @@ export function TableBlock(
                 onOpenChange={(open) => {
                   if (open) useUIState.getState().focusAndSelectBlock(props);
                 }}
-                trigger={<span>Table options</span>}
+                asChild
+                trigger={
+                  <button
+                    type="button"
+                    aria-label="Table options"
+                    title="Table options"
+                  >
+                    <BlockTableSmall />
+                  </button>
+                }
               >
                 <MenuItem onSelect={() => void add("row", contextRow, true)}>
                   Add row
@@ -633,115 +639,44 @@ export function TableBlock(
                 </MenuItem>
               </Menu>
             )}
-            {active &&
-              selected &&
-              inlineMarks.map(([label, mark]) => (
-                <button
-                  key={mark}
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    const view = editorRef.current;
-                    if (!view) return;
-                    toggleMark(schema.marks[mark])(
-                      view.state,
-                      view.dispatch,
-                      view,
-                    );
-                    view.focus();
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-            {active && selected && (
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => setLinkOpen(!linkOpen)}
-              >
-                Link
-              </button>
-            )}
-            {active && linkOpen && (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const href = String(
-                    new FormData(e.currentTarget).get("link") ?? "",
-                  ).trim();
-                  const view = editorRef.current;
-                  if (!view || (href && !/^(https?:|mailto:|tel:)/i.test(href)))
-                    return;
-                  const mark = schema.marks.link;
-                  const { from, to } = view.state.selection;
-                  let transaction = view.state.tr.removeMark(from, to, mark);
-                  if (href) {
-                    if (from === to)
-                      transaction = transaction
-                        .insertText(href, from)
-                        .addMark(
-                          from,
-                          from + href.length,
-                          mark.create({ href }),
-                        );
-                    else
-                      transaction = transaction.addMark(
-                        from,
-                        to,
-                        mark.create({ href }),
-                      );
-                  }
-                  view.dispatch(transaction);
-                  setLinkOpen(false);
-                  view.focus();
-                }}
-              >
-                <input
-                  name="link"
-                  aria-label="Link URL"
-                  placeholder="https://"
-                  autoFocus
-                />
-                <button type="submit">Apply</button>
-              </form>
-            )}
           </div>
         )}
         <div
-          className="overflow-x-auto overscroll-x-contain"
+          className={`overflow-x-auto overscroll-x-contain ${editable ? "pt-5" : ""}`}
           onWheel={(e) => {
             if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) e.stopPropagation();
           }}
         >
-          {editable && selected && (
-            <div
-              className="flex w-full"
-              style={{ minWidth: columns.length * TABLE_MIN_COLUMN_WIDTH }}
-              aria-label="Column drag handles"
-            >
-              {columns.map((column, i) => (
-                <div
-                  key={column}
-                  className="flex-1 text-center"
-                  {...dropOn("column", column)}
-                >
-                  {reorderHandle("column", column, `Drag column ${i + 1}`)}
-                </div>
-              ))}
-            </div>
-          )}
-          <table
-            style={{ minWidth: columns.length * TABLE_MIN_COLUMN_WIDTH }}
-            className={`w-full table-fixed border-collapse ${borders ? "" : "[&_td]:border-transparent [&_th]:border-transparent"} ${striped ? "[&_tbody_tr:nth-child(even)]:bg-bg-light" : ""}`}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={(args) =>
+              closestCenter({
+                ...args,
+                droppableContainers: args.droppableContainers.filter(
+                  (target) =>
+                    target.data.current?.axis ===
+                    args.active.data.current?.axis,
+                ),
+              })
+            }
+            onDragEnd={({ active, over }) => {
+              const from = active.data.current;
+              const to = over?.data.current;
+              if (from && to && from.axis === to.axis)
+                void move(from.axis, from.entity, to.entity);
+            }}
           >
-            {header && <thead>{renderRow(rows[0], 0, true)}</thead>}
-            <tbody>
-              {rows
-                .slice(header ? 1 : 0)
-                .map((row, i) => renderRow(row, i + Number(header), false))}
-            </tbody>
-          </table>
+            <table
+              className={`w-full table-auto border-collapse ${borders ? "" : "[&_td]:border-transparent [&_th]:border-transparent"} ${striped ? "[&_tbody_tr:nth-child(even)]:bg-bg-light" : ""}`}
+            >
+              {header && <thead>{renderRow(rows[0], 0, true)}</thead>}
+              <tbody>
+                {rows
+                  .slice(header ? 1 : 0)
+                  .map((row, i) => renderRow(row, i + Number(header), false))}
+              </tbody>
+            </table>
+          </DndContext>
         </div>
       </div>
     </BlockLayout>
@@ -749,7 +684,10 @@ export function TableBlock(
 }
 
 function TableRow(props: {
-  row: string;
+  table: string;
+  cells: Record<string, CellSnapshot>;
+  loaded: boolean;
+  columnHandle?: (column: string, index: number) => React.ReactNode;
   rowIndex: number;
   columns: readonly string[];
   alignments: readonly string[];
@@ -757,53 +695,22 @@ function TableRow(props: {
   rowHandle?: React.ReactNode;
   editable: boolean;
   currentColumn?: string;
+  caret?: Address["caret"];
   editorRef: React.RefObject<EditorView | null>;
   navigate: (direction: Navigation) => boolean;
   paste: (grid: TableGrid | "too-large") => void;
   activate: (column: string) => void;
   ensure: (column: string) => void;
-  drop: React.HTMLAttributes<HTMLTableRowElement>;
 }) {
-  const { row, currentColumn } = props;
-  const { rep, initialFacts } = useReplicache();
-  const local = useMemo(() => tableFactIndex(initialFacts), [initialFacts]);
-  const fallback = useMemo(
-    () =>
-      Object.fromEntries(
-        mapTableCells(
-          local(row, "table/row/cell"),
-          (cell) => local(cell, "table/cell/column")[0]?.data.value,
-        ),
-      ),
-    [local, row],
-  );
-  const cells = useSubscribe(
-    rep,
-    async (tx) => {
-      if (!(await tx.get("initialized"))) return null;
-      const scan = scanIndex(tx);
-      const entries = await scan.eav(row, "table/row/cell");
-      const columns = new Map(
-        await Promise.all(
-          entries.map(async (entry) => {
-            const id = entry.data.value;
-            return [
-              id,
-              (await scan.eav(id, "table/cell/column"))[0]?.data.value,
-            ] as const;
-          }),
-        ),
-      );
-      return Object.fromEntries(
-        mapTableCells(entries, (id) => columns.get(id)),
-      );
-    },
-    { default: null, dependencies: [row] },
-  );
-  const resolved = cells ?? fallback;
+  const { currentColumn, cells } = props;
   const repairing = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (!props.editable || !currentColumn || !cells || cells[currentColumn]) {
+    if (
+      !props.editable ||
+      !currentColumn ||
+      !props.loaded ||
+      cells[currentColumn]
+    ) {
       repairing.current = undefined;
       return;
     }
@@ -812,16 +719,19 @@ function TableRow(props: {
     props.ensure(currentColumn);
   }, [currentColumn, cells, props]);
   return (
-    <tr {...props.drop}>
+    <tr>
       {props.columns.map((column, i) => (
         <TableCell
           key={column}
-          cell={resolved[column] ?? null}
+          table={props.table}
+          cell={cells[column]}
+          columnHandle={props.columnHandle?.(column, i)}
           label={`Row ${props.rowIndex + 1}, column ${i + 1}`}
           alignment={props.alignments[i]}
           rowHandle={i === 0 ? props.rowHandle : undefined}
           header={props.header}
           active={currentColumn === column}
+          caret={currentColumn === column ? props.caret : undefined}
           editable={props.editable}
           activate={() => props.activate(column)}
           navigate={props.navigate}
@@ -830,5 +740,37 @@ function TableRow(props: {
         />
       ))}
     </tr>
+  );
+}
+
+function AxisHandle({
+  axis,
+  entity,
+  label,
+}: {
+  axis: Axis;
+  entity: string;
+  label: string;
+}) {
+  const id = `${axis}:${entity}`;
+  const data = { axis, entity };
+  const drag = useDraggable({ id, data });
+  const target = useDroppable({ id, data });
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      data-draggable="table-axis"
+      ref={(node) => {
+        drag.setNodeRef(node);
+        target.setNodeRef(node);
+      }}
+      {...drag.attributes}
+      {...drag.listeners}
+      className={`touch-none cursor-grab rounded px-1 ${target.isOver ? "bg-bg-accent text-accent-contrast" : "text-tertiary hover:text-primary"}`}
+    >
+      ⠿
+    </button>
   );
 }

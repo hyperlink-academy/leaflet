@@ -11,7 +11,7 @@ import { Block } from "components/Blocks/Block";
 import { parseBlocksToList, List } from "src/utils/parseBlocksToList";
 import { htmlToMarkdown } from "src/htmlMarkdownParsers";
 import { isUuid } from "src/utils/isUuid";
-import { byTablePosition, mapTableCells, validTableSize } from "src/replicache/table";
+import { byTablePosition, mapTableCells } from "src/replicache/table";
 
 // --- Auth ---
 
@@ -375,7 +375,7 @@ async function renderBlockToHTML(
     case "table": {
       const rows = factsLookup(allFacts, b.entityID, "table/row").sort(byTablePosition);
       const columns = factsLookup(allFacts, b.entityID, "table/column").sort(byTablePosition);
-      if (!validTableSize(rows.length, columns.length)) return "";
+      if (!rows.length || !columns.length) return "";
       const [header] = factsLookup(allFacts, b.entityID, "table/header-row");
       const textByCell = new Map(allFacts.filter(f => f.attribute === "block/text").map(f => [f.entity, f.data.value]));
       const columnByCell = new Map(allFacts.filter(f => f.attribute === "table/cell/column").map(f => [f.entity, f.data.value]));

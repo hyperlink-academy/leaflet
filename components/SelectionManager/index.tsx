@@ -14,6 +14,7 @@ import {
 } from "src/utils/list-operations";
 import { setTextBlockStyle } from "src/utils/blockTypeOperations";
 import { addShortcut, Shortcut } from "src/shortcuts";
+import { flushPendingTextWrites } from "components/Blocks/TextBlock/useCollabText";
 import { elementId } from "src/utils/elementId";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
 import { copySelection } from "src/utils/copySelection";
@@ -264,6 +265,7 @@ export function SelectionManager() {
             let selectedBlocks = useUIState.getState().selectedBlocks;
             let firstBlock = sortedBlocks[0];
 
+            await flushPendingTextWrites();
             await rep?.mutate.removeBlock(
               selectedBlocks.map((block) => ({
                 blockEntity: block.entityID,

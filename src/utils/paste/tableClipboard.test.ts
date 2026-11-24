@@ -22,6 +22,33 @@ function plaintext(value: string) {
 }
 
 describe("table clipboard", () => {
+  test.each([
+    [
+      "editor HTML",
+      "<pre><code>\tfoo\n\tbar\n\tbaz</code></pre>",
+      "\tfoo\n\tbar\n\tbaz",
+    ],
+    ["plain indented code", "", "\tfoo\n\tbar\n\tbaz"],
+    ["Markdown document", "", "# Title\n\nA\tword\n\n- List item"],
+    ["single line of prose", "", "Name\tvalue"],
+    ["HTML source", "", "<table><tr><td>Source</td></tr></table>"],
+    [
+      "non-table HTML with rectangular text",
+      "<pre>x\ty\nz\tw</pre>",
+      "x\ty\nz\tw",
+    ],
+  ])("does not reinterpret %s as a table", (_, html, plain) => {
+    expect(parseTableClipboard(html, plain)).toBeNull();
+  });
+
+  test("accepts a single TSV row only when the clipboard identifies it", () => {
+    const result = parseTableClipboard("", "Name\tvalue", true);
+    expect(result).toMatchObject({ normalized: false });
+    if (!result || result === "too-large") throw new Error("Expected a grid");
+    expect(result.values.map((row) => row.map(plaintext))).toEqual([
+      ["Name", "value"],
+    ]);
+  });
   test("copies a selected table as semantic HTML and Markdown with rich cell content", async () => {
     const grid = parseTableClipboard(
       '<table><tr><th>Title</th><th align="right">Price</th></tr><tr><td><a href="https://example.test"><strong>Bolt</strong></a><br>Steel</td><td>$5</td></tr></table>',
@@ -152,13 +179,13 @@ describe("table clipboard", () => {
   });
 
   test("checks the cell cap before encoding the grid", () => {
-    const row = Array(100).fill("").join("\t");
-    expect(parseTableClipboard("", Array(51).fill(row).join("\n"))).toBe(
+    const row = ["first", ...Array(99).fill("")].join("\t");
+    expect(parseTableClipboard("", Array(11).fill(row).join("\n"))).toBe(
       "too-large",
     );
-    const result = parseTableClipboard("", Array(50).fill(row).join("\n"));
+    const result = parseTableClipboard("", Array(10).fill(row).join("\n"));
     if (!result || result === "too-large") throw new Error("Expected a grid");
-    expect(result.values).toHaveLength(50);
+    expect(result.values).toHaveLength(10);
     expect(result.values[0]).toHaveLength(100);
     expect(
       parseTableClipboard(

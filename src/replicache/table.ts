@@ -3,12 +3,16 @@ import { generateNKeysBetween } from "fractional-indexing";
 import type { FactInput } from "./mutations";
 import type { Attribute } from "./attributes";
 import type { Fact } from ".";
+import type { DeepReadonly } from "replicache";
 
-export const MAX_TABLE_CELLS = 5_000;
-export const TABLE_MIN_COLUMN_WIDTH = 144;
+export const MAX_TABLE_CELLS = 1_000;
 
-export function validTableSize(rows: number, columns: number) {
-  return rows > 0 && columns > 0 && rows * columns <= MAX_TABLE_CELLS;
+export function validTableSize(
+  rows: number,
+  columns: number,
+  limit = MAX_TABLE_CELLS,
+) {
+  return rows > 0 && columns > 0 && rows * columns <= limit;
 }
 
 // The intersection is deterministic on both Replicache replicas. A missing
@@ -39,10 +43,12 @@ export function mapTableCells(
 }
 
 const tableFactIndexes = new WeakMap<
-  readonly Fact<Attribute>[],
-  Map<string, Fact<Attribute>[]>
+  readonly DeepReadonly<Fact<Attribute>>[],
+  Map<string, DeepReadonly<Fact<Attribute>>[]>
 >();
-export function tableFactIndex(facts: readonly Fact<Attribute>[]) {
+export function tableFactIndex(
+  facts: readonly DeepReadonly<Fact<Attribute>>[],
+) {
   let index = tableFactIndexes.get(facts);
   if (!index) {
     index = new Map();
@@ -55,7 +61,7 @@ export function tableFactIndex(facts: readonly Fact<Attribute>[]) {
     tableFactIndexes.set(facts, index);
   }
   return <A extends Attribute>(entity: string, attribute: A) =>
-    (index.get(`${entity}/${attribute}`) ?? []) as Fact<A>[];
+    (index.get(`${entity}/${attribute}`) ?? []) as DeepReadonly<Fact<A>>[];
 }
 
 export function byTablePosition(

@@ -135,3 +135,9 @@ export function matchDocumentUrl(
   }
   return null;
 }
+export function compareQuoteBlockPaths(a: readonly number[], b: readonly number[]): number {
+  for (let i = 0; i < Math.min(a.length, b.length); i++) {
+    if (a[i] !== b[i]) return a[i] - b[i];
+  }
+  return a.length - b.length;
+}

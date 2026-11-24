@@ -3,7 +3,11 @@
 
 import { useParams } from "next/navigation";
 import { create } from "zustand";
-import { decodeQuotePosition, QuotePosition } from "src/utils/quotePosition";
+import {
+  compareQuoteBlockPaths,
+  decodeQuotePosition,
+  QuotePosition,
+} from "src/utils/quotePosition";
 
 export const useActiveHighlightState = create(() => ({
   activeHighlight: null as null | QuotePosition,
@@ -28,22 +32,9 @@ export const useHighlight = (pos: number[], pageId?: string) => {
       if (quotePosition.pageId && !pageId) {
         return null;
       }
-      let maxLength = Math.max(
-        quotePosition.start.block.length,
-        quotePosition.end.block.length,
-      );
-      let expandedPos = pos.concat(
-        Array(Math.max(0, maxLength - pos.length)).fill(-1),
-      );
       if (
-        !expandedPos.reduce(
-          (acc, i, index) =>
-            acc &&
-            ((i === -1 && quotePosition?.start.block[index] === undefined) ||
-              i >= (quotePosition?.start.block[index] ?? -1)) &&
-            i <= quotePosition.end.block[index],
-          true,
-        )
+        compareQuoteBlockPaths(pos, quotePosition.start.block) < 0 ||
+        compareQuoteBlockPaths(pos, quotePosition.end.block) > 0
       ) {
         return null;
       }
