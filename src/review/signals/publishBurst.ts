@@ -5,7 +5,7 @@ const HOUR = 3600000;
 // The most documents published inside any one hour.
 export const publishBurst: Signal = {
   id: "publish.burst",
-  version: 1,
+  version: 2,
   cost: "cheap",
   async compute(account) {
     let times = account.documents
@@ -23,7 +23,6 @@ export const publishBurst: Signal = {
     return {
       value: best,
       evidence: {
-        documents: account.documents.length,
         hourStarting: bestStart ? new Date(bestStart).toISOString() : null,
       },
     };

@@ -3,6 +3,8 @@ import ring from "./fixtures/backlinkRing.json";
 import { extractLinks, toReviewDocument } from "./content";
 import { applyAutoBlock, decide, decideFrom } from "./run";
 import { explain } from "./reasons";
+import { SIGNALS } from "./signals";
+import { describeAccount, MEASURES } from "./signals/contentLlm";
 import { linksSingleTarget } from "./signals/linksSingleTarget";
 import { publishBurst } from "./signals/publishBurst";
 import type { AccountBundle } from "./types";
@@ -70,6 +72,21 @@ describe("signals", () => {
       {},
     );
     expect(result.value).toBe(3);
+  });
+});
+
+describe("model input", () => {
+  it("says what every cheap signal's value counts", async () => {
+    for (let signal of SIGNALS)
+      if (signal.cost === "cheap") expect(MEASURES[signal.id]).toBeTruthy();
+    let burst = await publishBurst.compute(account, ctx, {});
+    expect(
+      describeAccount(account, { "publish.burst": burst }, "2026-11-24"),
+    ).toContain(
+      `publish.burst = ${burst.value} (the most posts it published inside any one hour)`,
+    );
+    // The account's total beside the hour read as that many posts in the hour.
+    expect(burst.evidence).not.toHaveProperty("documents");
   });
 });
 
