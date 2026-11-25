@@ -2,7 +2,7 @@ import type { ProposedStatus, SignalValue } from "./types";
 
 // Bump when a rule or threshold changes, so decisions in review_events can be
 // told apart by the policy that made them.
-export const POLICY_VERSION = 3;
+export const POLICY_VERSION = 4;
 
 // Whether rules marked autoBlock block an account on their own. Set to false
 // and every decision is only a proposal: recorded, shown at /admin/review,
@@ -26,6 +26,10 @@ export type Rule = {
 const num = (v: Values, id: string) =>
   typeof v[id] === "number" ? (v[id] as number) : 0;
 
+// An empty profile, or none on file: the lookup found no account to describe.
+const noProfile = (v: Values) =>
+  v["account.profile"] === "empty" || v["account.profile"] == null;
+
 // First match wins.
 export const RULES: Rule[] = [
   {
@@ -37,7 +41,20 @@ export const RULES: Rule[] = [
   {
     id: "link-farm",
     when: (v) =>
-      num(v, "links.farm_accounts") >= 5 && v["account.profile"] === "empty",
+      num(v, "links.farm_accounts") >= 5 &&
+      v["account.profile"] !== "established",
+    then: "spam",
+    autoBlock: true,
+  },
+  {
+    // A farm too small to block on size alone, where everything else about
+    // the account says the same thing: nobody behind it, and nearly every
+    // post exists to carry one link.
+    id: "link-farm-backlinks",
+    when: (v) =>
+      num(v, "links.farm_accounts") >= 2 &&
+      noProfile(v) &&
+      num(v, "links.single_target_share") >= 0.8,
     then: "spam",
     autoBlock: true,
   },

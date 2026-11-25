@@ -13,7 +13,7 @@ import {
 import { truncatePagesAtMembersDelimiter } from "src/membership";
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
 import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
-import { dropHeld } from "src/publicationReview/held";
+import { dropHeld } from "src/review/held";
 import { getTagDocumentUrisByTrending } from "./getTagDocumentUrisByTrending";
 import { getPublicationTagDocumentUris } from "./getPublicationTagDocumentUris";
 
@@ -66,11 +66,7 @@ export async function getDocumentsByTag(
 }
 
 function dropHeldPosts(posts: Post[]) {
-  return dropHeld(
-    posts,
-    (p) => [p.publication?.uri],
-    (p) => p.documents.uri,
-  );
+  return dropHeld(posts, (p) => p.documents.uri);
 }
 
 // Every post in a publication carrying a tag, ranked by trending.
@@ -111,9 +107,7 @@ async function getPostsInOrder(uris: string[]): Promise<Post[]> {
   // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
   const byUri = new Map(deduplicateByUriOrdered(rows).map((d) => [d.uri, d]));
   return toPosts(
-    uris
-      .map((uri) => byUri.get(uri))
-      .filter((d): d is DocumentRow => !!d),
+    uris.map((uri) => byUri.get(uri)).filter((d): d is DocumentRow => !!d),
   );
 }
 

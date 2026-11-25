@@ -11,7 +11,6 @@ import {
 } from "lexicons/api";
 import { TID } from "@atproto/common";
 import { supabaseServerClient } from "supabase/serverClient";
-import { requestPublicationReview } from "src/publicationReview/request";
 import { requestAccountReview } from "src/review/request";
 import { blockedAmong, DISPUTE_EMAIL } from "src/review/blocked";
 import { isConfirmedContributor } from "src/contributorPermissions";
@@ -708,7 +707,6 @@ async function publish({
     }
   }
 
-  if (publication_uri) await requestPublicationReview(publication_uri);
   await requestAccountReview(credentialSession.did!, "document.published");
 
   // Runs after the documents/join-row writes above so the re-render reads the

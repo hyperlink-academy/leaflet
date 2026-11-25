@@ -112,6 +112,37 @@ describe("policy", () => {
     ).toEqual({ status: "cleared", rule: "llm-legit", block: false });
   });
 
+  it("blocks a big farm account whose profile could not be read", () => {
+    expect(decide({ "links.farm_accounts": 18 })).toMatchObject({
+      status: "spam",
+      rule: "link-farm",
+      block: true,
+    });
+  });
+
+  it("blocks a small farm only when the account is empty and all backlinks", () => {
+    let small = { "links.farm_accounts": 2, "links.single_target_share": 1 };
+    expect(decide({ ...small, "account.profile": "empty" })).toMatchObject({
+      status: "spam",
+      rule: "link-farm-backlinks",
+      block: true,
+    });
+    // Someone with a bio and followers stays with a person.
+    expect(decide({ ...small, "account.profile": "thin" })).toMatchObject({
+      status: "needs_review",
+      rule: "link-farm-small",
+      block: false,
+    });
+    // So does an empty account whose posts mostly aren't one-link posts.
+    expect(
+      decide({
+        "links.farm_accounts": 2,
+        "links.single_target_share": 0.3,
+        "account.profile": "empty",
+      }),
+    ).toMatchObject({ status: "needs_review", rule: "link-farm-small" });
+  });
+
   it("lets the link rules block on their own, but not the model", () => {
     expect(
       decide({ "account.profile": "empty", "links.farm_accounts": 99 }),

@@ -69,7 +69,8 @@ export async function loadAccounts(
        where p.identity_did = any($1) and ${MANAGED_PUBLICATION}`,
       [dids],
     ),
-    // An admin's own decision on any of the account's publications.
+    // Decisions admins made in the publication queue this system replaced.
+    // The table is no longer written; these rows are its labels.
     db.query(
       `select p.identity_did, bool_or(r.spam) as spam
        from publication_reviews r join publications p on p.uri = r.publication

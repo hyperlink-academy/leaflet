@@ -73,16 +73,13 @@ export const events = {
     "stripe/customer.subscription.deleted",
     { schema: staticSchema<{ subscriptionId: string }>() },
   ),
-  stripeInvoicePaymentSucceeded: eventType(
-    "stripe/invoice.payment.succeeded",
-    {
-      schema: staticSchema<{
-        invoiceId: string;
-        subscriptionId: string;
-        customerId: string;
-      }>(),
-    },
-  ),
+  stripeInvoicePaymentSucceeded: eventType("stripe/invoice.payment.succeeded", {
+    schema: staticSchema<{
+      invoiceId: string;
+      subscriptionId: string;
+      customerId: string;
+    }>(),
+  }),
   stripeInvoicePaymentFailed: eventType("stripe/invoice.payment.failed", {
     schema: staticSchema<{
       invoiceId: string;
@@ -104,14 +101,8 @@ export const events = {
     { schema: staticSchema<{ email_post_id: string; revision: number }>() },
   ),
   // `revision` works as it does for an email post's send.
-  postScheduledPublishRequested: eventType(
-    "post/scheduled-publish.requested",
-    {
-      schema: staticSchema<{ scheduled_post_id: string; revision: number }>(),
-    },
-  ),
-  publicationReviewRequested: eventType("publication/review.requested", {
-    schema: staticSchema<{ publication_uri: string }>(),
+  postScheduledPublishRequested: eventType("post/scheduled-publish.requested", {
+    schema: staticSchema<{ scheduled_post_id: string; revision: number }>(),
   }),
   reviewAccountTouched: eventType("review/account.touched", {
     schema: staticSchema<{ did: string; cause: string }>(),
@@ -127,6 +118,5 @@ export const events = {
 export const inngest = new Inngest({
   id: "leaflet",
   isDev:
-    process.env.INNGEST_DEV === "1" ||
-    process.env.NODE_ENV === "development",
+    process.env.INNGEST_DEV === "1" || process.env.NODE_ENV === "development",
 });

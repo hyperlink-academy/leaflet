@@ -3,7 +3,7 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
 import { enrichDocumentToPost } from "src/utils/enrichPost";
-import { dropHeld } from "src/publicationReview/held";
+import { dropHeld } from "src/review/held";
 import type { Cursor, Post } from "./getReaderFeed";
 
 // A page can come back with every row held back (a spam farm's burst). The
@@ -64,7 +64,6 @@ async function newFeedPage(
 
   const feed = await dropHeld(
     deduplicateByUriOrdered(rawFeed || []),
-    (d) => d.documents_in_publications.map((p) => p.publications.uri),
     (d) => d.uri,
   );
 

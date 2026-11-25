@@ -4,7 +4,7 @@ import { DidResolver, MemoryCache } from "@atproto/identity";
 import { parseReqNsid, verifyJwt } from "@atproto/xrpc-server";
 import { supabaseServerClient } from "supabase/serverClient";
 import { inngest } from "app/api/inngest/client";
-import { dropHeld } from "src/publicationReview/held";
+import { dropHeld } from "src/review/held";
 import { AtUri } from "@atproto/api";
 import { wikipedia } from "../mentions/services/wikipedia";
 import { pokemon } from "../mentions/services/pokemon";
@@ -36,7 +36,18 @@ app.get("/.well-known/did.json", (c) => {
 // Mention search services, keyed by rkey
 const mentionServices: Record<
   string,
-  (search: string, limit: number) => Promise<{ uri: string; name: string; href?: string; icon?: string; embed?: { src: string; width?: number; height?: number } }[]>
+  (
+    search: string,
+    limit: number,
+  ) => Promise<
+    {
+      uri: string;
+      name: string;
+      href?: string;
+      icon?: string;
+      embed?: { src: string; width?: number; height?: number };
+    }[]
+  >
 > = {
   wikipedia,
   pokemon,
@@ -51,7 +62,10 @@ app.get("/xrpc/parts.page.mention.search", async (c) => {
   );
 
   if (!serviceUri || !search) {
-    return c.json({ error: "missing required parameters: service, search" }, 400);
+    return c.json(
+      { error: "missing required parameters: service, search" },
+      400,
+    );
   }
 
   let rkey: string;
@@ -129,7 +143,8 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
       );
 
     let { data, error } = await query;
-    if (error) console.error("bsky-leaflet-quotes skeleton query error:", error);
+    if (error)
+      console.error("bsky-leaflet-quotes skeleton query error:", error);
     let posts = data || [];
 
     let lastPost = posts[posts.length - 1];
@@ -167,14 +182,7 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
     let { data, error } = await query;
     if (error) console.error("all-leaflets skeleton query error:", error);
     let rows = data || [];
-    let response = skeletonResponse(
-      await dropHeld(
-        rows,
-        (d) => d.documents_in_publications.map((p) => p.publications?.uri),
-        (d) => d.uri,
-      ),
-      cursor,
-    );
+    let response = skeletonResponse(await dropHeld(rows, (d) => d.uri), cursor);
     // From the last row fetched, so a page whose tail was held back advances.
     let last = rows[rows.length - 1];
     if (last) response.cursor = `${last.sort_date}::${last.uri}`;

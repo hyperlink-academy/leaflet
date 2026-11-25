@@ -39,6 +39,27 @@ export async function blockedAmong(dids: string[]): Promise<Set<string>> {
   return new Set((data ?? []).map((r) => r.id));
 }
 
+// Accounts kept out of discovery feeds: blocked ones, and ones the policy
+// proposes as spam or has left for a person. Being in doubt costs an account
+// its place in the feeds, not its pages.
+export async function hiddenFromDiscoveryAmong(
+  dids: string[],
+): Promise<Set<string>> {
+  let unique = [...new Set(dids)];
+  if (unique.length === 0) return new Set();
+  let { data, error } = await supabaseServerClient
+    .from("review_subjects")
+    .select("id")
+    .eq("kind", "account")
+    .in("id", unique)
+    .or("enforced_status.eq.spam,proposed_status.in.(spam,needs_review)");
+  if (error) {
+    console.error("[review] discovery lookup failed:", error);
+    return new Set();
+  }
+  return new Set((data ?? []).map((r) => r.id));
+}
+
 // Memoized for a minute per account, for the appview, which asks about the
 // same account for every record it writes. Page renders must not use this: a
 // stale "not blocked" there gets baked into a page cached for an hour.

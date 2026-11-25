@@ -446,12 +446,7 @@ export function ReviewView(props: {
     <div className="w-full max-w-3xl mx-auto flex flex-col gap-8 px-4 py-8">
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <div className="flex justify-between items-baseline gap-4">
-            <h2>Spam review</h2>
-            <Link href="/admin/publications" className={`text-sm ${link}`}>
-              Publication queue →
-            </Link>
-          </div>
+          <h2>Spam review</h2>
           <div className="text-sm text-secondary leading-snug">
             A blocked account can&apos;t publish, isn&apos;t indexed, and its
             pages 404. Its owner sees a banner with our contact address.{" "}

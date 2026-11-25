@@ -78,12 +78,6 @@ export default async function AdminPage() {
           Review system →
         </Link>
         <Link
-          href="/admin/publications"
-          className="text-sm text-accent-contrast hover:underline"
-        >
-          Publication queue →
-        </Link>
-        <Link
           href="/admin/active-users"
           className="text-sm text-accent-contrast hover:underline"
         >
