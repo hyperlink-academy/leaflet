@@ -29,6 +29,8 @@ export type PublicationMetadata = {
     /** Raw record - use normalizePublicationRecord() to get typed data */
     record: Json | null;
     uri: string;
+    /** Raw config - use parsePublicationDefaults() to get typed data */
+    defaults?: Json;
     publication_contributors?: {
       contributor_did: string;
       confirmed: boolean;

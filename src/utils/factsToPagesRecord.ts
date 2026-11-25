@@ -1,6 +1,6 @@
 import {
   isWiderReleaseDelay,
-  toWiderReleaseAudience,
+  toAudienceUnion,
   widerReleaseTimeline,
   type AudiencePolicy,
 } from "src/membership";
@@ -350,7 +350,7 @@ export async function processBlocksToPages(opts: {
           "block/members-only-wider-release-audience",
         )[0]?.data.value ?? { audience: "public" };
         block.widerReleaseAt = widerReleaseAt;
-        block.widerReleaseAudience = toWiderReleaseAudience(
+        block.widerReleaseAudience = toAudienceUnion(
           widerReleaseAudience.audience === "tiers"
             ? {
                 ...widerReleaseAudience,

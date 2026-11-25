@@ -832,6 +832,7 @@ export const publications = pgTable("publications", {
 	draft_leaflet: uuid("draft_leaflet").references(() => permission_tokens.id),
 	identity_did: text("identity_did").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
 	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	defaults: jsonb("defaults").default({}).notNull(),
 	name: text("name").notNull(),
 	record: jsonb("record"),
 	uri: text("uri").primaryKey().notNull(),

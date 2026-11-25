@@ -1,0 +1,99 @@
+import {
+  fromAudienceUnion,
+  isWiderReleaseDelay,
+  toAudienceUnion,
+  type AudiencePolicy,
+  type AudienceUnion,
+  type GatePolicy,
+  type WiderReleaseDelay,
+} from "src/membership";
+
+// publications.defaults holds editor choices a publication remembers so the
+// next one starts from them. Each section is read on its own and anything
+// invalid reads as absent, so a bad section never breaks the others.
+// Audiences are stored as the lexicon's audience union (the
+// membersOnlyDelimiter #public/#subscribers/#paid/#tiers defs).
+
+export type ContentGateDefaults = {
+  audience: AudienceUnion;
+  // Null for an Unlock Content gate.
+  widerRelease: { timeline: WiderReleaseDelay; audience: AudienceUnion } | null;
+};
+
+// A content gate's options in the form the editor works with.
+export type ContentGateConfig = {
+  audience: GatePolicy;
+  widerRelease: {
+    timeline: WiderReleaseDelay;
+    audience: AudiencePolicy;
+  } | null;
+};
+
+export function toContentGateDefaults(
+  config: ContentGateConfig,
+): ContentGateDefaults {
+  return {
+    audience: toAudienceUnion(config.audience),
+    widerRelease: config.widerRelease && {
+      timeline: config.widerRelease.timeline,
+      audience: toAudienceUnion(config.widerRelease.audience),
+    },
+  };
+}
+
+// A stored content gate, or null when it isn't a valid one.
+export function readContentGateDefaults(
+  value: unknown,
+): ContentGateConfig | null {
+  const v = value as
+    | { audience?: unknown; widerRelease?: unknown }
+    | null
+    | undefined;
+  const audience = fromAudienceUnion(v?.audience);
+  // A gate's own audience can't be public; only its wider release can.
+  if (!audience || audience.audience === "public") return null;
+  if (v?.widerRelease == null) return { audience, widerRelease: null };
+  const release = v.widerRelease as { timeline?: unknown; audience?: unknown };
+  const releaseAudience = fromAudienceUnion(release.audience);
+  if (!isWiderReleaseDelay(release.timeline) || !releaseAudience) return null;
+  return {
+    audience,
+    widerRelease: { timeline: release.timeline, audience: releaseAudience },
+  };
+}
+
+// The publication's remembered gate, checked against the tiers it offers now:
+// retired tiers are dropped, and a choice that no longer admits anyone (a paid
+// gate with no paid tiers, a tier gate whose tiers are all gone) is discarded
+// so the caller falls back to its default.
+export function savedContentGate(
+  defaults: unknown,
+  activeTierIds: string[],
+): ContentGateConfig | null {
+  const saved = readContentGateDefaults(
+    (defaults as { contentGate?: unknown } | null | undefined)?.contentGate,
+  );
+  if (!saved) return null;
+  const audience = policyForTiers(saved.audience, activeTierIds);
+  if (!audience || audience.audience === "public") return null;
+  const releaseAudience =
+    saved.widerRelease &&
+    policyForTiers(saved.widerRelease.audience, activeTierIds);
+  return {
+    audience,
+    widerRelease:
+      saved.widerRelease && releaseAudience
+        ? { timeline: saved.widerRelease.timeline, audience: releaseAudience }
+        : null,
+  };
+}
+
+function policyForTiers(
+  policy: AudiencePolicy,
+  activeTierIds: string[],
+): AudiencePolicy | null {
+  if (policy.audience === "paid") return activeTierIds.length ? policy : null;
+  if (policy.audience !== "tiers") return policy;
+  const tierIds = policy.tierIds.filter((id) => activeTierIds.includes(id));
+  return tierIds.length ? { audience: "tiers", tierIds } : null;
+}

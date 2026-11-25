@@ -2269,6 +2269,7 @@ export type Database = {
           draft_leaflet: string | null
           identity_did: string
           indexed_at: string
+          defaults: Json
           name: string
           record: Json | null
           uri: string
@@ -2277,6 +2278,7 @@ export type Database = {
           draft_leaflet?: string | null
           identity_did: string
           indexed_at?: string
+          defaults?: Json
           name: string
           record?: Json | null
           uri: string
@@ -2285,6 +2287,7 @@ export type Database = {
           draft_leaflet?: string | null
           identity_did?: string
           indexed_at?: string
+          defaults?: Json
           name?: string
           record?: Json | null
           uri?: string

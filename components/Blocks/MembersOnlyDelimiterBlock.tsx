@@ -18,6 +18,7 @@ import {
 } from "src/membership";
 import { ToggleGroup } from "components/ToggleGroup";
 import { useSetGatePolicy } from "components/Memberships/useSetGatePolicy";
+import { useSaveContentGateDefaults } from "components/Memberships/useSaveContentGateDefaults";
 
 export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
   let isSelected = useIsBlockSelected(props.entityID);
@@ -130,11 +131,14 @@ function TierSelector(props: {
     publishedRelease && new Date(publishedRelease.at).getTime() <= Date.now()
       ? publishedRelease
       : null;
-  let setPolicy = (policy: GatePolicy) =>
+  let saveDefaults = useSaveContentGateDefaults(props.entityID);
+  let setPolicy = (policy: GatePolicy) => {
     setAudience(
       policy.audience,
       policy.audience === "tiers" ? policy.tierIds : [],
     );
+    saveDefaults({ audience: policy });
+  };
 
   let widerReleaseTimelineFact = useEntity(
     props.entityID,
@@ -151,20 +155,24 @@ function TierSelector(props: {
     ? "early-access"
     : "unlock";
 
-  let setWiderReleaseTimeline = (delay: WiderReleaseDelay) =>
+  let setWiderReleaseTimeline = (delay: WiderReleaseDelay) => {
     rep?.mutate.assertFact({
       entity: props.entityID,
       attribute: "block/members-only-wider-release-timeline",
       data: { type: "string", value: delay },
     });
+    saveDefaults({ timeline: delay });
+  };
 
   // Switching back to unlock keeps the wider-release audience fact, so
   // returning to early access restores the earlier choice.
   let setMode = (next: typeof mode) => {
     if (!rep || next === mode) return;
     if (next === "early-access") setWiderReleaseTimeline("week");
-    else if (widerReleaseTimelineFact)
+    else if (widerReleaseTimelineFact) {
       rep.mutate.retractFact({ factID: widerReleaseTimelineFact.id });
+      saveDefaults({ timeline: null });
+    }
   };
 
   // With no paid tiers, subscribers are the only audience — unless an older
@@ -285,13 +293,14 @@ function TierSelector(props: {
                       audience: "public",
                     }
                   }
-                  onChange={(value) =>
+                  onChange={(value) => {
                     rep?.mutate.assertFact({
                       entity: props.entityID,
                       attribute: "block/members-only-wider-release-audience",
                       data: { type: "audience-union", value },
-                    })
-                  }
+                    });
+                    saveDefaults({ widerReleaseAudience: value });
+                  }}
                 />
               </>
             )}

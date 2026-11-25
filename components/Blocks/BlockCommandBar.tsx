@@ -2,6 +2,7 @@ import { useState } from "react";
 import { blockCommands } from "./BlockCommands";
 import { useEntity, useReplicache } from "src/replicache";
 import { useBlocks } from "src/hooks/queries/useBlocks";
+import { savedContentGate } from "src/publicationDefaults";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import {
   useLeafletPublicationData,
@@ -42,11 +43,17 @@ export const BlockCommandBar = ({
   // required — without it the gate is for free subscribers.
   let membershipsEnabled =
     !!pub?.publications?.publication_membership_settings?.enabled;
-  let hasPaidTiers =
-    membershipsEnabled &&
-    (pub?.publications?.publication_membership_tiers ?? []).some(
-      (t) => t.active,
-    );
+  let activeTierIds = membershipsEnabled
+    ? (pub?.publications?.publication_membership_tiers ?? [])
+        .filter((t) => t.active)
+        .map((t) => t.id)
+    : [];
+  let hasPaidTiers = activeTierIds.length > 0;
+  // A new gate starts from the publication's last published one.
+  let lastContentGate = savedContentGate(
+    pub?.publications?.defaults,
+    activeTierIds,
+  );
   let firstPage = useEntity(rootEntity, "root/page")[0]?.data.value;
   let hasMembersDelimiter = useBlocks(props.parent).some(
     (b) => b.type === "members-only-delimiter",
@@ -119,7 +126,12 @@ export const BlockCommandBar = ({
           if (!command || !rep) return;
           await command.onSelect(
             rep,
-            { ...props, entity_set: entity_set.set, hasPaidTiers },
+            {
+              ...props,
+              entity_set: entity_set.set,
+              hasPaidTiers,
+              lastContentGate,
+            },
             undoManager,
           );
         });
@@ -141,7 +153,12 @@ export const BlockCommandBar = ({
                   if (!rep) return;
                   await result.onSelect(
                     rep,
-                    { ...props, entity_set: entity_set.set, hasPaidTiers },
+                    {
+                      ...props,
+                      entity_set: entity_set.set,
+                      hasPaidTiers,
+                      lastContentGate,
+                    },
                     undoManager,
                   );
                 })

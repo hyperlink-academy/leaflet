@@ -1,6 +1,7 @@
 "use client";
 import { useEntity, useReplicache } from "src/replicache";
 import { useBlocks } from "src/hooks/queries/useBlocks";
+import { useSaveContentGateDefaults } from "components/Memberships/useSaveContentGateDefaults";
 import { WIDER_RELEASE_DELAYS, isWiderReleaseDelay } from "src/membership";
 
 // Shown under Publish Date when the post's gate is in early access. Edits the
@@ -17,6 +18,7 @@ export function WiderReleaseDateOptions(props: {
     "block/members-only-wider-release-timeline",
   );
   let timeline = timelineFact?.data.value;
+  let saveDefaults = useSaveContentGateDefaults(delimiter?.entityID ?? null);
   if (!delimiter || !isWiderReleaseDelay(timeline)) return null;
 
   return (
@@ -27,12 +29,13 @@ export function WiderReleaseDateOptions(props: {
           className="text-secondary font-bold bg-transparent text-right hover:underline cursor-pointer"
           value={timeline}
           onChange={(e) => {
-            if (isWiderReleaseDelay(e.target.value))
-              rep?.mutate.assertFact({
-                entity: delimiter.entityID,
-                attribute: "block/members-only-wider-release-timeline",
-                data: { type: "string", value: e.target.value },
-              });
+            if (!isWiderReleaseDelay(e.target.value)) return;
+            rep?.mutate.assertFact({
+              entity: delimiter.entityID,
+              attribute: "block/members-only-wider-release-timeline",
+              data: { type: "string", value: e.target.value },
+            });
+            saveDefaults({ timeline: e.target.value });
           }}
         >
           {WIDER_RELEASE_DELAYS.map((d) => (

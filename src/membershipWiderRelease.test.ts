@@ -6,7 +6,7 @@ import {
   getMembersDelimiterGatePolicy,
   getWiderReleasePolicy,
   isEarlyAccessPending,
-  toWiderReleaseAudience,
+  toAudienceUnion,
   pageHasMembersDelimiter,
   truncateBlocksAtMembersDelimiter,
   widerReleaseTimeline,
@@ -28,7 +28,7 @@ function pages(delimiter: Record<string, unknown>) {
 
 const PUBLISHED = "2026-01-31T12:00:00.000Z";
 
-describe("toWiderReleaseAudience", () => {
+describe("toAudienceUnion", () => {
   test("round-trips through the parser", () => {
     const policies: AudiencePolicy[] = [
       { audience: "public" },
@@ -41,7 +41,7 @@ describe("toWiderReleaseAudience", () => {
         getWiderReleasePolicy({
           $type: DELIMITER,
           widerReleaseAt: PUBLISHED,
-          widerReleaseAudience: toWiderReleaseAudience(policy),
+          widerReleaseAudience: toAudienceUnion(policy),
         }),
       ).toEqual(policy);
     }

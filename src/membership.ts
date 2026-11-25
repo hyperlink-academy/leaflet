@@ -1,4 +1,5 @@
 import { ids } from "lexicons/api/lexicons";
+import type * as MembersOnlyDelimiterLex from "lexicons/api/types/pub/leaflet/blocks/membersOnlyDelimiter";
 import {
   getDocumentPages,
   type NormalizedDocument,
@@ -124,18 +125,45 @@ type MembersDelimiterBlock = {
   widerReleaseAudience?: { $type?: unknown; tierIds?: unknown };
 };
 
-const WIDER_RELEASE_AUDIENCE_TYPE = {
-  public: `${ids.PubLeafletBlocksMembersOnlyDelimiter}#public`,
-  subscribers: `${ids.PubLeafletBlocksMembersOnlyDelimiter}#subscribers`,
-  paid: `${ids.PubLeafletBlocksMembersOnlyDelimiter}#paid`,
-  tiers: `${ids.PubLeafletBlocksMembersOnlyDelimiter}#tiers`,
-} as const;
+// The $types of the lexicon's audience union (the membersOnlyDelimiter
+// defs), the shape audiences are stored in outside the editor. Built from the
+// NSID and checked against the generated def types, so a renamed lexicon or
+// def fails typechecking after lexgen.
+const DELIMITER_NSID = ids.PubLeafletBlocksMembersOnlyDelimiter;
+export const AUDIENCE_UNION_TYPE = {
+  public: `${DELIMITER_NSID}#public`,
+  subscribers: `${DELIMITER_NSID}#subscribers`,
+  paid: `${DELIMITER_NSID}#paid`,
+  tiers: `${DELIMITER_NSID}#tiers`,
+} as const satisfies {
+  public: Required<MembersOnlyDelimiterLex.Public>["$type"];
+  subscribers: Required<MembersOnlyDelimiterLex.Subscribers>["$type"];
+  paid: Required<MembersOnlyDelimiterLex.Paid>["$type"];
+  tiers: Required<MembersOnlyDelimiterLex.Tiers>["$type"];
+};
 
-// The record form of a wider-release audience.
-export function toWiderReleaseAudience(policy: AudiencePolicy) {
+export type AudienceUnion =
+  | { $type: (typeof AUDIENCE_UNION_TYPE)["public"] }
+  | { $type: (typeof AUDIENCE_UNION_TYPE)["subscribers"] }
+  | { $type: (typeof AUDIENCE_UNION_TYPE)["paid"] }
+  | { $type: (typeof AUDIENCE_UNION_TYPE)["tiers"]; tierIds: string[] };
+
+export function toAudienceUnion(policy: AudiencePolicy): AudienceUnion {
   return policy.audience === "tiers"
-    ? { $type: WIDER_RELEASE_AUDIENCE_TYPE.tiers, tierIds: policy.tierIds }
-    : { $type: WIDER_RELEASE_AUDIENCE_TYPE[policy.audience] };
+    ? { $type: AUDIENCE_UNION_TYPE.tiers, tierIds: policy.tierIds }
+    : { $type: AUDIENCE_UNION_TYPE[policy.audience] };
+}
+
+// Null for anything that isn't a valid member of the union.
+export function fromAudienceUnion(value: unknown): AudiencePolicy | null {
+  const type = (value as { $type?: unknown } | null | undefined)?.$type;
+  for (const audience of ["public", "subscribers", "paid"] as const)
+    if (type === AUDIENCE_UNION_TYPE[audience]) return { audience };
+  if (type === AUDIENCE_UNION_TYPE.tiers) {
+    const tierIds = stringIds((value as { tierIds?: unknown }).tierIds);
+    return tierIds ? { audience: "tiers", tierIds } : null;
+  }
+  return null;
 }
 
 function widerReleaseReached(b: MembersDelimiterBlock, now: number) {
@@ -156,14 +184,7 @@ function stringIds(value: unknown): string[] | null {
 export function getWiderReleasePolicy(block: unknown): AudiencePolicy | null {
   const b = block as MembersDelimiterBlock | null | undefined;
   if (!b || typeof b.widerReleaseAt !== "string") return null;
-  const type = b.widerReleaseAudience?.$type;
-  for (const audience of ["public", "subscribers", "paid"] as const)
-    if (type === WIDER_RELEASE_AUDIENCE_TYPE[audience]) return { audience };
-  if (type === WIDER_RELEASE_AUDIENCE_TYPE.tiers) {
-    const tierIds = stringIds(b.widerReleaseAudience?.tierIds);
-    return tierIds ? { audience: "tiers", tierIds } : null;
-  }
-  return null;
+  return fromAudienceUnion(b.widerReleaseAudience);
 }
 
 function findDelimiterBlock(blocks: unknown): MembersDelimiterBlock | null {
