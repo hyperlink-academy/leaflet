@@ -49,7 +49,7 @@ describe("processBlocksToPages", () => {
     });
     expect((pages[0] as any).blocks[0].block).toEqual({
       $type: "pub.leaflet.blocks.membersOnlyDelimiter",
-      audience: "paid",
+      audience: { $type: "pub.leaflet.audience#paid" },
     });
   });
 
@@ -83,10 +83,10 @@ describe("processBlocksToPages", () => {
     });
     expect((pages[0] as any).blocks[0].block).toEqual({
       $type: "pub.leaflet.blocks.membersOnlyDelimiter",
-      audience: "paid",
+      audience: { $type: "pub.leaflet.audience#paid" },
       widerReleaseAt: "2026-01-08T00:00:00.000Z",
       widerReleaseAudience: {
-        $type: "pub.leaflet.blocks.membersOnlyDelimiter#subscribers",
+        $type: "pub.leaflet.audience#subscribers",
       },
     });
   });

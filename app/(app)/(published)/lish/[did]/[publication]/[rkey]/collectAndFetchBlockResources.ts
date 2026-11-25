@@ -24,7 +24,7 @@ import { extractCodeBlocks } from "./extractCodeBlocks";
 import { fetchPollData, type PollData } from "./fetchPollData";
 import { fetchBskyPosts } from "src/utils/fetchBskyPosts";
 import { loadDocumentReplies, type DocumentReply } from "src/documentReplies";
-import { audienceTierIds } from "src/questionsAudience";
+import { readSubmissionAudience } from "src/questionsAudience";
 import {
   loadDocumentQuestions,
   type DocumentQuestion,
@@ -67,17 +67,13 @@ export async function collectAndFetchBlockResources({
   const audienceTiers = [
     ...new Set(
       pageBlocks.flatMap((b) => {
-        const block = b.block as {
-          $type: string;
-          audience?: unknown;
-          tierIds?: unknown;
-        };
+        const block = b.block as { $type: string; audience?: unknown };
         if (
           block.$type !== ids.PubLeafletBlocksQuestions &&
           block.$type !== ids.PubLeafletBlocksReply
         )
           return [];
-        return block.audience === "tiers" ? audienceTierIds(block) : [];
+        return readSubmissionAudience(block.audience).tierIds;
       }),
     ),
   ];

@@ -11,8 +11,7 @@ import {
 // publications.defaults holds editor choices a publication remembers so the
 // next one starts from them. Each section is read on its own and anything
 // invalid reads as absent, so a bad section never breaks the others.
-// Audiences are stored as the lexicon's audience union (the
-// membersOnlyDelimiter #public/#subscribers/#paid/#tiers defs).
+// Audiences are stored as the pub.leaflet.audience union.
 
 export type ContentGateDefaults = {
   audience: AudienceUnion;

@@ -1,4 +1,8 @@
-import type { GatePolicy } from "src/membership";
+import {
+  AUDIENCE_UNION_TYPE,
+  stringIds,
+  type GatePolicy,
+} from "src/membership";
 
 // Who a questions or reply block takes submissions from; see
 // pub.leaflet.blocks.questions and pub.leaflet.blocks.reply. Subscribers,
@@ -29,14 +33,40 @@ export function isMembershipAudience(audience: QuestionsAudience) {
   );
 }
 
-export function audienceTierIds(block: { tierIds?: unknown }): string[] {
-  return Array.isArray(block.tierIds)
-    ? [
-        ...new Set(
-          block.tierIds.filter((id): id is string => typeof id === "string"),
-        ),
-      ]
-    : [];
+export type SubmissionAudience = {
+  audience: QuestionsAudience;
+  // The block's tiers, for the "tiers" audience
+  tierIds: string[];
+};
+
+// A block's audience union; absent or unrecognised reads as anyone.
+export function readSubmissionAudience(value: unknown): SubmissionAudience {
+  const type = (value as { $type?: unknown } | null | undefined)?.$type;
+  for (const audience of [
+    "subscribers",
+    "paid",
+    "follows",
+    "followers",
+  ] as const)
+    if (type === AUDIENCE_UNION_TYPE[audience])
+      return { audience, tierIds: [] };
+  if (type === AUDIENCE_UNION_TYPE.tiers)
+    return {
+      audience: "tiers",
+      tierIds: stringIds((value as { tierIds?: unknown }).tierIds) ?? [],
+    };
+  return { audience: "anyone", tierIds: [] };
+}
+
+// Undefined for anyone, which the lexicon spells as an absent audience.
+export function toSubmissionAudienceUnion(
+  audience: QuestionsAudience,
+  tierIds: string[],
+) {
+  if (audience === "anyone") return undefined;
+  if (audience === "tiers")
+    return { $type: AUDIENCE_UNION_TYPE.tiers, tierIds };
+  return { $type: AUDIENCE_UNION_TYPE[audience] };
 }
 
 export type AudienceErrorType =

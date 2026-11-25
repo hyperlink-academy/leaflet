@@ -1265,6 +1265,55 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletAudience: {
+    lexicon: 1,
+    id: 'pub.leaflet.audience',
+    defs: {
+      public: {
+        type: 'object',
+        description: 'Anyone, signed in or not.',
+        properties: {},
+      },
+      subscribers: {
+        type: 'object',
+        description:
+          "All free and paid subscribers to the document's publication.",
+        properties: {},
+      },
+      paid: {
+        type: 'object',
+        description: "All paid members of the document's publication.",
+        properties: {},
+      },
+      tiers: {
+        type: 'object',
+        description: 'Active members of the selected paid tiers.',
+        required: ['tierIds'],
+        properties: {
+          tierIds: {
+            type: 'array',
+            items: {
+              type: 'string',
+              maxLength: 100,
+            },
+            maxLength: 50,
+            description:
+              'Paid tier ids that grant access. An empty selection grants no membership access.',
+          },
+        },
+      },
+      follows: {
+        type: 'object',
+        description: "Accounts the document's author follows.",
+        properties: {},
+      },
+      followers: {
+        type: 'object',
+        description: "Accounts following the document's author.",
+        properties: {},
+      },
+    },
+  },
   PubLeafletBlocksBlockquote: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.blockquote',
@@ -1732,18 +1781,13 @@ export const schemaDict = {
         required: ['audience'],
         properties: {
           audience: {
-            type: 'string',
-            knownValues: ['subscribers', 'paid', 'tiers'],
-            description:
-              'Whether access is available to all subscribers, all paid members, or selected paid tiers.',
-          },
-          tierIds: {
-            type: 'array',
-            items: {
-              type: 'string',
-            },
-            description:
-              'Paid tier ids that grant access when audience is tiers. An empty selection grants no membership access.',
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.audience#subscribers',
+              'lex:pub.leaflet.audience#paid',
+              'lex:pub.leaflet.audience#tiers',
+            ],
+            description: 'Who can read past the delimiter.',
           },
           widerReleaseAt: {
             type: 'string',
@@ -1754,43 +1798,13 @@ export const schemaDict = {
           widerReleaseAudience: {
             type: 'union',
             refs: [
-              'lex:pub.leaflet.blocks.membersOnlyDelimiter#public',
-              'lex:pub.leaflet.blocks.membersOnlyDelimiter#subscribers',
-              'lex:pub.leaflet.blocks.membersOnlyDelimiter#paid',
-              'lex:pub.leaflet.blocks.membersOnlyDelimiter#tiers',
+              'lex:pub.leaflet.audience#public',
+              'lex:pub.leaflet.audience#subscribers',
+              'lex:pub.leaflet.audience#paid',
+              'lex:pub.leaflet.audience#tiers',
             ],
             description:
               'Who can read past the delimiter once widerReleaseAt passes, in addition to the original audience. public removes the gate entirely.',
-          },
-        },
-      },
-      public: {
-        type: 'object',
-        description: 'Anyone, signed in or not.',
-        properties: {},
-      },
-      subscribers: {
-        type: 'object',
-        description: 'All free and paid subscribers.',
-        properties: {},
-      },
-      paid: {
-        type: 'object',
-        description: 'All paid members.',
-        properties: {},
-      },
-      tiers: {
-        type: 'object',
-        description: 'Members of the selected paid tiers.',
-        required: ['tierIds'],
-        properties: {
-          tierIds: {
-            type: 'array',
-            items: {
-              type: 'string',
-            },
-            description:
-              'Paid tier ids that grant access. An empty selection grants no membership access.',
           },
         },
       },
@@ -1976,27 +1990,16 @@ export const schemaDict = {
               'Label for the button readers use to submit a question.',
           },
           audience: {
-            type: 'string',
-            knownValues: [
-              'anyone',
-              'subscribers',
-              'paid',
-              'tiers',
-              'follows',
-              'followers',
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.audience#subscribers',
+              'lex:pub.leaflet.audience#paid',
+              'lex:pub.leaflet.audience#tiers',
+              'lex:pub.leaflet.audience#follows',
+              'lex:pub.leaflet.audience#followers',
             ],
             description:
-              "Who may ask: anyone, only subscribers to the document's publication, only its paid members, only members of the tiers in tierIds, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a question is asked.",
-          },
-          tierIds: {
-            type: 'array',
-            items: {
-              type: 'string',
-              maxLength: 100,
-            },
-            maxLength: 50,
-            description:
-              'Paid membership tier ids whose active members may ask when audience is tiers.',
+              'Who may ask. Absent means anyone. Checked when a question is asked.',
           },
           closesAt: {
             type: 'string',
@@ -2067,27 +2070,16 @@ export const schemaDict = {
               "Render each reply in its own publication's theme. Defaults to true.",
           },
           audience: {
-            type: 'string',
-            knownValues: [
-              'anyone',
-              'subscribers',
-              'paid',
-              'tiers',
-              'follows',
-              'followers',
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.audience#subscribers',
+              'lex:pub.leaflet.audience#paid',
+              'lex:pub.leaflet.audience#tiers',
+              'lex:pub.leaflet.audience#follows',
+              'lex:pub.leaflet.audience#followers',
             ],
             description:
-              "Who may reply: anyone, only subscribers to the document's publication, only its paid members, only members of the tiers in tierIds, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a reply is submitted.",
-          },
-          tierIds: {
-            type: 'array',
-            items: {
-              type: 'string',
-              maxLength: 100,
-            },
-            maxLength: 50,
-            description:
-              'Paid membership tier ids whose active members may reply when audience is tiers.',
+              'Who may reply. Absent means anyone. Checked when a reply is submitted.',
           },
           closesAt: {
             type: 'string',
@@ -4018,6 +4010,7 @@ export const ids = {
   PartsPageMentionConfig: 'parts.page.mention.config',
   PartsPageMentionSearch: 'parts.page.mention.search',
   PartsPageMentionService: 'parts.page.mention.service',
+  PubLeafletAudience: 'pub.leaflet.audience',
   PubLeafletBlocksBlockquote: 'pub.leaflet.blocks.blockquote',
   PubLeafletBlocksBskyPost: 'pub.leaflet.blocks.bskyPost',
   PubLeafletBlocksButton: 'pub.leaflet.blocks.button',

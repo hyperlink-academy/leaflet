@@ -39,9 +39,9 @@ describe("headersAllowFraming", () => {
 
   test("frame-ancestors supersedes X-Frame-Options", () => {
     expect(headersAllowFraming("DENY", "frame-ancestors *")).toBe(true);
-    expect(headersAllowFraming(null, "default-src 'self'; frame-ancestors 'none'")).toBe(
-      false,
-    );
+    expect(
+      headersAllowFraming(null, "default-src 'self'; frame-ancestors 'none'"),
+    ).toBe(false);
   });
 
   test("CSP without frame-ancestors falls back to X-Frame-Options", () => {

@@ -1,5 +1,5 @@
 "use client";
-import { audienceTierIds, questionsAudience } from "src/questionsAudience";
+import { readSubmissionAudience } from "src/questionsAudience";
 import {
   blockSpacingClassName,
   type SpacingKind,
@@ -243,10 +243,8 @@ export let Block = ({
         newsletterMode: document.publication.newsletterMode,
       }
     : undefined;
-  let blockTierNames = (block: { tierIds?: unknown }) =>
-    audienceTierIds(block).flatMap((id) =>
-      tierNames?.[id] ? [tierNames[id]] : [],
-    );
+  let blockTierNames = (tierIds: string[]) =>
+    tierIds.flatMap((id) => (tierNames?.[id] ? [tierNames[id]] : []));
   let currentPublicationUri = document?.publication?.uri ?? null;
   let blockProps = {
     style: {
@@ -503,6 +501,7 @@ export let Block = ({
     },
     "pub.leaflet.blocks.reply": (block) => {
       if (!document || preview) return null;
+      let submission = readSubmissionAudience(block.audience);
       return (
         <div className={className} {...blockProps}>
           <InteractionBlockFrame
@@ -517,9 +516,9 @@ export let Block = ({
                 buttonText={block.buttonText}
                 prompt={block.promptText || DEFAULT_REPLY_PROMPT_TEXT}
                 showThemes={block.showPublicationTheme !== false}
-                audience={questionsAudience(block.audience)}
-                tierIds={audienceTierIds(block)}
-                tierNames={blockTierNames(block)}
+                audience={submission.audience}
+                tierIds={submission.tierIds}
+                tierNames={blockTierNames(submission.tierIds)}
                 closesAt={block.closesAt}
                 publication={interactionPublication}
               />
@@ -530,6 +529,7 @@ export let Block = ({
     },
     "pub.leaflet.blocks.questions": (block) => {
       if (!document || preview) return null;
+      let submission = readSubmissionAudience(block.audience);
       return (
         <div className={className} {...blockProps}>
           <InteractionBlockFrame
@@ -542,9 +542,9 @@ export let Block = ({
                 block={block.key ?? null}
                 initialQuestions={questionData}
                 buttonText={block.buttonText}
-                audience={questionsAudience(block.audience)}
-                tierIds={audienceTierIds(block)}
-                tierNames={blockTierNames(block)}
+                audience={submission.audience}
+                tierIds={submission.tierIds}
+                tierNames={blockTierNames(submission.tierIds)}
                 closesAt={block.closesAt}
                 showPending={!!block.showPending}
                 publication={interactionPublication}

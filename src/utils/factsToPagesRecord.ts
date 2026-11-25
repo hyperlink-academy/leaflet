@@ -9,7 +9,10 @@ import * as base64 from "base64-js";
 import { $Typed, UnicodeString } from "@atproto/api";
 import { BlobRef } from "@atproto/lexicon";
 import { DEFAULT_PAGE_LINK_DISPLAY } from "src/utils/pageLinkDisplay";
-import { isQuestionsAudience } from "src/questionsAudience";
+import {
+  isQuestionsAudience,
+  toSubmissionAudienceUnion,
+} from "src/questionsAudience";
 
 import {
   PubLeafletBlocksBlockquote,
@@ -330,8 +333,9 @@ export async function processBlocksToPages(opts: {
             : "paid";
       const block: $Typed<PubLeafletBlocksMembersOnlyDelimiter.Main> = {
         $type: ids.PubLeafletBlocksMembersOnlyDelimiter,
-        audience,
-        ...(audience === "tiers" && { tierIds }),
+        audience: toAudienceUnion(
+          audience === "tiers" ? { audience, tierIds } : { audience },
+        ),
       };
       const [timelineFact] = scan.eav(
         b.entityID,
@@ -637,20 +641,22 @@ export async function processBlocksToPages(opts: {
       const [showTheme] = scan.eav(b.entityID, "reply/show-publication-theme");
       const [audience] = scan.eav(b.entityID, "reply/audience");
       const [closesAt] = scan.eav(b.entityID, "reply/closes-at");
-      const audienceTiers = scan.eav(b.entityID, "reply/audience-tier");
+      const submissionAudience = isQuestionsAudience(audience?.data.value)
+        ? toSubmissionAudienceUnion(audience.data.value, [
+            ...new Set(
+              scan
+                .eav(b.entityID, "reply/audience-tier")
+                .map((f) => f.data.value),
+            ),
+          ])
+        : undefined;
       const block: $Typed<PubLeafletBlocksReply.Main> = {
         $type: "pub.leaflet.blocks.reply",
         ...(buttonText?.data.value && { buttonText: buttonText.data.value }),
         ...(promptText?.data.value && { promptText: promptText.data.value }),
         ...(showTheme?.data.value === false && { showPublicationTheme: false }),
-        ...(isQuestionsAudience(audience?.data.value) &&
-          audience.data.value !== "anyone" && {
-            audience: audience.data.value,
-          }),
+        ...(submissionAudience && { audience: submissionAudience }),
         ...(closesAt?.data.value && { closesAt: closesAt.data.value }),
-        ...(audience?.data.value === "tiers" && {
-          tierIds: [...new Set(audienceTiers.map((f) => f.data.value))],
-        }),
         key: b.entityID,
       };
       return block;
@@ -659,19 +665,21 @@ export async function processBlocksToPages(opts: {
       const [buttonText] = scan.eav(b.entityID, "questions/button-text");
       const [audience] = scan.eav(b.entityID, "questions/audience");
       const [closesAt] = scan.eav(b.entityID, "questions/closes-at");
-      const audienceTiers = scan.eav(b.entityID, "questions/audience-tier");
+      const submissionAudience = isQuestionsAudience(audience?.data.value)
+        ? toSubmissionAudienceUnion(audience.data.value, [
+            ...new Set(
+              scan
+                .eav(b.entityID, "questions/audience-tier")
+                .map((f) => f.data.value),
+            ),
+          ])
+        : undefined;
       const [showPending] = scan.eav(b.entityID, "questions/show-pending");
       const block: $Typed<PubLeafletBlocksQuestions.Main> = {
         $type: "pub.leaflet.blocks.questions",
         ...(buttonText?.data.value && { buttonText: buttonText.data.value }),
-        ...(isQuestionsAudience(audience?.data.value) &&
-          audience.data.value !== "anyone" && {
-            audience: audience.data.value,
-          }),
+        ...(submissionAudience && { audience: submissionAudience }),
         ...(closesAt?.data.value && { closesAt: closesAt.data.value }),
-        ...(audience?.data.value === "tiers" && {
-          tierIds: [...new Set(audienceTiers.map((f) => f.data.value))],
-        }),
         ...(showPending?.data.value && { showPending: true }),
         key: b.entityID,
       };

@@ -12,8 +12,7 @@ import { findDocumentBlocks } from "src/utils/documentHasBlock";
 import {
   audienceErrorType,
   audienceGatePolicy,
-  audienceTierIds,
-  questionsAudience,
+  readSubmissionAudience,
   type AudienceErrorType,
   type QuestionsAudience,
 } from "src/questionsAudience";
@@ -60,17 +59,11 @@ export async function submissionAudienceError(
   supabase: SupabaseClient<Database>,
   subject: string,
   did: string,
-  block: { audience?: unknown; tierIds?: unknown },
+  block: { audience?: unknown },
 ): Promise<AudienceErrorType | null> {
-  const audience = questionsAudience(block.audience);
+  const { audience, tierIds } = readSubmissionAudience(block.audience);
   if (audience === "anyone") return null;
-  return (await canAskQuestion(
-    supabase,
-    subject,
-    did,
-    audience,
-    audienceTierIds(block),
-  ))
+  return (await canAskQuestion(supabase, subject, did, audience, tierIds))
     ? null
     : audienceErrorType(audience);
 }

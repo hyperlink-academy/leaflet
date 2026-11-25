@@ -12,6 +12,7 @@ import {
 } from "src/membership";
 
 const DELIMITER = "pub.leaflet.blocks.membersOnlyDelimiter";
+const AUDIENCE = "pub.leaflet.audience";
 
 function gatedPages() {
   return [
@@ -21,7 +22,9 @@ function gatedPages() {
       blocks: [
         { block: { $type: "pub.leaflet.blocks.text", plaintext: "preview" } },
         { block: { $type: "pub.leaflet.blocks.page", id: "free-sub" } },
-        { block: { $type: DELIMITER, audience: "paid" } },
+        {
+          block: { $type: DELIMITER, audience: { $type: `${AUDIENCE}#paid` } },
+        },
         { block: { $type: "pub.leaflet.blocks.text", plaintext: "paid" } },
         { block: { $type: "pub.leaflet.blocks.page", id: "paid-sub" } },
       ],
@@ -109,15 +112,22 @@ describe("gate policy parsing", () => {
     ["subscribers", { audience: "subscribers" }],
     ["paid", { audience: "paid" }],
   ] as const)("parses the %s audience", (audience, expected) => {
-    expect(getMembersDelimiterGatePolicy(blocksWith({ audience }))).toEqual(
-      expected,
-    );
+    expect(
+      getMembersDelimiterGatePolicy(
+        blocksWith({ audience: { $type: `${AUDIENCE}#${audience}` } }),
+      ),
+    ).toEqual(expected);
   });
 
   test("parses and deduplicates selected paid tier ids", () => {
     expect(
       getMembersDelimiterGatePolicy(
-        blocksWith({ audience: "tiers", tierIds: ["plus", "plus", "pro"] }),
+        blocksWith({
+          audience: {
+            $type: `${AUDIENCE}#tiers`,
+            tierIds: ["plus", "plus", "pro"],
+          },
+        }),
       ),
     ).toEqual({ audience: "tiers", tierIds: ["plus", "pro"] });
   });
@@ -125,22 +135,37 @@ describe("gate policy parsing", () => {
   test("keeps an empty selected-tier policy explicit", () => {
     expect(
       getMembersDelimiterGatePolicy(
-        blocksWith({ audience: "tiers", tierIds: [] }),
+        blocksWith({ audience: { $type: `${AUDIENCE}#tiers`, tierIds: [] } }),
       ),
     ).toEqual({ audience: "tiers", tierIds: [] });
   });
 
   test("rejects unknown and malformed policies", () => {
     expect(
-      getMembersDelimiterGatePolicy(blocksWith({ audience: "unknown" })),
-    ).toBe(null);
-    expect(
       getMembersDelimiterGatePolicy(
-        blocksWith({ audience: "tiers", tierIds: "plus" }),
+        blocksWith({ audience: { $type: `${AUDIENCE}#unknown` } }),
       ),
     ).toBe(null);
     expect(
-      getMembersDelimiterGatePolicy(blocksWith({ audience: "tiers" })),
+      getMembersDelimiterGatePolicy(
+        blocksWith({
+          audience: { $type: `${AUDIENCE}#tiers`, tierIds: "plus" },
+        }),
+      ),
+    ).toBe(null);
+    expect(
+      getMembersDelimiterGatePolicy(
+        blocksWith({ audience: { $type: `${AUDIENCE}#tiers` } }),
+      ),
+    ).toBe(null);
+    // A gate's own audience can't be public; only its wider release can.
+    expect(
+      getMembersDelimiterGatePolicy(
+        blocksWith({ audience: { $type: `${AUDIENCE}#public` } }),
+      ),
+    ).toBe(null);
+    expect(
+      getMembersDelimiterGatePolicy(blocksWith({ audience: "paid" })),
     ).toBe(null);
   });
 
@@ -156,9 +181,9 @@ describe("gate policy parsing", () => {
     expect(getMembersDelimiterGatePolicy(blocksWith({ tiers: [] }))).toEqual({
       audience: "paid",
     });
-    expect(
-      getMembersDelimiterGatePolicy(blocksWith({ tiers: "plus" })),
-    ).toBe(null);
+    expect(getMembersDelimiterGatePolicy(blocksWith({ tiers: "plus" }))).toBe(
+      null,
+    );
   });
 
   test("reads the policy from the document's first page", () => {
@@ -174,8 +199,10 @@ describe("gate policy parsing", () => {
             $type: "pub.leaflet.pages.linearDocument",
             id: "root",
             blocks: blocksWith({
-              audience: "tiers",
-              tierIds: ["plus", "pro"],
+              audience: {
+                $type: `${AUDIENCE}#tiers`,
+                tierIds: ["plus", "pro"],
+              },
             }),
           },
         ],

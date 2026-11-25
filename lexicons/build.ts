@@ -10,6 +10,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { PubLeafletRichTextFacet } from "./src/facet";
 import { PubLeafletComment } from "./src/comment";
+import { PubLeafletAudience } from "./src/audience";
 import { PubLeafletAuthFullPermissions } from "./src/authFullPermissions";
 import { PubLeafletContent } from "./src/content";
 import { PubLeafletPublicationPage } from "./src/publicationPage";
@@ -27,6 +28,7 @@ const lexicons = [
   PubLeafletContent,
   PubLeafletPublicationPage,
   PubLeafletComment,
+  PubLeafletAudience,
   PubLeafletRichTextFacet,
   PubLeafletAuthFullPermissions,
   PageLexicons.PubLeafletPagesLinearDocument,

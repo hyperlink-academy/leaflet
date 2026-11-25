@@ -1,5 +1,5 @@
 import { ids } from "lexicons/api/lexicons";
-import type * as MembersOnlyDelimiterLex from "lexicons/api/types/pub/leaflet/blocks/membersOnlyDelimiter";
+import type * as AudienceLex from "lexicons/api/types/pub/leaflet/audience";
 import {
   getDocumentPages,
   type NormalizedDocument,
@@ -129,7 +129,6 @@ export function widerReleaseAudience(
 type MembersDelimiterBlock = {
   $type?: string;
   audience?: unknown;
-  tierIds?: unknown;
   // Pre-audience lexicon shape: absent tiers meant every paid tier, a
   // non-empty list restricted to those tiers.
   tiers?: unknown;
@@ -137,21 +136,25 @@ type MembersDelimiterBlock = {
   widerReleaseAudience?: { $type?: unknown; tierIds?: unknown };
 };
 
-// The $types of the lexicon's audience union (the membersOnlyDelimiter
-// defs), the shape audiences are stored in outside the editor. Built from the
-// NSID and checked against the generated def types, so a renamed lexicon or
-// def fails typechecking after lexgen.
-const DELIMITER_NSID = ids.PubLeafletBlocksMembersOnlyDelimiter;
+// The $types of the pub.leaflet.audience union, the shape audiences are
+// stored in outside the editor. Built from the NSID and checked against the
+// generated def types, so a renamed lexicon or def fails typechecking after
+// lexgen.
+const AUDIENCE_NSID = ids.PubLeafletAudience;
 export const AUDIENCE_UNION_TYPE = {
-  public: `${DELIMITER_NSID}#public`,
-  subscribers: `${DELIMITER_NSID}#subscribers`,
-  paid: `${DELIMITER_NSID}#paid`,
-  tiers: `${DELIMITER_NSID}#tiers`,
+  public: `${AUDIENCE_NSID}#public`,
+  subscribers: `${AUDIENCE_NSID}#subscribers`,
+  paid: `${AUDIENCE_NSID}#paid`,
+  tiers: `${AUDIENCE_NSID}#tiers`,
+  follows: `${AUDIENCE_NSID}#follows`,
+  followers: `${AUDIENCE_NSID}#followers`,
 } as const satisfies {
-  public: Required<MembersOnlyDelimiterLex.Public>["$type"];
-  subscribers: Required<MembersOnlyDelimiterLex.Subscribers>["$type"];
-  paid: Required<MembersOnlyDelimiterLex.Paid>["$type"];
-  tiers: Required<MembersOnlyDelimiterLex.Tiers>["$type"];
+  public: Required<AudienceLex.Public>["$type"];
+  subscribers: Required<AudienceLex.Subscribers>["$type"];
+  paid: Required<AudienceLex.Paid>["$type"];
+  tiers: Required<AudienceLex.Tiers>["$type"];
+  follows: Required<AudienceLex.Follows>["$type"];
+  followers: Required<AudienceLex.Followers>["$type"];
 };
 
 export type AudienceUnion =
@@ -184,7 +187,7 @@ function widerReleaseReached(b: MembersDelimiterBlock, now: number) {
   return !isNaN(at) && at <= now;
 }
 
-function stringIds(value: unknown): string[] | null {
+export function stringIds(value: unknown): string[] | null {
   if (!Array.isArray(value)) return null;
   return [
     ...new Set(value.filter((id): id is string => typeof id === "string")),
@@ -310,20 +313,10 @@ export function getMembersDelimiterGatePolicy(
 }
 
 function parseBaseGatePolicy(block: MembersDelimiterBlock): GatePolicy | null {
-  if (block.audience === "subscribers") return { audience: "subscribers" };
-  if (block.audience === "paid") return { audience: "paid" };
-  if (block.audience === "tiers") {
-    if (!Array.isArray(block.tierIds)) return null;
-    return {
-      audience: "tiers",
-      tierIds: [
-        ...new Set(
-          block.tierIds.filter((id): id is string => typeof id === "string"),
-        ),
-      ],
-    };
+  if (block.audience !== undefined) {
+    const policy = fromAudienceUnion(block.audience);
+    return policy && policy.audience !== "public" ? policy : null;
   }
-  if (block.audience !== undefined) return null;
   if (block.tiers === undefined) return { audience: "paid" };
   if (!Array.isArray(block.tiers)) return null;
   const tierIds = [

@@ -16,6 +16,7 @@ import {
 } from "src/membership";
 
 const DELIMITER = "pub.leaflet.blocks.membersOnlyDelimiter";
+const AUDIENCE = "pub.leaflet.audience";
 const TEXT = { block: { $type: "pub.leaflet.blocks.text", plaintext: "x" } };
 
 function pages(delimiter: Record<string, unknown>) {
@@ -74,9 +75,9 @@ describe("early access gating", () => {
 
   test("a public wider release lifts the gate only once widerReleaseAt passes", () => {
     const p = pages({
-      audience: "subscribers",
+      audience: { $type: `${AUDIENCE}#subscribers` },
       widerReleaseAt,
-      widerReleaseAudience: { $type: `${DELIMITER}#public` },
+      widerReleaseAudience: { $type: `${AUDIENCE}#public` },
     });
     expect(pageHasMembersDelimiter(p[0], before)).toBe(true);
     expect(pageHasMembersDelimiter(p[0], after)).toBe(false);
@@ -90,10 +91,9 @@ describe("early access gating", () => {
 
   test("a non-public wider release widens the policy without lifting the gate", () => {
     const p = pages({
-      audience: "tiers",
-      tierIds: ["a"],
+      audience: { $type: `${AUDIENCE}#tiers`, tierIds: ["a"] },
       widerReleaseAt,
-      widerReleaseAudience: { $type: `${DELIMITER}#subscribers` },
+      widerReleaseAudience: { $type: `${AUDIENCE}#subscribers` },
     });
     expect(getMembersDelimiterGatePolicy(p[0].blocks, before)).toEqual({
       audience: "tiers",
@@ -107,9 +107,9 @@ describe("early access gating", () => {
 
   test("a narrower delayed audience never removes readers", () => {
     const p = pages({
-      audience: "subscribers",
+      audience: { $type: `${AUDIENCE}#subscribers` },
       widerReleaseAt,
-      widerReleaseAudience: { $type: `${DELIMITER}#tiers`, tierIds: ["a"] },
+      widerReleaseAudience: { $type: `${AUDIENCE}#tiers`, tierIds: ["a"] },
     });
     expect(getMembersDelimiterGatePolicy(p[0].blocks, after)).toEqual({
       audience: "subscribers",
@@ -118,19 +118,21 @@ describe("early access gating", () => {
 
   test("early access is pending only before widerReleaseAt", () => {
     const p = pages({
-      audience: "paid",
+      audience: { $type: `${AUDIENCE}#paid` },
       widerReleaseAt,
-      widerReleaseAudience: { $type: `${DELIMITER}#public` },
+      widerReleaseAudience: { $type: `${AUDIENCE}#public` },
     });
     expect(isEarlyAccessPending(p[0].blocks, before)).toBe(true);
     expect(isEarlyAccessPending(p[0].blocks, after)).toBe(false);
-    expect(isEarlyAccessPending(pages({ audience: "paid" })[0].blocks)).toBe(
-      false,
-    );
+    expect(
+      isEarlyAccessPending(
+        pages({ audience: { $type: `${AUDIENCE}#paid` } })[0].blocks,
+      ),
+    ).toBe(false);
   });
 
   test("an Unlock Content gate is unaffected by time", () => {
-    const p = pages({ audience: "paid" });
+    const p = pages({ audience: { $type: `${AUDIENCE}#paid` } });
     const muchLater = after + 365 * 24 * 60 * 60 * 1000;
     expect(pageHasMembersDelimiter(p[0], muchLater)).toBe(true);
     expect(getMembersDelimiterGatePolicy(p[0].blocks, muchLater)).toEqual({
@@ -144,8 +146,8 @@ describe("early access gating", () => {
 
   test("a wider-release audience without widerReleaseAt is ignored", () => {
     const p = pages({
-      audience: "paid",
-      widerReleaseAudience: { $type: `${DELIMITER}#public` },
+      audience: { $type: `${AUDIENCE}#paid` },
+      widerReleaseAudience: { $type: `${AUDIENCE}#public` },
     });
     expect(pageHasMembersDelimiter(p[0], after)).toBe(true);
     expect(isEarlyAccessPending(p[0].blocks, before)).toBe(false);

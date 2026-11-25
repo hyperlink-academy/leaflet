@@ -3,7 +3,10 @@ import type { OAuthSession } from "@atproto/oauth-client-node";
 import { loggedFetchHandler } from "./loggedFetchHandler";
 
 const session = (res: Response) =>
-  ({ did: "did:plc:a", fetchHandler: async () => res }) as unknown as OAuthSession;
+  ({
+    did: "did:plc:a",
+    fetchHandler: async () => res,
+  }) as unknown as OAuthSession;
 
 describe("loggedFetchHandler", () => {
   it("logs a failed response with the PDS reply and leaves it readable", async () => {

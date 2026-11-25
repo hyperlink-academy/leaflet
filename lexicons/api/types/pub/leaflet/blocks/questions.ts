@@ -9,6 +9,7 @@ import {
   is$typed as _is$typed,
   type OmitKey,
 } from '../../../../util'
+import type * as PubLeafletAudience from '../audience'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -19,17 +20,13 @@ export interface Main {
   $type?: 'pub.leaflet.blocks.questions'
   /** Label for the button readers use to submit a question. */
   buttonText?: string
-  /** Who may ask: anyone, only subscribers to the document's publication, only its paid members, only members of the tiers in tierIds, only accounts the author follows, or only accounts following the author. Defaults to anyone. Checked when a question is asked. */
   audience?:
-    | 'anyone'
-    | 'subscribers'
-    | 'paid'
-    | 'tiers'
-    | 'follows'
-    | 'followers'
-    | (string & {})
-  /** Paid membership tier ids whose active members may ask when audience is tiers. */
-  tierIds?: string[]
+    | $Typed<PubLeafletAudience.Subscribers>
+    | $Typed<PubLeafletAudience.Paid>
+    | $Typed<PubLeafletAudience.Tiers>
+    | $Typed<PubLeafletAudience.Follows>
+    | $Typed<PubLeafletAudience.Followers>
+    | { $type: string }
   /** When the block stops taking questions. Absent means it never closes. Checked when a question is submitted. */
   closesAt?: string
   /** Show readers questions the author hasn't accepted, answered or hidden yet. Defaults to false. */

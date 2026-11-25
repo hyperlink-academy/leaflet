@@ -28,10 +28,10 @@ function record(widerReleaseAt?: string) {
           {
             block: {
               $type: DELIMITER,
-              audience: "paid",
+              audience: { $type: "pub.leaflet.audience#paid" },
               ...(widerReleaseAt && {
                 widerReleaseAt,
-                widerReleaseAudience: { $type: `${DELIMITER}#public` },
+                widerReleaseAudience: { $type: "pub.leaflet.audience#public" },
               }),
             },
           },
