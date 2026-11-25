@@ -847,10 +847,10 @@ export const publication_subscriptions = pgTable("publication_subscriptions", {
 });
 
 export const publications = pgTable("publications", {
+	defaults: jsonb("defaults").default({}).notNull(),
 	draft_leaflet: uuid("draft_leaflet").references(() => permission_tokens.id),
 	identity_did: text("identity_did").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
 	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	defaults: jsonb("defaults").default({}).notNull(),
 	name: text("name").notNull(),
 	record: jsonb("record"),
 	uri: text("uri").primaryKey().notNull(),
