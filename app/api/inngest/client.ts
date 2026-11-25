@@ -113,6 +113,12 @@ export const events = {
       wider_release_at: string;
     }>(),
   }),
+  postWiderReleasePdsWriteRequested: eventType(
+    "post/wider_release.pds_write.requested",
+    {
+      schema: staticSchema<{ document_uri: string; wider_release_at: string }>(),
+    },
+  ),
   reviewAccountTouched: eventType("review/account.touched", {
     schema: staticSchema<{ did: string; cause: string }>(),
   }),

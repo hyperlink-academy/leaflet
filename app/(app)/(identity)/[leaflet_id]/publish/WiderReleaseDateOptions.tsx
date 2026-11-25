@@ -7,6 +7,7 @@ import {
   WIDER_RELEASE_DELAYS,
   getDocumentWiderRelease,
   isWiderReleaseDelay,
+  isWiderReleasePassed,
   isWiderReleaseTimelinePast,
 } from "src/membership";
 
@@ -26,12 +27,14 @@ export function WiderReleaseDateOptions(props: {
     "block/members-only-wider-release-timeline",
   );
   let timeline = timelineFact?.data.value;
-  let saveDefaults = useSaveContentGateDefaults(delimiter?.entityID ?? null);
+  let { markChanged, save: saveDefaults } = useSaveContentGateDefaults(
+    delimiter?.entityID ?? null,
+  );
   // Publish keeps a release that has passed, so it can't be changed here.
   let { normalizedDocument } = useLeafletPublicationData();
   let publishedRelease = getDocumentWiderRelease(normalizedDocument);
   let passedAt =
-    publishedRelease && new Date(publishedRelease.at).getTime() <= Date.now()
+    isWiderReleasePassed(publishedRelease)
       ? new Date(publishedRelease.at)
       : null;
   if (!delimiter || !isWiderReleaseDelay(timeline)) return null;
@@ -60,8 +63,9 @@ export function WiderReleaseDateOptions(props: {
                 attribute: "block/members-only-wider-release-timeline",
                 data: { type: "string", value: e.target.value },
               });
-              saveDefaults({ timeline: e.target.value });
+              markChanged();
             }}
+            onBlur={saveDefaults}
           >
             {WIDER_RELEASE_DELAYS.map((d) => (
               <option

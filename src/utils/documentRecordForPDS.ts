@@ -50,11 +50,11 @@ function markLinkBlobs(value: unknown): unknown {
 export async function documentRecordForPDS<T extends { $type: string }>(
   record: T,
   agent: AtpBaseClient,
+  upload: (url: string) => Promise<JsonBlob> = (url) =>
+    uploadBlobFromUrl(agent, url),
 ): Promise<T> {
   const json = markLinkBlobs(lexToJson(truncateDocumentRecordForPDS(record)));
-  const { record: resolved } = await resolveBlobLinks(json, (url) =>
-    uploadBlobFromUrl(agent, url),
-  );
+  const { record: resolved } = await resolveBlobLinks(json, upload);
   const forPds = jsonToLex(resolved as Parameters<typeof jsonToLex>[0]) as T;
   if (forPds.$type !== "site.standard.document") return forPds;
   return (await maybeOffloadPagesToBlob(

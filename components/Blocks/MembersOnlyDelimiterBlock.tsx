@@ -11,6 +11,7 @@ import {
   WIDER_RELEASE_DELAYS,
   getDocumentWiderRelease,
   isWiderReleaseDelay,
+  isWiderReleasePassed,
   isWiderReleaseTimelinePast,
   widerReleaseAudience,
   type AudiencePolicy,
@@ -130,16 +131,18 @@ function TierSelector(props: {
   let { normalizedDocument } = useLeafletPublicationData();
   let publishedRelease = getDocumentWiderRelease(normalizedDocument);
   let pastRelease =
-    publishedRelease && new Date(publishedRelease.at).getTime() <= Date.now()
+    isWiderReleasePassed(publishedRelease)
       ? publishedRelease
       : null;
-  let saveDefaults = useSaveContentGateDefaults(props.entityID);
+  let { markChanged, save: saveDefaults } = useSaveContentGateDefaults(
+    props.entityID,
+  );
   let setPolicy = (policy: GatePolicy) => {
     setAudience(
       policy.audience,
       policy.audience === "tiers" ? policy.tierIds : [],
     );
-    saveDefaults({ audience: policy });
+    markChanged();
   };
 
   let widerReleaseTimelineFact = useEntity(
@@ -163,7 +166,7 @@ function TierSelector(props: {
       attribute: "block/members-only-wider-release-timeline",
       data: { type: "string", value: delay },
     });
-    saveDefaults({ timeline: delay });
+    markChanged();
   };
 
   // Switching back to unlock keeps the wider-release audience fact, so
@@ -173,7 +176,7 @@ function TierSelector(props: {
     if (next === "early-access") setWiderReleaseTimeline("week");
     else if (widerReleaseTimelineFact) {
       rep.mutate.retractFact({ factID: widerReleaseTimelineFact.id });
-      saveDefaults({ timeline: null });
+      markChanged();
     }
   };
 
@@ -195,6 +198,9 @@ function TierSelector(props: {
       side="top"
       align="center"
       className="w-full sm:w-sm min-w-0 p-0!"
+      onOpenChange={(open) => {
+        if (!open) saveDefaults();
+      }}
       trigger={
         <button
           type="button"
@@ -309,7 +315,7 @@ function TierSelector(props: {
                   attribute: "block/members-only-wider-release-audience",
                   data: { type: "audience-union", value },
                 });
-                saveDefaults({ widerReleaseAudience: value });
+                markChanged();
               }}
             />
           </>

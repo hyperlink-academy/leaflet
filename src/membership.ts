@@ -244,6 +244,15 @@ export function isWiderReleasePending(
   return !isNaN(at) && at > now;
 }
 
+export function isWiderReleasePassed(
+  release: WiderRelease | null | undefined,
+  now: number = Date.now(),
+): release is WiderRelease {
+  if (!release) return false;
+  const at = new Date(release.at).getTime();
+  return !isNaN(at) && at <= now;
+}
+
 // Whether a post still in early access will open to this reader at its wider
 // release.
 export function widerReleaseReaches(

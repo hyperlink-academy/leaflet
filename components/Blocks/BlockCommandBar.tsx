@@ -49,7 +49,7 @@ export const BlockCommandBar = ({
         .map((t) => t.id)
     : [];
   let hasPaidTiers = activeTierIds.length > 0;
-  // A new gate starts from the publication's last published one.
+  // A new gate starts from the options of the publication's last edited one.
   let lastContentGate = savedContentGate(
     pub?.publications?.defaults,
     activeTierIds,

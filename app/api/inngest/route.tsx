@@ -15,7 +15,10 @@ import { write_records_to_pds } from "./functions/write_records_to_pds";
 import { delete_records_from_pds } from "./functions/delete_records_from_pds";
 import { sync_document_metadata } from "./functions/sync_document_metadata";
 import { send_post_broadcast } from "./functions/send_post_broadcast";
-import { wider_release_post } from "./functions/wider_release_post";
+import {
+  wider_release_post,
+  write_wider_release_pds_copy,
+} from "./functions/wider_release_post";
 import {
   send_email_post,
   send_email_post_on_subscribe,
@@ -41,6 +44,7 @@ export const { GET, POST, PUT } = serve({
     sync_document_metadata,
     send_post_broadcast,
     wider_release_post,
+    write_wider_release_pds_copy,
     send_email_post,
     send_email_post_on_subscribe,
     publish_scheduled_post,

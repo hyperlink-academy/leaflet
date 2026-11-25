@@ -1,4 +1,5 @@
 "use client";
+import { useRef } from "react";
 import { saveContentGateDefaults } from "actions/publications/saveContentGateDefaults";
 import { toContentGateDefaults } from "src/publicationDefaults";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
@@ -7,22 +8,14 @@ import {
   isWiderReleaseDelay,
   type AudiencePolicy,
   type GatePolicy,
-  type WiderReleaseDelay,
 } from "src/membership";
 
-type GateChange = {
-  audience?: GatePolicy;
-  // Null switches the gate to Unlock Content.
-  timeline?: WiderReleaseDelay | null;
-  widerReleaseAudience?: AudiencePolicy;
-};
-
-// Remembers a gate's options as the publication's defaults whenever the
-// author changes them, so the next gate added starts from the same choices.
-// Takes the change explicitly because the facts it reads haven't caught up
-// with the mutation yet.
+// Remembers a gate's options as the publication's defaults, so the next gate
+// added starts from the same choices. Call `markChanged` on each edit and
+// `save` when the editing surface closes: saving once from the settled facts
+// keeps rapid edits from landing out of order.
 export function useSaveContentGateDefaults(entityID: string | null) {
-  let { data: pub } = useLeafletPublicationData();
+  let { data: pub, mutate } = useLeafletPublicationData();
   let audience = useEntity(entityID, "block/members-only-audience")?.data.value;
   let tierFacts = useEntity(entityID, "block/members-only-tier");
   let timeline = useEntity(
@@ -33,42 +26,45 @@ export function useSaveContentGateDefaults(entityID: string | null) {
     entityID,
     "block/members-only-wider-release-audience",
   )?.data.value;
+  let changed = useRef(false);
 
-  return (change: GateChange) => {
+  let save = () => {
     let publicationUri = pub?.publications?.uri;
-    if (!publicationUri) return;
+    if (!changed.current || !publicationUri) return;
+    changed.current = false;
     let gate: GatePolicy =
-      change.audience ??
-      (audience === "subscribers" || audience === "paid"
+      audience === "subscribers" || audience === "paid"
         ? { audience }
         : {
             audience: "tiers",
             tierIds: [...new Set(tierFacts.map((f) => f.data.value))],
-          });
-    let nextTimeline =
-      change.timeline !== undefined
-        ? change.timeline
-        : isWiderReleaseDelay(timeline)
-          ? timeline
-          : null;
-    let release = change.widerReleaseAudience ??
-      (widerAudience as AudiencePolicy | undefined) ?? { audience: "public" };
-    saveContentGateDefaults(
-      publicationUri,
-      toContentGateDefaults({
-        audience: gate,
-        widerRelease: nextTimeline
-          ? {
-              timeline: nextTimeline,
-              audience:
-                release.audience === "tiers"
-                  ? { audience: "tiers", tierIds: [...release.tierIds] }
-                  : release,
-            }
-          : null,
-      }),
-    ).catch((error) =>
-      console.error("[gate] saving publication defaults failed", error),
-    );
+          };
+    let release = (widerAudience as AudiencePolicy | undefined) ?? {
+      audience: "public",
+    };
+    let defaults = toContentGateDefaults({
+      audience: gate,
+      widerRelease: isWiderReleaseDelay(timeline)
+        ? {
+            timeline,
+            audience:
+              release.audience === "tiers"
+                ? { audience: "tiers", tierIds: [...release.tierIds] }
+                : release,
+          }
+        : null,
+    });
+    saveContentGateDefaults(publicationUri, defaults)
+      .then(() => mutate())
+      .catch((error) =>
+        console.error("[gate] saving publication defaults failed", error),
+      );
+  };
+
+  return {
+    markChanged: () => {
+      changed.current = true;
+    },
+    save,
   };
 }

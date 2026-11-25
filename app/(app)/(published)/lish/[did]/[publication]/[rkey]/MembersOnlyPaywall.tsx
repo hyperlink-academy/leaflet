@@ -107,7 +107,10 @@ export const MembersOnlyPaywall = () => {
             ) : (
               startingPriceCents !== null && (
                 <p>
-                  {`Available starting from ${formatPrice(startingPriceCents)}/month`}
+                  {needsUpgrade &&
+                  paidUnlockingTiers.length < tiers.length
+                    ? `Available starting from ${formatPrice(startingPriceCents)}/month`
+                    : `Memberships start at ${formatPrice(startingPriceCents)}/month`}
                 </p>
               )
             )}

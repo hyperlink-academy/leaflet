@@ -94,14 +94,14 @@ export const wider_release_post = inngest.createFunction(
       widerReleaseTime,
     );
 
-    // Until now the PDS copy stopped at the delimiter. A failure here (say
-    // the owner's session has lapsed) mustn't hold up the emails; the next
-    // publish writes the full copy too.
-    const pds = liftedForEveryone
-      ? await run("write-full-pds-copy", () =>
-          writeFullPdsCopy(document_uri, loaded.doc?.data),
-        )
-      : null;
+    // Until now the PDS copy stopped at the delimiter. Written by its own
+    // function so it retries without holding up or repeating the emails.
+    const pds = liftedForEveryone;
+    if (liftedForEveryone)
+      await step.sendEvent("write-full-pds-copy", {
+        name: "post/wider_release.pds_write.requested",
+        data: { document_uri, wider_release_at },
+      });
 
     // Only a post that was emailed when it was published gets a follow-up.
     const sender = resolveBroadcastSender(loaded.pub);
@@ -198,30 +198,52 @@ export const wider_release_post = inngest.createFunction(
   },
 );
 
-async function writeFullPdsCopy(
-  documentUri: string,
-  data: unknown,
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  try {
-    const uri = new AtUri(documentUri);
-    const record = data as { $type?: unknown } | null;
-    if (!record || typeof record.$type !== "string")
-      return { ok: false, error: "no_record" };
-    const session = await restoreOAuthSession(uri.host);
-    if (!session.ok) return { ok: false, error: session.error.message };
-    const agent = new AtpBaseClient(
-      session.value.fetchHandler.bind(session.value),
-    );
-    await agent.com.atproto.repo.putRecord({
-      repo: uri.host,
-      collection: uri.collection,
-      rkey: uri.rkey,
-      record: await documentRecordForPDS(record as { $type: string }, agent),
-      validate: false,
+// Throws on failure so Inngest retries. Reads the record at write time, so a
+// republish since the release isn't overwritten by an older copy.
+export const write_wider_release_pds_copy = inngest.createFunction(
+  {
+    id: "write_wider_release_pds_copy",
+    idempotency: "event.data.document_uri + '-' + event.data.wider_release_at",
+    retries: 10,
+    triggers: [events.postWiderReleasePdsWriteRequested],
+  },
+  async ({ event, step }) => {
+    const { document_uri, wider_release_at } = event.data;
+    return step.run("write-full-pds-copy", async () => {
+      const { data: doc, error } = await supabaseServerClient
+        .from("documents")
+        .select("data")
+        .eq("uri", document_uri)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      const record = doc?.data as { $type?: unknown } | null;
+      if (!record || typeof record.$type !== "string")
+        return { skipped: "no_record" };
+      const normalized = normalizeDocumentRecord(record, document_uri);
+      const pages = normalized ? getDocumentPages(normalized) ?? [] : [];
+      // Re-gated or rescheduled since: the regular publish owns the PDS copy.
+      if (
+        getFirstPageMembersDelimiter(pages)?.widerReleaseAt !==
+          wider_release_at ||
+        pageHasMembersDelimiter(pages[0])
+      )
+        return { skipped: "superseded" };
+
+      const uri = new AtUri(document_uri);
+      const session = await restoreOAuthSession(uri.host);
+      if (!session.ok)
+        throw new Error(`OAuth restore failed: ${session.error.message}`);
+      const agent = new AtpBaseClient(
+        session.value.fetchHandler.bind(session.value),
+      );
+      await agent.com.atproto.repo.putRecord({
+        repo: uri.host,
+        collection: uri.collection,
+        rkey: uri.rkey,
+        record: await documentRecordForPDS(record as { $type: string }, agent),
+        validate: false,
+      });
+      return { ok: true };
     });
-    return { ok: true };
-  } catch (e) {
-    console.error("[wider_release_post] PDS write failed", documentUri, e);
-    return { ok: false, error: String(e).slice(0, 500) };
-  }
-}
+  },
+);
