@@ -8,6 +8,7 @@ import { AtUri } from "@atproto/api";
 import { supabaseServerClient } from "supabase/serverClient";
 import { enrichDocumentToPost } from "src/utils/enrichPost";
 import { TRENDING_RANK } from "src/utils/trendingRank";
+import { dropHeld } from "src/review/held";
 import type { Post } from "./getReaderFeed";
 
 let redisClient: Client | null = null;
@@ -85,10 +86,12 @@ export async function getHotFeed(): Promise<{ posts: Post[] }> {
     if (doc) orderedDocs.push(doc);
   }
 
+  const visibleDocs = await dropHeld(orderedDocs, (d) => d.uri);
+
   // Enrich into Post[]
   const posts = (
     await Promise.all(
-      orderedDocs.map((doc) => enrichDocumentToPost(doc as any)),
+      visibleDocs.map((doc) => enrichDocumentToPost(doc as any)),
     )
   ).filter((post): post is Post => post !== null);
 

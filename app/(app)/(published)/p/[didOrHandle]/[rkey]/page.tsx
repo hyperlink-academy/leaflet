@@ -1,6 +1,7 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { BLOCKED_METADATA, blockedAmong } from "src/review/blocked";
 import { resolveDid } from "../resolveDid";
 import { DocumentPageRenderer } from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/DocumentPageRenderer";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
@@ -25,6 +26,7 @@ export async function generateMetadata(props: {
   let params = await props.params;
   let did = await resolveDid(decodeURIComponent(params.didOrHandle));
   if (!did) return { title: "404" };
+  if ((await blockedAmong([did])).has(did)) return BLOCKED_METADATA;
 
   let { data: documents } = await supabaseServerClient
     .from("documents")

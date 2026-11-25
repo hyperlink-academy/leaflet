@@ -3,6 +3,7 @@ import { Feed } from "feed";
 import { PubLeafletPagesLinearDocument } from "lexicons/api";
 import { blocksToFeedHtml, blocksToPlainText } from "./feedHtml";
 import { supabaseServerClient } from "supabase/serverClient";
+import { blockedAmong } from "src/review/blocked";
 import { NextResponse } from "next/server";
 import {
   normalizePublicationRecord,
@@ -38,6 +39,8 @@ export async function generateFeed(
   did: string,
   publication_name: string,
 ): Promise<Feed | NextResponse<unknown>> {
+  if ((await blockedAmong([did])).has(did))
+    return new NextResponse(null, { status: 404 });
   let { data: publications, error } = await supabaseServerClient
     .from("publications")
     .select(`uri, record`)

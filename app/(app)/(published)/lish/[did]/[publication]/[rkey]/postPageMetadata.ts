@@ -1,4 +1,5 @@
 import { supabaseServerClient } from "supabase/serverClient";
+import { BLOCKED_METADATA, blockedAmong } from "src/review/blocked";
 import { Metadata } from "next";
 import {
   hasLeafletContent,
@@ -56,6 +57,7 @@ export async function postPageMetadata(props: {
   let did = decodeURIComponent(props.did);
   let publication_name = decodeURIComponent(props.publication);
   let segment = decodeURIComponent(props.segment);
+  if ((await blockedAmong([did])).has(did)) return BLOCKED_METADATA;
 
   // The same fetcher the page body uses, so the two share one query.
   let pub = await fetchPublicationForPage(did, publication_name);

@@ -10,6 +10,7 @@ import {
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
 import { resolveBylineProfiles } from "src/utils/resolveBylineProfiles";
 import { idResolver } from "src/identity";
+import { blockedAmong } from "src/review/blocked";
 import { AtUri } from "@atproto/api";
 
 export type Cursor = {
@@ -22,6 +23,8 @@ export async function getProfilePosts(
   cursor?: Cursor | null,
 ): Promise<{ posts: Post[]; nextCursor: Cursor | null }> {
   const limit = 20;
+  if ((await blockedAmong([did])).has(did))
+    return { posts: [], nextCursor: null };
 
   let [{ data: rawFeed, error }, resolved] = await Promise.all([
     supabaseServerClient.rpc("get_profile_posts", {

@@ -29,12 +29,14 @@
     "format:check": "prettier --check .",
     "format:changed": "{ git diff --name-only --diff-filter=d HEAD; git ls-files -o --exclude-standard; } | xargs prettier --ignore-unknown --write",
     "check-query-plans": "node scripts/check-supabase-query-plans.mjs",
-    "check-published-purity": "node scripts/check-published-purity.mjs"
+    "check-published-purity": "node scripts/check-published-purity.mjs",
+    "review-backfill": "tsx --env-file=.env.local scripts/review-backfill.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "@atproto/api": "^0.16.9",
     "@atproto/common": "^0.4.8",
     "@atproto/identity": "^0.4.6",
@@ -124,6 +126,7 @@
     "stripe": "^20.4.0",
     "swr": "^2.3.3",
     "thumbhash": "^0.1.1",
+    "tldts": "^7.5.5",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.0.0",
     "uuid": "^10.0.0",

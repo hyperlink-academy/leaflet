@@ -113,6 +113,9 @@ export const events = {
       wider_release_at: string;
     }>(),
   }),
+  reviewAccountTouched: eventType("review/account.touched", {
+    schema: staticSchema<{ did: string; cause: string }>(),
+  }),
   newsletterSubscriberJoined: eventType("newsletter/subscriber.joined", {
     schema: staticSchema<{ publication_uri: string; identity_id: string }>(),
   }),

@@ -3,9 +3,28 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
 import { enrichDocumentToPost } from "src/utils/enrichPost";
+import { dropHeld } from "src/review/held";
 import type { Cursor, Post } from "./getReaderFeed";
 
+// A page can come back with every row held back (a spam farm's burst). The
+// reader treats an empty first page as an empty feed, so keep walking until a
+// post survives.
+const EMPTY_PAGES_SKIPPED = 8;
+
 export async function getNewFeed(
+  cursor?: Cursor | null,
+): Promise<{ posts: Post[]; nextCursor: Cursor | null }> {
+  let page = await newFeedPage(cursor);
+  for (
+    let skipped = 0;
+    page.posts.length === 0 && page.nextCursor && skipped < EMPTY_PAGES_SKIPPED;
+    skipped++
+  )
+    page = await newFeedPage(page.nextCursor);
+  return page;
+}
+
+async function newFeedPage(
   cursor?: Cursor | null,
 ): Promise<{ posts: Post[]; nextCursor: Cursor | null }> {
   // plan-checked: this is the global discover feed, so the newest-first walk
@@ -43,19 +62,21 @@ export async function getNewFeed(
 
   let { data: rawFeed, error } = await query;
 
-  const feed = deduplicateByUriOrdered(rawFeed || []);
+  const feed = await dropHeld(
+    deduplicateByUriOrdered(rawFeed || []),
+    (d) => d.uri,
+  );
 
   let posts = (
     await Promise.all(feed.map((post) => enrichDocumentToPost(post as any)))
   ).filter((post): post is Post => post !== null);
 
-  const nextCursor =
-    posts.length > 0
-      ? {
-          timestamp: posts[posts.length - 1].documents.sort_date,
-          uri: posts[posts.length - 1].documents.uri,
-        }
-      : null;
+  // From the last row fetched, not the last post shown, so a page whose tail
+  // (or whole) was held back still advances.
+  const last = rawFeed?.[rawFeed.length - 1];
+  const nextCursor = last?.sort_date
+    ? { timestamp: last.sort_date, uri: last.uri }
+    : null;
 
   return {
     posts,

@@ -1,4 +1,5 @@
 import { idResolver } from "src/identity";
+import { blockedAmong } from "src/review/blocked";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
@@ -97,6 +98,14 @@ async function ProfilePageLayoutInner(props: {
     }
     did = resolved;
   }
+  // Checked here, once, so the header and every tab of a blocked account's
+  // profile are gone together.
+  if ((await blockedAmong([did])).has(did))
+    return (
+      <NotFoundLayout>
+        <p className="font-bold">Sorry, we can&apos;t find that profile!</p>
+      </NotFoundLayout>
+    );
   let profileData = await getCachedProfileData(did);
   let { publications, profile } = profileData.result;
 

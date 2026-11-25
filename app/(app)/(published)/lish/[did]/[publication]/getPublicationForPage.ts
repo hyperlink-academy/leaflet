@@ -1,11 +1,13 @@
 import { cache } from "react";
 import { supabaseServerClient } from "supabase/serverClient";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
+import { blockedAmong } from "src/review/blocked";
 
 // Memoized per request: the page body, its metadata, and any nested renderer
 // all resolve the publication from the same route params.
 export const fetchPublicationForPage = cache(
   async function fetchPublicationForPage(did: string, publicationName: string) {
+    if ((await blockedAmong([did])).has(did)) return null;
     const { data } = await supabaseServerClient
       .from("publications")
       .select(

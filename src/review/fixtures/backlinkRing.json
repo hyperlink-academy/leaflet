@@ -1,0 +1,979 @@
+[
+  {
+    "uri": "at://did:plc:5v3kbsqhhfybfj2dt62urgij/site.standard.document/3n2qmvstjmk2c",
+    "data": {
+      "path": "/3n2qmvstjmk2c",
+      "site": "https://leaflet.pub/p/did:plc:5v3kbsqhhfybfj2dt62urgij",
+      "tags": [],
+      "$type": "site.standard.document",
+      "title": "How to Choose Security Cameras for Home Surveillance",
+      "content": {
+        "$type": "pub.leaflet.content",
+        "pages": [
+          {
+            "id": "01a1f903-80a8-711a-9aee-66d9fa37da7e",
+            "$type": "pub.leaflet.pages.linearDocument",
+            "blocks": [
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.image",
+                  "image": {
+                    "ref": {
+                      "$link": "bafkreifli6xlwqb7klo4m76pis43wsaobnbkpkjxauroiwcnuphaqey2iy"
+                    },
+                    "size": 135344,
+                    "$type": "blob",
+                    "mimeType": "image/webp"
+                  },
+                  "aspectRatio": {
+                    "width": 1799,
+                    "height": 986
+                  }
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "The layout of your house, your security requirements, and your financial constraints must all be taken into account when selecting the best security cameras for home monitoring. Seek out cameras that have motion detection, night vision, excellent video quality, and remote surveillance capabilities. While wireless solutions offer greater versatility and simpler setup, weather-resistant ones are best suited for outdoor installation. "
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 149,
+                        "byteStart": 120
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#underline"
+                        },
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        },
+                        {
+                          "uri": "https://isecuritysolutions.co.uk/services/construction-site-security-cameras/",
+                          "$type": "pub.leaflet.richtext.facet#link"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "To make sure crucial video is securely captured and available when required, look into storage alternatives. Dependable construction security cameras can also offer helpful information about long-lasting safety features for harsh settings. Lastly, pick a reliable camera system that protects your house by comparing product ratings, warranties, and installation specifications."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 38,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Determine Your Needs for Home Security"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Knowing what you want to protect is the first step in choosing security cameras. Depending on its size, layout, location, and potential hazards, every property has a different set of safety requirements. For instance, a bigger house could need monitoring around the garden, garage, driveway and rear door, but a smaller flat might simply need cameras near the doorway and main living rooms."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Think about the locations where security surveillance is most crucial. Determine areas that are hard to spot, dark corners, and weak points. You may decide how many cameras you need and what characteristics they should have by putting together a list of these areas. Knowing exactly what is required can help you prevent overspending on equipment that does not really improve safety."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 35,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Select Cameras with High Resolution"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "One of the most crucial considerations when choosing security cameras is video quality. A low-resolution camera might be able to record movement in general, but it would have trouble capturing faces, clothes, or license plates. Seek out cameras with a resolution of at least Full HD 1080p. For better clarity and crisper shots, think about investing in 2K or 4K cameras if your budget allows."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "When keeping an eye on wider outdoor areas where objects could appear smaller in the video, higher-resolution cameras are very helpful. But keep in mind that higher resolution inevitably also necessitates greater network speed and storage space. Select a camera that strikes a good mix between general performance, storage demands, and image quality."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 42,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Think About Your Night Vision Capabilities"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "There are safety hazards outside of the day. Night vision is a crucial function for home security cameras since a lot of things might happen at night or early in the morning. Cameras may record video in low light because of infrared night vision, which frequently produces crisp black-and-white images. Using embedded lighting or low-light sensors, some complex models furthermore provide colour night vision."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Examine each camera's night vision range and image clarity in total darkness when comparing them. Longer-range cameras might be better suited for keeping an eye on driveways, gardens, and other major outdoor areas. You may make sure that your surveillance system works around the clock by testing its night vision functionality prior to making a purchase."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 40,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Search for Features for Motion Detection"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Security cameras use motion detection to identify activity in the regions they are watching. Homeowners can get alerts when activity is spotted rather than continuously watching video footage."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Intelligent detection capabilities that differentiate between humans, cars, animals, and general movement are found in many modern cameras. This may reduce the needless alerts brought on by passing vehicles, branches, or animals."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Additionally, some systems let customers design their own detection zones. For instance, you can set up a camera to keep an eye on your front door while neglecting foot traffic on a nearby open walkway. To make surveillance more practical and efficient, select a system with dependable notification options and configurable sensitivity."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 41,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Choose Between Wireless and Wired Cameras"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "There are typically two types of security cameras: wired and wireless. Depending on the design and assembly requirements of your property, each alternative has advantages. They are frequently appropriate for continuous monitoring deployments and larger estates."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Because wireless cameras do not need a data cable to connect to a network, they offer more deployment freedom. Many still require frequent battery charging or a power connection, though. When deciding between these options, take into account the distance between your cameras and router, the accessibility of power sources, and the dependability of your connection to the internet."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 46,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Examine Your Options For Recording And Storage"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "A security camera is only beneficial if crucial video can be captured and retrieved as needed. Therefore, before investing in surveillance equipment, storage decisions should be taken into account."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "The majority of contemporary CCTV cameras have cloud storage, local storage, or both. Memory cards, network video recorders (NVRs), or digital video recorders (DVRs) are used for local storage. Although storage space and device security must be taken into account, this can provide more control over recorded information."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Homeowners may access footage via mobile apps or online platforms thanks to cloud storage, which stores records on remote servers. Monthly or annual subscriptions are needed for certain services. To discover a system suitable for your needs, compare storage capacities, recording durations, subscription costs, and backup choices."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 11,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Final Words"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "It takes more than just comparing costs and looks to select the top-rated security cameras for home monitoring. Video resolution, detection of motion, night vision, storage space, networking, weather resistance, and cybersecurity are essential considerations to take into account."
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "bskyPostRef": {
+        "cid": "bafyreibg45j7uoqmp3ztaof2umgml3zwlrf5nuxf6w6qwqo5uuoulr2uba",
+        "uri": "at://did:plc:5v3kbsqhhfybfj2dt62urgij/app.bsky.feed.post/3n2qmvy5qv22c",
+        "commit": {
+          "cid": "bafyreihrdhc4zvzsta5xyisprxldudbzhbf3knmp42hqpm5ffg2wiynaee",
+          "rev": "3n2qmvy7bhm2p"
+        },
+        "validationStatus": "valid"
+      },
+      "description": "",
+      "publishedAt": "2026-11-20T12:52:29.498Z"
+    }
+  },
+  {
+    "uri": "at://did:plc:5v3kbsqhhfybfj2dt62urgij/site.standard.document/3n2qmuaodfs2d",
+    "data": {
+      "path": "/3n2qmuaodfs2d",
+      "site": "https://leaflet.pub/p/did:plc:5v3kbsqhhfybfj2dt62urgij",
+      "tags": [],
+      "$type": "site.standard.document",
+      "title": "Best Frozen Dessert Brands for Quality and Great Taste",
+      "content": {
+        "$type": "pub.leaflet.content",
+        "pages": [
+          {
+            "id": "01a1f902-a21a-7002-adb6-eca5efe97c65",
+            "$type": "pub.leaflet.pages.linearDocument",
+            "blocks": [
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.image",
+                  "image": {
+                    "ref": {
+                      "$link": "bafkreidd6yoj6l6zpxwjbmxzloufm5zb5vicdaq7oouqzgr6ahmxtxr6si"
+                    },
+                    "size": 180386,
+                    "$type": "blob",
+                    "mimeType": "image/webp"
+                  },
+                  "aspectRatio": {
+                    "width": 1500,
+                    "height": 1000
+                  }
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 375,
+                        "byteStart": 359
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#underline"
+                        },
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        },
+                        {
+                          "uri": "https://seaforthgroup.co.uk/product/taylor-soft-serve-freezer-c152/",
+                          "$type": "pub.leaflet.richtext.facet#link"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "People of all ages love frozen desserts because they have the ideal balance of sweetness, creamy textures, and cool flavours. Selecting a brand that places an emphasis on quality and taste enhances your experience, whether you prefer conventional ice cream, frozen yoghurt, gelato, or other frozen delicacies. When talking about frozen dessert manufacturers, Taylor Ice Cream is a name worth looking into, especially for customers looking for tasty sweets and filling flavours. There is something for everyone in the frozen dessert market, from well-known brands to companies that provide distinctive dessert experiences."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 42,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "What Distinguishes a Frozen Dessert Brand?"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "A fantastic frozen dessert brand is characterised by more than just eye-catching packaging or a wide range of flavours. A delightful product is the result of precise production methods, balanced sweetness, consistent texture, and high-quality ingredients. Customers are becoming more appreciative of companies that focus on the quality of their ingredients and provide flavours that are rich without being overly sugary. Consistency is another crucial element. Every time they buy their favourite dessert, customers want it to taste just as good."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 13,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Ben & Jerry's"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Ben & Jerry's is well known for its inventive flavours and copious amounts of mix-ins. Those who prefer desserts with more than just a classic creamy foundation are especially fond of the brand. Ice cream is frequently combined with chocolate chunks, cookie pieces, brownies, caramel, and other intriguing components in its creations. Flavours like Cookie Dough and Chocolate Fudge Brownie show how various textures may add appeal to frozen desserts. The brand is a great option for those who like decadent, creamy desserts."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 12,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Häagen-Dazs"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "With a focus on rich flavour and clean consistency, Häagen-Dazs has built a reputation for producing excessive-stop ice cream. Customers who cost traditional dessert reports are interested in its sincere but decadent variety. Among the famous flavour profiles linked to the brand are vanilla, chocolate, strawberry, and salted caramel. It is attractive as it creates a rich, creamy dessert experience that elevates conventional flavours."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 14,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Baskin-Robbins"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Baskin-Robbins is well-known for its wide range of flavours and vibrant frozen desserts. Families, friends, and anyone who enjoys trying out different flavours may find it appealing due to its variety. The brand offers a wide range of options, from traditional chocolate and vanilla to seasonal delicacies and inventive combinations. Customers who desire something new every time they visit an ice cream parlour are especially drawn to its extensive range."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 6,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Magnum"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Magnum is particularly well-known for its chocolate-covered ice cream treats. A unique eating sensation is produced by the contrast between a crunchy chocolate shell and a velvety frozen core. Classic chocolate, almond, and other taste combinations are among the variants offered by the company. For those who like the mix of rich chocolate and creamy ice cream, Magnum is an especially alluring choice. "
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 7,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Talenti"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "For those who like frozen sweets with an Italian flair, Talenti is a great choice. The company is especially well-known for its sorbetto and gelato, which provide a slightly different experience from traditional ice cream. Its fruit-based sorbettos offer a cool substitute, while its gelato variations have smooth textures and rich flavours. Customers who value unique ingredients and complex flavour combinations should give Talenti some thought."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 8,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Cornetto"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "For many years, Cornetto has been a well-known brand in the frozen dessert industry. It is a well-liked portable dessert because of its distinctive blend of creamy ice cream, a crunchy waffle cone, and a chocolate-filled tip. The company offers a variety of flavours, such as chocolate, vanilla, and strawberry, to accommodate a range of tastes. Every mouthful is delightful due to the blend of textures, especially for those who prefer ice cream cones to conventional tubs. "
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 63,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "The Significance of High-Quality Ingredients in Frozen Desserts"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "A frozen dessert's overall quality is mostly determined by its ingredients. The final flavour and texture are influenced by milk, cream, cocoa, fruit, nuts, and flavouring components. ﻿Companies can produce greater captivating and properly balanced items by means of carefully choosing their substances. Rich chocolate, clean fruit flavours, and notable dairy can all have a discernible impact. Customers ought to consider their nutritional needs as well. Nowadays, plenty of agencies offer plant-based, dairy-free, and reduced-sugar substitutes, bringing frozen goodies to a bigger market."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 10,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Conclusion"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "The finest frozen dessert brand is ultimately determined by what each person finds pleasurable about a dish. Magnum gives a decadent chocolate-coated treat, Baskin-Robbins offers variety, Häagen-Dazs offers a superior ice cream experience, and Ben & Jerry's stands out for its inventive varieties."
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "bskyPostRef": {
+        "cid": "bafyreid3a5hyktastbugcolquktrlynmdujyd74ujtaeb5o3tgyzpxerjy",
+        "uri": "at://did:plc:5v3kbsqhhfybfj2dt62urgij/app.bsky.feed.post/3n2qmugbzfs2c",
+        "commit": {
+          "cid": "bafyreihngpjj2pct62z2exfzllqz37ekvmdhpvaesim6bufyamy5x4jwum",
+          "rev": "3n2qmugdqxn24"
+        },
+        "validationStatus": "valid"
+      },
+      "description": "",
+      "publishedAt": "2026-11-20T12:51:36.686Z"
+    }
+  },
+  {
+    "uri": "at://did:plc:5v3kbsqhhfybfj2dt62urgij/site.standard.document/3n2qms5vaos2d",
+    "data": {
+      "path": "/3n2qms5vaos2d",
+      "site": "https://leaflet.pub/p/did:plc:5v3kbsqhhfybfj2dt62urgij",
+      "tags": [],
+      "$type": "site.standard.document",
+      "title": "Best Customer Management Tools For Growing Companies",
+      "content": {
+        "$type": "pub.leaflet.content",
+        "pages": [
+          {
+            "id": "01a1f901-91bc-7002-adb6-9e8ee26e8c10",
+            "$type": "pub.leaflet.pages.linearDocument",
+            "blocks": [
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.image",
+                  "image": {
+                    "ref": {
+                      "$link": "bafkreiapkeoma3cdsekpmidrxsmc3d46xiq7zehpfpfd36l6ukilgq2rji"
+                    },
+                    "size": 130030,
+                    "$type": "blob",
+                    "mimeType": "image/webp"
+                  },
+                  "aspectRatio": {
+                    "width": 1600,
+                    "height": 900
+                  }
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Efficient customer administration technologies are essential for expanding businesses to better organise client data, enhance communication, and establish enduring business partnerships. Teams are able to handle prospects, monitor sales activity, automate follow-ups, and improve customer experiences with the aid of the appropriate CRM software. Among them, Microsoft Dynamics 365 helps companies handle client relationships from a single platform by providing complete solutions for selling, marketing, and customer service. "
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 287,
+                        "byteStart": 266
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#underline"
+                        },
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        },
+                        {
+                          "uri": "https://www.dynamixsystems.co.uk/dynamics-365/",
+                          "$type": "pub.leaflet.richtext.facet#link"
+                        }
+                      ]
+                    },
+                    {
+                      "index": {
+                        "byteEnd": 288,
+                        "byteStart": 287
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Its automation, reporting, and AI-powered insights can enhance team efficiency and facilitate improved decision-making. Growing businesses may promote sustainable company expansion, improve customer connections, and streamline processes by selecting the appropriate Micosoft CRM Dynamics solution."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 10,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Salesforce"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "One of the most well-known CRM systems is Salesforce, which provides an extensive set of abilities for handling marketing campaigns, customer service, sales processes, and relationships with clients. Its platform assists companies with lead monitoring, sales pipeline management, automated workflows, and customer information analysis. Additionally, businesses can alter dashboards and reports to track success and spot areas for development."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Through its larger platform, Salesforce provides AI-powered tools that assist teams in acquiring insights and automating specific company processes. It is also appropriate for businesses that use several business apps because of its wide range of integration options. Salesforce is an excellent option for expanding companies in search of a scalable CRM system, even though its sophisticated capabilities could necessitate training and a bigger expenditure."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 11,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "HubSpot CRM"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "A well-liked customer management system, HubSpot CRM is renowned for its user-friendly interface and readily available starting options. It aids businesses in tracking sales activity, managing contacts, organising customer data, and keeping an eye on transactions."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "The capacity to integrate marketing, sales, and customer service activities is one of its primary benefits. Through the platform, businesses may arrange meetings, track transactions, handle email correspondence, and execute specific duties."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Additionally, HubSpot provides reporting tools that assist teams in comprehending sales results and customer involvement. It is especially appealing to startups and smaller companies that wish to implement structured customer management without having to make a big upfront expenditure because of its free CRM solutions. Businesses can investigate more premium services and membership choices as they grow. "
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 9,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Pipedrive"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "A CRM platform with a sales focus, Pipedrive was created to simplify lead and sales funnel management. Organisations can track contracts as they progress through various stages of the sales process because to its visual interface."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Sales teams are able to arrange contacts, plan follow-ups, monitor conversations, and spot possibilities that require to be addressed. Additionally, the application provides reporting and automated tools that assist companies in boosting revenue and efficiency. Pipedrive is particularly helpful for businesses with specialised sales teams looking for a simple method to keep an eye on prospective clients and handle transactions."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Managers may more easily comprehend sales performance and pinpoint bottlenecks thanks to its visible pipeline. It is still a sensible option for expanding companies even though it mostly concentrates on sales management rather than offering a full business management ecosystem."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 9,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "New sales"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Freshsales is a CRM platform that helps companies enhance customer engagement and sales management. It is a member of the Freshworks product family. It provides process automation, lead scoring, sales pipeline tracking, communication tools, and contact management. Teams can prioritise prospective clients according to their engagement and sales potential with the aid of these tools."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Additionally, Freshsales has AI-powered features that can assist with efficiency, sales insights, and lead assessment. Because of its user-friendly design, it is appropriate for companies looking to use CRM software without having to cope with an excessively complex platform. "
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 8,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Bitrix24"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Bitrix24 is a company management program that integrates project administration, interaction, and working together capabilities with CRM elements. Contact organisation, lead tracking, sales pipelines, task management, and automation are some of its client management features. Its communication features can also be used by companies to plan departmental activity."
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Its ability to combine multiple business operations on a single platform is one of its key benefits. This could reduce the requirement for expanding organisations to handle several disparate apps. Because Bitrix24 provides a variety of plans and feature combinations, it may be used by companies with a range of requirements. It could take some time to become acquainted with its broad selection of tools, though. Before determining whether it is a good fit, businesses should assess the user interface and features that are available. "
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.header",
+                  "level": 2,
+                  "facets": [
+                    {
+                      "index": {
+                        "byteEnd": 11,
+                        "byteStart": 0
+                      },
+                      "features": [
+                        {
+                          "$type": "pub.leaflet.richtext.facet#bold"
+                        }
+                      ]
+                    }
+                  ],
+                  "plaintext": "Final Words"
+                }
+              },
+              {
+                "$type": "pub.leaflet.pages.linearDocument#block",
+                "block": {
+                  "$type": "pub.leaflet.blocks.text",
+                  "plaintext": "Customer management tools are crucial for assisting expanding businesses to streamline their procedures, enhance communication, and forge closer bonds with their clients. Every platform, from Microsoft Dynamics 365 and Zoho CRM to Salesforce and HubSpot CRM, has unique features to aid in company growth."
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "bskyPostRef": {
+        "cid": "bafyreif2fwyox5ekbcok4aigsfy76ok6y3tm7t7yq6mdtu7tgxo2xu63wm",
+        "uri": "at://did:plc:5v3kbsqhhfybfj2dt62urgij/app.bsky.feed.post/3n2qmsdj6is2d",
+        "commit": {
+          "cid": "bafyreiaxhduj62lrv5bkmiaj27nb4dismmh4pdhtitftlsz73pyqofaepe",
+          "rev": "3n2qmsdkzt42p"
+        },
+        "validationStatus": "valid"
+      },
+      "description": "",
+      "publishedAt": "2026-11-20T12:50:26.673Z"
+    }
+  }
+]

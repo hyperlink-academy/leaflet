@@ -11,6 +11,8 @@ import {
 } from "lexicons/api";
 import { TID } from "@atproto/common";
 import { supabaseServerClient } from "supabase/serverClient";
+import { requestAccountReview } from "src/review/request";
+import { blockedAmong, DISPUTE_EMAIL } from "src/review/blocked";
 import { isConfirmedContributor } from "src/contributorPermissions";
 import { scanIndexLocal } from "src/replicache/utils";
 import type { Fact } from "src/replicache";
@@ -248,6 +250,15 @@ async function publish({
       }
     }
   }
+
+  if ((await blockedAmong([actorDid, pdsDid])).size > 0)
+    return {
+      success: false,
+      error: {
+        type: "publish_failed",
+        message: `Publishing is turned off for this account. If you think that's a mistake, write to ${DISPUTE_EMAIL}.`,
+      },
+    };
 
   // Restore the OAuth session of the PDS that will host the record.
   // For publications this is the owner; for standalone docs this is the
@@ -744,6 +755,8 @@ async function publish({
       });
     }
   }
+
+  await requestAccountReview(credentialSession.did!, "document.published");
 
   // Runs after the documents/join-row writes above so the re-render reads the
   // record this publish just wrote — including the title and description that

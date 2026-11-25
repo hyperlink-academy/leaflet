@@ -4,6 +4,7 @@ import {
   PubLeafletPagesCanvas,
 } from "lexicons/api";
 import { getPostPageData } from "src/utils/getPostPageData";
+import { blockedAmong } from "src/review/blocked";
 import { getDocumentPages } from "src/utils/normalizeRecords";
 import { getProfiles } from "src/identity/profileCache";
 import {
@@ -34,6 +35,7 @@ export async function loadPostPage({
   openPageId?: string;
   skipCodeBlocks?: boolean;
 }) {
+  if ((await blockedAmong([did])).has(did)) return null;
   let agent = new AtpAgent({
     service: "https://public.api.bsky.app",
     fetch: (...args) =>

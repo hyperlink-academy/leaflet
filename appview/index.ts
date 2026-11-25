@@ -37,6 +37,7 @@ import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
 import { inngest } from "app/api/inngest/client";
 import { stripThemeWithoutType } from "src/utils/stripThemeWithoutType";
+import { isBlockedAccount } from "src/review/blocked";
 import {
   pageContainsMembersDelimiter,
   pageHasMembersDelimiter,
@@ -336,6 +337,16 @@ async function handleEvent(evt: Event) {
     evt.event == "account" ||
     evt.event === "identity" ||
     evt.event === "sync"
+  )
+    return;
+  // Deletes still go through, so a blocked account can take its own records
+  // down. Bluesky's own records are skipped: every post and profile edit on
+  // the network arrives here, and asking about each author would be a query
+  // per account.
+  if (
+    evt.event !== "delete" &&
+    !evt.collection.startsWith("app.bsky.") &&
+    (await isBlockedAccount(evt.did))
   )
     return;
   if (evt.collection !== "app.bsky.feed.post")
