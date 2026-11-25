@@ -71,7 +71,7 @@ export function AudienceChecklist(props: ChecklistProps) {
           onChange({ audience: subscribers ? "paid" : "subscribers" });
         }}
       >
-        All free and paid subscribers
+        {tiers.length > 0 ? "All free and paid subscribers" : "Subscribers"}
       </Checkbox>
       {(tiers.length > 0 || value.audience === "paid") && (
         <Checkbox

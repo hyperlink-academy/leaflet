@@ -12,6 +12,8 @@ import { SubscribeSuccessPrefetch } from "components/Subscribe/useSubscribeSucce
 import { SpeedyLink } from "components/SpeedyLink";
 import type { WordmarkData } from "src/utils/wordmark";
 import { CanvasPageArea } from "src/canvasZoom/CanvasPageScroll";
+import { sortPublicationPages } from "./sortPublicationPages";
+import { isExternalLink } from "src/utils/externalPublicationLink";
 
 export function PublicationHomeLayout(props: {
   showPageBackground: boolean;
@@ -31,6 +33,13 @@ export function PublicationHomeLayout(props: {
   );
   let hasNav = props.navPages.length > 0;
 
+  let firstTab = sortPublicationPages(props.navPages).find(
+    (page) => page.path && !isExternalLink(page.path),
+  );
+  let homeHref = firstTab
+    ? `${props.publicationUrl}${firstTab.path === "/" ? "" : firstTab.path}`
+    : props.publicationUrl;
+
   let narrowPage = props.pageWidth && props.pageWidth < 480;
   let hideSubscribeInHeader = props.navPages.length > 1 && !narrowPage;
 
@@ -48,6 +57,7 @@ export function PublicationHomeLayout(props: {
             hasNav={props.navPages.length > 1}
             subscribe={props.subscribe}
             hideSubscribeInHeader={hideSubscribeInHeader}
+            homeHref={homeHref}
           />
         </div>
       </div>

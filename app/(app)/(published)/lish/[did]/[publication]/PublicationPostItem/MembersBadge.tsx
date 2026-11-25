@@ -5,6 +5,7 @@ import { EarlyAccessTiny } from "components/Icons/EarlyAccessTiny";
 import { UnlockedTiny } from "components/Icons/UnlockedTiny";
 import { Tooltip } from "components/Tooltip";
 import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import {
   daysUntilLabel,
   membershipUnlocksGatedPost,
@@ -34,7 +35,8 @@ export function MembersBadge(props: {
   if (widerReleaseReaches(membership, props.gatePolicy, props.widerRelease))
     return (
       <EarlyAccessBadge
-        className={`${badgeClassName} bg-accent-1 text-accent-2`}
+        className={`${badgeClassName} pl-1.5 bg-accent-1 text-accent-2`}
+        releaseAt={props.widerRelease.at}
         label={`Unlocks in ${daysUntilLabel(props.widerRelease.at)}`}
       />
     );
@@ -48,9 +50,19 @@ export function MembersBadge(props: {
   );
 }
 
+const RELEASE_DATE_FORMAT: Intl.DateTimeFormatOptions = {
+  month: "2-digit",
+  day: "2-digit",
+};
+
 // Hover shows the countdown on desktop; a tap shows it on touch screens.
-function EarlyAccessBadge(props: { className: string; label: string }) {
+function EarlyAccessBadge(props: {
+  className: string;
+  label: string;
+  releaseAt: string;
+}) {
   let [open, setOpen] = useState(false);
+  let releaseDate = useLocalizedDate(props.releaseAt, RELEASE_DATE_FORMAT);
   return (
     <Tooltip
       asChild
@@ -69,6 +81,7 @@ function EarlyAccessBadge(props: { className: string; label: string }) {
             setOpen(true);
           }}
         >
+          <span className="text-xs">{releaseDate}</span>
           <EarlyAccessTiny className="shrink-0" />
         </button>
       }

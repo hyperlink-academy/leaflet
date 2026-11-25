@@ -8,6 +8,7 @@ import React from "react";
 import { Popover } from "components/Popover";
 import { EditTiny } from "components/Icons/EditTiny";
 import { WordmarkEditor } from "components/ThemeManager/WordmarkEditor";
+import { SpeedyLink } from "components/SpeedyLink";
 
 // The data needed to render a subscribe control.
 export type SubscribeData = SubscribeProps;
@@ -128,36 +129,39 @@ export function NewPublicationHeader(props: {
   subscribe?: SubscribeData;
   hasNav?: boolean;
   edit?: boolean;
+  homeHref?: string;
 }) {
   return (
     <div className="group/wordmark publicationHeader flex flex-col gap-2 sm:px-4 px-3 sm:pt-10 sm:pb-3 pt-6 pb-0 ">
       <div className="mx-auto">
         <div className="publicationName relative flex sm:flex-row flex-col items-start justify-center sm:gap-3 gap-1">
-          {props.wordmark ? (
-            // The h1 wrapper keeps the page's top heading when the pub name
-            // renders as a wordmark image — the alt supplies its text.
-            <h1 className="contents">
-              <Wordmark
-                wordmark={props.wordmark}
-                alt={props.subscribe?.publicationName}
-              />
-            </h1>
-          ) : (
-            <>
-              {props.iconUrl && (
-                <PubIcon
-                  className="sm:w-8! sm:h-8! sm:mt-1 w-12! h-12! mx-auto"
-                  icon={props.iconUrl}
-                  pubName={props.subscribe?.publicationName}
+          <PublicationNameLink href={props.homeHref}>
+            {props.wordmark ? (
+              // The h1 wrapper keeps the page's top heading when the pub name
+              // renders as a wordmark image — the alt supplies its text.
+              <h1 className="contents">
+                <Wordmark
+                  wordmark={props.wordmark}
+                  alt={props.subscribe?.publicationName}
                 />
-              )}
-              <h1
-                className={`sm:text-xl text-[1.5rem] text-accent-contrast sm:text-left text-center leading-snug`}
-              >
-                {props.subscribe?.publicationName}
               </h1>
-            </>
-          )}
+            ) : (
+              <>
+                {props.iconUrl && (
+                  <PubIcon
+                    className="sm:w-8! sm:h-8! sm:mt-1 w-12! h-12! mx-auto"
+                    icon={props.iconUrl}
+                    pubName={props.subscribe?.publicationName}
+                  />
+                )}
+                <h1
+                  className={`sm:text-xl text-[1.5rem] text-accent-contrast sm:text-left text-center leading-snug`}
+                >
+                  {props.subscribe?.publicationName}
+                </h1>
+              </>
+            )}
+          </PublicationNameLink>
           {props.edit && (
             <div className="absolute -top-2 -left-3">
               <Popover
@@ -191,5 +195,20 @@ export function NewPublicationHeader(props: {
         </div>
       )}
     </div>
+  );
+}
+
+function PublicationNameLink(props: {
+  href?: string;
+  children: React.ReactNode;
+}) {
+  if (!props.href) return <>{props.children}</>;
+  return (
+    <SpeedyLink
+      href={props.href}
+      className="flex sm:flex-row flex-col items-start justify-center sm:gap-3 gap-1 text-inherit no-underline!"
+    >
+      {props.children}
+    </SpeedyLink>
   );
 }
