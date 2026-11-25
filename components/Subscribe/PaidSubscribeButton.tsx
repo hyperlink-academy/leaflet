@@ -25,6 +25,9 @@ export const PaidSubscribeButton = (
     // Test-harness seam, threaded to the modal.
     viewerOverride?: MembershipJoinViewer;
     compact?: boolean;
+    // A subscribed viewer gets an Upgrade button into the join flow instead of
+    // only the Subscribed/Manage trigger.
+    upgrade?: boolean;
   },
 ) => {
   const user = useViewerSubscription(props.publicationUri);
@@ -44,7 +47,27 @@ export const PaidSubscribeButton = (
 
   return (
     <>
-      {user.subscribed ? (
+      {user.subscribed && props.upgrade ? (
+        <div className="flex flex-col gap-1 items-center justify-center">
+          <ButtonPrimary
+            compact={props.compact}
+            type="button"
+            className="pubPageUpgrade text-sm!"
+            onClick={() => setOpen(true)}
+          >
+            Upgrade
+          </ButtonPrimary>
+          <ManageSubscription
+            publicationUri={props.publicationUri}
+            publicationUrl={props.publicationUrl}
+            newsletterMode={props.newsletterMode}
+            user={user}
+            triggerLabel="Manage Subscription"
+            membershipTiers={props.tiers}
+            onChangeMembership={() => setOpen(true)}
+          />
+        </div>
+      ) : user.subscribed ? (
         <ManageSubscription
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
