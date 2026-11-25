@@ -4,7 +4,7 @@ import { restoreOAuthSession } from "src/atproto-oauth";
 import { AtpBaseClient, SiteStandardDocument } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { Json } from "supabase/database.types";
-import { truncateDocumentRecordForPDS } from "src/membership";
+import { documentRecordForPDS } from "src/utils/documentRecordForPDS";
 
 async function createAuthenticatedAgent(did: string): Promise<AtpBaseClient> {
   const result = await restoreOAuthSession(did);
@@ -253,7 +253,7 @@ export const fix_incorrect_site_values = inngest.createFunction(
                 rkey: docAturi.rkey,
                 // documents.data holds gated posts' full content; the PDS
                 // copy must stay truncated at the members-only delimiter.
-                record: truncateDocumentRecordForPDS(updatedRecord),
+                record: await documentRecordForPDS(updatedRecord, agent),
                 validate: false,
               });
 

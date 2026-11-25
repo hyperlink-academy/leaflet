@@ -9,7 +9,7 @@ import {
 } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { Json } from "supabase/database.types";
-import { truncateDocumentRecordForPDS } from "src/membership";
+import { documentRecordForPDS } from "src/utils/documentRecordForPDS";
 import {
   normalizePublicationRecord,
   normalizeDocumentRecord,
@@ -279,7 +279,7 @@ export const migrate_user_to_standard = inngest.createFunction(
             rkey,
             // documents.data holds gated posts' full content; the PDS copy
             // must stay truncated at the members-only delimiter.
-            record: truncateDocumentRecordForPDS(newRecord),
+            record: await documentRecordForPDS(newRecord, agent),
             validate: false,
           });
           const newUri = putResult.data.uri;
@@ -404,7 +404,7 @@ export const migrate_user_to_standard = inngest.createFunction(
               rkey,
               // documents.data holds gated posts' full content; the PDS copy
               // must stay truncated at the members-only delimiter.
-              record: truncateDocumentRecordForPDS(updatedRecord),
+              record: await documentRecordForPDS(updatedRecord, agent),
               validate: false,
             });
 

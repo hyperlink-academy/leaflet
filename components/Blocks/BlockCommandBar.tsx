@@ -2,6 +2,7 @@ import { useState } from "react";
 import { blockCommands } from "./BlockCommands";
 import { useEntity, useReplicache } from "src/replicache";
 import { useBlocks } from "src/hooks/queries/useBlocks";
+import { savedContentGate } from "src/publicationDefaults";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import {
   useLeafletPublicationData,
@@ -37,13 +38,22 @@ export const BlockCommandBar = ({
   let publicationPage = useLeafletPublicationPage();
   let inPublicationEdit = !!publicationPage;
 
-  // Gating for the members-only delimiter: memberships enabled, first page
-  // only (that's the page the server truncates), and at most one per post.
+  // Gating for the members-only delimiter: first page only (that's the page
+  // the server truncates), and at most one per post. Monetization isn't
+  // required — without it the gate is for free subscribers.
   let membershipsEnabled =
     !!pub?.publications?.publication_membership_settings?.enabled;
-  let hasPaidTiers = (
-    pub?.publications?.publication_membership_tiers ?? []
-  ).some((t) => t.active);
+  let activeTierIds = membershipsEnabled
+    ? (pub?.publications?.publication_membership_tiers ?? [])
+        .filter((t) => t.active)
+        .map((t) => t.id)
+    : [];
+  let hasPaidTiers = activeTierIds.length > 0;
+  // A new gate starts from the options of the publication's last edited one.
+  let lastContentGate = savedContentGate(
+    pub?.publications?.defaults,
+    activeTierIds,
+  );
   let firstPage = useEntity(rootEntity, "root/page")[0]?.data.value;
   let hasMembersDelimiter = useBlocks(props.parent).some(
     (b) => b.type === "members-only-delimiter",
@@ -78,9 +88,7 @@ export const BlockCommandBar = ({
     const isVisible = !pub || !command.hiddenInPublication;
     const hasMembership =
       !command.membersOnlyDelimiter ||
-      (membershipsEnabled &&
-        props.parent === firstPage &&
-        !hasMembersDelimiter);
+      (props.parent === firstPage && !hasMembersDelimiter);
 
     const allowedForAccount = !command.atprotoOnly || !!identity?.atp_did;
     const allowedInPublication =
@@ -118,7 +126,12 @@ export const BlockCommandBar = ({
           if (!command || !rep) return;
           await command.onSelect(
             rep,
-            { ...props, entity_set: entity_set.set, hasPaidTiers },
+            {
+              ...props,
+              entity_set: entity_set.set,
+              hasPaidTiers,
+              lastContentGate,
+            },
             undoManager,
           );
         });
@@ -140,7 +153,12 @@ export const BlockCommandBar = ({
                   if (!rep) return;
                   await result.onSelect(
                     rep,
-                    { ...props, entity_set: entity_set.set, hasPaidTiers },
+                    {
+                      ...props,
+                      entity_set: entity_set.set,
+                      hasPaidTiers,
+                      lastContentGate,
+                    },
                     undoManager,
                   );
                 })

@@ -20,6 +20,77 @@ const child = (parent: string, value: string, position: string) =>
   });
 
 describe("processBlocksToPages", () => {
+  it("writes no wider release for an Unlock Content gate, even with a leftover audience", async () => {
+    let facts = [
+      fact({
+        entity: "root",
+        attribute: "root/page",
+        data: { type: "ordered-reference", value: "page", position: "a0" },
+      }),
+      child("page", "gate", "a0"),
+      block("gate", "members-only-delimiter"),
+      fact({
+        entity: "gate",
+        attribute: "block/members-only-audience",
+        data: { type: "string", value: "paid" },
+      }),
+      // Kept from an earlier switch to Early Access and back.
+      fact({
+        entity: "gate",
+        attribute: "block/members-only-wider-release-audience",
+        data: { type: "audience-union", value: { audience: "public" } },
+      }),
+    ];
+    let { pages } = await processBlocksToPages({
+      facts,
+      root_entity: "root",
+      publishedAt: "2026-01-01T00:00:00.000Z",
+      hooks: { uploadImage: async () => undefined, uploadPoll: null },
+    });
+    expect((pages[0] as any).blocks[0].block).toEqual({
+      $type: "pub.leaflet.blocks.membersOnlyDelimiter",
+      audience: "paid",
+    });
+  });
+
+  it("writes an early-access gate's widerReleaseAt from publishedAt", async () => {
+    const str = (entity: string, attribute: Attribute, value: string) =>
+      fact({ entity, attribute, data: { type: "string", value } } as Omit<
+        Fact<Attribute>,
+        "id"
+      >);
+    let facts = [
+      fact({
+        entity: "root",
+        attribute: "root/page",
+        data: { type: "ordered-reference", value: "page", position: "a0" },
+      }),
+      child("page", "gate", "a0"),
+      block("gate", "members-only-delimiter"),
+      str("gate", "block/members-only-audience", "paid"),
+      str("gate", "block/members-only-wider-release-timeline", "week"),
+      fact({
+        entity: "gate",
+        attribute: "block/members-only-wider-release-audience",
+        data: { type: "audience-union", value: { audience: "subscribers" } },
+      }),
+    ];
+    let { pages } = await processBlocksToPages({
+      facts,
+      root_entity: "root",
+      publishedAt: "2026-01-01T00:00:00.000Z",
+      hooks: { uploadImage: async () => undefined, uploadPoll: null },
+    });
+    expect((pages[0] as any).blocks[0].block).toEqual({
+      $type: "pub.leaflet.blocks.membersOnlyDelimiter",
+      audience: "paid",
+      widerReleaseAt: "2026-01-08T00:00:00.000Z",
+      widerReleaseAudience: {
+        $type: "pub.leaflet.blocks.membersOnlyDelimiter#subscribers",
+      },
+    });
+  });
+
   it("publishes only the theme colors a page overrides", async () => {
     let facts = [
       fact({

@@ -20,6 +20,7 @@ export function PublicationPostItemSmall(props: CommonProps) {
             <MembersBadge
               publicationUri={props.publicationUri}
               gatePolicy={props.gatePolicy}
+              widerRelease={props.widerRelease}
             />
           )}
         </h2>

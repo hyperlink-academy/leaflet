@@ -12,10 +12,7 @@ import {
   isLeafletPublication,
 } from "src/utils/normalizeRecords";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
-import {
-  getDocumentURL,
-  getPublicationURL,
-} from "src/utils/getPublicationURL";
+import { getDocumentURL, getPublicationURL } from "src/utils/getPublicationURL";
 import { truncateBlocksAtMembersDelimiter } from "src/membership";
 
 // Readers poll feeds constantly, so cap the feed at the most recent posts
@@ -46,7 +43,7 @@ export async function generateFeed(
     return new NextResponse(null, { status: 404 });
   let { data: publications, error } = await supabaseServerClient
     .from("publications")
-    .select(`uri, record, publication_membership_settings(enabled)`)
+    .select(`uri, record`)
     .eq("identity_did", did)
     .or(publicationNameOrUriFilter(did, publication_name))
     .order("uri", { ascending: false })
@@ -72,10 +69,9 @@ export async function generateFeed(
   const absolutize = (url: string) =>
     url.startsWith("/") ? `https://leaflet.pub${url}` : url;
   const pubInput = { uri: publication.uri, record: publication.record };
-  const pubUrl = absolutize(pubRecord?.url ?? getPublicationURL(pubInput)).replace(
-    /\/$/,
-    "",
-  );
+  const pubUrl = absolutize(
+    pubRecord?.url ?? getPublicationURL(pubInput),
+  ).replace(/\/$/, "");
   const description = pubRecord?.description ?? rawRecord?.description;
 
   let { data: docs, error: docsError } = await supabaseServerClient.rpc(
@@ -125,8 +121,7 @@ export async function generateFeed(
       }
     }
     // The feed is public, so members-only posts only syndicate their preview.
-    if (publication.publication_membership_settings?.enabled)
-      blocks = truncateBlocksAtMembersDelimiter(blocks);
+    blocks = truncateBlocksAtMembersDelimiter(blocks);
 
     const docUrl = absolutize(
       getDocumentURL(record, doc.uri, pubRecord ?? pubInput),

@@ -1,3 +1,4 @@
+import type { AudiencePolicy } from "src/membership";
 import type { AppBskyFeedGetPostThread } from "@atproto/api";
 import type { DeepAsReadonlyJSONValue } from "./utils";
 
@@ -103,6 +104,18 @@ const BlockAttributes = {
   "block/members-only-tier": {
     type: "string",
     cardinality: "many",
+  },
+  // Present only while the gate is in early access: one of
+  // WIDER_RELEASE_DELAYS.
+  "block/members-only-wider-release-timeline": {
+    type: "string",
+    cardinality: "one",
+  },
+  // Mirrors the lexicon's widerReleaseAudience union: who the gate widens to at
+  // wider release, tier selection included, as a single fact.
+  "block/members-only-wider-release-audience": {
+    type: "audience-union",
+    cardinality: "one",
   },
   "block/is-locked": {
     type: "boolean",
@@ -770,6 +783,7 @@ export type Data<A extends keyof typeof Attributes> = {
     type: "view-box";
     value: { x: number; y: number; width: number; height: number };
   };
+  "audience-union": { type: "audience-union"; value: AudiencePolicy };
 }[(typeof Attributes)[A]["type"]];
 export type FilterAttributes<F extends Partial<Attributes[keyof Attributes]>> =
   {

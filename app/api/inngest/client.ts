@@ -104,6 +104,21 @@ export const events = {
   postScheduledPublishRequested: eventType("post/scheduled-publish.requested", {
     schema: staticSchema<{ scheduled_post_id: string; revision: number }>(),
   }),
+  // `wider_release_at` is the gate's wider-release time when it was scheduled; a run whose
+  // time no longer matches the published record exits without acting.
+  postWiderReleaseScheduled: eventType("post/wider_release.scheduled", {
+    schema: staticSchema<{
+      publication_uri: string;
+      document_uri: string;
+      wider_release_at: string;
+    }>(),
+  }),
+  postWiderReleasePdsWriteRequested: eventType(
+    "post/wider_release.pds_write.requested",
+    {
+      schema: staticSchema<{ document_uri: string; wider_release_at: string }>(),
+    },
+  ),
   reviewAccountTouched: eventType("review/account.touched", {
     schema: staticSchema<{ did: string; cause: string }>(),
   }),

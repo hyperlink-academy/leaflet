@@ -49,15 +49,13 @@ export async function getUnlockedPost(
     .select(
       `data, uri,
        documents_in_publications(publications(uri, identity_did,
-         publication_membership_settings(enabled),
          publication_contributors(contributor_did, confirmed)))`,
     )
     .eq("uri", uri)
     .order("publication", { referencedTable: "documents_in_publications" })
     .maybeSingle();
   const pub = document?.documents_in_publications[0]?.publications;
-  if (!document || !pub?.publication_membership_settings?.enabled)
-    return { entitled: false };
+  if (!document || !pub) return { entitled: false };
 
   const record = normalizeDocumentRecord(document.data, document.uri);
   if (!record || !postHasMembersDelimiter(record)) return { entitled: false };

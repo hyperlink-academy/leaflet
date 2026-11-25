@@ -46,6 +46,7 @@ export function PublicationPostItemLarge(props: LargeProps) {
           <MembersBadge
             publicationUri={props.publicationUri}
             gatePolicy={props.gatePolicy}
+              widerRelease={props.widerRelease}
           />
         )}
 

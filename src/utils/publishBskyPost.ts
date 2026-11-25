@@ -15,8 +15,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { screenshotBskyCardImage } from "src/utils/bskyCardScreenshot";
 import { uploadCoverImageThumb } from "src/utils/uploadCoverImageThumb";
-import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
-import { truncateDocumentRecordForPDS } from "src/membership";
+import { documentRecordForPDS } from "src/utils/documentRecordForPDS";
 import { addBskyPostUtm, BskyUtmCampaign } from "src/utils/bskyPostUtm";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { Err, Ok, Result } from "src/result";
@@ -180,10 +179,7 @@ export async function postDocumentToBsky(
     // The caller hands us the fully inflated record. It needs the same
     // members-only truncation and blob offload the initial publish applied,
     // otherwise this re-put would leak gated content (or 413) on the PDS.
-    const recordForPDS = await maybeOffloadPagesToBlob(
-      truncateDocumentRecordForPDS(record),
-      agent,
-    );
+    const recordForPDS = await documentRecordForPDS(record, agent);
 
     let { data: result } = await agent.com.atproto.repo.putRecord({
       rkey,

@@ -126,6 +126,12 @@ type PostEmailProps = {
     cheapestMonthlyCents?: number | null;
   };
   /**
+   * Set for recipients reached by an early-access post's wider release:
+   * renders a note above the post saying it was in early access, linking to
+   * the membership page to get early access next time.
+   */
+  widerReleaseNote?: { upgradeUrl: string };
+  /**
    * Hydrated Bluesky posts for `pub.leaflet.blocks.bskyPost` blocks, keyed
    * by post URI. Blocks whose post is missing (hydration failed, post
    * deleted/blocked) fall back to the "not supported" card.
@@ -861,6 +867,14 @@ export const PostEmail = (props: Partial<PostEmailProps> = {}) => {
                           padding: "20px 24px",
                         }}
                       >
+                        {p.widerReleaseNote ? (
+                          <WiderReleaseNote
+                            upgradeUrl={p.widerReleaseNote.upgradeUrl}
+                            theme={theme}
+                            colors={c}
+                          />
+                        ) : null}
+
                         <Link
                           href={p.publicationUrl}
                           style={{
@@ -2998,6 +3012,56 @@ const BlockNotSupported = ({
           </Link>
         </Paragraph>
       ) : null}
+    </Section>
+  );
+};
+
+const WiderReleaseNote = ({
+  upgradeUrl,
+  theme = defaultEmailTheme,
+  colors,
+}: {
+  upgradeUrl: string;
+  theme?: EmailTheme;
+  colors?: ResolvedColors;
+}) => {
+  const c = colors ?? resolveColors(theme);
+  return (
+    <Section
+      {...bgcolorAttr(c.bgLight)}
+      style={{
+        backgroundColor: c.bgLight,
+        border: `1px solid ${c.borderLight}`,
+        borderRadius: 4,
+        margin: "0 0 16px",
+        padding: "10px 12px",
+      }}
+    >
+      <Paragraph
+        style={{
+          color: c.secondary,
+          fontFamily: theme.bodyFont,
+          fontSize: 14,
+          lineHeight: 1.4,
+          margin: 0,
+        }}
+      >
+        <strong style={{ color: theme.primary }}>
+          This post was released from Early Access.
+        </strong>
+        <br />
+        Get early access to future posts.{" "}
+        <Link
+          href={upgradeUrl}
+          style={{
+            color: theme.accentBackground,
+            fontWeight: "bold",
+            textDecoration: "underline",
+          }}
+        >
+          Upgrade your Membership!
+        </Link>
+      </Paragraph>
     </Section>
   );
 };

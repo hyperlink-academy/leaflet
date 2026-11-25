@@ -1745,6 +1745,53 @@ export const schemaDict = {
             description:
               'Paid tier ids that grant access when audience is tiers. An empty selection grants no membership access.',
           },
+          widerReleaseAt: {
+            type: 'string',
+            format: 'datetime',
+            description:
+              'When an early-access gate widens to widerReleaseAudience. Absent when the gate never widens.',
+          },
+          widerReleaseAudience: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.blocks.membersOnlyDelimiter#public',
+              'lex:pub.leaflet.blocks.membersOnlyDelimiter#subscribers',
+              'lex:pub.leaflet.blocks.membersOnlyDelimiter#paid',
+              'lex:pub.leaflet.blocks.membersOnlyDelimiter#tiers',
+            ],
+            description:
+              'Who can read past the delimiter once widerReleaseAt passes, in addition to the original audience. public removes the gate entirely.',
+          },
+        },
+      },
+      public: {
+        type: 'object',
+        description: 'Anyone, signed in or not.',
+        properties: {},
+      },
+      subscribers: {
+        type: 'object',
+        description: 'All free and paid subscribers.',
+        properties: {},
+      },
+      paid: {
+        type: 'object',
+        description: 'All paid members.',
+        properties: {},
+      },
+      tiers: {
+        type: 'object',
+        description: 'Members of the selected paid tiers.',
+        required: ['tierIds'],
+        properties: {
+          tierIds: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            description:
+              'Paid tier ids that grant access. An empty selection grants no membership access.',
+          },
         },
       },
     },

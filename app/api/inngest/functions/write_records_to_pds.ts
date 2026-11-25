@@ -6,9 +6,12 @@ import {
   isDocumentCollection,
   isPublicationCollection,
 } from "src/utils/collectionHelpers";
-import { truncateDocumentRecordForPDS } from "src/membership";
 import { supabaseServerClient } from "supabase/serverClient";
 import { resolveBlobLinks, type JsonBlob } from "src/utils/resolveBlobLinks";
+import {
+  documentRecordForPDS,
+  uploadBlobFromUrl,
+} from "src/utils/documentRecordForPDS";
 import type { Json } from "supabase/database.types";
 
 // Batch size to avoid Inngest payload limits and PDS rate limits
@@ -64,7 +67,9 @@ export const write_records_to_pds = inngest.createFunction(
           // The same image can appear more than once (a cover that's also a
           // block), and across the records of one batch.
           const uploads = new Map<string, Promise<JsonBlob>>();
+          let resolved = 0;
           const upload = (url: string) => {
+            resolved++;
             let p = uploads.get(url);
             if (!p) {
               p = uploadBlobFromUrl(agent, url);
@@ -75,14 +80,21 @@ export const write_records_to_pds = inngest.createFunction(
           let written = 0;
           let blobs = 0;
           for (const rec of batch) {
+            resolved = 0;
             // Restores read from our documents table, which holds the full
             // content of gated posts — the PDS copy must stay truncated.
-            const forPds = isDocumentCollection(rec.collection)
-              ? truncateDocumentRecordForPDS(
+            const record = isDocumentCollection(rec.collection)
+              ? await documentRecordForPDS(
                   rec.record as Record<string, unknown> & { $type: string },
+                  agent,
+                  upload,
                 )
-              : (rec.record as Record<string, unknown>);
-            const { record, resolved } = await resolveBlobLinks(forPds, upload);
+              : (
+                  await resolveBlobLinks(
+                    rec.record as Record<string, unknown>,
+                    upload,
+                  )
+                ).record;
             await agent.com.atproto.repo.putRecord({
               repo: did,
               collection: rec.collection,
@@ -117,20 +129,6 @@ export const write_records_to_pds = inngest.createFunction(
     };
   },
 );
-
-async function uploadBlobFromUrl(
-  agent: AtpBaseClient,
-  url: string,
-): Promise<JsonBlob> {
-  const res = await fetch(url);
-  if (res.status !== 200)
-    throw new Error(`Fetching blob ${url} failed: HTTP ${res.status}`);
-  const binary = await res.blob();
-  const { data } = await agent.com.atproto.repo.uploadBlob(binary, {
-    headers: { "Content-Type": binary.type },
-  });
-  return data.blob.toJSON() as JsonBlob;
-}
 
 // Our indexed copy of a record we just changed the blob refs of. The appview
 // re-indexes from the firehose too, but only for the collections it follows.

@@ -8,7 +8,11 @@ import type {
   NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { hasLeafletContent } from "lexicons/src/normalize";
-import { getGatedPostPolicy, postHasMembersDelimiter } from "src/membership";
+import {
+  getDocumentWiderRelease,
+  getGatedPostPolicy,
+  postHasMembersDelimiter,
+} from "src/membership";
 import type { Post } from "actions/reader/getReaderFeed";
 
 import Link from "next/link";
@@ -200,6 +204,7 @@ export const PostListing = (
     membersOnly: postHasMembersDelimiter(postRecord),
     publicationUri: props.publication?.uri,
     gatePolicy: getGatedPostPolicy(postRecord),
+    widerRelease: getDocumentWiderRelease(postRecord),
     title: postRecord.title,
     description: postRecord.description || getFirstParagraph(postRecord),
     author,

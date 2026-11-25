@@ -12,11 +12,13 @@ import { getDocumentURL } from "src/utils/getPublicationURL";
 import { getDocumentPages } from "src/utils/normalizeRecords";
 import {
   buildMembershipTiers,
+  getDocumentWiderRelease,
   getGatedPostPolicy,
   postHasMembersDelimiter,
   truncatePagesAtMembersDelimiter,
   type GatePolicy,
   type MembershipTiers,
+  type WiderRelease,
 } from "src/membership";
 import {
   projectDocumentRowForClient,
@@ -93,29 +95,31 @@ export const getPostPageData = cache(async function getPostPageData(
     documentPublication?.record,
   );
 
-  // Members-only gating: when the publication has paid memberships enabled and
-  // the post's first page carries a delimiter, drop everything after it before
-  // the record leaves the server. This render is identity-free by construction
-  // — every viewer gets the gated variant so the page stays cacheable — and
-  // entitled readers unlock the tail client-side via getUnlockedPost.
+  // Members-only gating: when the post's first page carries a delimiter, drop
+  // everything after it before the record leaves the server. Gating doesn't
+  // depend on monetization — a publication without it can still gate to free
+  // subscribers. This render is identity-free by construction — every viewer
+  // gets the gated variant so the page stays cacheable — and entitled readers
+  // unlock the tail client-side via getUnlockedPost.
   const gatePub = documentPublication;
   const membershipTiers = buildMembershipTiers(
     gatePub?.publication_membership_settings,
-    gatePub?.publication_membership_tiers ?? [],
+    gatePub?.publication_membership_settings?.enabled
+      ? gatePub?.publication_membership_tiers ?? []
+      : [],
   );
   let membersOnly: {
     gated: boolean;
     tiers: MembershipTiers;
     gatePolicy: GatePolicy | null;
+    widerRelease: WiderRelease | null;
   } = {
     gated: false,
     tiers: membershipTiers,
     gatePolicy: null,
+    widerRelease: null,
   };
-  if (
-    gatePub?.publication_membership_settings?.enabled &&
-    postHasMembersDelimiter(normalizedDocument)
-  ) {
+  if (postHasMembersDelimiter(normalizedDocument)) {
     const gatePolicy = getGatedPostPolicy(normalizedDocument);
     // normalizeDocumentRecord shares the pages array with `document.data`, so
     // this one splice gates both the normalized view and the raw record we
@@ -126,6 +130,7 @@ export const getPostPageData = cache(async function getPostPageData(
       gated: true,
       tiers: membershipTiers,
       gatePolicy,
+      widerRelease: getDocumentWiderRelease(normalizedDocument),
     };
   }
 

@@ -108,6 +108,7 @@ export type ResolvedColors = {
   tertiary: string;
   border: string;
   borderLight: string;
+  bgLight: string;
 };
 
 export const resolveColors = (theme: EmailTheme): ResolvedColors => {
@@ -127,6 +128,7 @@ export const resolveColors = (theme: EmailTheme): ResolvedColors => {
     tertiary: mixRgb(theme.primary, effectiveBg, 55),
     border: mixRgb(theme.primary, effectiveBg, 75),
     borderLight: mixRgb(theme.primary, effectiveBg, 85),
+    bgLight: mixRgb(theme.primary, effectiveBg, 95),
   };
 };
 

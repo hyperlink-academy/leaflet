@@ -31,13 +31,14 @@ import {
   makePublishUploadHooks,
   PublishImageError,
 } from "src/utils/publishHelpers";
-import { maybeOffloadPagesToBlob } from "src/utils/offloadPagesToBlob";
+import { documentRecordForPDS } from "src/utils/documentRecordForPDS";
 import { makeGatedImageStore } from "src/utils/gatedDocumentImages";
 import {
+  getFirstPageMembersDelimiter,
   pageHasMembersDelimiter,
-  truncateDocumentRecordForPDS,
 } from "src/membership";
 import {
+  getDocumentPages,
   normalizeDocumentRecord,
   type NormalizedDocument,
 } from "src/utils/normalizeRecords";
@@ -304,16 +305,25 @@ async function publish({
     ? makeGatedImageStore({ did: credentialSession.did!, rkey })
     : undefined;
 
+  const normalizedDoc = normalizeDocumentRecord(draft?.documents?.data);
+  // Feeds and sort orders choke on unparseable dates, so only accept a
+  // publishedAt that parses.
+  const isValidDate = (v: string | undefined) =>
+    !!v && !isNaN(new Date(v).getTime());
+  const resolvedPublishedAt =
+    [publishedAt, normalizedDoc?.publishedAt].find(isValidDate) ||
+    new Date().toISOString();
+
   let { pages } = await processBlocksToPages({
     facts,
     root_entity,
+    publishedAt: resolvedPublishedAt,
     hooks: makePublishUploadHooks(agent, credentialSession.did!, {
       gatedImages,
     }),
   });
 
   let existingRecord: Partial<SiteStandardDocument.Record> = {};
-  const normalizedDoc = normalizeDocumentRecord(draft?.documents?.data);
   if (normalizedDoc) {
     // When reading existing data, use normalized format to extract fields
     // The theme is preserved in NormalizedDocument for backward compatibility
@@ -440,13 +450,26 @@ async function publish({
     description !== undefined ? description : existingRecord.description;
   const resolvedTags = tags !== undefined ? tags : existingRecord.tags;
   const resolvedCoverImage = coverImageBlob ?? existingRecord.coverImage;
-  // Feeds and sort orders choke on unparseable dates, so only accept a
-  // publishedAt that parses.
-  const isValidDate = (v: string | undefined) =>
-    !!v && !isNaN(new Date(v).getTime());
-  const resolvedPublishedAt =
-    [publishedAt, existingRecord.publishedAt].find(isValidDate) ||
-    new Date().toISOString();
+  const previousDelimiter = normalizedDoc
+    ? getFirstPageMembersDelimiter(getDocumentPages(normalizedDoc))
+    : null;
+  const previousWiderReleaseAt = previousDelimiter?.widerReleaseAt;
+  // An early access that has been released can't be rescheduled, so the gate
+  // keeps its released date and audience whatever the draft's timeline says.
+  // A gate switched to Unlock Content has no widerReleaseAt and gates again.
+  const delimiter = getFirstPageMembersDelimiter(pages);
+  if (
+    delimiter?.widerReleaseAt &&
+    previousDelimiter &&
+    typeof previousWiderReleaseAt === "string" &&
+    new Date(previousWiderReleaseAt).getTime() <= Date.now()
+  ) {
+    delimiter.widerReleaseAt = previousWiderReleaseAt;
+    delimiter.widerReleaseAudience = previousDelimiter.widerReleaseAudience;
+  }
+  const widerReleaseAt = publication_uri
+    ? delimiter?.widerReleaseAt
+    : undefined;
 
   // Create record based on the document type
   let record: PubLeafletDocument.Record | SiteStandardDocument.Record;
@@ -490,10 +513,7 @@ async function publish({
     };
     record = siteRecord;
 
-    recordForPDS = await maybeOffloadPagesToBlob(
-      truncateDocumentRecordForPDS(siteRecord),
-      agent,
-    );
+    recordForPDS = await documentRecordForPDS(siteRecord, agent);
   } else {
     // pub.leaflet.document format (legacy)
     record = {
@@ -517,7 +537,7 @@ async function publish({
       pages,
       publishedAt: resolvedPublishedAt,
     } satisfies PubLeafletDocument.Record;
-    recordForPDS = truncateDocumentRecordForPDS(record);
+    recordForPDS = await documentRecordForPDS(record, agent);
   }
 
   let { data: result } = await agent.com.atproto.repo.putRecord({
@@ -704,6 +724,35 @@ async function publish({
           },
         });
       }
+    }
+  }
+
+  // Only a new or changed wider-release time is scheduled: republishing an unchanged
+  // post must not queue a second wider-release email, and a run whose time no longer
+  // matches the record bails when it wakes.
+  if (
+    publication_uri &&
+    typeof widerReleaseAt === "string" &&
+    widerReleaseAt !== previousWiderReleaseAt
+  ) {
+    // The post is already live, so a failure to schedule is logged rather
+    // than reported as a failed publish. The gate itself still widens on
+    // time; only the cache refresh, PDS copy and release emails are missed.
+    try {
+      await inngest.send({
+        name: "post/wider_release.scheduled",
+        data: {
+          publication_uri,
+          document_uri: result.uri,
+          wider_release_at: widerReleaseAt,
+        },
+      });
+    } catch (e) {
+      console.error("[publish] scheduling wider release failed", {
+        document_uri: result.uri,
+        wider_release_at: widerReleaseAt,
+        error: e,
+      });
     }
   }
 

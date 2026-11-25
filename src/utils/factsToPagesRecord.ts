@@ -1,3 +1,9 @@
+import {
+  isWiderReleaseDelay,
+  toAudienceUnion,
+  widerReleaseTimeline,
+  type AudiencePolicy,
+} from "src/membership";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { $Typed, UnicodeString } from "@atproto/api";
@@ -131,6 +137,7 @@ export async function processBlocksToPages(opts: {
   // (theme facts still resolve against root_entity).
   start_page?: string;
   hooks: ProcessBlocksToPagesHooks;
+  publishedAt?: string;
 }): Promise<ProcessBlocksToPagesResult> {
   const { facts, root_entity, hooks } = opts;
   const scan = scanIndexLocal(facts);
@@ -326,6 +333,32 @@ export async function processBlocksToPages(opts: {
         audience,
         ...(audience === "tiers" && { tierIds }),
       };
+      const [timelineFact] = scan.eav(
+        b.entityID,
+        "block/members-only-wider-release-timeline",
+      );
+      const widerReleaseAt =
+        timelineFact && isWiderReleaseDelay(timelineFact.data.value)
+          ? widerReleaseTimeline(
+              opts.publishedAt ?? new Date().toISOString(),
+              timelineFact.data.value,
+            )
+          : null;
+      if (widerReleaseAt) {
+        const widerReleaseAudience: AudiencePolicy = scan.eav(
+          b.entityID,
+          "block/members-only-wider-release-audience",
+        )[0]?.data.value ?? { audience: "public" };
+        block.widerReleaseAt = widerReleaseAt;
+        block.widerReleaseAudience = toAudienceUnion(
+          widerReleaseAudience.audience === "tiers"
+            ? {
+                ...widerReleaseAudience,
+                tierIds: [...widerReleaseAudience.tierIds].sort(),
+              }
+            : widerReleaseAudience,
+        );
+      }
       return block;
     },
     heading: async (b) => {

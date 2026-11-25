@@ -1,4 +1,5 @@
 import { ids } from "lexicons/api/lexicons";
+import type * as MembersOnlyDelimiterLex from "lexicons/api/types/pub/leaflet/blocks/membersOnlyDelimiter";
 import {
   getDocumentPages,
   type NormalizedDocument,
@@ -8,13 +9,38 @@ import {
 // lives with its consumers (e.g. getPostPageData) — importing the supabase
 // service client here would break client bundles.
 
-export function pageHasMembersDelimiter(page: unknown): boolean {
+// Every gating check goes through this rather than matching $type, so a
+// delimiter whose wider release is public stops gating everywhere at
+// once — the post reads as ungated even though the block is still in it.
+export function isActiveMembersDelimiter(
+  block: unknown,
+  now: number = Date.now(),
+): boolean {
+  const b = block as MembersDelimiterBlock | null | undefined;
+  if (b?.$type !== ids.PubLeafletBlocksMembersOnlyDelimiter) return false;
+  return !(
+    getWiderReleasePolicy(b)?.audience === "public" &&
+    widerReleaseReached(b, now)
+  );
+}
+
+// Whether the page has a delimiter at all, released or not. For deciding
+// whether a record is one of ours whose full copy we keep, which stays true
+// after a public wider release.
+export function pageContainsMembersDelimiter(page: unknown): boolean {
+  return !!findDelimiterBlock(
+    (page as { blocks?: unknown } | null | undefined)?.blocks,
+  );
+}
+
+export function pageHasMembersDelimiter(
+  page: unknown,
+  now: number = Date.now(),
+): boolean {
   const blocks = (page as { blocks?: unknown[] } | null)?.blocks;
   if (!Array.isArray(blocks)) return false;
-  return blocks.some(
-    (b) =>
-      (b as { block?: { $type?: string } } | null)?.block?.$type ===
-      ids.PubLeafletBlocksMembersOnlyDelimiter,
+  return blocks.some((b) =>
+    isActiveMembersDelimiter((b as { block?: unknown } | null)?.block, now),
   );
 }
 
@@ -22,15 +48,83 @@ export function pageHasMembersDelimiter(page: unknown): boolean {
 // elsewhere.
 export function postHasMembersDelimiter(
   doc: NormalizedDocument | null,
+  now: number = Date.now(),
 ): boolean {
   const pages = doc ? getDocumentPages(doc) : undefined;
-  return !!pages?.[0] && pageHasMembersDelimiter(pages[0]);
+  return !!pages?.[0] && pageHasMembersDelimiter(pages[0], now);
 }
 
 export type GatePolicy =
   | { audience: "subscribers" }
   | { audience: "paid" }
   | { audience: "tiers"; tierIds: string[] };
+
+// An early-access gate can widen to everyone at its wider release.
+export type AudiencePolicy = GatePolicy | { audience: "public" };
+
+export const WIDER_RELEASE_DELAYS = [
+  { value: "day", label: "1 day" },
+  { value: "week", label: "1 week" },
+  { value: "two-weeks", label: "2 weeks" },
+  { value: "month", label: "1 month" },
+] as const;
+export type WiderReleaseDelay = (typeof WIDER_RELEASE_DELAYS)[number]["value"];
+
+export function isWiderReleaseDelay(
+  value: unknown,
+): value is WiderReleaseDelay {
+  return WIDER_RELEASE_DELAYS.some((d) => d.value === value);
+}
+
+export function widerReleaseTimeline(
+  publishedAt: string,
+  delay: WiderReleaseDelay,
+): string | null {
+  const date = new Date(publishedAt);
+  if (isNaN(date.getTime())) return null;
+  if (delay === "month") date.setUTCMonth(date.getUTCMonth() + 1);
+  else
+    date.setUTCDate(
+      date.getUTCDate() + (delay === "day" ? 1 : delay === "week" ? 7 : 14),
+    );
+  return date.toISOString();
+}
+
+// Whether a timeline counted from publishedAt has already run out, so picking
+// it would release the post as soon as it's published. Unpublished posts count
+// from now.
+export function isWiderReleaseTimelinePast(
+  publishedAt: string | undefined,
+  delay: WiderReleaseDelay,
+  now: number = Date.now(),
+): boolean {
+  const at = publishedAt && widerReleaseTimeline(publishedAt, delay);
+  return !!at && new Date(at).getTime() <= now;
+}
+
+// The delayed audience only ever adds readers: the gate after widerReleaseAt admits
+// anyone either policy admits, so a narrower pick can't lock readers out.
+export function widerReleaseAudience(a: GatePolicy, b: GatePolicy): GatePolicy;
+export function widerReleaseAudience(
+  a: AudiencePolicy,
+  b: AudiencePolicy,
+): AudiencePolicy;
+export function widerReleaseAudience(
+  a: AudiencePolicy,
+  b: AudiencePolicy,
+): AudiencePolicy {
+  for (const audience of ["public", "subscribers", "paid"] as const)
+    if (a.audience === audience || b.audience === audience) return { audience };
+  return {
+    audience: "tiers",
+    tierIds: [
+      ...new Set([
+        ...(a.audience === "tiers" ? a.tierIds : []),
+        ...(b.audience === "tiers" ? b.tierIds : []),
+      ]),
+    ],
+  };
+}
 
 type MembersDelimiterBlock = {
   $type?: string;
@@ -39,17 +133,183 @@ type MembersDelimiterBlock = {
   // Pre-audience lexicon shape: absent tiers meant every paid tier, a
   // non-empty list restricted to those tiers.
   tiers?: unknown;
+  widerReleaseAt?: unknown;
+  widerReleaseAudience?: { $type?: unknown; tierIds?: unknown };
 };
 
-// Parse the policy stored on a delimiter. Invalid policies remain invalid so a
-// malformed or empty tier selection can never accidentally broaden access.
+// The $types of the lexicon's audience union (the membersOnlyDelimiter
+// defs), the shape audiences are stored in outside the editor. Built from the
+// NSID and checked against the generated def types, so a renamed lexicon or
+// def fails typechecking after lexgen.
+const DELIMITER_NSID = ids.PubLeafletBlocksMembersOnlyDelimiter;
+export const AUDIENCE_UNION_TYPE = {
+  public: `${DELIMITER_NSID}#public`,
+  subscribers: `${DELIMITER_NSID}#subscribers`,
+  paid: `${DELIMITER_NSID}#paid`,
+  tiers: `${DELIMITER_NSID}#tiers`,
+} as const satisfies {
+  public: Required<MembersOnlyDelimiterLex.Public>["$type"];
+  subscribers: Required<MembersOnlyDelimiterLex.Subscribers>["$type"];
+  paid: Required<MembersOnlyDelimiterLex.Paid>["$type"];
+  tiers: Required<MembersOnlyDelimiterLex.Tiers>["$type"];
+};
+
+export type AudienceUnion =
+  | { $type: (typeof AUDIENCE_UNION_TYPE)["public"] }
+  | { $type: (typeof AUDIENCE_UNION_TYPE)["subscribers"] }
+  | { $type: (typeof AUDIENCE_UNION_TYPE)["paid"] }
+  | { $type: (typeof AUDIENCE_UNION_TYPE)["tiers"]; tierIds: string[] };
+
+export function toAudienceUnion(policy: AudiencePolicy): AudienceUnion {
+  return policy.audience === "tiers"
+    ? { $type: AUDIENCE_UNION_TYPE.tiers, tierIds: policy.tierIds }
+    : { $type: AUDIENCE_UNION_TYPE[policy.audience] };
+}
+
+// Null for anything that isn't a valid member of the union.
+export function fromAudienceUnion(value: unknown): AudiencePolicy | null {
+  const type = (value as { $type?: unknown } | null | undefined)?.$type;
+  for (const audience of ["public", "subscribers", "paid"] as const)
+    if (type === AUDIENCE_UNION_TYPE[audience]) return { audience };
+  if (type === AUDIENCE_UNION_TYPE.tiers) {
+    const tierIds = stringIds((value as { tierIds?: unknown }).tierIds);
+    return tierIds ? { audience: "tiers", tierIds } : null;
+  }
+  return null;
+}
+
+function widerReleaseReached(b: MembersDelimiterBlock, now: number) {
+  if (typeof b.widerReleaseAt !== "string") return false;
+  const at = new Date(b.widerReleaseAt).getTime();
+  return !isNaN(at) && at <= now;
+}
+
+function stringIds(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null;
+  return [
+    ...new Set(value.filter((id): id is string => typeof id === "string")),
+  ];
+}
+
+// The audience a delimiter widens to at widerReleaseAt, or null when it has no
+// valid wider release.
+export function getWiderReleasePolicy(block: unknown): AudiencePolicy | null {
+  const b = block as MembersDelimiterBlock | null | undefined;
+  if (!b || typeof b.widerReleaseAt !== "string") return null;
+  return fromAudienceUnion(b.widerReleaseAudience);
+}
+
+function findDelimiterBlock(blocks: unknown): MembersDelimiterBlock | null {
+  if (!Array.isArray(blocks)) return null;
+  return (
+    blocks.find(
+      (b) =>
+        (b as { block?: MembersDelimiterBlock } | null)?.block?.$type ===
+        ids.PubLeafletBlocksMembersOnlyDelimiter,
+    )?.block ?? null
+  );
+}
+
+// The first page's delimiter block, for callers that need its wider release.
+export function getFirstPageMembersDelimiter(
+  pages: unknown[] | undefined,
+): MembersDelimiterBlock | null {
+  return findDelimiterBlock(
+    (pages?.[0] as { blocks?: unknown } | undefined)?.blocks,
+  );
+}
+
+export type WiderRelease = { at: string; audience: AudiencePolicy };
+
+// A post's early-access gate: when it widens and to whom. Callers compare
+// `at` with the current time to tell early access from a past release.
+export function getDocumentWiderRelease(
+  doc: NormalizedDocument | null | undefined,
+): WiderRelease | null {
+  const block = getFirstPageMembersDelimiter(
+    doc ? getDocumentPages(doc) : undefined,
+  );
+  const audience = getWiderReleasePolicy(block);
+  return block && audience
+    ? { at: block.widerReleaseAt as string, audience }
+    : null;
+}
+
+export function isWiderReleasePending(
+  release: WiderRelease | null | undefined,
+  now: number = Date.now(),
+): release is WiderRelease {
+  if (!release) return false;
+  const at = new Date(release.at).getTime();
+  return !isNaN(at) && at > now;
+}
+
+export function isWiderReleasePassed(
+  release: WiderRelease | null | undefined,
+  now: number = Date.now(),
+): release is WiderRelease {
+  if (!release) return false;
+  const at = new Date(release.at).getTime();
+  return !isNaN(at) && at <= now;
+}
+
+// Whether a post still in early access will open to this reader at its wider
+// release.
+export function widerReleaseReaches(
+  membership: ResolvedPublicationMembership | null | undefined,
+  gatePolicy: GatePolicy | null | undefined,
+  release: WiderRelease | null | undefined,
+  now: number = Date.now(),
+): release is WiderRelease {
+  if (!isWiderReleasePending(release, now) || !gatePolicy) return false;
+  if (release.audience.audience === "public") return true;
+  return membershipUnlocksGatedPost(
+    membership,
+    widerReleaseAudience(gatePolicy, release.audience),
+  );
+}
+
+// "3 days" until `at`, rounding a part-day up so the last day reads "1 day".
+export function daysUntilLabel(at: string, now: number = Date.now()): string {
+  const days = Math.max(
+    1,
+    Math.ceil((new Date(at).getTime() - now) / (24 * 60 * 60 * 1000)),
+  );
+  return days === 1 ? "1 day" : `${days} days`;
+}
+
+// Whether a delimiter's wider release is still ahead: the post is in early
+// access.
+export function isEarlyAccessPending(
+  blocks: unknown,
+  now: number = Date.now(),
+): boolean {
+  const block = findDelimiterBlock(blocks);
+  return (
+    !!block &&
+    !!getWiderReleasePolicy(block) &&
+    !widerReleaseReached(block, now)
+  );
+}
+
+// Parse the policy stored on a delimiter, widened by its wider release once
+// that has passed. Invalid policies remain invalid so a malformed or empty
+// tier selection can never accidentally broaden access.
 export function getMembersDelimiterGatePolicy(
   blocks: { block?: MembersDelimiterBlock }[] | undefined,
+  now: number = Date.now(),
 ): GatePolicy | null {
-  const block = blocks?.find(
-    (b) => b?.block?.$type === ids.PubLeafletBlocksMembersOnlyDelimiter,
-  )?.block;
+  const block = findDelimiterBlock(blocks);
   if (!block) return null;
+  const base = parseBaseGatePolicy(block);
+  const delayed = widerReleaseReached(block, now)
+    ? getWiderReleasePolicy(block)
+    : null;
+  if (!delayed || delayed.audience === "public") return base;
+  return base ? widerReleaseAudience(base, delayed) : delayed;
+}
+
+function parseBaseGatePolicy(block: MembersDelimiterBlock): GatePolicy | null {
   if (block.audience === "subscribers") return { audience: "subscribers" };
   if (block.audience === "paid") return { audience: "paid" };
   if (block.audience === "tiers") {
@@ -78,12 +338,13 @@ export function getMembersDelimiterGatePolicy(
 
 export function getGatedPostPolicy(
   doc: NormalizedDocument | null,
+  now: number = Date.now(),
 ): GatePolicy | null {
   const pages = doc ? getDocumentPages(doc) : undefined;
   const first = pages?.[0] as
     | { blocks?: { block?: MembersDelimiterBlock }[] }
     | undefined;
-  return getMembersDelimiterGatePolicy(first?.blocks);
+  return getMembersDelimiterGatePolicy(first?.blocks, now);
 }
 
 // For render paths that work on a flat block list (RSS feed, newsletter
@@ -91,10 +352,8 @@ export function getGatedPostPolicy(
 // after it.
 export function truncateBlocksAtMembersDelimiter<
   T extends { block?: { $type?: string } },
->(blocks: T[]): T[] {
-  const idx = blocks.findIndex(
-    (b) => b?.block?.$type === ids.PubLeafletBlocksMembersOnlyDelimiter,
-  );
+>(blocks: T[], now: number = Date.now()): T[] {
+  const idx = blocks.findIndex((b) => isActiveMembersDelimiter(b?.block, now));
   return idx === -1 ? blocks : blocks.slice(0, idx);
 }
 
@@ -160,9 +419,7 @@ export function truncateDocumentRecordForPDS<T extends { $type: string }>(
 export function truncatePagesAtMembersDelimiter(pages: unknown[]): void {
   const first = pages[0] as PageLike | undefined;
   if (!first?.blocks) return;
-  const idx = first.blocks.findIndex(
-    (b) => b?.block?.$type === ids.PubLeafletBlocksMembersOnlyDelimiter,
-  );
+  const idx = first.blocks.findIndex((b) => isActiveMembersDelimiter(b?.block));
   if (idx === -1) return;
   first.blocks.splice(idx + 1);
 

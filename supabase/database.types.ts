@@ -2299,6 +2299,7 @@ export type Database = {
       }
       publications: {
         Row: {
+          defaults: Json
           draft_leaflet: string | null
           identity_did: string
           indexed_at: string
@@ -2307,6 +2308,7 @@ export type Database = {
           uri: string
         }
         Insert: {
+          defaults?: Json
           draft_leaflet?: string | null
           identity_did: string
           indexed_at?: string
@@ -2315,6 +2317,7 @@ export type Database = {
           uri: string
         }
         Update: {
+          defaults?: Json
           draft_leaflet?: string | null
           identity_did?: string
           indexed_at?: string

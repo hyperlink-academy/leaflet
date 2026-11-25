@@ -9,7 +9,11 @@ import { PubIcon } from "components/ActionBar/Publications";
 import { formatPrice } from "components/Memberships/TierGrid";
 import { useMyMembership } from "components/Memberships/useMyMembership";
 import { revalidateUnlocks } from "components/Memberships/revalidateUnlocks";
-import { membershipUnlocksGatedPost } from "src/membership";
+import {
+  daysUntilLabel,
+  membershipUnlocksGatedPost,
+  widerReleaseReaches,
+} from "src/membership";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { AtUri } from "@atproto/syntax";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
@@ -55,14 +59,20 @@ export const MembersOnlyPaywall = () => {
     ? Math.min(...paidUnlockingTiers.map((t) => t.monthly_price_cents))
     : null;
 
-  let namedTiers =
-    paidUnlockingTiers.length < tiers.length
-      ? paidUnlockingTiers.map((t) => t.name)
-      : [];
-
   let needsUpgrade =
     viewer.membership?.kind === "paid" &&
     !membershipUnlocksGatedPost(viewer.membership, gatePolicy);
+
+  // In early access, a reader the wider release will reach is told when,
+  // and that upgrading gets them posts like this sooner.
+  let widerRelease = document?.membersOnly?.widerRelease;
+  let unlocksAt = widerReleaseReaches(
+    viewer.membership,
+    gatePolicy,
+    widerRelease,
+  )
+    ? widerRelease.at
+    : null;
 
   return (
     <div className="membersOnlyPaywall light-container flex flex-col items-center gap-3 text-center block-border bg-bg-page px-4 py-4 my-4 sm:my-6">
@@ -76,23 +86,35 @@ export const MembersOnlyPaywall = () => {
         large
       />
       <div className="">
-        <h3 className="leading-tight pb-1">
-          {needsUpgrade
-            ? "Upgrade your membership to continue reading"
-            : subscriptionUnlocks
-              ? "Subscribe to continue reading"
-              : "Become a member to continue reading"}
-        </h3>
-        {subscriptionUnlocks ? (
-          <p>Free for subscribers</p>
+        {unlocksAt ? (
+          <>
+            <h3 className="leading-tight pb-1">
+              This post will unlock in {daysUntilLabel(unlocksAt)}.
+            </h3>
+            <p>Upgrade your subscription to get early access.</p>
+          </>
         ) : (
-          startingPriceCents !== null && (
-            <p>
-              {needsUpgrade && namedTiers.length > 0
-                ? `Available starting from ${formatPrice(startingPriceCents)}/month`
-                : `Memberships start at ${formatPrice(startingPriceCents)}/month`}
-            </p>
-          )
+          <>
+            <h3 className="leading-tight pb-1">
+              {needsUpgrade
+                ? "Upgrade your membership to continue reading"
+                : subscriptionUnlocks
+                  ? "Subscribe to continue reading"
+                  : "Become a member to continue reading"}
+            </h3>
+            {subscriptionUnlocks ? (
+              <p>Free for subscribers</p>
+            ) : (
+              startingPriceCents !== null && (
+                <p>
+                  {needsUpgrade &&
+                  paidUnlockingTiers.length < tiers.length
+                    ? `Available starting from ${formatPrice(startingPriceCents)}/month`
+                    : `Memberships start at ${formatPrice(startingPriceCents)}/month`}
+                </p>
+              )
+            )}
+          </>
         )}
       </div>
       {needsUpgrade ? (

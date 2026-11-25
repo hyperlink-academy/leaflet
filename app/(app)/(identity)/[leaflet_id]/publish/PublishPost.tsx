@@ -32,6 +32,7 @@ import { EditorState } from "prosemirror-state";
 import { TagSelector } from "components/Tags";
 import { latestSendAt } from "src/emailPosts/types";
 import { PublishingTo } from "./PublishingTo";
+import { WiderReleaseDateOptions } from "./WiderReleaseDateOptions";
 import type { ReplyTarget } from "src/documentReplies";
 import { ReplyingTo } from "components/Pages/ReplyingTo";
 import {
@@ -401,14 +402,20 @@ const PublishPostForm = (
 
               <hr className="border-border-light" />
 
-              <BackdateOptions
-                publishedAt={localPublishedAt}
-                setPublishedAt={setLocalPublishedAt}
-                canSchedule={canSchedule}
-                showScheduleUpsell={
-                  props.scheduling?.ineligibleReason === "not_pro"
-                }
-              />
+              <div className="flex flex-col gap-1">
+                <BackdateOptions
+                  publishedAt={localPublishedAt}
+                  setPublishedAt={setLocalPublishedAt}
+                  canSchedule={canSchedule}
+                  showScheduleUpsell={
+                    props.scheduling?.ineligibleReason === "not_pro"
+                  }
+                />
+                <WiderReleaseDateOptions
+                  firstPage={firstPage}
+                  publishedAt={localPublishedAt}
+                />
+              </div>
               <hr className="border-border-light" />
 
               <div className="flex justify-between  gap-4">

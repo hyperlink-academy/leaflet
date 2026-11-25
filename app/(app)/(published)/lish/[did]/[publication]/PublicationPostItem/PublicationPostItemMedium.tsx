@@ -34,6 +34,7 @@ export function PublicationPostItemMedium(props: MediumProps) {
             <MembersBadge
               publicationUri={props.publicationUri}
               gatePolicy={props.gatePolicy}
+              widerRelease={props.widerRelease}
             />
           )}
 

@@ -5,6 +5,8 @@ import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "src/utils/focusPage";
 import { getEditorPrefs } from "src/utils/editorPrefs";
 import { v7 } from "uuid";
+import type { GatePolicy } from "src/membership";
+import type { ContentGateConfig } from "src/publicationDefaults";
 import { Replicache } from "replicache";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { elementId } from "src/utils/elementId";
@@ -125,13 +127,17 @@ type Command = {
   // Not offered inside a question's answer, whose published form renders
   // only self-contained blocks.
   hiddenInAnswer?: boolean;
-  // Only shown when the publication has paid memberships enabled, the current
-  // page is the post's first page, and no delimiter exists yet (gating is
-  // computed against the served first page, and one delimiter is enough).
+  // Only shown when the current page is the post's first page and no
+  // delimiter exists yet (gating is computed against the served first page,
+  // and one delimiter is enough).
   membersOnlyDelimiter?: boolean;
   onSelect: (
     rep: Replicache<ReplicacheMutators>,
-    props: Props & { entity_set: string; hasPaidTiers?: boolean },
+    props: Props & {
+      entity_set: string;
+      hasPaidTiers?: boolean;
+      lastContentGate?: ContentGateConfig | null;
+    },
     undoManager: UndoManager,
   ) => Promise<any>;
 };
@@ -605,11 +611,19 @@ export const blockCommands: Command[] = [
     },
   },
   {
-    name: "Paywall",
+    name: "Gated Content",
     hiddenInAnswer: true,
     icon: <LockTiny />,
     type: "publication",
-    alternateNames: ["members", "membership", "members only", "premium"],
+    alternateNames: [
+      "paywall",
+      "gate",
+      "members",
+      "membership",
+      "members only",
+      "subscribers only",
+      "premium",
+    ],
     publicationOnly: true,
     hiddenOnPublicationPage: true,
     membersOnlyDelimiter: true,
@@ -624,14 +638,35 @@ export const blockCommands: Command[] = [
         props,
         "members-only-delimiter",
       );
+      const gate = props.lastContentGate;
+      const audience: GatePolicy = gate?.audience ?? {
+        audience: props.hasPaidTiers ? "paid" : "subscribers",
+      };
       await rep.mutate.assertFact({
         entity,
         attribute: "block/members-only-audience",
-        data: {
-          type: "string",
-          value: props.hasPaidTiers ? "paid" : "subscribers",
-        },
+        data: { type: "string", value: audience.audience },
       });
+      if (audience.audience === "tiers")
+        for (const tierId of audience.tierIds)
+          await rep.mutate.assertFact({
+            id: v7(),
+            entity,
+            attribute: "block/members-only-tier",
+            data: { type: "string", value: tierId },
+          });
+      if (gate?.widerRelease) {
+        await rep.mutate.assertFact({
+          entity,
+          attribute: "block/members-only-wider-release-timeline",
+          data: { type: "string", value: gate.widerRelease.timeline },
+        });
+        await rep.mutate.assertFact({
+          entity,
+          attribute: "block/members-only-wider-release-audience",
+          data: { type: "audience-union", value: gate.widerRelease.audience },
+        });
+      }
       um.add({
         undo: () => {
           props.entityID && focusTextBlock(props.entityID);
