@@ -1,8 +1,9 @@
+import { SPAM_OBVIOUS } from "./signals/contentLlm";
 import type { ProposedStatus, SignalValue } from "./types";
 
 // Bump when a rule or threshold changes, so decisions in review_events can be
 // told apart by the policy that made them.
-export const POLICY_VERSION = 4;
+export const POLICY_VERSION = 5;
 
 // Whether rules marked autoBlock block an account on their own. Set to false
 // and every decision is only a proposal: recorded, shown at /admin/review,
@@ -86,7 +87,22 @@ export const RULES: Rule[] = [
     when: (v) => v["content.llm"] === undefined,
     run: ["content.llm"],
   },
-  { id: "llm-spam", when: (v) => v["content.llm"] === "spam", then: "spam" },
+  {
+    // The one rule that blocks on the model's word alone, and only on the
+    // verdict it reserves for accounts no admin would hesitate over.
+    id: "llm-spam-obvious",
+    when: (v) =>
+      v["content.llm"] === SPAM_OBVIOUS &&
+      v["account.profile"] !== "established",
+    then: "spam",
+    autoBlock: true,
+  },
+  {
+    id: "llm-spam",
+    when: (v) =>
+      v["content.llm"] === "spam" || v["content.llm"] === SPAM_OBVIOUS,
+    then: "spam",
+  },
   {
     id: "llm-legit",
     when: (v) => v["content.llm"] === "legit",

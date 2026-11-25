@@ -217,8 +217,9 @@ about). The admin queue filters by reason and block-by-site selects by it.
 logged signal values after a rule or reason changes, at no signal cost.
 
 Auto-block: a rule marked `autoBlock` in `policy.ts` blocks on its own while
-`AUTO_BLOCK` in the same file is true (today `known-spam-site` and `link-farm`; the model's
-spam verdict is not one). It never blocks an account an admin unblocked, and
+`AUTO_BLOCK` in the same file is true (today `known-spam-site`, the `link-farm` rules, and
+`llm-spam-obvious`: the model's spam verdict blocks only when it also calls the
+spam obvious, and never for an established profile). It never blocks an account an admin unblocked, and
 never unblocks. Blocked content 404s; the owner, signed in, sees a banner
 naming contact@leaflet.pub for disputes.
 

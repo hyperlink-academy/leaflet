@@ -168,6 +168,19 @@ describe("policy", () => {
       decide({ "account.profile": "thin", "content.llm": "spam" }),
     ).toEqual({ status: "spam", rule: "llm-spam", block: false });
   });
+
+  it("blocks on the model alone only when it calls the spam obvious", () => {
+    expect(
+      decide({ "account.profile": "thin", "content.llm": "spam_obvious" }),
+    ).toEqual({ status: "spam", rule: "llm-spam-obvious", block: true });
+    expect(
+      decide({
+        "account.profile": "established",
+        "links.single_target_share": 0.9,
+        "content.llm": "spam_obvious",
+      }),
+    ).toEqual({ status: "spam", rule: "llm-spam", block: false });
+  });
 });
 
 describe("auto-block", () => {

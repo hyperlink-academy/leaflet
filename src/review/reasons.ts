@@ -1,3 +1,4 @@
+import { SPAM_OBVIOUS } from "./signals/contentLlm";
 import type { Reason, SignalResult } from "./types";
 
 // Status says what to do with an account; reasons say why. They are worked
@@ -46,7 +47,9 @@ export const REASONS: Record<string, Finder> = {
       account: partner.did,
     };
   },
-  model_spam: (s) => modelReason(s, "spam", "The model read its posts as spam"),
+  model_spam: (s) =>
+    modelReason(s, SPAM_OBVIOUS, "The model read its posts as obvious spam") ??
+    modelReason(s, "spam", "The model read its posts as spam"),
   model_unsure: (s) =>
     modelReason(s, "unsure", "The model read its posts and couldn't decide"),
   backlink_posts: (s) => {
