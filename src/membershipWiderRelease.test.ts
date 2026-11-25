@@ -10,6 +10,7 @@ import {
   pageHasMembersDelimiter,
   truncateBlocksAtMembersDelimiter,
   widerReleaseTimeline,
+  isWiderReleaseTimelinePast,
   widerReleaseAudience,
   type AudiencePolicy,
 } from "src/membership";
@@ -207,5 +208,18 @@ describe("widerReleaseReaches", () => {
     expect(
       widerReleaseReaches(null, gate, toPublic, new Date(at).getTime()),
     ).toBe(false);
+  });
+});
+
+describe("isWiderReleaseTimelinePast", () => {
+  const now = new Date("2026-01-10T00:00:00Z").getTime();
+  test("only timelines that have run out from the publish date", () => {
+    const publishedAt = "2026-01-05T00:00:00Z";
+    expect(isWiderReleaseTimelinePast(publishedAt, "day", now)).toBe(true);
+    expect(isWiderReleaseTimelinePast(publishedAt, "week", now)).toBe(false);
+    expect(isWiderReleaseTimelinePast(publishedAt, "month", now)).toBe(false);
+  });
+  test("an unpublished post counts from now", () => {
+    expect(isWiderReleaseTimelinePast(undefined, "day", now)).toBe(false);
   });
 });

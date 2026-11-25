@@ -411,7 +411,10 @@ const PublishPostForm = (
                     props.scheduling?.ineligibleReason === "not_pro"
                   }
                 />
-                <WiderReleaseDateOptions firstPage={firstPage} />
+                <WiderReleaseDateOptions
+                  firstPage={firstPage}
+                  publishedAt={localPublishedAt}
+                />
               </div>
               <hr className="border-border-light" />
 

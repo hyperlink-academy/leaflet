@@ -90,6 +90,18 @@ export function widerReleaseTimeline(
   return date.toISOString();
 }
 
+// Whether a timeline counted from publishedAt has already run out, so picking
+// it would release the post as soon as it's published. Unpublished posts count
+// from now.
+export function isWiderReleaseTimelinePast(
+  publishedAt: string | undefined,
+  delay: WiderReleaseDelay,
+  now: number = Date.now(),
+): boolean {
+  const at = publishedAt && widerReleaseTimeline(publishedAt, delay);
+  return !!at && new Date(at).getTime() <= now;
+}
+
 // The delayed audience only ever adds readers: the gate after widerReleaseAt admits
 // anyone either policy admits, so a narrower pick can't lock readers out.
 export function widerReleaseAudience(a: GatePolicy, b: GatePolicy): GatePolicy;

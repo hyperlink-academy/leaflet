@@ -443,11 +443,12 @@ async function publish({
     ? getFirstPageMembersDelimiter(getDocumentPages(normalizedDoc))
     : null;
   const previousWiderReleaseAt = previousDelimiter?.widerReleaseAt;
-  // A release that has happened can't be undone: readers it reached keep
-  // access, so the gate keeps its released audience whatever the draft says.
+  // An early access that has been released can't be rescheduled, so the gate
+  // keeps its released date and audience whatever the draft's timeline says.
+  // A gate switched to Unlock Content has no widerReleaseAt and gates again.
   const delimiter = getFirstPageMembersDelimiter(pages);
   if (
-    delimiter &&
+    delimiter?.widerReleaseAt &&
     previousDelimiter &&
     typeof previousWiderReleaseAt === "string" &&
     new Date(previousWiderReleaseAt).getTime() <= Date.now()
