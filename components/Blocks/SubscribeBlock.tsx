@@ -33,11 +33,11 @@ export const SubscribeBlock = (
         isSelected={false}
         className="accent-container rounded-lg! border-none! p-0! text-center justify-center"
       >
-        <div className="px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-5">
-          <h3 className="leading-snug text-secondary">{publicationName}</h3>
-          {publicationDescription && (
-            <div className="text-tertiary">{publicationDescription}</div>
-          )}
+        <div className="flex flex-col items-center gap-3 px-4 py-4 leading-snug">
+          <div>
+            <h3 className="leading-tight pb-1">{publicationName}</h3>
+            {publicationDescription && <p>{publicationDescription}</p>}
+          </div>
         </div>
       </BlockLayout>
     );
@@ -49,12 +49,12 @@ export const SubscribeBlock = (
       setAreYouSure={props.setAreYouSure}
       className="accent-container rounded-lg! border-none! p-0! text-center justify-center"
     >
-      <div className="px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-5">
-        <h3 className="leading-snug text-secondary">{publicationName}</h3>
-        {publicationDescription && (
-          <div className="text-tertiary">{publicationDescription}</div>
-        )}
-        <div className="w-fit max-w-full mx-auto pt-3">
+      <div className="flex flex-col items-center gap-3 px-4 py-4 leading-snug">
+        <div>
+          <h3 className="leading-tight pb-1">{publicationName}</h3>
+          {publicationDescription && <p>{publicationDescription}</p>}
+        </div>
+        <div className="w-fit max-w-full mx-auto">
           {publicationUri && (
             <SubscribeInput
               publicationUri={publicationUri}

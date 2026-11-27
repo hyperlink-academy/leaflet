@@ -1,0 +1,343 @@
+"use client";
+import { useState } from "react";
+import { AtUri } from "@atproto/syntax";
+import { ButtonPrimary } from "components/Buttons";
+import { Input } from "components/Input";
+import { SettingsSection, InputSetting } from "components/SettingsLayout";
+import { IdentityContext } from "components/IdentityProvider";
+import { SubscribePanel } from "components/Subscribe/SubscribeButton";
+import { useMembershipTiers } from "components/Memberships/useMembershipTiers";
+import {
+  MembersOnlyPaywallCard,
+  membersOnlyPaywallCopy,
+} from "app/(app)/(published)/lish/[did]/[publication]/[rkey]/MembersOnlyPaywall";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import type {
+  GatePolicy,
+  MembershipTiers,
+  ResolvedPublicationMembership,
+  WiderRelease,
+} from "src/membership";
+import {
+  usePublicationData,
+  useNormalizedPublicationRecord,
+} from "../PublicationSWRProvider";
+
+type PubInfo = {
+  uri: string;
+  url: string | undefined;
+  name: string;
+  description: string | undefined;
+  iconSrc: string | undefined;
+  newsletterMode: boolean;
+  paidTiers: MembershipTiers["paid"];
+};
+
+const DAY = 24 * 60 * 60 * 1000;
+
+export function CtaSettings() {
+  let { data } = usePublicationData();
+  let record = useNormalizedPublicationRecord();
+  let pub = data?.publication;
+  let { tiers, hasPaidTiers } = useMembershipTiers(pub?.uri);
+  if (!pub) return null;
+
+  let pubInfo: PubInfo = {
+    uri: pub.uri,
+    url: record?.url,
+    name: record?.name ?? pub.name,
+    description: record?.description,
+    iconSrc: record?.icon
+      ? blobRefToSrc(record.icon.ref, new AtUri(pub.uri).host)
+      : undefined,
+    newsletterMode: !!pub.publication_newsletter_settings?.enabled,
+    paidTiers: hasPaidTiers ? tiers?.paid ?? [] : [],
+  };
+
+  return (
+    <>
+      <GeneralCta pub={pubInfo} />
+      <PaywallCta kind="locked" pub={pubInfo} />
+      <PaywallCta kind="earlyAccess" pub={pubInfo} />
+    </>
+  );
+}
+
+const PAYWALL_SECTIONS = {
+  general: {
+    title: "General",
+    help: (
+      <>
+        This Subcription box appears wherever it is possible to subscribe to
+        your publication. For example, you can find it at the bottom of each
+        post or the the Subscribe Form block.
+      </>
+    ),
+  },
+  locked: {
+    title: "Locked",
+    help: (
+      <div>
+        If you gate your content for certain subscribers or members, readers
+        without access, they will see this.
+      </div>
+    ),
+  },
+  earlyAccess: {
+    title: "Early Access",
+    help: (
+      <div>
+        If you offer early access to your content for certain subscribers or
+        members, readers who do not yet have access will see this CTA.
+      </div>
+    ),
+  },
+} as const;
+
+function GeneralCta(props: { pub: PubInfo }) {
+  let [header, setHeader] = useState("");
+  let [description, setDescription] = useState("");
+  let dirty = header !== "" || description !== "";
+
+  return (
+    <SettingsSection
+      title={PAYWALL_SECTIONS.general.title}
+      help={PAYWALL_SECTIONS.general.help}
+    >
+      <CtaInputs
+        id="cta-general"
+        header={header}
+        setHeader={setHeader}
+        headerPlaceholder={props.pub.name}
+        description={description}
+        setDescription={setDescription}
+        descriptionPlaceholder={props.pub.description}
+      />
+      <CtaPreview>
+        <SubscribePanel
+          publicationUri={props.pub.uri}
+          publicationUrl={props.pub.url}
+          publicationName={header.trim() || props.pub.name}
+          publicationDescription={description.trim() || props.pub.description}
+          newsletterMode={props.pub.newsletterMode}
+        />
+      </CtaPreview>
+      <SaveButton dirty={dirty} />
+    </SettingsSection>
+  );
+}
+function PaywallCta(props: { kind: "locked" | "earlyAccess"; pub: PubInfo }) {
+  let section = PAYWALL_SECTIONS[props.kind];
+  let hasPaidTiers = props.pub.paidTiers.length > 0;
+  let [header, setHeader] = useState("");
+  let [upgradeHeader, setUpgradeHeader] = useState("");
+  let [description, setDescription] = useState("");
+  let dirty = header !== "" || upgradeHeader !== "" || description !== "";
+
+  let signUp = samplePaywallCopy(props.kind, props.pub, null);
+  let upgrade = hasPaidTiers
+    ? samplePaywallCopy(props.kind, props.pub, { kind: "free" })
+    : null;
+
+  return (
+    <SettingsSection title={section.title} help={section.help}>
+      <CtaInputs
+        id={`cta-${props.kind}`}
+        header={header}
+        setHeader={setHeader}
+        headerLabel={hasPaidTiers ? "Sign Up Header" : "Header"}
+        headerPlaceholder={signUp.heading}
+        upgradeHeader={hasPaidTiers ? upgradeHeader : undefined}
+        setUpgradeHeader={setUpgradeHeader}
+        upgradeHeaderPlaceholder={upgrade?.heading}
+        description={description}
+        setDescription={setDescription}
+      />
+      <div
+        className={`grid gap-3 md:gap-y-1 ${upgrade ? "md:grid-cols-2" : ""}`}
+      >
+        <CtaPreview
+          label={upgrade ? "Sign up" : undefined}
+          help={
+            upgrade ? "Shown to readers who aren't subscribed yet." : undefined
+          }
+        >
+          <MembersOnlyPaywallCard
+            className="m-0!"
+            iconSrc={props.pub.iconSrc}
+            pubName={props.pub.name}
+            copy={{ ...signUp, heading: header.trim() || signUp.heading }}
+            description={description.trim() || undefined}
+          >
+            <ButtonPrimary type="button" className="text-sm!">
+              Subscribe
+            </ButtonPrimary>
+          </MembersOnlyPaywallCard>
+        </CtaPreview>
+        {upgrade && (
+          <CtaPreview
+            label="Upgrade"
+            help="Shown to subscribers who need to upgrade to read."
+          >
+            <MembersOnlyPaywallCard
+              className="m-0!"
+              iconSrc={props.pub.iconSrc}
+              pubName={props.pub.name}
+              copy={{
+                ...upgrade,
+                heading: upgradeHeader.trim() || upgrade.heading,
+              }}
+              description={description.trim() || undefined}
+            >
+              <div className="flex flex-col gap-1 items-center justify-center">
+                <ButtonPrimary type="button" className="text-sm!">
+                  Upgrade
+                </ButtonPrimary>
+                <div className="text-accent-contrast text-sm">
+                  Manage Subscription
+                </div>
+              </div>
+            </MembersOnlyPaywallCard>
+          </CtaPreview>
+        )}
+      </div>
+      <SaveButton dirty={dirty} />
+    </SettingsSection>
+  );
+}
+
+// A representative post for each preview: paid pubs gate to any paid tier
+// (early access opening to subscribers after a week); free pubs gate to
+// subscribers (early access opening to everyone).
+function samplePaywallCopy(
+  kind: "locked" | "earlyAccess",
+  pub: PubInfo,
+  membership: ResolvedPublicationMembership | null,
+) {
+  let hasPaidTiers = pub.paidTiers.length > 0;
+  let gatePolicy: GatePolicy = hasPaidTiers
+    ? { audience: "paid" }
+    : { audience: "subscribers" };
+  let now = Date.now();
+  let widerRelease: WiderRelease | null =
+    kind === "earlyAccess"
+      ? {
+          at: new Date(now + 7 * DAY - 60_000).toISOString(),
+          audience: hasPaidTiers
+            ? { audience: "subscribers" }
+            : { audience: "public" },
+        }
+      : null;
+  return membersOnlyPaywallCopy({
+    membership,
+    gatePolicy,
+    tiers: pub.paidTiers,
+    widerRelease,
+    now,
+  });
+}
+
+function CtaInputs(props: {
+  id: string;
+  header: string;
+  setHeader: (v: string) => void;
+  headerLabel?: string;
+  headerPlaceholder?: string;
+  upgradeHeader?: string;
+  setUpgradeHeader?: (v: string) => void;
+  upgradeHeaderPlaceholder?: string;
+  description: string;
+  setDescription: (v: string) => void;
+  descriptionPlaceholder?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <InputSetting
+        label={props.headerLabel ?? "Header"}
+        optional
+        htmlFor={`${props.id}-header`}
+      >
+        <Input
+          className="input-with-border w-full text-primary"
+          type="text"
+          id={`${props.id}-header`}
+          value={props.header}
+          placeholder={props.headerPlaceholder}
+          onChange={(e) => props.setHeader(e.currentTarget.value)}
+        />
+      </InputSetting>
+      {props.upgradeHeader !== undefined && props.setUpgradeHeader && (
+        <InputSetting
+          label="Upgrade Header"
+          optional
+          htmlFor={`${props.id}-upgrade-header`}
+        >
+          <Input
+            className="input-with-border w-full text-primary"
+            type="text"
+            id={`${props.id}-upgrade-header`}
+            value={props.upgradeHeader}
+            placeholder={props.upgradeHeaderPlaceholder}
+            onChange={(e) => props.setUpgradeHeader!(e.currentTarget.value)}
+          />
+        </InputSetting>
+      )}
+      <InputSetting
+        label="Description"
+        optional
+        htmlFor={`${props.id}-description`}
+      >
+        <Input
+          textarea
+          rows={2}
+          className="input-with-border w-full text-primary"
+          id={`${props.id}-description`}
+          value={props.description}
+          placeholder={props.descriptionPlaceholder}
+          onChange={(e) => props.setDescription(e.currentTarget.value)}
+        />
+      </InputSetting>
+    </div>
+  );
+}
+
+function CtaPreview(props: {
+  label?: string;
+  help?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-2 min-w-0 md:grid md:grid-rows-subgrid md:row-span-2">
+      <IdentityContext.Provider
+        value={{
+          identity: null,
+          mutate: (async () => null) as any,
+          identityPending: false,
+        }}
+      >
+        <div
+          inert
+          className="grow rounded-lg bg-bg-page p-3 sm:p-4 pointer-events-none select-none flex flex-col gap-1"
+        >
+          <div>
+            <p className="text-sm font-bold text-tertiary">{props.label}</p>
+            {props.help && (
+              <p className="text-sm text-tertiary">{props.help}</p>
+            )}
+          </div>
+          {props.children}
+        </div>
+      </IdentityContext.Provider>
+    </div>
+  );
+}
+
+function SaveButton(props: { dirty: boolean }) {
+  return (
+    <div className="flex justify-end">
+      <ButtonPrimary type="button" disabled={!props.dirty}>
+        Save
+      </ButtonPrimary>
+    </div>
+  );
+}

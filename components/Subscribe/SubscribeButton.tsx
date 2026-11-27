@@ -75,14 +75,15 @@ export type SubscribeProps = {
 export const SubscribePanel = (props: SubscribeProps) => {
   return (
     <div className="subscribePanel accent-container rounded-lg! border-none! p-0! w-full text-center justify-center">
-      <div className="px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-5">
-        <h3 className="leading-snug text-secondary">{props.publicationName}</h3>
-        {props.publicationDescription && (
-          <div className="text-tertiary leading-snug">
-            {props.publicationDescription}
-          </div>
-        )}
-        <div className="w-fit max-w-full mx-auto pt-3">
+      {/* Spacing and type match MembersOnlyPaywallCard. */}
+      <div className="flex flex-col items-center gap-3 px-4 py-4 leading-snug">
+        <div>
+          <h3 className="leading-tight pb-1">{props.publicationName}</h3>
+          {props.publicationDescription && (
+            <p>{props.publicationDescription}</p>
+          )}
+        </div>
+        <div className="w-fit max-w-full mx-auto">
           <SubscribeInput {...props} />
         </div>
       </div>

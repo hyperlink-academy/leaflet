@@ -84,18 +84,25 @@ function EnableNewsletterSection(props: {
   let [pending, setPending] = useState(false);
 
   return (
-    <SettingsSection title="Enable Newsletter">
-      <div className="font-bold">
-        Newsletter mode allows you to send email updates to your subscribers!
-      </div>
-      <div>
-        Your first 1k email subscribers are included with Leaflet Pro.
-        <br /> After that, it&apos;s $5 for each additional 1k subs.
-      </div>
-      <div>
-        If you have questions, or you want to import an existing email list,{" "}
-        <a href="mailto:contact@leaflet.pub">contact us</a>!
-      </div>
+    <SettingsSection
+      title="Enable Newsletter"
+      help={
+        <div className="flex flex-col gap-2">
+          <div className="font-bold">
+            Newsletter mode allows you to send email updates to your
+            subscribers!
+          </div>
+          <div>
+            Your first 1k email subscribers are included with Leaflet Pro.
+            <br /> After that, it&apos;s $5 for each additional 1k subs.
+          </div>
+          <div>
+            If you have questions, or you want to import an existing email list,{" "}
+            <a href="mailto:contact@leaflet.pub">contact us</a>!
+          </div>
+        </div>
+      }
+    >
       <ButtonPrimary
         className="self-start"
         disabled={pending}
@@ -129,18 +136,21 @@ function DisableNewsletterSection(props: {
   let [pending, setPending] = useState(false);
 
   return (
-    <SettingsSection title="Disable Newsletter">
-      <div className="flex flex-col gap-3 flex-wrap">
-        <div className="text-secondary leading-snug">
-          Disabling newsletter mode will stop sending emails to subscribers. You
-          will keep the emails and can re-enable at any time.
+    <SettingsSection
+      title="Disable Newsletter"
+      help={
+        <div className="flex flex-col gap-3">
+          <div>
+            Disabling newsletter mode will stop sending emails to subscribers.
+            You will keep the emails and can re-enable at any time.
+          </div>
+          <div>
+            We will NOT send an automatic email notifying subscribers, so be
+            sure to send a notice before you disable!
+          </div>
         </div>
-        <div className="text-secondary leading-snug">
-          We will NOT send an automatic email notifying subscribers, so be sure
-          to send a notice before you disable!
-        </div>
-      </div>
-
+      }
+    >
       <ButtonSecondary
         disabled={pending}
         onClick={async () => {
@@ -205,12 +215,20 @@ function NewsletterOptions(props: {
     replyToValue.trim().toLowerCase() !== savedReplyTo.toLowerCase();
 
   return (
-    <SettingsSection title="Newsletter Options">
-      <div>Newsletters allow your subscribers to opt into email updates.</div>
-      <div>
-        If you have questions, or you want to import an existing email list,{" "}
-        <a href="mailto:contact@leaflet.pub">contact us</a>!
-      </div>
+    <SettingsSection
+      title="Newsletter Options"
+      help={
+        <div className="flex flex-col gap-2">
+          <div>
+            Newsletters allow your subscribers to opt into email updates.
+          </div>
+          <div>
+            If you have questions, or you want to import an existing email list,{" "}
+            <a href="mailto:contact@leaflet.pub">contact us</a>!
+          </div>
+        </div>
+      }
+    >
       <div className="flex flex-col gap-4">
         <InputSetting label="Sender Name">
           <div className="light-container w-full max-w-prose text-secondary h-fit bg-border-light px-2 py-1 rounded-md">

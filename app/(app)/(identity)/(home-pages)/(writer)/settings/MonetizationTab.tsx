@@ -13,8 +13,10 @@ export function MonetizationTab(props: { pubs: MonetizationPub[] }) {
     <>
       <ConnectStripeSection />
       {chargesEnabled && (
-        <SettingsSection title="Monetized Publications">
-          Enable and disable monetization in your publication settings
+        <SettingsSection
+          title="Monetized Publications"
+          help="Enable and disable monetization in your publication settings"
+        >
           {props.pubs.length === 0 ? (
             <div className="text-tertiary text-sm">No publications yet.</div>
           ) : (

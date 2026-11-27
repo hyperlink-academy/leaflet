@@ -66,11 +66,15 @@ export function RecommendationSettings(props: {
   };
 
   return (
-    <SettingsSection title="Recommendations">
-      <p>
-        Recommend other Standard Site publications. <br />
-        They'll be shown to readers after they subscribe.
-      </p>
+    <SettingsSection
+      title="Recommendations"
+      help={
+        <>
+          Recommend other Standard Site publications. <br />
+          They'll be shown to readers after they subscribe.
+        </>
+      }
+    >
       <InputSetting label="Publications">
         <div className="flex flex-col gap-2">
           <Combobox

@@ -105,9 +105,8 @@ export const MembersOnlyPaywall = () => {
 
 export type MembersOnlyPaywallCopy = {
   heading: string;
-  subhead: string | null;
+  subscribeConditions: string | null;
   needsUpgrade: boolean;
-  // The viewer already subscribes and a paid tier would let them in now.
   canUpgrade: boolean;
   earlyAccess: boolean;
 };
@@ -125,7 +124,8 @@ export function membersOnlyPaywallCopy(input: {
     !membershipUnlocksGatedPost(membership, gatePolicy);
   let cheapest = cheapestUnlockingTier(tiers, gatePolicy);
   let canUpgrade = !!membership && !!cheapest;
-  let upgradeNote = canUpgrade ? " Upgrade to access." : "";
+  let upgradeNote = canUpgrade ? " Upgrade to read now!" : "";
+  let upgrading = needsUpgrade || canUpgrade;
 
   if (widerReleaseReaches(membership, gatePolicy, widerRelease, input.now)) {
     // Gate and release combined: who can read once the wider release lands.
@@ -137,8 +137,10 @@ export function membersOnlyPaywallCopy(input: {
           ? "subscribers"
           : cheapestUnlockingTier(tiers, released)?.name ?? "members";
     return {
-      heading: "Subscribe for early access",
-      subhead: `This post unlocks for ${audience} in ${daysUntilLabel(widerRelease.at, input.now)}.${upgradeNote}`,
+      heading: upgrading
+        ? "Upgrade for early access"
+        : "Subscribe for early access",
+      subscribeConditions: `This post unlocks for ${audience} in ${daysUntilLabel(widerRelease.at, input.now)}.${upgradeNote}`,
       needsUpgrade,
       canUpgrade,
       earlyAccess: true,
@@ -146,12 +148,14 @@ export function membersOnlyPaywallCopy(input: {
   }
 
   return {
-    heading: "Subscribe to continue reading",
-    subhead:
+    heading: upgrading
+      ? "Upgrade to continue reading"
+      : "Subscribe to continue reading",
+    subscribeConditions:
       gatePolicy?.audience === "subscribers"
         ? "Available to subscribers"
         : cheapest
-          ? `Available starting from ${formatPrice(cheapest.monthly_price_cents)}/month.${upgradeNote}`
+          ? `Available starting from ${formatPrice(cheapest.monthly_price_cents)}/month.`
           : null,
     needsUpgrade,
     canUpgrade,
@@ -189,13 +193,26 @@ export const MembersOnlyPaywallCard = (props: {
   iconSrc: string | undefined;
   pubName: string | undefined;
   copy: MembersOnlyPaywallCopy;
+  className?: string;
+  description?: string;
   children: React.ReactNode;
 }) => (
-  <div className="membersOnlyPaywall light-container flex flex-col items-center gap-3 text-center block-border bg-bg-page px-4 py-4 my-4 sm:my-6">
+  <div
+    className={`membersOnlyPaywall light-container flex flex-col items-center gap-3 text-center block-border bg-bg-page px-4 py-4 my-4 sm:my-6 leading-snug ${props.className}`}
+  >
     <PubIcon icon={props.iconSrc} pubName={props.pubName} large />
     <div>
       <h3 className="leading-tight pb-1">{props.copy.heading}</h3>
-      {props.copy.subhead && <p>{props.copy.subhead}</p>}
+      {props.description && <p>{props.description}</p>}
+      {props.copy.subscribeConditions && (
+        <p
+          className={
+            props.description ? "text-sm text-tertiary italic mt-2 " : ""
+          }
+        >
+          {props.copy.subscribeConditions}
+        </p>
+      )}
     </div>
     {props.children}
   </div>

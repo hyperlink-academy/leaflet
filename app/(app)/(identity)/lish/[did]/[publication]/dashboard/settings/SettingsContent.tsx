@@ -20,6 +20,7 @@ import { SubscribePageSettings } from "./SubscribePageSettings";
 import { NewsletterSettings } from "./NewsletterSettings";
 import { ContributorSettings } from "./ContributorSettings";
 import { MonetizationSettings } from "./MonetizationSettings";
+import { CtaSettings } from "./CtaSettings";
 import { useIsPro, useCanSeePayments } from "src/hooks/useEntitlement";
 import { useIdentityData } from "components/IdentityProvider";
 import { isOAuthSessionError, OAuthErrorMessage } from "components/OAuthError";
@@ -33,6 +34,7 @@ import { UpgradeContent } from "app/(app)/(published)/lish/[did]/[publication]/U
 
 export type PubSettingsTab =
   | "general"
+  | "cta"
   | "monetization"
   | "contributors"
   | "newsletter";
@@ -54,6 +56,7 @@ export function usePubSettingsTabs(): {
   // the tabs — those panes show the upgrade pitch instead of the settings.
   return [
     { value: "general" as const, label: "General" },
+    { value: "cta" as const, label: "CTA" },
     ...(canSeePayments
       ? [{ value: "monetization" as const, label: "Monetization" }]
       : []),
@@ -245,6 +248,14 @@ export function SettingsContent(props: { tab: PubSettingsTab }) {
     return (
       <SettingsPageLayout>
         <ContributorSettings />
+      </SettingsPageLayout>
+    );
+  }
+
+  if (props.tab === "cta") {
+    return (
+      <SettingsPageLayout>
+        <CtaSettings />
       </SettingsPageLayout>
     );
   }

@@ -61,19 +61,23 @@ export const MembershipTiers = (props: { publicationUri: string }) => {
   let [disabling, setDisabling] = useState(false);
 
   return (
-    <SettingsSection title="Membership Tiers">
+    <SettingsSection
+      title="Membership Tiers"
+      help={
+        <div className="flex flex-col gap-1">
+          <p>
+            Readers can join a tier to unlock paywalled content in your posts.
+          </p>
+          <p>
+            Gate content by typing "/" in the post editor and selecting "Gated
+            Content" from the block menu.
+          </p>
+        </div>
+      }
+    >
       <p className="font-bold">
         Paid Membership is in Alpha. Some issues may occur.
       </p>
-      <div className="text-secondary leading-snug flex flex-col gap-1">
-        <p>
-          Readers can join a tier to unlock paywalled content in your posts.
-        </p>
-        <p>
-          Gate content by typing "/" in the post editor and selecting "Gated
-          Content" from the block menu.
-        </p>
-      </div>
 
       <div className="flex flex-col gap-2">
         <div className="flex flex-col opaque-container py-2 px-3">
