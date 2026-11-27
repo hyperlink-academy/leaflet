@@ -2,6 +2,14 @@
 import { useState } from "react";
 import { AtUri } from "@atproto/syntax";
 import { ButtonPrimary } from "components/Buttons";
+import { DotLoader } from "components/utils/DotLoader";
+import { useToaster } from "components/Toast";
+import { saveCtaDefaults } from "actions/publications/saveCtaDefaults";
+import {
+  savedCtaDefaults,
+  type CtaSection,
+  type CtaText,
+} from "src/publicationDefaults";
 import { Input } from "components/Input";
 import { SettingsSection, InputSetting } from "components/SettingsLayout";
 import { IdentityContext } from "components/IdentityProvider";
@@ -25,6 +33,7 @@ import {
 
 type PubInfo = {
   uri: string;
+  cta: ReturnType<typeof savedCtaDefaults>;
   url: string | undefined;
   name: string;
   description: string | undefined;
@@ -44,6 +53,7 @@ export function CtaSettings() {
 
   let pubInfo: PubInfo = {
     uri: pub.uri,
+    cta: savedCtaDefaults(pub.defaults),
     url: record?.url,
     name: record?.name ?? pub.name,
     description: record?.description,
@@ -94,9 +104,10 @@ const PAYWALL_SECTIONS = {
 } as const;
 
 function GeneralCta(props: { pub: PubInfo }) {
-  let [header, setHeader] = useState("");
-  let [description, setDescription] = useState("");
-  let dirty = header !== "" || description !== "";
+  let saved = props.pub.cta.general;
+  let [header, setHeader] = useState(saved?.header ?? "");
+  let [description, setDescription] = useState(saved?.description ?? "");
+  let text = { header, description };
 
   return (
     <SettingsSection
@@ -121,17 +132,25 @@ function GeneralCta(props: { pub: PubInfo }) {
           newsletterMode={props.pub.newsletterMode}
         />
       </CtaPreview>
-      <SaveButton dirty={dirty} />
+      <SaveButton
+        publicationUri={props.pub.uri}
+        section="general"
+        saved={saved}
+        text={text}
+      />
     </SettingsSection>
   );
 }
+
 function PaywallCta(props: { kind: "locked" | "earlyAccess"; pub: PubInfo }) {
   let section = PAYWALL_SECTIONS[props.kind];
   let hasPaidTiers = props.pub.paidTiers.length > 0;
-  let [header, setHeader] = useState("");
-  let [upgradeHeader, setUpgradeHeader] = useState("");
-  let [description, setDescription] = useState("");
-  let dirty = header !== "" || upgradeHeader !== "" || description !== "";
+  let saved = props.pub.cta[props.kind];
+  let [header, setHeader] = useState(saved?.header ?? "");
+  // Kept and re-saved while hidden, so it returns if paid tiers come back.
+  let [upgradeHeader, setUpgradeHeader] = useState(saved?.upgradeHeader ?? "");
+  let [description, setDescription] = useState(saved?.description ?? "");
+  let text = { header, upgradeHeader, description };
 
   let signUp = samplePaywallCopy(props.kind, props.pub, null);
   let upgrade = hasPaidTiers
@@ -200,7 +219,12 @@ function PaywallCta(props: { kind: "locked" | "earlyAccess"; pub: PubInfo }) {
           </CtaPreview>
         )}
       </div>
-      <SaveButton dirty={dirty} />
+      <SaveButton
+        publicationUri={props.pub.uri}
+        section={props.kind}
+        saved={saved}
+        text={text}
+      />
     </SettingsSection>
   );
 }
@@ -331,11 +355,52 @@ function CtaPreview(props: {
   );
 }
 
-function SaveButton(props: { dirty: boolean }) {
+function SaveButton(props: {
+  publicationUri: string;
+  section: CtaSection;
+  saved: CtaText | undefined;
+  text: CtaText;
+}) {
+  let { mutate } = usePublicationData();
+  let toaster = useToaster();
+  let [saving, setSaving] = useState(false);
+  let keys = ["header", "upgradeHeader", "description"] as const;
+  let dirty = keys.some(
+    (k) => (props.text[k]?.trim() ?? "") !== (props.saved?.[k] ?? ""),
+  );
+
   return (
     <div className="flex justify-end">
-      <ButtonPrimary type="button" disabled={!props.dirty}>
-        Save
+      <ButtonPrimary
+        type="button"
+        disabled={!dirty || saving}
+        onClick={async () => {
+          setSaving(true);
+          let res = await saveCtaDefaults(
+            props.publicationUri,
+            props.section,
+            props.text,
+          );
+          setSaving(false);
+          if (!res.ok) {
+            toaster({
+              type: "error",
+              content:
+                res.error === "unauthorized"
+                  ? "You don't have permission to edit this publication."
+                  : res.error === "header_too_long"
+                    ? "Not saved! A header was too long."
+                    : res.error === "description_too_long"
+                      ? "Not saved! A description was too long."
+                      : "Couldn't save. Try again.",
+            });
+            return;
+          }
+          await mutate();
+          toaster({ type: "success", content: "Saved!" });
+        }}
+      >
+        {saving ? <DotLoader /> : "Save"}
       </ButtonPrimary>
     </div>
   );

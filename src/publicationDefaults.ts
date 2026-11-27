@@ -96,3 +96,85 @@ function policyForTiers(
   const tierIds = policy.tierIds.filter((id) => activeTierIds.includes(id));
   return tierIds.length ? { audience: "tiers", tierIds } : null;
 }
+
+// Custom subscribe-box text from the CTA settings tab. A blank field is
+// stored as absent so the box falls back to its built-in text.
+export type CtaText = {
+  header?: string;
+  upgradeHeader?: string;
+  description?: string;
+};
+export type CtaSection = "general" | "locked" | "earlyAccess";
+export type CtaDefaults = Partial<Record<CtaSection, CtaText>>;
+
+export const CTA_SECTIONS: readonly CtaSection[] = [
+  "general",
+  "locked",
+  "earlyAccess",
+];
+// Abuse guards only: this text loads on every subscribe box and paywall.
+export const CTA_HEADER_MAX_LENGTH = 2000;
+export const CTA_DESCRIPTION_MAX_LENGTH = 10000;
+
+export function isCtaSection(value: unknown): value is CtaSection {
+  return CTA_SECTIONS.includes(value as CtaSection);
+}
+
+// One section's text, trimmed with blanks dropped; null when a field isn't a
+// string or is too long. General has no upgrade header.
+export function readCtaText(
+  section: CtaSection,
+  value: unknown,
+): CtaText | null {
+  if (value == null) return {};
+  if (typeof value !== "object" || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  const text: CtaText = {};
+  const fields = [
+    ["header", CTA_HEADER_MAX_LENGTH],
+    ...(section === "general"
+      ? []
+      : ([["upgradeHeader", CTA_HEADER_MAX_LENGTH]] as const)),
+    ["description", CTA_DESCRIPTION_MAX_LENGTH],
+  ] as const;
+  for (const [key, max] of fields) {
+    const raw = v[key];
+    if (raw == null) continue;
+    if (typeof raw !== "string") return null;
+    const trimmed = raw.trim();
+    if (trimmed.length > max) return null;
+    if (trimmed) text[key] = trimmed;
+  }
+  return text;
+}
+
+// Which kind of field, if any, is over its limit, for telling the writer why a
+// save was refused. An upgrade header counts as a header.
+export function ctaTooLongField(
+  value: unknown,
+): "header" | "description" | null {
+  const v = (value ?? {}) as Record<string, unknown>;
+  const tooLong = (key: string, max: number) =>
+    typeof v[key] === "string" && (v[key] as string).trim().length > max;
+  if (
+    tooLong("header", CTA_HEADER_MAX_LENGTH) ||
+    tooLong("upgradeHeader", CTA_HEADER_MAX_LENGTH)
+  )
+    return "header";
+  if (tooLong("description", CTA_DESCRIPTION_MAX_LENGTH)) return "description";
+  return null;
+}
+
+export function savedCtaDefaults(defaults: unknown): CtaDefaults {
+  const cta = (defaults as { cta?: unknown } | null | undefined)?.cta;
+  const result: CtaDefaults = {};
+  if (!cta || typeof cta !== "object") return result;
+  for (const section of CTA_SECTIONS) {
+    const text = readCtaText(
+      section,
+      (cta as Record<string, unknown>)[section],
+    );
+    if (text && Object.keys(text).length) result[section] = text;
+  }
+  return result;
+}
