@@ -27,7 +27,12 @@ import {
   type MembershipPlan,
   type Cadence,
 } from "components/Memberships/TierGrid";
-import type { GatePolicy, MembershipTiers, PaidTier } from "src/membership";
+import type {
+  GatePolicy,
+  MembershipTiers,
+  PaidTier,
+  WiderRelease,
+} from "src/membership";
 import { type JoinResume } from "components/Memberships/joinReturn";
 import { revalidateUnlocks } from "components/Memberships/revalidateUnlocks";
 import {
@@ -92,6 +97,7 @@ export function JoinMembershipFlow(props: {
   newsletterMode: boolean;
   tiers: MembershipTiers;
   gatePolicy?: GatePolicy | null;
+  widerRelease?: WiderRelease | null;
   resume?: JoinResume | null;
   // Analytics: where the join flow was opened from.
   source?: SubscriptionSource;
@@ -659,6 +665,7 @@ export function JoinMembershipFlow(props: {
               membership={myMembership}
               tiers={props.tiers}
               gatePolicy={props.gatePolicy}
+              widerRelease={props.widerRelease}
               onSuccess={() => {
                 setChangeKey((k) => k + 1);
                 props.onClose?.();
@@ -672,6 +679,7 @@ export function JoinMembershipFlow(props: {
               busyPlan={busyPlan}
               currentMembership={viewerSub.membership}
               gatePolicy={props.gatePolicy}
+              widerRelease={props.widerRelease}
               onSelectPlan={selectPlan}
             />
           )}

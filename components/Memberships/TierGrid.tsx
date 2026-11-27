@@ -3,19 +3,23 @@ import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { ToggleGroup } from "components/ToggleGroup";
 import { CheckTiny } from "components/Icons/CheckTiny";
+import { ClockTiny } from "components/Icons/ClockTiny";
 import {
   membershipUnlocksGatedPost,
+  widerReleaseReaches,
   type GatePolicy,
   type MembershipTiers,
   type PaidTier,
   type ResolvedPublicationMembership,
   type SubscriberTier,
+  type WiderRelease,
 } from "src/membership";
 import { TierDescription } from "components/Memberships/TierDescription";
 import {
   centeredGridCellStyle,
   centeredGridStyle,
 } from "src/utils/centeredGrid";
+import { UnlockedTiny } from "components/Icons/UnlockedTiny";
 
 // Stored tiers are always paid tiers now.
 export type Tier = PaidTier;
@@ -74,6 +78,7 @@ export function TierGrid(props: {
   busyPlan: string | null;
   currentMembership?: ResolvedPublicationMembership | null;
   gatePolicy?: GatePolicy | null;
+  widerRelease?: WiderRelease | null;
   onSelectPlan: (plan: MembershipPlan) => void;
 }) {
   const paidTiers = [...props.tiers.paid].sort(
@@ -190,22 +195,53 @@ export function TierGrid(props: {
                   </ButtonPrimary>
                 )}
               </div>
-              {props.gatePolicy &&
-                membershipUnlocksGatedPost(
-                  resolvedMembership,
-                  props.gatePolicy,
-                ) && (
-                  <div className="tierPostUnlockIndicator absolute -bottom-3.5 left-0 right-0 flex justify-center">
-                    <div className="opaque-container rounded-full! flex items-center gap-1 mx-auto px-2 py-0.5 text-xs font-bold text-accent-contrast">
-                      <CheckTiny className="w-3 h-3 shrink-0" />
-                      Unlocks post
-                    </div>
-                  </div>
-                )}
+              <PostUnlockIndicator
+                membership={resolvedMembership}
+                gatePolicy={props.gatePolicy}
+                widerRelease={props.widerRelease}
+              />
             </div>
           );
         })}
       </div>
     </>
+  );
+}
+
+function PostUnlockIndicator(props: {
+  membership: ResolvedPublicationMembership;
+  gatePolicy?: GatePolicy | null;
+  widerRelease?: WiderRelease | null;
+}) {
+  if (!props.gatePolicy) return null;
+  let label: React.ReactNode;
+  if (membershipUnlocksGatedPost(props.membership, props.gatePolicy))
+    label = (
+      <>
+        <UnlockedTiny className="w-3 h-3 shrink-0" />
+        Unlocks post
+      </>
+    );
+  else if (
+    widerReleaseReaches(props.membership, props.gatePolicy, props.widerRelease)
+  )
+    label = (
+      <>
+        <ClockTiny className="w-3 h-3 shrink-0" />
+        Unlocks on{" "}
+        {new Date(props.widerRelease.at).toLocaleDateString(undefined, {
+          month: "2-digit",
+          day: "2-digit",
+        })}
+      </>
+    );
+  else return null;
+
+  return (
+    <div className="tierPostUnlockIndicator absolute -bottom-3.5 left-0 right-0 flex justify-center">
+      <div className="opaque-container rounded-full! flex items-center gap-1 mx-auto px-2 py-0.5 text-xs font-bold text-accent-contrast">
+        {label}
+      </div>
+    </div>
   );
 }

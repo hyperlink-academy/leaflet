@@ -23,7 +23,7 @@ import {
   type MembershipPlan,
   type Cadence,
 } from "components/Memberships/TierGrid";
-import type { GatePolicy, MembershipTiers } from "src/membership";
+import type { GatePolicy, MembershipTiers, WiderRelease } from "src/membership";
 
 export function membershipPrice(m: MyMembership): string | null {
   const cents = m.cadence === "year" ? m.annualPriceCents : m.monthlyPriceCents;
@@ -102,6 +102,7 @@ export function ChangePlanModal(props: {
   onSuccess?: () => void;
   title?: string;
   gatePolicy?: GatePolicy | null;
+  widerRelease?: WiderRelease | null;
 }) {
   return (
     <Modal
@@ -118,6 +119,7 @@ export function ChangePlanModal(props: {
       <ChangePlanForm
         membership={props.membership}
         gatePolicy={props.gatePolicy}
+        widerRelease={props.widerRelease}
         onSuccess={() => {
           props.onSuccess?.();
           props.onClose();
@@ -131,6 +133,7 @@ export function ChangePlanForm(props: {
   membership: MyMembership;
   onSuccess: () => void;
   gatePolicy?: GatePolicy | null;
+  widerRelease?: WiderRelease | null;
   // Skips the tiers fetch when the host already has them (the join flow).
   tiers?: MembershipTiers;
 }) {
@@ -264,6 +267,7 @@ export function ChangePlanForm(props: {
         busyPlan={null}
         currentMembership={{ kind: "paid", tierId: m.tierId }}
         gatePolicy={props.gatePolicy}
+        widerRelease={props.widerRelease}
         // A change on a cancelled subscription would bill the new plan while
         // leaving the cancellation in place, so it has to be resumed first.
         onSelectPlan={(plan) =>

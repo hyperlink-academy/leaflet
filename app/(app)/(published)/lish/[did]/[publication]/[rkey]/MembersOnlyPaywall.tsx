@@ -43,12 +43,13 @@ export const MembersOnlyPaywall = () => {
   let membershipTiers = document?.membersOnly?.tiers;
   if (!membershipTiers) return null;
   let gatePolicy = document?.membersOnly?.gatePolicy ?? null;
+  let widerRelease = document?.membersOnly?.widerRelease ?? null;
 
   let copy = membersOnlyPaywallCopy({
     membership: viewer.membership,
     gatePolicy,
     tiers: membershipTiers.paid,
-    widerRelease: document?.membersOnly?.widerRelease,
+    widerRelease,
   });
 
   return (
@@ -76,6 +77,7 @@ export const MembersOnlyPaywall = () => {
               membership={membership}
               title="Upgrade your membership"
               gatePolicy={gatePolicy}
+              widerRelease={widerRelease}
               onSuccess={revalidateUnlocks}
               onClose={() => setChangingPlan(false)}
             />
@@ -96,6 +98,7 @@ export const MembersOnlyPaywall = () => {
           newsletterMode={pub.newsletterMode}
           tiers={membershipTiers}
           gatePolicy={gatePolicy}
+          widerRelease={widerRelease}
           upgrade={copy.canUpgrade}
         />
       )}

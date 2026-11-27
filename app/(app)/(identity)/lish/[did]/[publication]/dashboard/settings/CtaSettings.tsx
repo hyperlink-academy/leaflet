@@ -68,9 +68,8 @@ const PAYWALL_SECTIONS = {
     title: "General",
     help: (
       <>
-        This Subcription box appears wherever it is possible to subscribe to
-        your publication. For example, you can find it at the bottom of each
-        post or the the Subscribe Form block.
+        This appears wherever it is possible to subscribe to your publication.
+        You can find it at the bottom of each post or the Subscribe Form block.
       </>
     ),
   },
@@ -317,7 +316,7 @@ function CtaPreview(props: {
       >
         <div
           inert
-          className="grow rounded-lg bg-bg-page p-3 sm:p-4 pointer-events-none select-none flex flex-col gap-1"
+          className="grow rounded-lg bg-bg-page p-3 sm:p-4 pointer-events-none select-none flex flex-col gap-2"
         >
           <div>
             <p className="text-sm font-bold text-tertiary">{props.label}</p>

@@ -10,7 +10,7 @@ import {
   type JoinResume,
 } from "components/Memberships/joinReturn";
 import type { MembershipJoinViewer } from "actions/publications/joinMembership";
-import type { GatePolicy, MembershipTiers } from "src/membership";
+import type { GatePolicy, MembershipTiers, WiderRelease } from "src/membership";
 
 // The subscribe control for publications with paid tiers. Styled like
 // SubscribeButton, but instead of one-click subscribing it opens the paid join
@@ -22,6 +22,7 @@ export const PaidSubscribeButton = (
     tiers: MembershipTiers;
     // Badges the plans admitted by the post's gate policy.
     gatePolicy?: GatePolicy | null;
+    widerRelease?: WiderRelease | null;
     // Test-harness seam, threaded to the modal.
     viewerOverride?: MembershipJoinViewer;
     compact?: boolean;
@@ -97,6 +98,7 @@ export const PaidSubscribeButton = (
         newsletterMode={props.newsletterMode}
         tiers={props.tiers}
         gatePolicy={props.gatePolicy}
+        widerRelease={props.widerRelease}
         resume={resume}
         source={props.source}
         viewerOverride={props.viewerOverride}
