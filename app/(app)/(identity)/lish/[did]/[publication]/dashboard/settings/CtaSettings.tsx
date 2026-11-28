@@ -10,7 +10,7 @@ import {
   type CtaSection,
   type CtaText,
 } from "src/publicationDefaults";
-import { Input } from "components/Input";
+import { AutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { SettingsSection, InputSetting } from "components/SettingsLayout";
 import { IdentityContext } from "components/IdentityProvider";
 import { SubscribePanel } from "components/Subscribe/SubscribeButton";
@@ -263,6 +263,16 @@ function samplePaywallCopy(
   });
 }
 
+// AutosizeTextarea's grow-wrap styles strip the textarea's own border and
+// focus outline, so the wrapper carries them.
+const autosizeInputClass =
+  "input-with-border w-full text-primary focus-within:border-tertiary focus-within:outline-solid focus-within:outline-tertiary focus-within:outline-2 focus-within:outline-offset-1";
+
+// Headers are single-line; they only wrap visually.
+const preventNewline = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  if (e.key === "Enter") e.preventDefault();
+};
+
 function CtaInputs(props: {
   id: string;
   header: string;
@@ -283,12 +293,12 @@ function CtaInputs(props: {
         optional
         htmlFor={`${props.id}-header`}
       >
-        <Input
-          className="input-with-border w-full text-primary"
-          type="text"
+        <AutosizeTextarea
+          className={autosizeInputClass}
           id={`${props.id}-header`}
           value={props.header}
           placeholder={props.headerPlaceholder}
+          onKeyDown={preventNewline}
           onChange={(e) => props.setHeader(e.currentTarget.value)}
         />
       </InputSetting>
@@ -298,12 +308,12 @@ function CtaInputs(props: {
           optional
           htmlFor={`${props.id}-upgrade-header`}
         >
-          <Input
-            className="input-with-border w-full text-primary"
-            type="text"
+          <AutosizeTextarea
+            className={autosizeInputClass}
             id={`${props.id}-upgrade-header`}
             value={props.upgradeHeader}
             placeholder={props.upgradeHeaderPlaceholder}
+            onKeyDown={preventNewline}
             onChange={(e) => props.setUpgradeHeader!(e.currentTarget.value)}
           />
         </InputSetting>
@@ -313,10 +323,8 @@ function CtaInputs(props: {
         optional
         htmlFor={`${props.id}-description`}
       >
-        <Input
-          textarea
-          rows={2}
-          className="input-with-border w-full text-primary"
+        <AutosizeTextarea
+          className={autosizeInputClass}
           id={`${props.id}-description`}
           value={props.description}
           placeholder={props.descriptionPlaceholder}

@@ -3,6 +3,7 @@ import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { BlockProps, BlockLayout } from "./Block";
 import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 import { savedCtaDefaults } from "src/publicationDefaults";
+import { CtaDescription } from "components/Subscribe/CtaDescription";
 
 // SubscribeBlock renders the publication subscribe form in the editor, styled to
 // match SubscribePanel (components/Subscribe/SubscribeButton.tsx). The published
@@ -40,7 +41,7 @@ export const SubscribeBlock = (
         <div className="flex flex-col items-center gap-3 px-4 py-4 leading-snug">
           <div>
             <h3 className="leading-tight pb-1">{header}</h3>
-            {description && <p>{description}</p>}
+            {description && <CtaDescription text={description} />}
           </div>
         </div>
       </BlockLayout>
@@ -56,7 +57,7 @@ export const SubscribeBlock = (
       <div className="flex flex-col items-center gap-3 px-4 py-4 leading-snug">
         <div>
           <h3 className="leading-tight pb-1">{header}</h3>
-          {description && <p>{description}</p>}
+          {description && <CtaDescription text={description} />}
         </div>
         <div className="w-fit max-w-full mx-auto">
           {publicationUri && (

@@ -34,6 +34,7 @@ import { PaidSubscribeButton } from "./PaidSubscribeButton";
 import { useMembershipTiers } from "components/Memberships/useMembershipTiers";
 import { usePublicationCta } from "./usePublicationCta";
 import type { CtaText } from "src/publicationDefaults";
+import { CtaDescription } from "components/Subscribe/CtaDescription";
 
 type SubscribeMode = "email" | "atproto";
 
@@ -93,7 +94,7 @@ export const SubscribePanel = (
       <div className="flex flex-col items-center gap-3 px-4 py-4 leading-snug">
         <div>
           <h3 className="leading-tight pb-1">{header}</h3>
-          {description && <p>{description}</p>}
+          {description && <CtaDescription text={description} />}
         </div>
         <div className="w-fit max-w-full mx-auto">
           <SubscribeInput {...subscribeProps} />

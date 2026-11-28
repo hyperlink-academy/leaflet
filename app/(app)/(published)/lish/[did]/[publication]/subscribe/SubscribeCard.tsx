@@ -4,6 +4,7 @@ import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import type { CtaText } from "src/publicationDefaults";
+import { CtaDescription } from "components/Subscribe/CtaDescription";
 
 export const SubscribeCard = (props: {
   record: NormalizedPublication;
@@ -29,7 +30,10 @@ export const SubscribeCard = (props: {
         <h3 className="grow min-w-0 text-primary">{header}</h3>
       </div>
       {description && (
-        <p className="text-secondary text-sm pb-4">{description}</p>
+        <CtaDescription
+          text={description}
+          className="text-secondary text-sm pb-4"
+        />
       )}
       <SubscribeInput
         publicationUri={props.uri}

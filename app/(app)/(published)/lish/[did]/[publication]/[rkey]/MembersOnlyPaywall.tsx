@@ -25,6 +25,7 @@ import { AtUri } from "@atproto/syntax";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
 import { useUnlockStatus } from "./PostDataProvider";
 import { ChangePlanModal } from "components/Memberships/ChangePlanModal";
+import { CtaDescription } from "components/Subscribe/CtaDescription";
 
 // Rendered in place of the members-only delimiter for readers without an
 // active membership; the gated blocks were already dropped server-side. Shows
@@ -225,7 +226,7 @@ export const MembersOnlyPaywallCard = (props: {
     <PubIcon icon={props.iconSrc} pubName={props.pubName} large />
     <div>
       <h3 className="leading-tight pb-1">{props.copy.heading}</h3>
-      {props.description && <p>{props.description}</p>}
+      {props.description && <CtaDescription text={props.description} />}
       {props.copy.subscribeConditions && (
         <p
           className={
