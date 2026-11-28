@@ -1,5 +1,4 @@
 import {
-  disableMemberships,
   MembershipTierInput,
   upsertMembershipTier,
   deleteMembershipTier,
@@ -8,7 +7,6 @@ import {
 import {
   ButtonSecondary,
   ButtonPrimary,
-  ButtonTertiary,
 } from "components/Buttons";
 import { formatPrice } from "components/Memberships/TierGrid";
 import { SettingsSection } from "components/SettingsLayout";
@@ -41,7 +39,6 @@ const memberCount = (tier: Tier) =>
 
 export const MembershipTiers = (props: { publicationUri: string }) => {
   let { data, mutate } = usePublicationData();
-  let toaster = useToaster();
 
   let membershipSettings = data?.publication?.publication_membership_settings;
   let subscriberTier = buildMembershipTiers(membershipSettings, []).subscriber;
@@ -58,7 +55,6 @@ export const MembershipTiers = (props: { publicationUri: string }) => {
 
   let [editingTier, setEditingTier] = useState<Tier | "new" | null>(null);
   let [editingSubscriberTier, setEditingSubscriberTier] = useState(false);
-  let [disabling, setDisabling] = useState(false);
 
   return (
     <SettingsSection
@@ -151,31 +147,13 @@ export const MembershipTiers = (props: { publicationUri: string }) => {
 
       <hr className="border-border-light" />
 
-      <ButtonTertiary
-        type="button"
-        className="self-start"
-        disabled={disabling}
-        onClick={async () => {
-          if (disabling) return;
-          setDisabling(true);
-          let res = await disableMemberships(props.publicationUri);
-          setDisabling(false);
-          if (!res.ok) {
-            toaster({
-              type: "error",
-              content:
-                res.error === "unsupported"
-                  ? "Monetization can't be turned off automatically yet — reach out and we'll help!"
-                  : "Failed to disable monetization.",
-            });
-            return;
-          }
-          toaster({ type: "success", content: "Monetization disabled." });
-          await mutate();
-        }}
-      >
-        {disabling ? <DotLoader /> : "Disable Membership Tiers"}
-      </ButtonTertiary>
+      <p className="text-sm text-secondary">
+        If you'd like to disable or change your member tiers, please{" "}
+        <a href="mailto:contact@leaflet.pub" className="text-accent-contrast">
+          contact us
+        </a>
+        !
+      </p>
 
       {editingTier !== null && (
         <TierEditorModal

@@ -21,6 +21,7 @@ import {
 import { ToggleGroup } from "components/ToggleGroup";
 import { useSetGatePolicy } from "components/Memberships/useSetGatePolicy";
 import { useSaveContentGateDefaults } from "components/Memberships/useSaveContentGateDefaults";
+import { getBasePublicationURL } from "src/utils/getPublicationURL";
 
 export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
   let isSelected = useIsBlockSelected(props.entityID);
@@ -128,7 +129,10 @@ function TierSelector(props: {
   // Once the published post's wider release has passed, its early access
   // can't be rescheduled; publish keeps the release as it was. Switching to
   // Unlock Content still gates the post again.
-  let { normalizedDocument } = useLeafletPublicationData();
+  let { data: pub, normalizedDocument } = useLeafletPublicationData();
+  let settingsUrl = pub?.publications
+    ? `${getBasePublicationURL(pub.publications)}/dashboard/settings?tab=cta`
+    : null;
   let publishedRelease = getDocumentWiderRelease(normalizedDocument);
   let pastRelease =
     isWiderReleasePassed(publishedRelease)
@@ -289,11 +293,9 @@ function TierSelector(props: {
             </label>
             <hr />
 
-            {showGateChecklist && (
-              <ChecklistSection label="Early access for…">
-                {gateChecklist}
-              </ChecklistSection>
-            )}
+            <ChecklistSection label="Early access for…">
+              {gateChecklist}
+            </ChecklistSection>
             <hr />
 
             <WiderReleaseChecklist
@@ -320,6 +322,26 @@ function TierSelector(props: {
             />
           </>
         )}
+        <div className="flex flex-col gap-0.5">
+          <hr />
+          <hr />
+        </div>
+        <div className="text-sm text-secondary leading-snug">
+          Readers without access will see a subscription box in place of the
+          content. Go to{" "}
+          {settingsUrl ? (
+            <a
+              href={settingsUrl}
+              target="_blank"
+              className="text-accent-contrast"
+            >
+              settings
+            </a>
+          ) : (
+            "settings"
+          )}{" "}
+          to customize the box.
+        </div>
       </div>
     </Popover>
   );
