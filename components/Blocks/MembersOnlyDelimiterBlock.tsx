@@ -22,6 +22,7 @@ import { ToggleGroup } from "components/ToggleGroup";
 import { useSetGatePolicy } from "components/Memberships/useSetGatePolicy";
 import { useSaveContentGateDefaults } from "components/Memberships/useSaveContentGateDefaults";
 import { getBasePublicationURL } from "src/utils/getPublicationURL";
+import { useIdentityData } from "components/IdentityProvider";
 
 export const MembersOnlyDelimiterBlock = (props: BlockProps) => {
   let isSelected = useIsBlockSelected(props.entityID);
@@ -130,9 +131,13 @@ function TierSelector(props: {
   // can't be rescheduled; publish keeps the release as it was. Switching to
   // Unlock Content still gates the post again.
   let { data: pub, normalizedDocument } = useLeafletPublicationData();
-  let settingsUrl = pub?.publications
-    ? `${getBasePublicationURL(pub.publications)}/dashboard/settings?tab=cta`
-    : null;
+  let { identity } = useIdentityData();
+  let settingsUrl =
+    pub?.publications &&
+    !!identity?.atp_did &&
+    identity.atp_did === pub.publications.identity_did
+      ? `${getBasePublicationURL(pub.publications)}/dashboard/settings?tab=cta`
+      : null;
   let publishedRelease = getDocumentWiderRelease(normalizedDocument);
   let pastRelease =
     isWiderReleasePassed(publishedRelease)
@@ -322,26 +327,26 @@ function TierSelector(props: {
             />
           </>
         )}
-        <div className="flex flex-col gap-0.5">
-          <hr />
-          <hr />
-        </div>
-        <div className="text-sm text-secondary leading-snug">
-          Readers without access will see a subscription box in place of the
-          content. Go to{" "}
-          {settingsUrl ? (
-            <a
-              href={settingsUrl}
-              target="_blank"
-              className="text-accent-contrast"
-            >
-              settings
-            </a>
-          ) : (
-            "settings"
-          )}{" "}
-          to customize the box.
-        </div>
+        {settingsUrl && (
+          <>
+            <div className="flex flex-col gap-0.5">
+              <hr />
+              <hr />
+            </div>
+            <div className="text-sm text-secondary leading-snug">
+              Readers without access will see a subscription box in place of
+              the content. Go to{" "}
+              <a
+                href={settingsUrl}
+                target="_blank"
+                className="text-accent-contrast"
+              >
+                settings
+              </a>{" "}
+              to customize the box.
+            </div>
+          </>
+        )}
       </div>
     </Popover>
   );

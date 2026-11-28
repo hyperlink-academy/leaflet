@@ -5,6 +5,7 @@ import { ButtonPrimary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { useToaster } from "components/Toast";
 import { saveCtaDefaults } from "actions/publications/saveCtaDefaults";
+import { setPublicationCtaCache } from "components/Subscribe/usePublicationCta";
 import {
   savedCtaDefaults,
   type CtaSection,
@@ -379,12 +380,19 @@ function SaveButton(props: {
         disabled={!dirty || saving}
         onClick={async () => {
           setSaving(true);
-          let res = await saveCtaDefaults(
-            props.publicationUri,
-            props.section,
-            props.text,
-          );
-          setSaving(false);
+          let res;
+          try {
+            res = await saveCtaDefaults(
+              props.publicationUri,
+              props.section,
+              props.text,
+            );
+          } catch {
+            toaster({ type: "error", content: "Couldn't save. Try again." });
+            return;
+          } finally {
+            setSaving(false);
+          }
           if (!res.ok) {
             toaster({
               type: "error",
@@ -399,7 +407,10 @@ function SaveButton(props: {
             });
             return;
           }
-          await mutate();
+          await Promise.all([
+            mutate(),
+            setPublicationCtaCache(props.publicationUri, res.value),
+          ]);
           toaster({ type: "success", content: "Saved!" });
         }}
       >

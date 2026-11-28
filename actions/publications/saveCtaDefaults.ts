@@ -6,7 +6,8 @@ import {
   ctaTooLongField,
   isCtaSection,
   readCtaText,
-  type CtaText,
+  savedCtaDefaults,
+  type CtaDefaults,
 } from "src/publicationDefaults";
 import { Err, Ok, type Result } from "src/result";
 import type { Json } from "supabase/database.types";
@@ -19,7 +20,7 @@ export async function saveCtaDefaults(
   text: unknown,
 ): Promise<
   Result<
-    CtaText,
+    CtaDefaults,
     | "unauthorized"
     | "invalid"
     | "header_too_long"
@@ -63,7 +64,7 @@ export async function saveCtaDefaults(
     return Err("database_error");
   }
   await revalidatePublicationSettingsPaths(publicationUri);
-  return Ok(saved);
+  return Ok(savedCtaDefaults({ cta }));
 }
 
 function asObject(value: unknown): Record<string, unknown> {

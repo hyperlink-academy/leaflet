@@ -32,7 +32,7 @@ import { Separator } from "components/Layout";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { PaidSubscribeButton } from "./PaidSubscribeButton";
 import { useMembershipTiers } from "components/Memberships/useMembershipTiers";
-import { usePublicationCta } from "./usePublicationCta";
+import { usePublicationCta, preloadPublicationCta } from "./usePublicationCta";
 import type { CtaText } from "src/publicationDefaults";
 import { CtaDescription } from "components/Subscribe/CtaDescription";
 
@@ -373,7 +373,6 @@ export const SubscribeButton = (props: SubscribeProps) => {
   let [atSuccessOpen, setAtSuccessOpen] = useState(false);
   let [emailSuccessOpen, setEmailSuccessOpen] = useState(false);
   const membershipTiers = useMembershipTiers(props.publicationUri);
-  usePublicationCta(props.publicationUri);
 
   // Paid memberships replace the one-click subscribe with the paid join flow.
   if (membershipTiers.hasPaidTiers && membershipTiers.tiers)
@@ -381,8 +380,15 @@ export const SubscribeButton = (props: SubscribeProps) => {
       <PaidSubscribeButton {...props} tiers={membershipTiers.tiers} compact />
     );
 
+  const warmCta = () => preloadPublicationCta(props.publicationUri);
   const subscribeTrigger = (
-    <ButtonPrimary compact className="pubPageSubscribe text-sm!">
+    <ButtonPrimary
+      compact
+      className="pubPageSubscribe text-sm!"
+      onPointerEnter={warmCta}
+      onFocus={warmCta}
+      onTouchStart={warmCta}
+    >
       Subscribe
     </ButtonPrimary>
   );

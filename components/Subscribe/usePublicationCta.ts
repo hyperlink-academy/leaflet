@@ -1,5 +1,5 @@
 "use client";
-import useSWR from "swr";
+import useSWR, { mutate, preload } from "swr";
 import { getPublicationCta } from "actions/publications/getPublicationCta";
 import type { CtaDefaults } from "src/publicationDefaults";
 
@@ -15,4 +15,19 @@ export function usePublicationCta(
     { revalidateOnFocus: false, revalidateIfStale: false },
   );
   return data ?? {};
+}
+
+// Warms the cache from a subscribe trigger's hover/focus/touch, so the panel
+// it opens has the CTA without every button on a list page fetching on mount.
+export function preloadPublicationCta(publicationUri: string) {
+  preload(publicationCtaKey(publicationUri), () =>
+    getPublicationCta(publicationUri),
+  );
+}
+
+export function setPublicationCtaCache(
+  publicationUri: string,
+  cta: CtaDefaults,
+) {
+  return mutate(publicationCtaKey(publicationUri), cta, { revalidate: false });
 }
