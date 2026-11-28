@@ -32,6 +32,8 @@ import { Separator } from "components/Layout";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { PaidSubscribeButton } from "./PaidSubscribeButton";
 import { useMembershipTiers } from "components/Memberships/useMembershipTiers";
+import { usePublicationCta } from "./usePublicationCta";
+import type { CtaText } from "src/publicationDefaults";
 
 type SubscribeMode = "email" | "atproto";
 
@@ -72,19 +74,29 @@ export type SubscribeProps = {
   source?: SubscriptionSource;
 };
 
-export const SubscribePanel = (props: SubscribeProps) => {
+export const SubscribePanel = (
+  props: SubscribeProps & {
+    // Shown in place of the saved General CTA text, for the settings preview.
+    cta?: CtaText;
+  },
+) => {
+  let { cta: ctaOverride, ...subscribeProps } = props;
+  let saved = usePublicationCta(
+    ctaOverride ? undefined : props.publicationUri,
+  ).general;
+  let cta = ctaOverride ?? saved;
+  let header = cta?.header || props.publicationName;
+  let description = cta?.description || props.publicationDescription;
   return (
     <div className="subscribePanel accent-container rounded-lg! border-none! p-0! w-full text-center justify-center">
       {/* Spacing and type match MembersOnlyPaywallCard. */}
       <div className="flex flex-col items-center gap-3 px-4 py-4 leading-snug">
         <div>
-          <h3 className="leading-tight pb-1">{props.publicationName}</h3>
-          {props.publicationDescription && (
-            <p>{props.publicationDescription}</p>
-          )}
+          <h3 className="leading-tight pb-1">{header}</h3>
+          {description && <p>{description}</p>}
         </div>
         <div className="w-fit max-w-full mx-auto">
-          <SubscribeInput {...props} />
+          <SubscribeInput {...subscribeProps} />
         </div>
       </div>
     </div>
@@ -362,6 +374,8 @@ export const SubscribeButton = (props: SubscribeProps) => {
   let [atSuccessOpen, setAtSuccessOpen] = useState(false);
   let [emailSuccessOpen, setEmailSuccessOpen] = useState(false);
   const membershipTiers = useMembershipTiers(props.publicationUri);
+  // Warms the text for the SubscribePanel this button opens in a modal.
+  usePublicationCta(props.publicationUri);
 
   // Paid memberships replace the one-click subscribe with the paid join flow.
   if (membershipTiers.hasPaidTiers && membershipTiers.tiers)

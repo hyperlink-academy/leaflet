@@ -3,13 +3,17 @@ import { PubIcon } from "components/ActionBar/Publications";
 import { SubscribeInput } from "components/Subscribe/SubscribeButton";
 import type { NormalizedPublication } from "src/utils/normalizeRecords";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import type { CtaText } from "src/publicationDefaults";
 
 export const SubscribeCard = (props: {
   record: NormalizedPublication;
   uri: string;
   newsletterMode: boolean;
+  cta?: CtaText;
 }) => {
   let record = props.record;
+  let header = props.cta?.header || record.name;
+  let description = props.cta?.description || record.description;
   let iconUrl = record.icon
     ? blobRefToSrc(record.icon.ref, new AtUri(props.uri).host)
     : undefined;
@@ -22,10 +26,10 @@ export const SubscribeCard = (props: {
     >
       <div className="flex flex-row gap-3 items-center pb-3">
         <PubIcon icon={iconUrl} pubName={record.name} large />
-        <h3 className="grow min-w-0 text-primary">{record.name}</h3>
+        <h3 className="grow min-w-0 text-primary">{header}</h3>
       </div>
-      {record.description && (
-        <p className="text-secondary text-sm pb-4">{record.description}</p>
+      {description && (
+        <p className="text-secondary text-sm pb-4">{description}</p>
       )}
       <SubscribeInput
         publicationUri={props.uri}

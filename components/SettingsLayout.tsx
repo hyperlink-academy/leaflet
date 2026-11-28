@@ -25,12 +25,14 @@ export function SettingsSection(props: {
     <div
       className={`${props.accent ? "accent-container" : cardBorderHidden ? "light-container" : "opaque-container"} flex flex-col gap-4 p-3 pb-4 sm:px-4 ${props.className || ""}`}
     >
-      <div className="leading-snug max-w-prose flex flex-col gap-1">
+      <div className="leading-snug flex flex-col gap-1">
         <div className="flex justify-between items-center">
           {props.title && <h3>{props.title}</h3>}
           {props.action && props.action}
         </div>
-        {props.help && <div className=" text-secondary">{props.help}</div>}
+        {props.help && (
+          <div className="text-secondary max-w-prose">{props.help}</div>
+        )}
       </div>
       <div className="flex flex-col gap-4 text-secondary leading-snug">
         {props.children}

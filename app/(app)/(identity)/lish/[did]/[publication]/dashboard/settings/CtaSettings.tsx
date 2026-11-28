@@ -88,7 +88,7 @@ const PAYWALL_SECTIONS = {
     help: (
       <div>
         If you gate your content for certain subscribers or members, readers
-        without access, they will see this.
+        without access will see this.
       </div>
     ),
   },
@@ -127,8 +127,9 @@ function GeneralCta(props: { pub: PubInfo }) {
         <SubscribePanel
           publicationUri={props.pub.uri}
           publicationUrl={props.pub.url}
-          publicationName={header.trim() || props.pub.name}
-          publicationDescription={description.trim() || props.pub.description}
+          publicationName={props.pub.name}
+          publicationDescription={props.pub.description}
+          cta={{ header: header.trim(), description: description.trim() }}
           newsletterMode={props.pub.newsletterMode}
         />
       </CtaPreview>
@@ -229,9 +230,10 @@ function PaywallCta(props: { kind: "locked" | "earlyAccess"; pub: PubInfo }) {
   );
 }
 
-// A representative post for each preview: paid pubs gate to any paid tier
-// (early access opening to subscribers after a week); free pubs gate to
-// subscribers (early access opening to everyone).
+// A representative post for each preview: paid pubs gate to any paid tier,
+// free pubs to subscribers. The early-access release must reach the previewed
+// reader, or the paywall shows Locked text: so it opens to everyone for a
+// logged-out reader, and to subscribers for a free subscriber.
 function samplePaywallCopy(
   kind: "locked" | "earlyAccess",
   pub: PubInfo,
@@ -246,9 +248,10 @@ function samplePaywallCopy(
     kind === "earlyAccess"
       ? {
           at: new Date(now + 7 * DAY - 60_000).toISOString(),
-          audience: hasPaidTiers
-            ? { audience: "subscribers" }
-            : { audience: "public" },
+          audience:
+            hasPaidTiers && membership
+              ? { audience: "subscribers" }
+              : { audience: "public" },
         }
       : null;
   return membersOnlyPaywallCopy({

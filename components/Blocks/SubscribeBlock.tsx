@@ -2,6 +2,7 @@ import { useIsBlockSelected } from "src/useUIState";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { BlockProps, BlockLayout } from "./Block";
 import { SubscribeInput } from "components/Subscribe/SubscribeButton";
+import { savedCtaDefaults } from "src/publicationDefaults";
 
 // SubscribeBlock renders the publication subscribe form in the editor, styled to
 // match SubscribePanel (components/Subscribe/SubscribeButton.tsx). The published
@@ -24,8 +25,11 @@ export const SubscribeBlock = (
   let newsletterMode =
     !!data?.publications?.publication_newsletter_settings?.enabled;
 
+  let cta = savedCtaDefaults(data?.publications?.defaults).general;
   let publicationName = normalizedPublication?.name || "Subscribe";
+  let header = cta?.header || publicationName;
   let publicationDescription = normalizedPublication?.description;
+  let description = cta?.description || publicationDescription;
 
   if (props.preview)
     return (
@@ -35,8 +39,8 @@ export const SubscribeBlock = (
       >
         <div className="flex flex-col items-center gap-3 px-4 py-4 leading-snug">
           <div>
-            <h3 className="leading-tight pb-1">{publicationName}</h3>
-            {publicationDescription && <p>{publicationDescription}</p>}
+            <h3 className="leading-tight pb-1">{header}</h3>
+            {description && <p>{description}</p>}
           </div>
         </div>
       </BlockLayout>
@@ -51,8 +55,8 @@ export const SubscribeBlock = (
     >
       <div className="flex flex-col items-center gap-3 px-4 py-4 leading-snug">
         <div>
-          <h3 className="leading-tight pb-1">{publicationName}</h3>
-          {publicationDescription && <p>{publicationDescription}</p>}
+          <h3 className="leading-tight pb-1">{header}</h3>
+          {description && <p>{description}</p>}
         </div>
         <div className="w-fit max-w-full mx-auto">
           {publicationUri && (

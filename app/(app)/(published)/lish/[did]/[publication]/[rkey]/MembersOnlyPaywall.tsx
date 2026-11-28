@@ -7,6 +7,7 @@ import { useViewerSubscription } from "components/Subscribe/viewerSubscription";
 import { ButtonPrimary } from "components/Buttons";
 import { PubIcon } from "components/ActionBar/Publications";
 import { formatPrice } from "components/Memberships/TierGrid";
+import type { CtaDefaults } from "src/publicationDefaults";
 import { useMyMembership } from "components/Memberships/useMyMembership";
 import { revalidateUnlocks } from "components/Memberships/revalidateUnlocks";
 import {
@@ -45,12 +46,15 @@ export const MembersOnlyPaywall = () => {
   let gatePolicy = document?.membersOnly?.gatePolicy ?? null;
   let widerRelease = document?.membersOnly?.widerRelease ?? null;
 
-  let copy = membersOnlyPaywallCopy({
-    membership: viewer.membership,
-    gatePolicy,
-    tiers: membershipTiers.paid,
-    widerRelease,
-  });
+  let copy = applyPaywallCta(
+    membersOnlyPaywallCopy({
+      membership: viewer.membership,
+      gatePolicy,
+      tiers: membershipTiers.paid,
+      widerRelease,
+    }),
+    document?.cta,
+  );
 
   return (
     <MembersOnlyPaywallCard
@@ -61,6 +65,7 @@ export const MembersOnlyPaywall = () => {
       }
       pubName={pub?.record?.name}
       copy={copy}
+      description={copy.description}
     >
       {copy.needsUpgrade ? (
         <div className="flex flex-col gap-1 items-center justify-center">
@@ -108,11 +113,25 @@ export const MembersOnlyPaywall = () => {
 
 export type MembersOnlyPaywallCopy = {
   heading: string;
+  description?: string;
   subscribeConditions: string | null;
   needsUpgrade: boolean;
   canUpgrade: boolean;
   earlyAccess: boolean;
 };
+
+export function applyPaywallCta(
+  copy: MembersOnlyPaywallCopy,
+  cta: CtaDefaults | undefined,
+): MembersOnlyPaywallCopy {
+  let text = copy.earlyAccess ? cta?.earlyAccess : cta?.locked;
+  let upgrading = copy.needsUpgrade || copy.canUpgrade;
+  return {
+    ...copy,
+    heading: (upgrading ? text?.upgradeHeader : text?.header) || copy.heading,
+    description: text?.description || copy.description,
+  };
+}
 
 export function membersOnlyPaywallCopy(input: {
   membership: ResolvedPublicationMembership | null | undefined;
@@ -201,7 +220,7 @@ export const MembersOnlyPaywallCard = (props: {
   children: React.ReactNode;
 }) => (
   <div
-    className={`membersOnlyPaywall light-container flex flex-col items-center gap-3 text-center block-border bg-bg-page px-4 py-4 my-4 sm:my-6 leading-snug ${props.className}`}
+    className={`membersOnlyPaywall light-container flex flex-col items-center gap-3 text-center block-border bg-bg-page px-4 py-4 my-4 sm:my-6 leading-snug ${props.className ?? ""}`}
   >
     <PubIcon icon={props.iconSrc} pubName={props.pubName} large />
     <div>

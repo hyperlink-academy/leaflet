@@ -3,6 +3,7 @@
 import { getAuthIdentity } from "src/auth";
 import { isConfirmedContributor } from "src/contributorPermissions";
 import {
+  ctaTooLongField,
   isCtaSection,
   readCtaText,
   type CtaText,
@@ -10,13 +11,25 @@ import {
 import { Err, Ok, type Result } from "src/result";
 import type { Json } from "supabase/database.types";
 import { supabaseServerClient } from "supabase/serverClient";
+import { revalidatePublicationSettingsPaths } from "src/utils/revalidatePublication";
 
 export async function saveCtaDefaults(
   publicationUri: string,
   section: unknown,
   text: unknown,
-): Promise<Result<CtaText, "unauthorized" | "invalid" | "database_error">> {
+): Promise<
+  Result<
+    CtaText,
+    | "unauthorized"
+    | "invalid"
+    | "header_too_long"
+    | "description_too_long"
+    | "database_error"
+  >
+> {
   if (!isCtaSection(section)) return Err("invalid");
+  const tooLong = ctaTooLongField(text);
+  if (tooLong) return Err(`${tooLong}_too_long` as const);
   const saved = readCtaText(section, text);
   if (!saved) return Err("invalid");
 
@@ -49,6 +62,7 @@ export async function saveCtaDefaults(
     console.error("[saveCtaDefaults] update failed", error);
     return Err("database_error");
   }
+  await revalidatePublicationSettingsPaths(publicationUri);
   return Ok(saved);
 }
 
