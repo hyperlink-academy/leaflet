@@ -97,8 +97,6 @@ function policyForTiers(
   return tierIds.length ? { audience: "tiers", tierIds } : null;
 }
 
-// Custom subscribe-box text from the CTA settings tab. A blank field is
-// stored as absent so the box falls back to its built-in text.
 export type CtaText = {
   header?: string;
   upgradeHeader?: string;
@@ -112,7 +110,6 @@ export const CTA_SECTIONS: readonly CtaSection[] = [
   "locked",
   "earlyAccess",
 ];
-// Abuse guards only: this text loads on every subscribe box and paywall.
 export const CTA_HEADER_MAX_LENGTH = 2000;
 export const CTA_DESCRIPTION_MAX_LENGTH = 10000;
 
@@ -120,8 +117,6 @@ export function isCtaSection(value: unknown): value is CtaSection {
   return CTA_SECTIONS.includes(value as CtaSection);
 }
 
-// One section's text, trimmed with blanks dropped; null when a field isn't a
-// string or is too long. General has no upgrade header.
 export function readCtaText(
   section: CtaSection,
   value: unknown,
@@ -148,8 +143,6 @@ export function readCtaText(
   return text;
 }
 
-// Which kind of field, if any, is over its limit, for telling the writer why a
-// save was refused. An upgrade header counts as a header.
 export function ctaTooLongField(
   value: unknown,
 ): "header" | "description" | null {

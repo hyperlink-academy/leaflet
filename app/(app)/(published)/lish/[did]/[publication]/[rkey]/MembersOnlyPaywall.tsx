@@ -151,7 +151,6 @@ export function membersOnlyPaywallCopy(input: {
   let upgrading = needsUpgrade || canUpgrade;
 
   if (widerReleaseReaches(membership, gatePolicy, widerRelease, input.now)) {
-    // Gate and release combined: who can read once the wider release lands.
     let released = widerReleaseAudience(gatePolicy!, widerRelease.audience);
     let audience =
       released.audience === "public"

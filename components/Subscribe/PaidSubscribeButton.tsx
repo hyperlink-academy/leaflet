@@ -26,8 +26,6 @@ export const PaidSubscribeButton = (
     // Test-harness seam, threaded to the modal.
     viewerOverride?: MembershipJoinViewer;
     compact?: boolean;
-    // A subscribed viewer gets an Upgrade button into the join flow instead of
-    // only the Subscribed/Manage trigger.
     upgrade?: boolean;
   },
 ) => {

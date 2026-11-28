@@ -1,5 +1,3 @@
-// Each line the writer typed is its own paragraph; blank lines don't add
-// extra space.
 export function CtaDescription(props: { text: string; className?: string }) {
   let paragraphs = props.text
     .split("\n")

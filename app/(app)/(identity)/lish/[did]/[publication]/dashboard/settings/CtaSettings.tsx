@@ -148,7 +148,6 @@ function PaywallCta(props: { kind: "locked" | "earlyAccess"; pub: PubInfo }) {
   let hasPaidTiers = props.pub.paidTiers.length > 0;
   let saved = props.pub.cta[props.kind];
   let [header, setHeader] = useState(saved?.header ?? "");
-  // Kept and re-saved while hidden, so it returns if paid tiers come back.
   let [upgradeHeader, setUpgradeHeader] = useState(saved?.upgradeHeader ?? "");
   let [description, setDescription] = useState(saved?.description ?? "");
   let text = { header, upgradeHeader, description };
@@ -230,10 +229,6 @@ function PaywallCta(props: { kind: "locked" | "earlyAccess"; pub: PubInfo }) {
   );
 }
 
-// A representative post for each preview: paid pubs gate to any paid tier,
-// free pubs to subscribers. The early-access release must reach the previewed
-// reader, or the paywall shows Locked text: so it opens to everyone for a
-// logged-out reader, and to subscribers for a free subscriber.
 function samplePaywallCopy(
   kind: "locked" | "earlyAccess",
   pub: PubInfo,
@@ -263,12 +258,9 @@ function samplePaywallCopy(
   });
 }
 
-// AutosizeTextarea's grow-wrap styles strip the textarea's own border and
-// focus outline, so the wrapper carries them.
 const autosizeInputClass =
   "input-with-border w-full text-primary focus-within:border-tertiary focus-within:outline-solid focus-within:outline-tertiary focus-within:outline-2 focus-within:outline-offset-1";
 
-// Headers are single-line; they only wrap visually.
 const preventNewline = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
   if (e.key === "Enter") e.preventDefault();
 };

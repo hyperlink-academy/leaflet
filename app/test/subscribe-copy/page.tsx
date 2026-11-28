@@ -63,8 +63,6 @@ function MockIdentity(props: {
   );
 }
 
-// Keeps the panel on the free subscribe form and stops every other SWR fetch on the page (success
-// modal data, avatars) from hitting the server with the fake URIs.
 function MockSWR(props: { children: React.ReactNode }) {
   return (
     <SWRConfig
@@ -97,8 +95,6 @@ function Cell(props: {
     </div>
   );
 }
-
-// ─── Paywall ────────────────────────────────────────────────────────────────
 
 type Viewer = {
   label: string;
@@ -159,8 +155,6 @@ type PaywallState = {
   scenarios: string[];
 };
 
-// Prices, day counts and tier names are interpolated, so cards that differ only in those
-// collapse into one.
 function copyShape(text: string | null) {
   return (text ?? "")
     .replace(/\$[\d.,]+/g, "$X")
@@ -180,7 +174,6 @@ function paywallStates(now: number): PaywallState[] {
   for (let gate of GATES)
     for (let viewer of VIEWERS)
       for (let release of releaseOptions) {
-        // Entitled readers read straight through; the paywall never renders.
         if (membershipUnlocksGatedPost(viewer.membership, gate.policy))
           continue;
         let widerRelease: WiderRelease | null = release
@@ -285,12 +278,9 @@ function PaywallSection() {
   );
 }
 
-// ─── Subscribe panel (post footer + subscribe block) ───────────────────────
-
 const NAMES = {
   normal: "Test Publication",
   long: "The Extraordinarily Long-Winded Quarterly Review of Small Things",
-  // The editor SubscribeBlock falls back to this when the pub has no name.
   fallback: "Subscribe",
 };
 const NAME_LABELS: Record<keyof typeof NAMES, string> = {
