@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { savedCtaDefaults } from "src/publicationDefaults";
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
 import {
@@ -50,7 +51,7 @@ export const getPostPageData = cache(async function getPostPageData(
         data,
         uri,
         comments_on_documents(record),
-        documents_in_publications(publications(uri, name, identity_did, record,
+        documents_in_publications(publications(uri, name, identity_did, record, defaults,
           documents_in_publications(members_only, documents(uri, sort_date, title:data->>title, publishedAt:data->>publishedAt)),
           publication_newsletter_settings(enabled),
           publication_membership_settings(enabled, subscriber_tier_name, subscriber_tier_description),
@@ -262,6 +263,7 @@ export const getPostPageData = cache(async function getPostPageData(
     theme,
     prevNext,
     membersOnly,
+    cta: savedCtaDefaults(documentPublication?.defaults),
     // Explicit relational data for DocumentContext
     publication,
     commentsCount,

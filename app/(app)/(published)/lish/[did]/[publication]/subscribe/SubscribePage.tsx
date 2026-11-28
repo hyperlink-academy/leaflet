@@ -1,3 +1,4 @@
+import { savedCtaDefaults } from "src/publicationDefaults";
 import { supabaseServerClient } from "supabase/serverClient";
 import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
@@ -22,7 +23,7 @@ export async function SubscribePage(props: {
   const { data: publications } = await supabaseServerClient
     .from("publications")
     .select(
-      `uri, record, identity_did,
+      `uri, record, identity_did, defaults,
       publication_newsletter_settings(enabled)`,
     )
     .eq("identity_did", did)
@@ -49,6 +50,7 @@ export async function SubscribePage(props: {
           <SubscribeCard
             record={record}
             uri={publication.uri}
+            cta={savedCtaDefaults(publication.defaults).general}
             newsletterMode={
               publication.publication_newsletter_settings?.enabled ?? false
             }

@@ -1,6 +1,8 @@
 "use client";
 import { createContext, useContext, useMemo } from "react";
 import useSWRImmutable from "swr/immutable";
+import { SWRConfig } from "swr";
+import { publicationCtaKey } from "components/Subscribe/usePublicationCta";
 import { AppBskyFeedDefs } from "@atproto/api";
 import type { PubLeafletContent } from "lexicons/api";
 import { DocumentProvider } from "contexts/DocumentContext";
@@ -99,15 +101,25 @@ export function PostDataProvider(props: {
     [resources.pages],
   );
 
+  const ctaFallback = useMemo(
+    () =>
+      document.publication?.uri
+        ? { [publicationCtaKey(document.publication.uri)]: document.cta }
+        : {},
+    [document.publication?.uri, document.cta],
+  );
+
   return (
-    <DocumentProvider value={documentValue}>
-      <LeafletContentProvider value={content}>
-        <PostResourcesContext.Provider value={resources}>
-          <UnlockStatusContext.Provider value={effectiveStatus}>
-            {props.children}
-          </UnlockStatusContext.Provider>
-        </PostResourcesContext.Provider>
-      </LeafletContentProvider>
-    </DocumentProvider>
+    <SWRConfig value={{ fallback: ctaFallback }}>
+      <DocumentProvider value={documentValue}>
+        <LeafletContentProvider value={content}>
+          <PostResourcesContext.Provider value={resources}>
+            <UnlockStatusContext.Provider value={effectiveStatus}>
+              {props.children}
+            </UnlockStatusContext.Provider>
+          </PostResourcesContext.Provider>
+        </LeafletContentProvider>
+      </DocumentProvider>
+    </SWRConfig>
   );
 }

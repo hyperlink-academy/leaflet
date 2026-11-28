@@ -9,11 +9,10 @@ import { usePublicationData } from "../PublicationSWRProvider";
 
 export function SubscribePageSettings() {
   return (
-    <SettingsSection title="Subscribe Page">
-      <p>
-        Link people to this page or embed it in an iframe to allow them to
-        subscribe to your publication
-      </p>
+    <SettingsSection
+      title="Subscribe Page"
+      help="Link people to this page or embed it in an iframe to allow them to subscribe to your publication"
+    >
       <SubscribePageLinkInput />
     </SettingsSection>
   );

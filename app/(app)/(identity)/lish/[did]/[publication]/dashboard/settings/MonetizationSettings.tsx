@@ -42,34 +42,36 @@ export const ConnectStripeSection = () => {
   return (
     <SettingsSection
       title={stripeEnabled ? "Payments Enabled" : "Enable Payments"}
+      help={
+        <div className="flex flex-col gap-2">
+          {stripeEnabled ? (
+            <>
+              <div className="font-bold">
+                {" "}
+                You can accept payments from readers with Stripe!
+              </div>
+              <div>
+                Manage and withdraw funds, and find information on
+                subscriptions, customers, and disputes via the Stripe Dashboard.
+              </div>
+              <div>
+                Leaflet collects 5% of all charges, after processing fees.
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                Collect subscriptions and monetize your content!
+                <br /> Connect a Stripe account to get started!
+              </div>
+              <div>
+                Leaflet collects 5% of all charges, after processing fees.
+              </div>
+            </>
+          )}
+        </div>
+      }
     >
-      <div className="flex flex-col gap-2 text-secondary">
-        {stripeEnabled ? (
-          <>
-            <div className="font-bold">
-              {" "}
-              You can accept payments from readers with Stripe!
-            </div>
-            <div>
-              Manage and withdraw funds, and find information on subscriptions,
-              customers, and disputes via the Stripe Dashboard.
-            </div>
-            <div>
-              Leaflet collects 5% of all charges, after processing fees.
-            </div>
-          </>
-        ) : (
-          <>
-            <div>
-              Collect subscriptions and monetize your content!
-              <br /> Connect a Stripe account to get started!
-            </div>
-            <div>
-              Leaflet collects 5% of all charges, after processing fees.
-            </div>
-          </>
-        )}
-      </div>
       <ConnectPayments />
     </SettingsSection>
   );
@@ -81,12 +83,17 @@ const EnableMonetization = (props: { publicationUri: string }) => {
   let [enabling, setEnabling] = useState(false);
 
   return (
-    <SettingsSection accent title="Set Up Paid Memberships">
-      <div className="leading-snug text-secondary">
-        You've connected a Stripe account! <br />
-        Turn on paid memberships for this publication to <br /> create
-        membership tiers and start collecting payments!
-      </div>
+    <SettingsSection
+      accent
+      title="Set Up Paid Memberships"
+      help={
+        <>
+          You've connected a Stripe account! <br />
+          Turn on paid memberships for this publication to <br /> create
+          membership tiers and start collecting payments!
+        </>
+      }
+    >
       <ButtonPrimary
         type="button"
         className=""

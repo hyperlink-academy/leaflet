@@ -23,7 +23,7 @@ export type DocumentContextValue = Pick<
 > &
   // Optional so non-post DocumentProvider consumers (publication pages,
   // previews) don't have to supply it; absent means ungated.
-  Partial<Pick<NonNullPostPageData, "membersOnly">>;
+  Partial<Pick<NonNullPostPageData, "membersOnly" | "cta">>;
 
 const DocumentContext = createContext<DocumentContextValue | null>(null);
 

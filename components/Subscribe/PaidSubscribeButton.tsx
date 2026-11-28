@@ -10,7 +10,7 @@ import {
   type JoinResume,
 } from "components/Memberships/joinReturn";
 import type { MembershipJoinViewer } from "actions/publications/joinMembership";
-import type { GatePolicy, MembershipTiers } from "src/membership";
+import type { GatePolicy, MembershipTiers, WiderRelease } from "src/membership";
 
 // The subscribe control for publications with paid tiers. Styled like
 // SubscribeButton, but instead of one-click subscribing it opens the paid join
@@ -22,9 +22,11 @@ export const PaidSubscribeButton = (
     tiers: MembershipTiers;
     // Badges the plans admitted by the post's gate policy.
     gatePolicy?: GatePolicy | null;
+    widerRelease?: WiderRelease | null;
     // Test-harness seam, threaded to the modal.
     viewerOverride?: MembershipJoinViewer;
     compact?: boolean;
+    upgrade?: boolean;
   },
 ) => {
   const user = useViewerSubscription(props.publicationUri);
@@ -44,7 +46,27 @@ export const PaidSubscribeButton = (
 
   return (
     <>
-      {user.subscribed ? (
+      {user.subscribed && props.upgrade ? (
+        <div className="flex flex-col gap-1 items-center justify-center">
+          <ButtonPrimary
+            compact={props.compact}
+            type="button"
+            className="pubPageUpgrade text-sm!"
+            onClick={() => setOpen(true)}
+          >
+            Upgrade
+          </ButtonPrimary>
+          <ManageSubscription
+            publicationUri={props.publicationUri}
+            publicationUrl={props.publicationUrl}
+            newsletterMode={props.newsletterMode}
+            user={user}
+            triggerLabel="Manage Subscription"
+            membershipTiers={props.tiers}
+            onChangeMembership={() => setOpen(true)}
+          />
+        </div>
+      ) : user.subscribed ? (
         <ManageSubscription
           publicationUri={props.publicationUri}
           publicationUrl={props.publicationUrl}
@@ -74,6 +96,7 @@ export const PaidSubscribeButton = (
         newsletterMode={props.newsletterMode}
         tiers={props.tiers}
         gatePolicy={props.gatePolicy}
+        widerRelease={props.widerRelease}
         resume={resume}
         source={props.source}
         viewerOverride={props.viewerOverride}

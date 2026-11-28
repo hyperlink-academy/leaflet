@@ -155,15 +155,19 @@ function OwnerContributorSettings(props: {
 
   return (
     <>
-      <SettingsSection title="Invite Contributors ">
-        <div className="leading-snug text-secondary">
-          Contributors can write and publish to this publication!<br /> Posts they publish will have their name in the byline but are still owned by you.
-           <br />
-        </div>
-        <div className="leading-snug text-secondary">
-          Search Atmosphere accounts to add contributors.
-        </div>
-
+      <SettingsSection
+        title="Invite Contributors"
+        help={
+          <div className="flex flex-col gap-2">
+            <div>
+              Contributors can write and publish to this publication!
+              <br /> Posts they publish will have their name in the byline but
+              are still owned by you.
+            </div>
+            <div>Search Atmosphere accounts to add contributors.</div>
+          </div>
+        }
+      >
         <div className="mt-2">
           <HandleSearchInput
             leading={null}
@@ -397,10 +401,11 @@ function ContributorLeaveSettings(props: {
   };
 
   return (
-    <SettingsSection title="Contributor" className="pb-4">
-      <div className="text-secondary leading-snug">
-        You're a contributor on this publication.
-      </div>
+    <SettingsSection
+      title="Contributor"
+      className="pb-4"
+      help="You're a contributor on this publication."
+    >
       <Modal
         open={open}
         onOpenChange={setOpen}

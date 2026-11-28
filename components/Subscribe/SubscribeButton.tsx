@@ -32,6 +32,9 @@ import { Separator } from "components/Layout";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { PaidSubscribeButton } from "./PaidSubscribeButton";
 import { useMembershipTiers } from "components/Memberships/useMembershipTiers";
+import { usePublicationCta, preloadPublicationCta } from "./usePublicationCta";
+import type { CtaText } from "src/publicationDefaults";
+import { CtaDescription } from "components/Subscribe/CtaDescription";
 
 type SubscribeMode = "email" | "atproto";
 
@@ -72,18 +75,27 @@ export type SubscribeProps = {
   source?: SubscriptionSource;
 };
 
-export const SubscribePanel = (props: SubscribeProps) => {
+export const SubscribePanel = (
+  props: SubscribeProps & {
+    cta?: CtaText;
+  },
+) => {
+  let { cta: ctaOverride, ...subscribeProps } = props;
+  let saved = usePublicationCta(
+    ctaOverride ? undefined : props.publicationUri,
+  ).general;
+  let cta = ctaOverride ?? saved;
+  let header = cta?.header || props.publicationName;
+  let description = cta?.description || props.publicationDescription;
   return (
     <div className="subscribePanel accent-container rounded-lg! border-none! p-0! w-full text-center justify-center">
-      <div className="px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-5">
-        <h3 className="leading-snug text-secondary">{props.publicationName}</h3>
-        {props.publicationDescription && (
-          <div className="text-tertiary leading-snug">
-            {props.publicationDescription}
-          </div>
-        )}
-        <div className="w-fit max-w-full mx-auto pt-3">
-          <SubscribeInput {...props} />
+      <div className="flex flex-col items-center gap-3 px-4 py-4 leading-snug">
+        <div>
+          <h3 className="leading-tight pb-1">{header}</h3>
+          {description && <CtaDescription text={description} />}
+        </div>
+        <div className="w-fit max-w-full mx-auto">
+          <SubscribeInput {...subscribeProps} />
         </div>
       </div>
     </div>
@@ -368,8 +380,15 @@ export const SubscribeButton = (props: SubscribeProps) => {
       <PaidSubscribeButton {...props} tiers={membershipTiers.tiers} compact />
     );
 
+  const warmCta = () => preloadPublicationCta(props.publicationUri);
   const subscribeTrigger = (
-    <ButtonPrimary compact className="pubPageSubscribe text-sm!">
+    <ButtonPrimary
+      compact
+      className="pubPageSubscribe text-sm!"
+      onPointerEnter={warmCta}
+      onFocus={warmCta}
+      onTouchStart={warmCta}
+    >
       Subscribe
     </ButtonPrimary>
   );
